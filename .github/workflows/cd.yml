@@ -32,6 +32,11 @@ on:
           Only publish docs to the website, do not publish the plugin.
         default: false
         type: boolean
+      gcs-only:
+        description: |
+          Only publish the plugin to GCS, do not publish the plugin to the Grafana Plugin Catalog.
+        default: false
+        type: boolean
       run-playwright:
         description: Whether to run Playwright E2E tests.
         type: boolean
@@ -145,7 +150,7 @@ jobs:
 
   deploy:
     name: Deploy to ${{ matrix.environment }}
-    if: ${{ !inputs.docs-only }}
+    if: ${{ !inputs.docs-only && !inputs.gcs-only }}
     needs:
       - define-variables
       - ci
