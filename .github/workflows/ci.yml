@@ -1,14 +1,15 @@
+# Description:
+#  CI workflow for building, testing and packaging a plugin.
+#  It does the following steps:
+#  - Runs unit tests and builds the frontend
+#  - Tests and builds the backend (if it exists)
+#  - Signes and packages the plugin into a universal ZIP and OS/arch ZIPs
+#  - Tests the plugin docs (if they exist)
+#  - Runs Playwright E2E tests (if they exist)
+#  - Uploads the ZIPs to Google Cloud Storage, for publishing to the Grafana Plugin Catalog
+#  - Uploads the ZIPs as GitHub artifacts, for other workflows to consume
+
 name: Plugins - CI
-description: |
-  CI workflow for building, testing and packaging a plugin.
-  It does the following steps:
-  - Runs unit tests and builds the frontend
-  - Tests and builds the backend (if it exists)
-  - Signes and packages the plugin into a universal ZIP and OS/arch ZIPs
-  - Tests the plugin docs (if they exist)
-  - Runs Playwright E2E tests (if they exist)
-  - Uploads the ZIPs to Google Cloud Storage, for publishing to the Grafana Plugin Catalog
-  - Uploads the ZIPs as GitHub artifacts, for other workflows to consume
 
 on:
   workflow_call:
@@ -174,7 +175,7 @@ jobs:
         run: |
           r=false
           [ -f "Magefile.go" ] && r=true
-          echo "has-backend=$r" >> $GITHUB_OUTPUT
+          echo "has-backend=$r" >> "$GITHUB_OUTPUT"
         shell: bash
 
       - name: Test and build frontend
@@ -206,22 +207,23 @@ jobs:
 
       - name: Define outputs
         id: outputs
-        run: |
-          echo plugin=$(jq -n \
-            --arg id "$(jq -r .id dist/plugin.json)" \
-            --arg version "$(jq -r .info.version dist/plugin.json)" \
-            --arg has-backend "${{ steps.check-for-backend.outputs.has-backend }}" \
-            --arg executable "$(jq -r .executable dist/plugin.json)" \
-            '$ARGS.named'
-          ) >> "$GITHUB_OUTPUT"
+        run: |          
+          {
+            echo plugin="$(jq -n \
+                --arg id "$(jq -r .id dist/plugin.json)" \
+                --arg version "$(jq -r .info.version dist/plugin.json)" \
+                --arg has-backend "${{ steps.check-for-backend.outputs.has-backend }}" \
+                --arg executable "$(jq -r .executable dist/plugin.json)" \
+                '$ARGS.named'
+              )"
 
-          echo universal-zip='${{ steps.universal-zip.outputs.zip }}' >> "$GITHUB_OUTPUT"
-          echo os-arch-zips='${{ steps.os-arch-zips.outputs.zip }}' >> "$GITHUB_OUTPUT"
+            echo universal-zip='${{ steps.universal-zip.outputs.zip }}'
+            echo os-arch-zips='${{ steps.os-arch-zips.outputs.zip }}'
 
-          # combine universal zip string with os-arch zips into a single array
-          zips=$(echo -e '["${{ steps.universal-zip.outputs.zip }}"]\n${{ steps.os-arch-zips.outputs.zip }}' | jq -cs 'add')
-          echo zips="$zips" >> "$GITHUB_OUTPUT"
-
+            # combine universal zip string with os-arch zips into a single array
+            zips=$(echo -e '["${{ steps.universal-zip.outputs.zip }}"]\n${{ steps.os-arch-zips.outputs.zip }}' | jq -cs 'add')
+            echo zips="$zips"
+          }  >> "$GITHUB_OUTPUT"
           cat "$GITHUB_OUTPUT"
         shell: bash
 
@@ -257,7 +259,7 @@ jobs:
         run: |
           r=false
           [ -d "docs" ] && r=true
-          echo "exist=$r" >> $GITHUB_OUTPUT
+          echo "exist=$r" >> "$GITHUB_OUTPUT"
         shell: bash
 
       - name: Test docs
@@ -321,11 +323,7 @@ jobs:
 
       - name: Upload GCS artifacts (latest)
         id: gcs-upload-latest
-        if: >
-          ${{
-            (github.event_name == 'push')
-            && (github.ref == 'refs/heads/main')
-          }}
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main'}}
         uses: google-github-actions/upload-cloud-storage@v2.2.1
         with:
           path: /tmp/dist-artifacts
@@ -379,7 +377,7 @@ jobs:
           echo zip_urls_commit="$zip_urls_commit" >> "$GITHUB_OUTPUT"
 
           universal_zip_file_name=$(basename "${{ needs.test-and-build.outputs.universal-zip }}")
-          if [ ! -z "$universal_zip_file_name" ]; then
+          if [ -n "$universal_zip_file_name" ]; then
             echo universal_zip_url_latest="$gcs_artifacts_path_latest/$universal_zip_file_name" >> "$GITHUB_OUTPUT"
             echo universal_zip_url_commit="$gcs_artifacts_path_commit/$universal_zip_file_name" >> "$GITHUB_OUTPUT"
           fi
