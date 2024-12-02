@@ -216,13 +216,16 @@ jobs:
             GCOM_PUBLISH_TOKEN_OPS=plugins/gcom-publish-token:ops
             GCOM_PUBLISH_TOKEN_PROD=plugins/gcom-publish-token:prod
 
-      - name: Determine token
+      - name: Determine which token to use
         run: |
           if [ "${{ matrix.environment }}" == 'dev' ]; then
+            echo "Picked dev token"
             token="${{ env.GCOM_PUBLISH_TOKEN_DEV }}"
           elif [ "${{ matrix.environment }}" == 'ops' ]; then
+            echo "Picked ops token"
             token="${{ env.GCOM_PUBLISH_TOKEN_OPS }}"
           elif [ "${{ matrix.environment }}" == 'prod' ]; then
+            echo "Picked prod token"
             token="${{ env.GCOM_PUBLISH_TOKEN_PROD }}"
           else
             echo "Invalid environment '${{ matrix.environment }}'"
