@@ -1,13 +1,14 @@
-name: Plugins - Publish plugin
-description: |
-  Publishes the plugin to the Grafana Plugin Catalog.
-  The plugin must be built via the "ci" workflow before running this workflow.
-  It does the following steps:
-  - Publishes the plugin to 'dev', 'ops', and 'prod' catalogs.
-  - ('prod' target only) Publishes docs to the website, if they exist.
-  - ('prod' target only) Creates a lightweight Git tag and a drafts a new GitHub.
+# Description:
+# Publishes the plugin to the Grafana Plugin Catalog.
+# The plugin must be built via the "ci" workflow before running this workflow.
+# It does the following steps:
+#  - Publishes the plugin to 'dev', 'ops', and 'prod' catalogs.
+#  - ('prod' target only) Publishes docs to the website, if they exist.
+#  - ('prod' target only) Creates a lightweight Git tag and a drafts a new GitHub.
+#
+#  This workflow can also publish a PR (or any other non-main branch), but only to the 'dev' catalog.
 
-  This workflow can also publish a PR (or any other non-main branch), but only to the 'dev' catalog.
+name: Plugins - Publish plugin
 
 on:
   workflow_call:

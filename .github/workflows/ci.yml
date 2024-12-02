@@ -1,14 +1,15 @@
+# Description:
+#  CI workflow for building, testing and packaging a plugin.
+#  It does the following steps:
+#  - Runs unit tests and builds the frontend
+#  - Tests and builds the backend (if it exists)
+#  - Signes and packages the plugin into a universal ZIP and OS/arch ZIPs
+#  - Tests the plugin docs (if they exist)
+#  - Runs Playwright E2E tests (if they exist)
+#  - Uploads the ZIPs to Google Cloud Storage, for publishing to the Grafana Plugin Catalog
+#  - Uploads the ZIPs as GitHub artifacts, for other workflows to consume
+
 name: Plugins - CI
-description: |
-  CI workflow for building, testing and packaging a plugin.
-  It does the following steps:
-  - Runs unit tests and builds the frontend
-  - Tests and builds the backend (if it exists)
-  - Signes and packages the plugin into a universal ZIP and OS/arch ZIPs
-  - Tests the plugin docs (if they exist)
-  - Runs Playwright E2E tests (if they exist)
-  - Uploads the ZIPs to Google Cloud Storage, for publishing to the Grafana Plugin Catalog
-  - Uploads the ZIPs as GitHub artifacts, for other workflows to consume
 
 on:
   workflow_call:
