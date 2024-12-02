@@ -150,26 +150,36 @@ jobs:
         run: |
           # If we are publishing docs only, we don't need to deploy the plugin
           if [ "${{ inputs.docs-only }}" == 'true' ]; then
-            echo 'environments=[]' >> "$GITHUB_OUTPUT"
-            echo 'publish-docs=true' >> "$GITHUB_OUTPUT"
-            echo 'prod=false' >> "$GITHUB_OUTPUT"
+            {
+              echo 'environments=[]'
+              echo 'publish-docs=true'
+              echo 'prod=false'
+            } >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
           # Define environments matrix,
           # and deploy docs only if we are publishing to prod
           if [ "${{ inputs.environment }}" == 'dev' ]; then
-            echo 'environments=["dev"]' >> "$GITHUB_OUTPUT"
-            echo 'publish-docs=false' >> "$GITHUB_OUTPUT"
-            echo 'prod=false' >> "$GITHUB_OUTPUT"
+            {
+              echo 'environments=["dev"]'
+              echo 'publish-docs=false'
+              echo 'prod=false' 
+            } >> "$GITHUB_OUTPUT"
           elif [ "${{ inputs.environment }}" == 'ops' ]; then
-            echo 'environments=["dev", "ops"]' >> "$GITHUB_OUTPUT"
-            echo 'publish-docs=false' >> "$GITHUB_OUTPUT"
-            echo 'prod=false' >> "$GITHUB_OUTPUT"
+            {
+              echo 'environments=["dev", "ops"]'
+              echo 'publish-docs=false'
+              echo 'prod=false'
+            } >> "$GITHUB_OUTPUT"
+            
           elif [ "${{ inputs.environment }}" == 'prod' ]; then
-            echo 'environments=["dev", "ops", "prod"]' >> "$GITHUB_OUTPUT"
-            echo 'publish-docs=true' >> "$GITHUB_OUTPUT"
-            echo 'prod=true' >> "$GITHUB_OUTPUT"
+            {
+              echo 'environments=["dev", "ops", "prod"]'
+              echo 'publish-docs=true'
+              echo 'prod=true'
+            } >> "$GITHUB_OUTPUT"
+            
           else
             echo "Invalid environment '${{ inputs.environment }}'"
             exit 1
