@@ -83,7 +83,7 @@ jobs:
     runs-on: ubuntu-latest
 
     outputs:
-      commit-sha: ${{ steps.commit-sha.outputs.sha }}
+      commit-sha: ${{ steps.checkout-specified-branch.outputs.commit }}
 
     steps:
       - name: Check environment
@@ -107,13 +107,10 @@ jobs:
         shell: bash
 
       - name: Checkout specified branch
+        id: checkout-specified-branch
         uses: actions/checkout@v4.2.2
         with:
-          ref: ${{ inputs.branch }}
-
-      - name: Get commit SHA
-        id: commit-sha
-        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          ref: ${{ inputs.branch }}      
 
   ci:
     name: CI
