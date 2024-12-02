@@ -377,7 +377,7 @@ jobs:
           echo zip_urls_commit="$zip_urls_commit" >> "$GITHUB_OUTPUT"
 
           universal_zip_file_name=$(basename "${{ needs.test-and-build.outputs.universal-zip }}")
-          if [ ! -z "$universal_zip_file_name" ]; then
+          if [ -n "$universal_zip_file_name" ]; then
             echo universal_zip_url_latest="$gcs_artifacts_path_latest/$universal_zip_file_name" >> "$GITHUB_OUTPUT"
             echo universal_zip_url_commit="$gcs_artifacts_path_commit/$universal_zip_file_name" >> "$GITHUB_OUTPUT"
           fi
