@@ -101,7 +101,7 @@ jobs:
           unzip ${{ inputs.id }}-${{ inputs.version }}.zip -d out
           # Folder structure: /tmp/dist-artifacts/out/$PLUGIN_ID/plugin.json
           cd out
-          cd $(ls -1)
+          cd "$(ls -1)"
           mv * "$src/dist/"
 
       - name: Start Grafana
