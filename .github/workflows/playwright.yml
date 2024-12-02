@@ -102,7 +102,7 @@ jobs:
           # Folder structure: /tmp/dist-artifacts/out/$PLUGIN_ID/plugin.json
           cd out
           cd "$(ls -1)"
-          mv * "$src/dist/"
+          mv ./* "$src/dist/"
 
       - name: Start Grafana
         run: |
