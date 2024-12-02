@@ -175,7 +175,7 @@ jobs:
         run: |
           r=false
           [ -f "Magefile.go" ] && r=true
-          echo "has-backend=$r" >> $GITHUB_OUTPUT
+          echo "has-backend=$r" >> "$GITHUB_OUTPUT"
         shell: bash
 
       - name: Test and build frontend
@@ -259,7 +259,7 @@ jobs:
         run: |
           r=false
           [ -d "docs" ] && r=true
-          echo "exist=$r" >> $GITHUB_OUTPUT
+          echo "exist=$r" >> "$GITHUB_OUTPUT"
         shell: bash
 
       - name: Test docs
