@@ -121,7 +121,7 @@ sha=$(git rev-parse HEAD)
 popd > /dev/null
 
 # Publish the plugin
-echo "Publishing to $gcom_api_url..."
+echo "Publishing to $gcom_api_url"
 json_download=$(json_obj "${jq_download_args[@]}")
 json_payload=$(jq -c -n \
     --argjson download "$json_download" \
