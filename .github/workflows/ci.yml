@@ -209,7 +209,7 @@ jobs:
         id: outputs
         run: |          
           {
-            echo plugin="$(jq -n \
+            echo plugin="$(jq -n -c \
                 --arg id "$(jq -r .id dist/plugin.json)" \
                 --arg version "$(jq -r .info.version dist/plugin.json)" \
                 --arg has-backend "${{ steps.check-for-backend.outputs.has-backend }}" \
