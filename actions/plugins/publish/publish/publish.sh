@@ -2,7 +2,7 @@
 set -e
 
 usage() {
-    echo "Usage: $0 --environment <dev|ops|prod> <plugin_zip_urls...>"
+    echo "Usage: $0 --environment <dev|ops|prod> [--scopes <scopes_json_array> --dry-run] <plugin_zip_urls...>"
 }
 
 json_obj() {
@@ -10,9 +10,13 @@ json_obj() {
 }
 
 gcs_zip_urls=()
+scopes='["universal"]'
+dry_run=false
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         --environment) gcom_env=$2; shift 2;;
+        --scopes) scopes=$2; shift 2;;
+        --dry-run) dry_run=true; shift;;
         --help)
             usage
             exit 0
@@ -94,7 +98,6 @@ for zip_url in $gcs_zip_urls; do
         # os-arch zip
         platform="$os-$arch"
     fi
-    echo $file
 
     # Try to get the .md5 for the zip file
     md5_url="$zip_url.md5"
@@ -127,9 +130,14 @@ json_payload=$(jq -c -n \
     --argjson download "$json_download" \
     --arg url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" \
     --arg commit "$sha" \
+    --argjson scopes "$scopes" \
     '$ARGS.named'
 )
 echo $json_payload | jq
+if [ "$dry_run" = true ]; then
+    echo "Dry run enabled, skipping publish"
+    exit 0
+fi
 out=$(
     curl -sSL \
         -X POST \
