@@ -28,6 +28,13 @@ on:
           Docs will only be published to the website when targeting 'prod'.
         required: true
         type: string
+      scopes:
+        description: |
+          Array of scopes for the plugin version.
+          Default is ["universal"].
+        required: false
+        default: '["universal"]'
+        type: string
       docs-only:
         description: |
           Only publish docs to the website, do not publish the plugin.
@@ -111,7 +118,7 @@ jobs:
         id: checkout-specified-branch
         uses: actions/checkout@v4.2.2
         with:
-          ref: ${{ inputs.branch }}      
+          ref: ${{ inputs.branch }}
 
   ci:
     name: CI
@@ -256,6 +263,7 @@ jobs:
         with:
           zips: ${{ needs.ci.outputs.gcs-zip-urls-commit }}
           environment: ${{ matrix.environment }}
+          scopes: ${{ inputs.scopes }}
           gcom-publish-token: ${{ env.GCOM_PUBLISH_TOKEN }}
           gcloud-auth-token: ${{ steps.gcloud.outputs.id_token }}
 
