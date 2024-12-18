@@ -2,7 +2,7 @@
 set -e
 
 usage() {
-    echo "Usage: $0 --environment <dev|ops|prod> [--scopes <scopes_json_array> --dry-run] <plugin_zip_urls...>"
+    echo "Usage: $0 --environment <dev|ops|prod> --scopes <scopes_json_array> [--dry-run] <plugin_zip_urls...>"
 }
 
 json_obj() {
@@ -10,7 +10,7 @@ json_obj() {
 }
 
 gcs_zip_urls=()
-scopes='["universal"]'
+scopes=''
 dry_run=false
 while [[ "$#" -gt 0 ]]; do
     case $1 in
@@ -42,6 +42,12 @@ fi
 
 if [ -z $gcom_env ]; then
     echo "Environment not provided"
+    usage
+    exit 1
+fi
+
+if [ -z $scopes ]; then
+    echo "Scopes not provided"
     usage
     exit 1
 fi
