@@ -8,9 +8,17 @@ runs:
       shell: bash
       run: ${{ github.action_path }}/pm.sh install
 
+    - name: Lint
+      shell: bash
+      run: ${{ github.action_path }}/pm.sh lint
+
+    - name: Typecheck
+      shell: bash
+      run: ${{ github.action_path }}/pm.sh typecheck
+
     - name: Test
       shell: bash
-      run: ./node_modules/.bin/jest --passWithNoTests --maxWorkers 4
+      run: ${{ github.action_path }}/pm.sh test:ci
 
     - name: Build
       shell: bash
