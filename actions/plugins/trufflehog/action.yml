@@ -1,0 +1,16 @@
+name: Plugins - Trufflehog secrets scanning
+description: Scans plugin zip files for secrets using Trufflehog.
+
+inputs:
+  folder:
+    description: |
+      Folder containing plugin zip files to scan.
+      It will be scanned recursively.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Run Trufflehog
+      shell: bash
+      run: ./bin/trufflehog filesystem "${{ inputs.folder }}" --fail --github-actions
