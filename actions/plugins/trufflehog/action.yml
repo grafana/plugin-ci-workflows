@@ -14,7 +14,7 @@ runs:
     - name: Install Trufflehog
       shell: bash
       run: |
-        curl -sSfL https://raw.githubusercontent.com/trufflesecurity/trufflehog/${{ inputs.trufflehog-version }}/scripts/install.sh | sh
+        curl -sSfL https://raw.githubusercontent.com/trufflesecurity/trufflehog/main/scripts/install.sh | sh
 
     - name: Run Trufflehog
       shell: bash
