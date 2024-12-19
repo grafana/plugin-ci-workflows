@@ -27,6 +27,11 @@ on:
         type: string
         required: false
         default: ${{ github.head_ref || github.ref_name }}
+      run-trufflehog:
+        description: Whether to run Trufflehog secrets scanning.
+        type: boolean
+        required: false
+        default: true
       run-playwright:
         description: Whether to run Playwright E2E tests.
         type: boolean
@@ -205,9 +210,15 @@ jobs:
           output-folder: dist-artifacts
           access-policy-token: ${{ env.SIGN_PLUGIN_ACCESS_POLICY_TOKEN }}
 
+      - name: Trufflehog secrets scanning
+        if: ${{ inputs.run-trufflehog == true }}
+        uses: grafana/plugin-ci-workflows/actions/plugins/trufflehog@main
+        with:
+          folder: dist-artifacts
+
       - name: Define outputs
         id: outputs
-        run: |          
+        run: |
           {
             echo plugin="$(jq -n -c \
                 --arg id "$(jq -r .id dist/plugin.json)" \
