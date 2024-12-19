@@ -13,4 +13,4 @@ runs:
   steps:
     - name: Run Trufflehog
       shell: bash
-      run: ./bin/trufflehog filesystem "${{ inputs.folder }}" --fail --github-actions
+      run: ./bin/trufflehog filesystem "${{ inputs.folder }}" --fail --github-actions --debug
