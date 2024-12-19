@@ -11,9 +11,6 @@ inputs:
   golangci-lint-version:
     description: golangci-lint version to use.
     required: true
-  trufflehog-version:
-    description: Trufflehog version to use.
-    required: true
 
 runs:
   using: composite
@@ -37,8 +34,3 @@ runs:
       shell: bash
       run: |
         curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v${{ inputs.golangci-lint-version }}
-
-    - name: Install Trufflehog
-      shell: bash
-      run: |
-        curl -sSfL https://raw.githubusercontent.com/trufflesecurity/trufflehog/${{ inputs.trufflehog-version }}/scripts/install.sh | sh
