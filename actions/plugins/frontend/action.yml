@@ -1,5 +1,5 @@
 name: Plugins - Frontend - Test and build
-description: Runs unit tests and builds the frontend
+description: Tests, lints, typechecks and builds the frontend.
 
 runs:
   using: composite
