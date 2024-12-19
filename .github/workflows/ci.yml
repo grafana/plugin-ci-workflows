@@ -157,7 +157,7 @@ jobs:
 
       - name: Get secrets from Vault
         id: get-secrets
-        uses: grafana/shared-workflows/actions/get-vault-secrets@giuseppe/trufflehog
+        uses: grafana/shared-workflows/actions/get-vault-secrets@main
         with:
           vault_instance: ${{ env.VAULT_INSTANCE }}
           common_secrets: |
