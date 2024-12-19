@@ -152,6 +152,7 @@ jobs:
           go-version: ${{ inputs.go-version }}
           node-version: ${{ inputs.node-version }}
           golangci-lint-version: ${{ inputs.golangci-lint-version }}
+          # TODO: do not set up trufflehog if not needed
           trufflehog-version: ${{ inputs.trufflehog-version }}
 
       - name: Get secrets from Vault
