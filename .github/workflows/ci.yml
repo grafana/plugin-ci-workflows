@@ -179,7 +179,7 @@ jobs:
         shell: bash
 
       - name: Test and build frontend
-        uses: grafana/plugin-ci-workflows/actions/plugins/frontend@giuseppe/frontend-lint-tsc
+        uses: grafana/plugin-ci-workflows/actions/plugins/frontend@main
 
       - name: Test and build backend
         if: ${{ steps.check-for-backend.outputs.has-backend == 'true' }}
