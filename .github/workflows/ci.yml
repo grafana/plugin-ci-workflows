@@ -244,6 +244,7 @@ jobs:
           cat "$GITHUB_OUTPUT"
         shell: bash
 
+      # TODO: Block upload if secrets are found
       - name: Upload GitHub artifacts
         uses: actions/upload-artifact@v4.4.3
         with:
