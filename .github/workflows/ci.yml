@@ -79,7 +79,7 @@ on:
         description: Trufflehog version to use
         type: string
         required: false
-        default: "3.87.2"
+        default: "v3.87.2"
     outputs:
       plugin:
         description: |
