@@ -11,6 +11,21 @@ inputs:
       Folder containing plugin zip files to scan.
       It will be scanned recursively.
     required: true
+  include-detectors:
+    description: |
+      Comma-separated list of detector types to include.
+      Protobuf name or IDs may be used, as well as ranges.
+      This value will be passed via the `--include-detectors` option to Trufflehog.
+      If not provided, the flag is not passed.
+    required: false
+  exclude-detectors:
+    description: |
+      Comma-separated list of detector types to exclude.
+      Protobuf name or IDs may be used, as well as ranges.
+      IDs defined here take precedence over the include list.
+      This value will be passed via the `--exclude-detectors` option to Trufflehog.
+      If not provided, the flag is not passed.
+    required: false
 
 runs:
   using: composite
@@ -22,4 +37,8 @@ runs:
 
     - name: Run Trufflehog
       shell: bash
-      run: ./bin/trufflehog filesystem "${{ inputs.folder }}" --no-update --fail --github-actions
+      run: >
+        ./bin/trufflehog filesystem "${{ inputs.folder }}"
+        --no-update --fail --github-actions
+        ${{ inputs.include-detectors && ('--include-detectors="' + inputs.include-detectors + '"') || '' }}
+        ${{ inputs.exclude-detectors && ('--exclude-detectors="' + inputs.exclude-detectors + '"') || '' }}

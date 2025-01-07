@@ -66,7 +66,23 @@ on:
         required: false
         type: boolean
         default: false
-
+      trufflehog-include-detectors:
+        description: |
+          Comma-separated list of detector types to include.
+          Protobuf name or IDs may be used, as well as ranges.
+          This value will be passed via the `--include-detectors` option to Trufflehog.
+          If not provided, the flag is not passed.
+        type: string
+        required: false
+      trufflehog-exclude-detectors:
+        description: |
+          Comma-separated list of detector types to exclude.
+          Protobuf name or IDs may be used, as well as ranges.
+          IDs defined here take precedence over the include list.
+          This value will be passed via the `--exclude-detectors` option to Trufflehog.
+          If not provided, the flag is not passed.
+        type: string
+        required: false
 concurrency:
   group: cd-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
@@ -111,7 +127,7 @@ jobs:
         id: checkout-specified-branch
         uses: actions/checkout@v4.2.2
         with:
-          ref: ${{ inputs.branch }}      
+          ref: ${{ inputs.branch }}
 
   ci:
     name: CI
@@ -125,6 +141,8 @@ jobs:
       run-playwright-with-skip-grafana-dev-image: ${{ inputs.run-playwright-with-skip-grafana-dev-image }}
       run-playwright-with-version-resolver-type: ${{ inputs.run-playwright-with-version-resolver-type }}
       upload-playwright-artifacts: ${{ github.event.inputs.upload-playwright-artifacts == true }}
+      trufflehog-include-detectors: ${{ inputs.trufflehog-include-detectors }}
+      trufflehog-exclude-detectors: ${{ inputs.trufflehog-exclude-detectors }}
       plugin-version-suffix: >-
         ${{
           github.event.inputs.branch != 'main'

@@ -32,6 +32,28 @@ on:
         type: boolean
         required: false
         default: true
+      trufflehog-version:
+        description: Trufflehog version to use
+        type: string
+        required: false
+        default: "3.88.1"
+      trufflehog-include-detectors:
+        description: |
+          Comma-separated list of detector types to include.
+          Protobuf name or IDs may be used, as well as ranges.
+          This value will be passed via the `--include-detectors` option to Trufflehog.
+          If not provided, the flag is not passed.
+        type: string
+        required: false
+      trufflehog-exclude-detectors:
+        description: |
+          Comma-separated list of detector types to exclude.
+          Protobuf name or IDs may be used, as well as ranges.
+          IDs defined here take precedence over the include list.
+          This value will be passed via the `--exclude-detectors` option to Trufflehog.
+          If not provided, the flag is not passed.
+        type: string
+        required: false
       run-playwright:
         description: Whether to run Playwright E2E tests.
         type: boolean
@@ -75,11 +97,6 @@ on:
         type: string
         required: false
         default: "1.61.0"
-      trufflehog-version:
-        description: Trufflehog version to use
-        type: string
-        required: false
-        default: "3.88.1"
     outputs:
       plugin:
         description: |
@@ -195,8 +212,6 @@ jobs:
         if: ${{ steps.check-for-backend.outputs.has-backend == 'true' }}
         uses: grafana/plugin-ci-workflows/actions/plugins/backend@main
 
-      # TODO: security scan?
-
       - name: Package universal ZIP
         id: universal-zip
         uses: grafana/plugin-ci-workflows/actions/plugins/package@main
@@ -221,6 +236,8 @@ jobs:
         with:
           trufflehog-version: ${{ inputs.trufflehog-version }}
           folder: dist-artifacts
+          include-detectors: ${{ inputs.trufflehog-include-detectors }}
+          exclude-detectors: ${{ inputs.trufflehog-exclude-detectors }}
 
       - name: Define outputs
         id: outputs
