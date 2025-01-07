@@ -37,8 +37,13 @@ runs:
 
     - name: Run Trufflehog
       shell: bash
-      run: >
-        ./bin/trufflehog filesystem "${{ inputs.folder }}"
-        --no-update --fail --github-actions
-        ${{ inputs.include-detectors && '--include-detectors=' + inputs.include-detectors || '' }}
-        ${{ inputs.exclude-detectors && '--exclude-detectors=' + inputs.exclude-detectors || '' }}
+      run: |
+        include_detectors="all"
+        if [ -n "${{ inputs.include-detectors }}" ]; then
+          include_detectors="${{ inputs.include-detectors }}"
+        fi
+
+        ./bin/trufflehog filesystem "${{ inputs.folder }}" \
+        --no-update --fail --github-actions \
+        --include-detectors="${include_detectors}" \
+        --exclude-detectors="${{ inputs.exclude-detectors }}"
