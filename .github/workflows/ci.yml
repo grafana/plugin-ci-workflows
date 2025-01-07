@@ -232,7 +232,7 @@ jobs:
 
       - name: Trufflehog secrets scanning
         if: ${{ inputs.run-trufflehog == true }}
-        uses: grafana/plugin-ci-workflows/actions/plugins/trufflehog@main
+        uses: grafana/plugin-ci-workflows/actions/plugins/trufflehog@giuseppe/trufflehog
         with:
           trufflehog-version: ${{ inputs.trufflehog-version }}
           folder: dist-artifacts
