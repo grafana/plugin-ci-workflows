@@ -40,5 +40,5 @@ runs:
       run: >
         ./bin/trufflehog filesystem "${{ inputs.folder }}"
         --no-update --fail --github-actions
-        ${{ inputs.include-detectors && ('--include-detectors="' + inputs.include-detectors + '"') || '' }}
-        ${{ inputs.exclude-detectors && ('--exclude-detectors="' + inputs.exclude-detectors + '"') || '' }}
+        ${{ inputs.include-detectors && '--include-detectors=' + inputs.include-detectors || '' }}
+        ${{ inputs.exclude-detectors && '--exclude-detectors=' + inputs.exclude-detectors || '' }}
