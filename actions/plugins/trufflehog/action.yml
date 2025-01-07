@@ -2,6 +2,10 @@ name: Plugins - Trufflehog secrets scanning
 description: Scans plugin zip files for secrets using Trufflehog.
 
 inputs:
+  trufflehog-version:
+    description: |
+      Version of Trufflehog to install (e.g.: 3.88.1).
+    required: true
   folder:
     description: |
       Folder containing plugin zip files to scan.
@@ -14,8 +18,8 @@ runs:
     - name: Install Trufflehog
       shell: bash
       run: |
-        curl -sSfL https://raw.githubusercontent.com/trufflesecurity/trufflehog/main/scripts/install.sh | sh
+        curl -sSfL https://raw.githubusercontent.com/trufflesecurity/trufflehog/v${{ inputs.trufflehog-version }}/scripts/install.sh | sh
 
     - name: Run Trufflehog
       shell: bash
-      run: ./bin/trufflehog filesystem "${{ inputs.folder }}" --fail --github-actions
+      run: ./bin/trufflehog filesystem "${{ inputs.folder }}" --no-update --fail --github-actions

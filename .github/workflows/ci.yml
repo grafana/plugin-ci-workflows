@@ -75,6 +75,11 @@ on:
         type: string
         required: false
         default: "1.61.0"
+      trufflehog-version:
+        description: Trufflehog version to use
+        type: string
+        required: false
+        default: "3.88.1"
     outputs:
       plugin:
         description: |
@@ -214,6 +219,7 @@ jobs:
         if: ${{ inputs.run-trufflehog == true }}
         uses: grafana/plugin-ci-workflows/actions/plugins/trufflehog@main
         with:
+          trufflehog-version: ${{ inputs.trufflehog-version }}
           folder: dist-artifacts
 
       - name: Define outputs
