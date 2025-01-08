@@ -17,27 +17,21 @@ on:
     inputs:
       # Those inputs can be customized depending on the plugin's needs:
 
-      # Trufflehog
-      run-trufflehog:
-        description: Whether to run Trufflehog secrets scanning.
-        type: boolean
-        required: false
-        default: true
-      trufflehog-include-detectors:
-        description: |
-          Comma-separated list of detector types to include.
-          Protobuf name or IDs may be used, as well as ranges.
-          This value will be passed via the `--include-detectors` option to Trufflehog.
-          If not provided, the flag is not passed.
+      # Custom tooling versions. The default values are in the env section.
+      go-version:
+        description: Go version to use
         type: string
         required: false
-      trufflehog-exclude-detectors:
-        description: |
-          Comma-separated list of detector types to exclude.
-          Protobuf name or IDs may be used, as well as ranges.
-          IDs defined here take precedence over the include list.
-          This value will be passed via the `--exclude-detectors` option to Trufflehog.
-          If not provided, the flag is not passed.
+      node-version:
+        description: Node.js version to use
+        type: string
+        required: false
+      golangci-lint-version:
+        description: golangci-lint version to use
+        type: string
+        required: false
+      trufflehog-version:
+        description: Trufflehog version to use
         type: string
         required: false
 
@@ -71,25 +65,31 @@ on:
         type: boolean
         default: false
 
-      # Tooling versions. The default values are in the env section.
-      go-version:
-        description: Go version to use
+      # Trufflehog
+      run-trufflehog:
+        description: Whether to run Trufflehog secrets scanning.
+        type: boolean
+        required: false
+        default: true
+      trufflehog-include-detectors:
+        description: |
+          Comma-separated list of detector types to include.
+          Protobuf name or IDs may be used, as well as ranges.
+          This value will be passed via the `--include-detectors` option to Trufflehog.
+          If not provided, the flag is not passed.
         type: string
         required: false
-      node-version:
-        description: Node.js version to use
-        type: string
-        required: false
-      golangci-lint-version:
-        description: golangci-lint version to use
-        type: string
-        required: false
-      trufflehog-version:
-        description: Trufflehog version to use
+      trufflehog-exclude-detectors:
+        description: |
+          Comma-separated list of detector types to exclude.
+          Protobuf name or IDs may be used, as well as ranges.
+          IDs defined here take precedence over the include list.
+          This value will be passed via the `--exclude-detectors` option to Trufflehog.
+          If not provided, the flag is not passed.
         type: string
         required: false
 
-      # The inputs in this section are provided by cd.yml and should not be used directly.
+      # Options for building PRs. Those values should come from the PR event and should not be set manually.
       plugin-version-suffix:
         description: |
           Suffix to append to plugin version before building it,
