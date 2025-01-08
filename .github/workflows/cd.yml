@@ -66,6 +66,18 @@ on:
         required: false
         type: boolean
         default: false
+      go-version:
+        description: Go version to use
+        type: string
+        required: false
+      node-version:
+        description: Node.js version to use
+        type: string
+        required: false
+      golangci-lint-version:
+        description: golangci-lint version to use
+        type: string
+        required: false
 
 concurrency:
   group: cd-${{ github.head_ref || github.run_id }}
@@ -111,7 +123,7 @@ jobs:
         id: checkout-specified-branch
         uses: actions/checkout@v4.2.2
         with:
-          ref: ${{ inputs.branch }}      
+          ref: ${{ inputs.branch }}
 
   ci:
     name: CI
@@ -119,15 +131,18 @@ jobs:
     needs:
       - setup
     with:
-      branch: ${{ github.event.inputs.branch }}
-      run-playwright: ${{ github.event.inputs.run-playwright == true }}
+      branch: ${{ inputs.branch }}
+      go-version: ${{ inputs.go-version }}
+      node-version: ${{ inputs.node-version }}
+      golangci-lint-version: ${{ inputs.golangci-lint-version }}
+      run-playwright: ${{ inputs.run-playwright == true }}
       run-playwright-with-grafana-dependency: ${{ inputs.run-playwright-with-grafana-dependency }}
       run-playwright-with-skip-grafana-dev-image: ${{ inputs.run-playwright-with-skip-grafana-dev-image }}
       run-playwright-with-version-resolver-type: ${{ inputs.run-playwright-with-version-resolver-type }}
-      upload-playwright-artifacts: ${{ github.event.inputs.upload-playwright-artifacts == true }}
+      upload-playwright-artifacts: ${{ inputs.upload-playwright-artifacts == true }}
       plugin-version-suffix: >-
         ${{
-          github.event.inputs.branch != 'main'
+          inputs.branch != 'main'
           && needs.setup.outputs.commit-sha
           || ''
         }}
