@@ -66,6 +66,33 @@ on:
         required: false
         type: boolean
         default: false
+      run-trufflehog:
+        description: Whether to run Trufflehog secrets scanning.
+        type: boolean
+        required: false
+        default: true
+      trufflehog-version:
+        description: Trufflehog version to use
+        type: string
+        required: false
+        default: "3.88.1"
+      trufflehog-include-detectors:
+        description: |
+          Comma-separated list of detector types to include.
+          Protobuf name or IDs may be used, as well as ranges.
+          This value will be passed via the `--include-detectors` option to Trufflehog.
+          If not provided, the flag is not passed.
+        type: string
+        required: false
+      trufflehog-exclude-detectors:
+        description: |
+          Comma-separated list of detector types to exclude.
+          Protobuf name or IDs may be used, as well as ranges.
+          IDs defined here take precedence over the include list.
+          This value will be passed via the `--exclude-detectors` option to Trufflehog.
+          If not provided, the flag is not passed.
+        type: string
+        required: false
       go-version:
         description: Go version to use
         type: string
@@ -140,6 +167,10 @@ jobs:
       run-playwright-with-skip-grafana-dev-image: ${{ inputs.run-playwright-with-skip-grafana-dev-image }}
       run-playwright-with-version-resolver-type: ${{ inputs.run-playwright-with-version-resolver-type }}
       upload-playwright-artifacts: ${{ inputs.upload-playwright-artifacts == true }}
+      run-trufflehog: ${{ inputs.run-trufflehog == true }}
+      trufflehog-version: ${{ inputs.trufflehog-version }}
+      trufflehog-include-detectors: ${{ inputs.trufflehog-include-detectors }}
+      trufflehog-exclude-detectors: ${{ inputs.trufflehog-exclude-detectors }}
       plugin-version-suffix: >-
         ${{
           inputs.branch != 'main'
