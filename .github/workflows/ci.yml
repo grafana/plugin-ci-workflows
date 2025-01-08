@@ -3,9 +3,10 @@
 #  It does the following steps:
 #  - Runs unit tests and builds the frontend
 #  - Tests and builds the backend (if it exists)
-#  - Signes and packages the plugin into a universal ZIP and OS/arch ZIPs
+#  - Signs and packages the plugin into a universal ZIP and OS/arch ZIPs
 #  - Tests the plugin docs (if they exist)
 #  - Runs Playwright E2E tests (if they exist)
+#  - Runs Trufflehog security scanning on all the plugin ZIPs
 #  - Uploads the ZIPs to Google Cloud Storage, for publishing to the Grafana Plugin Catalog
 #  - Uploads the ZIPs as GitHub artifacts, for other workflows to consume
 
@@ -27,6 +28,33 @@ on:
         type: string
         required: false
         default: ${{ github.head_ref || github.ref_name }}
+      run-trufflehog:
+        description: Whether to run Trufflehog secrets scanning.
+        type: boolean
+        required: false
+        default: true
+      trufflehog-version:
+        description: Trufflehog version to use
+        type: string
+        required: false
+        default: "3.88.1"
+      trufflehog-include-detectors:
+        description: |
+          Comma-separated list of detector types to include.
+          Protobuf name or IDs may be used, as well as ranges.
+          This value will be passed via the `--include-detectors` option to Trufflehog.
+          If not provided, the flag is not passed.
+        type: string
+        required: false
+      trufflehog-exclude-detectors:
+        description: |
+          Comma-separated list of detector types to exclude.
+          Protobuf name or IDs may be used, as well as ranges.
+          IDs defined here take precedence over the include list.
+          This value will be passed via the `--exclude-detectors` option to Trufflehog.
+          If not provided, the flag is not passed.
+        type: string
+        required: false
       run-playwright:
         description: Whether to run Playwright E2E tests.
         type: boolean
@@ -185,8 +213,6 @@ jobs:
         if: ${{ steps.check-for-backend.outputs.has-backend == 'true' }}
         uses: grafana/plugin-ci-workflows/actions/plugins/backend@main
 
-      # TODO: security scan?
-
       - name: Package universal ZIP
         id: universal-zip
         uses: grafana/plugin-ci-workflows/actions/plugins/package@main
@@ -205,9 +231,18 @@ jobs:
           output-folder: dist-artifacts
           access-policy-token: ${{ env.SIGN_PLUGIN_ACCESS_POLICY_TOKEN }}
 
+      - name: Trufflehog secrets scanning
+        if: ${{ inputs.run-trufflehog == true }}
+        uses: grafana/plugin-ci-workflows/actions/plugins/trufflehog@main
+        with:
+          trufflehog-version: ${{ inputs.trufflehog-version }}
+          folder: dist-artifacts
+          include-detectors: ${{ inputs.trufflehog-include-detectors }}
+          exclude-detectors: ${{ inputs.trufflehog-exclude-detectors }}
+
       - name: Define outputs
         id: outputs
-        run: |          
+        run: |
           {
             echo plugin="$(jq -n -c \
                 --arg id "$(jq -r .id dist/plugin.json)" \
@@ -228,7 +263,7 @@ jobs:
         shell: bash
 
       - name: Upload GitHub artifacts
-        uses: actions/upload-artifact@v4.4.3
+        uses: actions/upload-artifact@v4.5.0
         with:
           name: dist-artifacts
           path: dist-artifacts/
