@@ -15,28 +15,14 @@ name: Plugins - CI
 on:
   workflow_call:
     inputs:
-      plugin-version-suffix:
-        description: |
-          Suffix to append to plugin version before building it,
-          for example "+abcdef" for PRs.
-          Leave empty for no suffix (use the same version as in package.json).
-        type: string
-        required: false
-        default: ""
-      branch:
-        description: Branch to build from. Can be used to build PRs.
-        type: string
-        required: false
-        default: ${{ github.head_ref || github.ref_name }}
+      # Those inputs can be customized depending on the plugin's needs:
+
+      # Trufflehog
       run-trufflehog:
         description: Whether to run Trufflehog secrets scanning.
         type: boolean
         required: false
         default: true
-      trufflehog-version:
-        description: Trufflehog version to use
-        type: string
-        required: false
       trufflehog-include-detectors:
         description: |
           Comma-separated list of detector types to include.
@@ -54,6 +40,8 @@ on:
           If not provided, the flag is not passed.
         type: string
         required: false
+
+      # Playwright
       run-playwright:
         description: Whether to run Playwright E2E tests.
         type: boolean
@@ -82,6 +70,8 @@ on:
         required: false
         type: boolean
         default: false
+
+      # Tooling versions. The default values are in the env section.
       go-version:
         description: Go version to use
         type: string
@@ -94,6 +84,26 @@ on:
         description: golangci-lint version to use
         type: string
         required: false
+      trufflehog-version:
+        description: Trufflehog version to use
+        type: string
+        required: false
+
+      # The inputs in this section are provided by cd.yml and should not be used directly.
+      plugin-version-suffix:
+        description: |
+          Suffix to append to plugin version before building it,
+          for example "+abcdef" for PRs.
+          Leave empty for no suffix (use the same version as in package.json).
+        type: string
+        required: false
+        default: ""
+      branch:
+        description: Branch to build from. Can be used to build PRs.
+        type: string
+        required: false
+        default: ${{ github.head_ref || github.ref_name }}
+
     outputs:
       plugin:
         description: |
@@ -139,6 +149,7 @@ permissions:
   id-token: write
 
 env:
+  # Default versions for tooling
   DEFAULT_GO_VERSION: "1.21"
   DEFAULT_NODE_VERSION: "20"
   DEFAULT_GOLANGCI_LINT_VERSION: "1.61.0"
