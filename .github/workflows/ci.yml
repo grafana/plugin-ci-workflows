@@ -59,17 +59,14 @@ on:
         description: Go version to use
         type: string
         required: false
-        default: "1.21"
       node-version:
         description: Node.js version to use
         type: string
         required: false
-        default: "20"
       golangci-lint-version:
         description: golangci-lint version to use
         type: string
         required: false
-        default: "1.61.0"
     outputs:
       plugin:
         description: |
@@ -115,6 +112,11 @@ permissions:
   id-token: write
 
 env:
+  DEFAULT_GO_VERSION: "1.21"
+  DEFAULT_NODE_VERSION: "20"
+  DEFAULT_GOLANGCI_LINT_VERSION: "1.61.0"
+  DEFAULT_TRUFFLEHOG_VERSION: "3.88.1"
+
   GCS_ARTIFACTS_BUCKET: "integration-artifacts"
   VAULT_INSTANCE: ops
 
@@ -139,9 +141,9 @@ jobs:
       - name: Setup
         uses: grafana/plugin-ci-workflows/actions/plugins/setup@main
         with:
-          go-version: ${{ inputs.go-version }}
-          node-version: ${{ inputs.node-version }}
-          golangci-lint-version: ${{ inputs.golangci-lint-version }}
+          go-version: ${{ inputs.go-version || env.DEFAULT_GO_VERSION }}
+          node-version: ${{ inputs.node-version || env.DEFAULT_NODE_VERSION }}
+          golangci-lint-version: ${{ inputs.golangci-lint-version || env.DEFAULT_GOLANGCI_LINT_VERSION }}
 
       - name: Get secrets from Vault
         id: get-secrets
@@ -207,7 +209,7 @@ jobs:
 
       - name: Define outputs
         id: outputs
-        run: |          
+        run: |
           {
             echo plugin="$(jq -n -c \
                 --arg id "$(jq -r .id dist/plugin.json)" \
