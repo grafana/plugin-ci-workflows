@@ -36,7 +36,6 @@ on:
         description: Trufflehog version to use
         type: string
         required: false
-        default: "3.88.1"
       trufflehog-include-detectors:
         description: |
           Comma-separated list of detector types to include.
@@ -236,7 +235,7 @@ jobs:
         if: ${{ inputs.run-trufflehog == true }}
         uses: grafana/plugin-ci-workflows/actions/plugins/trufflehog@main
         with:
-          trufflehog-version: ${{ inputs.trufflehog-version }}
+          trufflehog-version: ${{ inputs.trufflehog-version || env.DEFAULT_TRUFFLEHOG_VERSION }}
           folder: dist-artifacts
           include-detectors: ${{ inputs.trufflehog-include-detectors }}
           exclude-detectors: ${{ inputs.trufflehog-exclude-detectors }}
