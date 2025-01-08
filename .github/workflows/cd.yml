@@ -66,6 +66,16 @@ on:
         required: false
         type: boolean
         default: false
+      run-trufflehog:
+        description: Whether to run Trufflehog secrets scanning.
+        type: boolean
+        required: false
+        default: true
+      trufflehog-version:
+        description: Trufflehog version to use
+        type: string
+        required: false
+        default: "3.88.1"
       trufflehog-include-detectors:
         description: |
           Comma-separated list of detector types to include.
@@ -141,6 +151,8 @@ jobs:
       run-playwright-with-skip-grafana-dev-image: ${{ inputs.run-playwright-with-skip-grafana-dev-image }}
       run-playwright-with-version-resolver-type: ${{ inputs.run-playwright-with-version-resolver-type }}
       upload-playwright-artifacts: ${{ github.event.inputs.upload-playwright-artifacts == true }}
+      run-trufflehog: ${{ github.event.inputs.run-trufflehog == true }}
+      trufflehog-version: ${{ inputs.trufflehog-version }}
       trufflehog-include-detectors: ${{ inputs.trufflehog-include-detectors }}
       trufflehog-exclude-detectors: ${{ inputs.trufflehog-exclude-detectors }}
       plugin-version-suffix: >-
