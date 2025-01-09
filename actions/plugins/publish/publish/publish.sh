@@ -2,7 +2,7 @@
 set -e
 
 usage() {
-    echo "Usage: $0 --environment <dev|ops|prod> --scopes <scopes_json_array> [--dry-run] <plugin_zip_urls...>"
+    echo "Usage: $0 --environment <dev|ops|prod> --scopes <comma_separated_scopes> [--dry-run] <plugin_zip_urls...>"
 }
 
 json_obj() {
@@ -15,7 +15,7 @@ dry_run=false
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         --environment) gcom_env=$2; shift 2;;
-        --scopes) scopes=$2; shift 2;;
+        --scopes) scopes=$(echo $2 | jq -Rc 'split(",")'); shift 2;;
         --dry-run) dry_run=true; shift;;
         --help)
             usage
