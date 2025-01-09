@@ -176,12 +176,12 @@ jobs:
       go-version: ${{ inputs.go-version }}
       node-version: ${{ inputs.node-version }}
       golangci-lint-version: ${{ inputs.golangci-lint-version }}
-      run-playwright: ${{ inputs.run-playwright == true }}
+      run-playwright: ${{ inputs.run-playwright }}
       run-playwright-with-grafana-dependency: ${{ inputs.run-playwright-with-grafana-dependency }}
       run-playwright-with-skip-grafana-dev-image: ${{ inputs.run-playwright-with-skip-grafana-dev-image }}
       run-playwright-with-version-resolver-type: ${{ inputs.run-playwright-with-version-resolver-type }}
-      upload-playwright-artifacts: ${{ inputs.upload-playwright-artifacts == true }}
-      run-trufflehog: ${{ inputs.run-trufflehog == true }}
+      upload-playwright-artifacts: ${{ inputs.upload-playwright-artifacts }}
+      run-trufflehog: ${{ inputs.run-trufflehog }}
       trufflehog-version: ${{ inputs.trufflehog-version }}
       trufflehog-include-detectors: ${{ inputs.trufflehog-include-detectors }}
       trufflehog-exclude-detectors: ${{ inputs.trufflehog-exclude-detectors }}
