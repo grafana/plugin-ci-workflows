@@ -45,5 +45,6 @@ runs:
 
         ./bin/trufflehog filesystem "${{ inputs.folder }}" \
         --no-update --fail --github-actions \
+        --results=verified,unknown \
         --include-detectors="${include_detectors}" \
         --exclude-detectors="${{ inputs.exclude-detectors }}"
