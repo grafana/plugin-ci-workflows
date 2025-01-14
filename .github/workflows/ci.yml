@@ -15,46 +15,27 @@ name: Plugins - CI
 on:
   workflow_call:
     inputs:
-      plugin-version-suffix:
-        description: |
-          Suffix to append to plugin version before building it,
-          for example "+abcdef" for PRs.
-          Leave empty for no suffix (use the same version as in package.json).
+      # Those inputs can be customized depending on the plugin's needs:
+
+      # Custom tooling versions. The default values are in the env section.
+      go-version:
+        description: Go version to use
         type: string
         required: false
-        default: ""
-      branch:
-        description: Branch to build from. Can be used to build PRs.
+      node-version:
+        description: Node.js version to use
         type: string
         required: false
-        default: ${{ github.head_ref || github.ref_name }}
-      run-trufflehog:
-        description: Whether to run Trufflehog secrets scanning.
-        type: boolean
+      golangci-lint-version:
+        description: golangci-lint version to use
+        type: string
         required: false
-        default: true
       trufflehog-version:
         description: Trufflehog version to use
         type: string
         required: false
-        default: "3.88.1"
-      trufflehog-include-detectors:
-        description: |
-          Comma-separated list of detector types to include.
-          Protobuf name or IDs may be used, as well as ranges.
-          This value will be passed via the `--include-detectors` option to Trufflehog.
-          If not provided, the flag is not passed.
-        type: string
-        required: false
-      trufflehog-exclude-detectors:
-        description: |
-          Comma-separated list of detector types to exclude.
-          Protobuf name or IDs may be used, as well as ranges.
-          IDs defined here take precedence over the include list.
-          This value will be passed via the `--exclude-detectors` option to Trufflehog.
-          If not provided, the flag is not passed.
-        type: string
-        required: false
+
+      # Playwright
       run-playwright:
         description: Whether to run Playwright E2E tests.
         type: boolean
@@ -83,21 +64,46 @@ on:
         required: false
         type: boolean
         default: false
-      go-version:
-        description: Go version to use
+
+      # Trufflehog
+      run-trufflehog:
+        description: Whether to run Trufflehog secrets scanning.
+        type: boolean
+        required: false
+        default: true
+      trufflehog-include-detectors:
+        description: |
+          Comma-separated list of detector types to include.
+          Protobuf name or IDs may be used, as well as ranges.
+          This value will be passed via the `--include-detectors` option to Trufflehog.
+          If not provided, the flag is not passed.
         type: string
         required: false
-        default: "1.21"
-      node-version:
-        description: Node.js version to use
+      trufflehog-exclude-detectors:
+        description: |
+          Comma-separated list of detector types to exclude.
+          Protobuf name or IDs may be used, as well as ranges.
+          IDs defined here take precedence over the include list.
+          This value will be passed via the `--exclude-detectors` option to Trufflehog.
+          If not provided, the flag is not passed.
         type: string
         required: false
-        default: "20"
-      golangci-lint-version:
-        description: golangci-lint version to use
+
+      # Options for building PRs. Those values should come from the PR event and should not be set manually.
+      plugin-version-suffix:
+        description: |
+          Suffix to append to plugin version before building it,
+          for example "+abcdef" for PRs.
+          Leave empty for no suffix (use the same version as in package.json).
         type: string
         required: false
-        default: "1.61.0"
+        default: ""
+      branch:
+        description: Branch to build from. Can be used to build PRs.
+        type: string
+        required: false
+        default: ${{ github.head_ref || github.ref_name }}
+
     outputs:
       plugin:
         description: |
@@ -143,6 +149,12 @@ permissions:
   id-token: write
 
 env:
+  # Default versions for tooling
+  DEFAULT_GO_VERSION: "1.21"
+  DEFAULT_NODE_VERSION: "20"
+  DEFAULT_GOLANGCI_LINT_VERSION: "1.61.0"
+  DEFAULT_TRUFFLEHOG_VERSION: "3.88.1"
+
   GCS_ARTIFACTS_BUCKET: "integration-artifacts"
   VAULT_INSTANCE: ops
 
@@ -167,9 +179,9 @@ jobs:
       - name: Setup
         uses: grafana/plugin-ci-workflows/actions/plugins/setup@main
         with:
-          go-version: ${{ inputs.go-version }}
-          node-version: ${{ inputs.node-version }}
-          golangci-lint-version: ${{ inputs.golangci-lint-version }}
+          go-version: ${{ inputs.go-version || env.DEFAULT_GO_VERSION }}
+          node-version: ${{ inputs.node-version || env.DEFAULT_NODE_VERSION }}
+          golangci-lint-version: ${{ inputs.golangci-lint-version || env.DEFAULT_GOLANGCI_LINT_VERSION }}
 
       - name: Get secrets from Vault
         id: get-secrets
@@ -235,7 +247,7 @@ jobs:
         if: ${{ inputs.run-trufflehog == true }}
         uses: grafana/plugin-ci-workflows/actions/plugins/trufflehog@main
         with:
-          trufflehog-version: ${{ inputs.trufflehog-version }}
+          trufflehog-version: ${{ inputs.trufflehog-version || env.DEFAULT_TRUFFLEHOG_VERSION }}
           folder: dist-artifacts
           include-detectors: ${{ inputs.trufflehog-include-detectors }}
           exclude-detectors: ${{ inputs.trufflehog-exclude-detectors }}
