@@ -2,7 +2,7 @@
 set -e
 
 usage() {
-    echo "Usage: $0 --environment <dev|ops|prod> --scopes <comma_separated_scopes> [--dry-run] <plugin_zip_urls...>"
+    echo "Usage: $0 --environment <dev|ops|prod> [--scopes <comma_separated_scopes>] [--dry-run] <plugin_zip_urls...>"
 }
 
 json_obj() {
@@ -47,9 +47,7 @@ if [ -z $gcom_env ]; then
 fi
 
 if [ -z $scopes ]; then
-    echo "Scopes not provided"
-    usage
-    exit 1
+    scopes='["universal"]'
 fi
 
 has_iap=false

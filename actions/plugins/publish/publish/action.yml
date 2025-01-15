@@ -17,8 +17,11 @@ inputs:
     required: true
 
   scopes:
-    description: Comma-separated list of scopes for the plugin version.
-    required: true
+    description: |
+      Comma-separated list of scopes for the plugin version.
+      Defaults to 'universal'.
+    required: false
+    default: universal
 
   gcom-publish-token:
     description: GCOM token used to publish the plugin to the catalog.
