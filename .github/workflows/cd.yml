@@ -136,7 +136,7 @@ permissions:
   id-token: write
 
 env:
-  VAULT_INSTANCE: ops
+  VAULT_INSTANCE: dev
 
 jobs:
   setup:
@@ -286,7 +286,8 @@ jobs:
         uses: grafana/shared-workflows/actions/get-vault-secrets@main
         with:
           vault_instance: ${{ env.VAULT_INSTANCE }}
-          common_secrets: |
+          # common_secrets: |
+          repo_secrets: |
             GCOM_PUBLISH_TOKEN_DEV=plugins/gcom-publish-token:dev
             GCOM_PUBLISH_TOKEN_OPS=plugins/gcom-publish-token:ops
             GCOM_PUBLISH_TOKEN_PROD=plugins/gcom-publish-token:prod
