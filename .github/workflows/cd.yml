@@ -288,9 +288,9 @@ jobs:
           vault_instance: ${{ env.VAULT_INSTANCE }}
           # common_secrets: |
           repo_secrets: |
-            GCOM_PUBLISH_TOKEN_DEV=plugins/gcom-publish-token:dev
-            GCOM_PUBLISH_TOKEN_OPS=plugins/gcom-publish-token:ops
-            GCOM_PUBLISH_TOKEN_PROD=plugins/gcom-publish-token:prod
+            GCOM_PUBLISH_TOKEN_DEV=gcom-publish-token:dev
+            GCOM_PUBLISH_TOKEN_OPS=gcom-publish-token:ops
+            GCOM_PUBLISH_TOKEN_PROD=gcom-publish-token:prod
 
       - name: Determine which token to use
         run: |
