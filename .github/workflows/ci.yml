@@ -305,7 +305,7 @@ jobs:
         id: exist
         run: |
           r=false
-          [ -d "docs" ] && r=true
+          [ -d "docs/sources" ] && r=true
           echo "exist=$r" >> "$GITHUB_OUTPUT"
         shell: bash
 
