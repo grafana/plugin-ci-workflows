@@ -365,7 +365,7 @@ jobs:
           plugin_version="${plugin_version%%+*}"
           gcs_artifacts_base="${{ env.GCS_ARTIFACTS_BUCKET }}/${{ fromJSON(needs.test-and-build.outputs.plugin).id }}/$plugin_version"
           echo "gcs_artifacts_path_latest=$gcs_artifacts_base/main/latest" >> "$GITHUB_ENV"
-          echo "gcs_artifacts_path_commit=$gcs_artifacts_base/main/${{ github.event.pull_request.head.sha || github.sha }}" >> "$GITHUB_ENV"
+          echo "gcs_artifacts_path_commit=$gcs_artifacts_base/${{ github.event.pull_request.base.ref || 'main' }}/${{ github.event.pull_request.head.sha || github.sha }}" >> "$GITHUB_ENV"
         shell: bash
 
       - name: Upload GCS artifacts (latest)
