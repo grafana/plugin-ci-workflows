@@ -13,31 +13,44 @@ name: Plugins - Publish plugin
 on:
   workflow_call:
     inputs:
-      branch:
-        description: Branch to publish from. Can be used to deploy PRs to dev.
-        default: main
-        type: string
-      environment:
-        description: |
-          Environment(s) to publish to.
-          Can be 'dev', 'ops', or 'prod'.
+      # Those inputs can be customized depending on the plugin's needs:
 
-          Publishing to 'ops' will also deploy to 'dev'.
-          Publishing to 'prod' will also deploy to 'ops' and 'dev'.
-
-          Docs will only be published to the website when targeting 'prod'.
-        required: true
-        type: string
-      docs-only:
-        description: |
-          Only publish docs to the website, do not publish the plugin.
-        default: false
-        type: boolean
+      # Publishing options (GCS and/or catalog)
       gcs-only:
         description: |
           Only publish the plugin to GCS, do not publish the plugin to the Grafana Plugin Catalog.
         default: false
         type: boolean
+      scopes:
+        description: |
+          Comma-separated list of scopes for the plugin version in the catalog.
+          Default is 'universal'.
+        required: false
+        default: universal
+        type: string
+
+      # Those inputs are used to customize the CI workflow, before publishing the plugin.
+      # They should match with the ones used in CI (ci.yml/push.yml).
+
+      # Custom tooling versions. The default values are in the env section of ci.yml.
+      go-version:
+        description: Go version to use
+        type: string
+        required: false
+      node-version:
+        description: Node.js version to use
+        type: string
+        required: false
+      golangci-lint-version:
+        description: golangci-lint version to use
+        type: string
+        required: false
+      trufflehog-version:
+        description: Trufflehog version to use
+        type: string
+        required: false
+
+      # Playwright
       run-playwright:
         description: Whether to run Playwright E2E tests.
         type: boolean
@@ -67,6 +80,59 @@ on:
         type: boolean
         default: false
 
+      # Trufflehog
+      run-trufflehog:
+        description: Whether to run Trufflehog secrets scanning.
+        type: boolean
+        required: false
+        default: true
+      trufflehog-include-detectors:
+        description: |
+          Comma-separated list of detector types to include.
+          Protobuf name or IDs may be used, as well as ranges.
+          This value will be passed via the `--include-detectors` option to Trufflehog.
+          If not provided, the flag is not passed.
+        type: string
+        required: false
+      trufflehog-exclude-detectors:
+        description: |
+          Comma-separated list of detector types to exclude.
+          Protobuf name or IDs may be used, as well as ranges.
+          IDs defined here take precedence over the include list.
+          This value will be passed via the `--exclude-detectors` option to Trufflehog.
+          If not provided, the flag is not passed.
+        type: string
+        required: false
+
+      # Artifacts attestation for build provenance
+      attestation:
+        description: Create a verifiable attestation for the plugin using Github OIDC.
+        type: boolean
+        required: false
+
+      # User inputs
+      environment:
+        description: |
+          Environment(s) to publish to.
+          Can be 'dev', 'ops', or 'prod'.
+
+          Publishing to 'ops' will also deploy to 'dev'.
+          Publishing to 'prod' will also deploy to 'ops' and 'dev'.
+
+          Docs will only be published to the website when targeting 'prod'.
+        required: true
+        type: string
+      docs-only:
+        description: |
+          Only publish docs to the website, do not publish the plugin.
+        default: false
+        type: boolean
+
+      # Options for deploying PRs. Those values should come from the PR event and should not be set manually.
+      branch:
+        description: Branch to publish from. Can be used to deploy PRs to dev.
+        default: main
+        type: string
 concurrency:
   group: cd-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
@@ -74,6 +140,7 @@ concurrency:
 permissions:
   contents: write
   id-token: write
+  attestations: write
 
 env:
   VAULT_INSTANCE: ops
@@ -111,7 +178,7 @@ jobs:
         id: checkout-specified-branch
         uses: actions/checkout@v4.2.2
         with:
-          ref: ${{ inputs.branch }}      
+          ref: ${{ inputs.branch }}
 
   ci:
     name: CI
@@ -119,18 +186,51 @@ jobs:
     needs:
       - setup
     with:
-      branch: ${{ github.event.inputs.branch }}
-      run-playwright: ${{ github.event.inputs.run-playwright == true }}
+      branch: ${{ inputs.branch }}
+      go-version: ${{ inputs.go-version }}
+      node-version: ${{ inputs.node-version }}
+      golangci-lint-version: ${{ inputs.golangci-lint-version }}
+      run-playwright: ${{ inputs.run-playwright }}
       run-playwright-with-grafana-dependency: ${{ inputs.run-playwright-with-grafana-dependency }}
       run-playwright-with-skip-grafana-dev-image: ${{ inputs.run-playwright-with-skip-grafana-dev-image }}
       run-playwright-with-version-resolver-type: ${{ inputs.run-playwright-with-version-resolver-type }}
-      upload-playwright-artifacts: ${{ github.event.inputs.upload-playwright-artifacts == true }}
+      upload-playwright-artifacts: ${{ inputs.upload-playwright-artifacts }}
+      run-trufflehog: ${{ inputs.run-trufflehog }}
+      trufflehog-version: ${{ inputs.trufflehog-version }}
+      trufflehog-include-detectors: ${{ inputs.trufflehog-include-detectors }}
+      trufflehog-exclude-detectors: ${{ inputs.trufflehog-exclude-detectors }}
       plugin-version-suffix: >-
         ${{
-          github.event.inputs.branch != 'main'
+          inputs.branch != 'main'
           && needs.setup.outputs.commit-sha
           || ''
         }}
+
+  build-attestation:
+    name: Build attestation
+    if: ${{ inputs.attestation }}
+    needs:
+      - ci
+    runs-on: ubuntu-latest
+
+    outputs:
+      attestation-id: ${{ steps.attestation.outputs.attestation-id }}
+      attestation-url: ${{ steps.attestation.outputs.attestation-url }}
+      bundle-path: ${{ steps.attestation.outputs.bundle-path }}
+
+    steps:
+      - name: Download GitHub artifact
+        uses: actions/download-artifact@v4.1.8
+        with:
+          name: dist-artifacts
+          path: /tmp/dist-artifacts
+
+      - name: Generate artifact attestation
+        if: ${{ inputs.attestation }}
+        id: attestation
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: /tmp/dist-artifacts/*.zip
 
   define-variables:
     name: Define variables
@@ -256,6 +356,7 @@ jobs:
         with:
           zips: ${{ needs.ci.outputs.gcs-zip-urls-commit }}
           environment: ${{ matrix.environment }}
+          scopes: ${{ inputs.scopes }}
           gcom-publish-token: ${{ env.GCOM_PUBLISH_TOKEN }}
           gcloud-auth-token: ${{ steps.gcloud.outputs.id_token }}
 
@@ -299,7 +400,7 @@ jobs:
 
       - name: Generate GitHub token
         id: generate-github-token
-        uses: actions/create-github-app-token@v1.11.0
+        uses: actions/create-github-app-token@v1.11.1
         with:
           app-id: ${{ env.GITHUB_APP_ID }}
           private-key: ${{ env.GITHUB_APP_PRIVATE_KEY }}
@@ -362,7 +463,7 @@ jobs:
             })
 
       - name: Create Github release
-        uses: softprops/action-gh-release@v2.1.0
+        uses: softprops/action-gh-release@v2.2.1
         with:
           draft: true
           name: ${{ fromJSON(needs.ci.outputs.plugin).id }} v${{ fromJSON(needs.ci.outputs.plugin).version }}

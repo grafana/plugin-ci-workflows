@@ -16,6 +16,13 @@ inputs:
       Can be 'dev', 'ops', or 'prod'.
     required: true
 
+  scopes:
+    description: |
+      Comma-separated list of scopes for the plugin version.
+      Defaults to 'universal'.
+    required: false
+    default: universal
+
   gcom-publish-token:
     description: GCOM token used to publish the plugin to the catalog.
     required: true
@@ -42,5 +49,6 @@ runs:
 
         ${{ github.action_path }}/publish.sh \
           --environment "${{ inputs.environment }}" \
+          --scopes '${{ inputs.scopes }}' \
           "${files[@]}"
       shell: bash

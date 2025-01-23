@@ -3,9 +3,10 @@
 #  It does the following steps:
 #  - Runs unit tests and builds the frontend
 #  - Tests and builds the backend (if it exists)
-#  - Signes and packages the plugin into a universal ZIP and OS/arch ZIPs
+#  - Signs and packages the plugin into a universal ZIP and OS/arch ZIPs
 #  - Tests the plugin docs (if they exist)
 #  - Runs Playwright E2E tests (if they exist)
+#  - Runs Trufflehog security scanning on all the plugin ZIPs
 #  - Uploads the ZIPs to Google Cloud Storage, for publishing to the Grafana Plugin Catalog
 #  - Uploads the ZIPs as GitHub artifacts, for other workflows to consume
 
@@ -14,19 +15,27 @@ name: Plugins - CI
 on:
   workflow_call:
     inputs:
-      plugin-version-suffix:
-        description: |
-          Suffix to append to plugin version before building it,
-          for example "+abcdef" for PRs.
-          Leave empty for no suffix (use the same version as in package.json).
+      # Those inputs can be customized depending on the plugin's needs:
+
+      # Custom tooling versions. The default values are in the env section.
+      go-version:
+        description: Go version to use
         type: string
         required: false
-        default: ""
-      branch:
-        description: Branch to build from. Can be used to build PRs.
+      node-version:
+        description: Node.js version to use
         type: string
         required: false
-        default: ${{ github.head_ref || github.ref_name }}
+      golangci-lint-version:
+        description: golangci-lint version to use
+        type: string
+        required: false
+      trufflehog-version:
+        description: Trufflehog version to use
+        type: string
+        required: false
+
+      # Playwright
       run-playwright:
         description: Whether to run Playwright E2E tests.
         type: boolean
@@ -55,21 +64,46 @@ on:
         required: false
         type: boolean
         default: false
-      go-version:
-        description: Go version to use
+
+      # Trufflehog
+      run-trufflehog:
+        description: Whether to run Trufflehog secrets scanning.
+        type: boolean
+        required: false
+        default: true
+      trufflehog-include-detectors:
+        description: |
+          Comma-separated list of detector types to include.
+          Protobuf name or IDs may be used, as well as ranges.
+          This value will be passed via the `--include-detectors` option to Trufflehog.
+          If not provided, the flag is not passed.
         type: string
         required: false
-        default: "1.21"
-      node-version:
-        description: Node.js version to use
+      trufflehog-exclude-detectors:
+        description: |
+          Comma-separated list of detector types to exclude.
+          Protobuf name or IDs may be used, as well as ranges.
+          IDs defined here take precedence over the include list.
+          This value will be passed via the `--exclude-detectors` option to Trufflehog.
+          If not provided, the flag is not passed.
         type: string
         required: false
-        default: "20"
-      golangci-lint-version:
-        description: golangci-lint version to use
+
+      # Options for building PRs. Those values should come from the PR event and should not be set manually.
+      plugin-version-suffix:
+        description: |
+          Suffix to append to plugin version before building it,
+          for example "+abcdef" for PRs.
+          Leave empty for no suffix (use the same version as in package.json).
         type: string
         required: false
-        default: "1.61.0"
+        default: ""
+      branch:
+        description: Branch to build from. Can be used to build PRs.
+        type: string
+        required: false
+        default: ${{ github.head_ref || github.ref_name }}
+
     outputs:
       plugin:
         description: |
@@ -115,6 +149,12 @@ permissions:
   id-token: write
 
 env:
+  # Default versions for tooling
+  DEFAULT_GO_VERSION: "1.23"
+  DEFAULT_NODE_VERSION: "20"
+  DEFAULT_GOLANGCI_LINT_VERSION: "1.61.0"
+  DEFAULT_TRUFFLEHOG_VERSION: "3.88.1"
+
   GCS_ARTIFACTS_BUCKET: "integration-artifacts"
   VAULT_INSTANCE: ops
 
@@ -139,9 +179,9 @@ jobs:
       - name: Setup
         uses: grafana/plugin-ci-workflows/actions/plugins/setup@main
         with:
-          go-version: ${{ inputs.go-version }}
-          node-version: ${{ inputs.node-version }}
-          golangci-lint-version: ${{ inputs.golangci-lint-version }}
+          go-version: ${{ inputs.go-version || env.DEFAULT_GO_VERSION }}
+          node-version: ${{ inputs.node-version || env.DEFAULT_NODE_VERSION }}
+          golangci-lint-version: ${{ inputs.golangci-lint-version || env.DEFAULT_GOLANGCI_LINT_VERSION }}
 
       - name: Get secrets from Vault
         id: get-secrets
@@ -185,8 +225,6 @@ jobs:
         if: ${{ steps.check-for-backend.outputs.has-backend == 'true' }}
         uses: grafana/plugin-ci-workflows/actions/plugins/backend@main
 
-      # TODO: security scan?
-
       - name: Package universal ZIP
         id: universal-zip
         uses: grafana/plugin-ci-workflows/actions/plugins/package@main
@@ -205,9 +243,18 @@ jobs:
           output-folder: dist-artifacts
           access-policy-token: ${{ env.SIGN_PLUGIN_ACCESS_POLICY_TOKEN }}
 
+      - name: Trufflehog secrets scanning
+        if: ${{ inputs.run-trufflehog == true }}
+        uses: grafana/plugin-ci-workflows/actions/plugins/trufflehog@main
+        with:
+          trufflehog-version: ${{ inputs.trufflehog-version || env.DEFAULT_TRUFFLEHOG_VERSION }}
+          folder: dist-artifacts
+          include-detectors: ${{ inputs.trufflehog-include-detectors }}
+          exclude-detectors: ${{ inputs.trufflehog-exclude-detectors }}
+
       - name: Define outputs
         id: outputs
-        run: |          
+        run: |
           {
             echo plugin="$(jq -n -c \
                 --arg id "$(jq -r .id dist/plugin.json)" \
@@ -228,7 +275,7 @@ jobs:
         shell: bash
 
       - name: Upload GitHub artifacts
-        uses: actions/upload-artifact@v4.4.3
+        uses: actions/upload-artifact@v4.5.0
         with:
           name: dist-artifacts
           path: dist-artifacts/
@@ -258,7 +305,7 @@ jobs:
         id: exist
         run: |
           r=false
-          [ -d "docs" ] && r=true
+          [ -d "docs/sources" ] && r=true
           echo "exist=$r" >> "$GITHUB_OUTPUT"
         shell: bash
 
@@ -318,7 +365,7 @@ jobs:
           plugin_version="${plugin_version%%+*}"
           gcs_artifacts_base="${{ env.GCS_ARTIFACTS_BUCKET }}/${{ fromJSON(needs.test-and-build.outputs.plugin).id }}/$plugin_version"
           echo "gcs_artifacts_path_latest=$gcs_artifacts_base/main/latest" >> "$GITHUB_ENV"
-          echo "gcs_artifacts_path_commit=$gcs_artifacts_base/main/${{ github.event.pull_request.head.sha || github.sha }}" >> "$GITHUB_ENV"
+          echo "gcs_artifacts_path_commit=$gcs_artifacts_base/${{ github.event.pull_request.base.ref || 'main' }}/${{ github.event.pull_request.head.sha || github.sha }}" >> "$GITHUB_ENV"
         shell: bash
 
       - name: Upload GCS artifacts (latest)
