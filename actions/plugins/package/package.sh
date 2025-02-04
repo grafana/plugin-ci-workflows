@@ -53,7 +53,6 @@ fi
 mkdir -p $out
 
 cd $dist
-cat plugin.json
 plugin_id=$(jq -r .id plugin.json)
 plugin_version=$(jq -r .info.version plugin.json)
 if [ -z "$plugin_id" ] || [ -z "$plugin_version" ]; then
@@ -99,7 +98,7 @@ fi
 exe_basename=$(basename $exe)
 for file in $(find "$backend_folder" -type f -name "${exe_basename}_*"); do
     # Extract os+arch from the file name
-    os_arch=$(echo $(basename $file) | sed -E "s|${exe}_(\w+)(.exe)?|\1|")
+    os_arch=$(echo $(basename $file) | sed -E "s|${exe_basename}_(\w+)(.exe)?|\1|")
 
     # Temporary folder for the zip file
     tmp=$(mktemp -d)
@@ -107,7 +106,7 @@ for file in $(find "$backend_folder" -type f -name "${exe_basename}_*"); do
 
     # Copy all files but the executables
     mkdir -p "$plugin_id"
-    rsync -a --exclude "${exe}*" "$dist/" "$plugin_id"
+    rsync -a --exclude "${exe_basename}*" "$dist/" "$plugin_id"
     
     # Copy only the current executable
     cp "$dist/$file" "$plugin_id/$backend_folder"
