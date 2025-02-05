@@ -227,7 +227,7 @@ jobs:
 
       - name: Package universal ZIP
         id: universal-zip
-        uses: grafana/plugin-ci-workflows/actions/plugins/package@giuseppe/fix-nested-app-zip-names
+        uses: grafana/plugin-ci-workflows/actions/plugins/package@main
         with:
           universal: "true"
           dist-folder: dist
@@ -236,7 +236,7 @@ jobs:
 
       - name: Package os/arch ZIPs
         id: os-arch-zips
-        uses: grafana/plugin-ci-workflows/actions/plugins/package@giuseppe/fix-nested-app-zip-names
+        uses: grafana/plugin-ci-workflows/actions/plugins/package@main
         with:
           universal: "false"
           dist-folder: dist
