@@ -337,7 +337,7 @@ jobs:
     runs-on: ubuntu-latest
 
     # Do not run upload to GCS for PRs from forks (no access)
-    if: ${{ !github.env.IS_FORK }}
+    if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
 
     permissions:
       contents: read
