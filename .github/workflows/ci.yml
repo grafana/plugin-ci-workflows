@@ -158,8 +158,7 @@ env:
   GCS_ARTIFACTS_BUCKET: "integration-artifacts"
   VAULT_INSTANCE: ops
 
-  # TODO: testing
-  IS_FORK: ${{ github.event.pull_request.head.repo.full_name != github.repository || true }}
+  IS_FORK: ${{ github.event.pull_request.head.repo.full_name != github.repository }}
 
 jobs:
   test-and-build:
@@ -338,8 +337,7 @@ jobs:
     runs-on: ubuntu-latest
 
     # Do not run upload to GCS for PRs from forks (no access)
-    # TODO: testing
-    if: ${{ github.event.pull_request.head.repo.full_name == github.repository && false }}
+    if: ${{ !github.env.IS_FORK }}
 
     permissions:
       contents: read
