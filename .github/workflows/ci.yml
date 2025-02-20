@@ -187,7 +187,7 @@ jobs:
 
       - name: Get secrets from Vault
         id: get-secrets
-        if: ${{ !env.IS_FORK }}
+        if: ${{ env.IS_FORK == 'true' }}
         uses: grafana/shared-workflows/actions/get-vault-secrets@main
         with:
           vault_instance: ${{ env.VAULT_INSTANCE }}
