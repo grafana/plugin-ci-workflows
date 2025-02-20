@@ -158,8 +158,6 @@ env:
   GCS_ARTIFACTS_BUCKET: "integration-artifacts"
   VAULT_INSTANCE: ops
 
-  IS_FORK: ${{ github.event.pull_request.head.repo.full_name != github.repository }}
-
 jobs:
   test-and-build:
     name: Test and build plugin
@@ -187,7 +185,6 @@ jobs:
 
       - name: Get secrets from Vault
         id: get-secrets
-        if: ${{ !env.IS_FORK }}
         uses: grafana/shared-workflows/actions/get-vault-secrets@main
         with:
           vault_instance: ${{ env.VAULT_INSTANCE }}
@@ -235,8 +232,7 @@ jobs:
           universal: "true"
           dist-folder: dist
           output-folder: dist-artifacts
-          access-policy-token: ${{ env.SIGN_PLUGIN_ACCESS_POLICY_TOKEN || '' }}
-          allow-unsigned: ${{ env.IS_FORK }}
+          access-policy-token: ${{ env.SIGN_PLUGIN_ACCESS_POLICY_TOKEN }}
 
       - name: Package os/arch ZIPs
         id: os-arch-zips
@@ -245,8 +241,7 @@ jobs:
           universal: "false"
           dist-folder: dist
           output-folder: dist-artifacts
-          access-policy-token: ${{ env.SIGN_PLUGIN_ACCESS_POLICY_TOKEN || '' }}
-          allow-unsigned: ${{ env.IS_FORK }}
+          access-policy-token: ${{ env.SIGN_PLUGIN_ACCESS_POLICY_TOKEN }}
 
       - name: Trufflehog secrets scanning
         if: ${{ inputs.run-trufflehog == true }}
@@ -335,9 +330,6 @@ jobs:
   upload-to-gcs:
     name: Upload to GCS
     runs-on: ubuntu-latest
-
-    # Do not run upload to GCS for PRs from forks (no access)
-    if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
 
     permissions:
       contents: read
