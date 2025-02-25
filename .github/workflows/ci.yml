@@ -89,17 +89,6 @@ on:
         type: string
         required: false
 
-      # GCS/provisioned plugins options
-      upload-to-gcs-release-folder:
-        description: |
-          If true, the plugin will be uploaded to the release folder in GCS.
-          (`${GCS_ARTIFACTS_BUCKET}/${PLUGIN_NAME}/release/${VERSION}`).
-          Default is false.
-          This should be true only when calling CI for deployments.
-        required: false
-        type: boolean
-        default: false
-
       # Options for building PRs. Those values should come from the PR event and should not be set manually.
       plugin-version-suffix:
         description: |
@@ -166,7 +155,7 @@ env:
   DEFAULT_GOLANGCI_LINT_VERSION: "1.61.0"
   DEFAULT_TRUFFLEHOG_VERSION: "3.88.1"
 
-  GCS_ARTIFACTS_BUCKET: "integration-artifacts"
+  GCS_ARTIFACTS_BUCKET: integration-artifacts
   VAULT_INSTANCE: ops
 
   IS_FORK: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
@@ -451,59 +440,3 @@ jobs:
           # TODO: remove
           cat "$GITHUB_OUTPUT"
         shell: bash
-
-  # Optional step to upload the plugin to the release folder in GCS.
-  # We need this in a separate job because we use a different folder structure and we need to use a matrix.
-  upload-to-gcs-release:
-    name: Upload GCS artifacts (release)
-    runs-on: ubuntu-latest
-
-    needs:
-      - test-and-build
-      # Depend on "upload-to-gcs" to avoid repeating the if condition for GCS uploads here as well (fork check).
-      - upload-to-gcs
-
-    if: ${{ needs.upload-to-gcs.result == 'success' && inputs.upload-to-gcs-release-folder == true }}
-
-    strategy:
-      matrix:
-        os: [linux, darwin, windows, any]
-
-    steps:
-      - name: Download GitHub artifact
-        uses: actions/download-artifact@v4.1.8
-        with:
-          name: dist-artifacts
-          path: /tmp/dist-artifacts
-
-      - name: Login to Google Cloud
-        uses: google-github-actions/auth@v2.1.7
-        with:
-          workload_identity_provider: "projects/304398677251/locations/global/workloadIdentityPools/github/providers/github-provider"
-          service_account: github-plugin-ci-workflows@grafanalabs-workload-identity.iam.gserviceaccount.com
-
-      - name: Determine GCS artifacts paths
-        run: |
-          plugin_version='${{ fromJSON(needs.test-and-build.outputs.plugin).version }}'
-          gcs_artifacts_release_base="${{ env.GCS_ARTIFACTS_BUCKET }}/${{ fromJSON(needs.test-and-build.outputs.plugin).id }}/release"
-          echo "gcs_artifacts_release_path_latest=$gcs_artifacts_release_base/latest" >> "$GITHUB_ENV"
-          echo "gcs_artifacts_release_path_tag=$gcs_artifacts_release_base/$plugin_version" >> "$GITHUB_ENV"
-        shell: bash
-
-      - name: Upload GCS release artifact (tag)
-        uses: google-github-actions/upload-cloud-storage@v2.2.1
-        with:
-          path: /tmp/dist-artifacts
-          glob: "*${{ matrix.os }}*"
-          destination: "${{ env.gcs_artifacts_release_path_tag }}/${{ matrix.os }}"
-          parent: false
-          process_gcloudignore: falses
-
-      - name: Upload GCS release artifact (latest)
-        uses: google-github-actions/upload-cloud-storage@v2.2.1
-        with:
-          path: /tmp/dist-artifacts
-          glob: "*${{ matrix.os }}*"
-          destination: "${{ env.gcs_artifacts_release_path_latest }}/${{ matrix.os }}"
-          parent: false
-          process_gcloudignore: falses

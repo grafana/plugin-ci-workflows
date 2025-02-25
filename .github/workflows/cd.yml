@@ -144,6 +144,7 @@ permissions:
 
 env:
   VAULT_INSTANCE: ops
+  GCS_ARTIFACTS_BUCKET: integration-artifacts
 
 jobs:
   setup:
@@ -206,7 +207,6 @@ jobs:
           && needs.setup.outputs.commit-sha
           || ''
         }}
-      upload-to-gcs-release-folder: true
 
   build-attestation:
     name: Build attestation
@@ -361,6 +361,60 @@ jobs:
           scopes: ${{ inputs.scopes }}
           gcom-publish-token: ${{ env.GCOM_PUBLISH_TOKEN }}
           gcloud-auth-token: ${{ steps.gcloud.outputs.id_token }}
+
+  upload-gcs-release:
+    name: Upload GCS artifacts (release)
+    runs-on: ubuntu-latest
+
+    needs:
+      - ci
+      - deploy
+
+    # TODO: change to "ops || prod" after testing
+    if: ${{ inputs.environment == 'dev' }}
+
+    strategy:
+      matrix:
+        os: [linux, darwin, windows, any]
+
+    steps:
+      - name: Download GitHub artifact
+        uses: actions/download-artifact@v4.1.8
+        with:
+          name: dist-artifacts
+          path: /tmp/dist-artifacts
+
+      - name: Login to Google Cloud
+        uses: google-github-actions/auth@v2.1.7
+        with:
+          workload_identity_provider: "projects/304398677251/locations/global/workloadIdentityPools/github/providers/github-provider"
+          service_account: github-plugin-ci-workflows@grafanalabs-workload-identity.iam.gserviceaccount.com
+
+      - name: Determine GCS artifacts paths
+        run: |
+          plugin_version='${{ fromJSON(needs.ci.outputs.plugin).version }}'
+          gcs_artifacts_release_base="${{ env.GCS_ARTIFACTS_BUCKET }}/${{ fromJSON(needs.ci.outputs.plugin).id }}/release"
+          echo "gcs_artifacts_release_path_latest=$gcs_artifacts_release_base/latest" >> "$GITHUB_ENV"
+          echo "gcs_artifacts_release_path_tag=$gcs_artifacts_release_base/$plugin_version" >> "$GITHUB_ENV"
+        shell: bash
+
+      - name: Upload GCS release artifact (tag)
+        uses: google-github-actions/upload-cloud-storage@v2.2.1
+        with:
+          path: /tmp/dist-artifacts
+          glob: "*${{ matrix.os }}*"
+          destination: "${{ env.gcs_artifacts_release_path_tag }}/${{ matrix.os }}"
+          parent: false
+          process_gcloudignore: falses
+
+      - name: Upload GCS release artifact (latest)
+        uses: google-github-actions/upload-cloud-storage@v2.2.1
+        with:
+          path: /tmp/dist-artifacts
+          glob: "*${{ matrix.os }}*"
+          destination: "${{ env.gcs_artifacts_release_path_latest }}/${{ matrix.os }}"
+          parent: false
+          process_gcloudignore: falses
 
   publish-docs:
     name: Publish docs
