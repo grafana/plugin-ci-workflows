@@ -255,7 +255,7 @@ jobs:
           else
             platforms='["any"]'
           fi
-          echo 'platforms=$platforms' >> "$GITHUB_OUTPUT"
+          echo "platforms=$platforms" >> "$GITHUB_OUTPUT"
 
           # If we are publishing docs only, we don't need to deploy the plugin
           if [ "${{ inputs.docs-only }}" == 'true' ]; then
