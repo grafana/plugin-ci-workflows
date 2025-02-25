@@ -379,8 +379,6 @@ jobs:
           service_account: github-plugin-ci-workflows@grafanalabs-workload-identity.iam.gserviceaccount.com
 
       - name: Determine GCS artifacts paths
-        # TODO: for release artifacts: windows, darwin, linux, any
-        #   (https://github.com/grafana/grafana-drone-extension/blob/411172f4e3681acb2e78d2ed0d42ba8e1fc093c7/pluginjson/pipeline-deploy.go#L142-L153)
         run: |
           plugin_version='${{ fromJSON(needs.test-and-build.outputs.plugin).version }}'
           # Strip the SHA suffix from the version, if present.
@@ -389,7 +387,6 @@ jobs:
           {
             echo "gcs_artifacts_path_latest=$gcs_artifacts_base/$plugin_version/main/latest"
             echo "gcs_artifacts_path_commit=$gcs_artifacts_base/$plugin_version/${{ github.event.pull_request.base.ref || 'main' }}/${{ github.event.pull_request.head.sha || github.sha }}"
-            echo "gcs_artifacts_path_release=$gcs_artifacts_base/release/$plugin_version"
           } >> "$GITHUB_ENV"
         shell: bash
 
@@ -409,16 +406,6 @@ jobs:
         with:
           path: /tmp/dist-artifacts
           destination: ${{ env.gcs_artifacts_path_commit }}
-          parent: false
-          process_gcloudignore: false
-
-      - name: Upload GCS artifacts (release)
-        id: gcs-upload-release
-        if: ${{ inputs.upload-to-gcs-release-folder == true }}
-        uses: google-github-actions/upload-cloud-storage@v2.2.1
-        with:
-          path: /tmp/dist-artifacts
-          destination: ${{ env.gcs_artifacts_path_release }}
           parent: false
           process_gcloudignore: false
 
@@ -463,5 +450,44 @@ jobs:
             echo universal_zip_url_latest="$gcs_artifacts_path_latest/$universal_zip_file_name" >> "$GITHUB_OUTPUT"
             echo universal_zip_url_commit="$gcs_artifacts_path_commit/$universal_zip_file_name" >> "$GITHUB_OUTPUT"
           fi
+          # TODO: remove
           cat "$GITHUB_OUTPUT"
         shell: bash
+
+  # Optional step to upload the plugin to the release folder in GCS.
+  # We need this in a separate job because we use a different folder structure and we need to use a matrix.
+  upload-to-gcs-release:
+    name: Upload GCS artifacts (release)
+    runs-on: ubuntu-latest
+
+    needs:
+      - upload-to-gcs
+
+    if: ${{ needs.upload-to-gcs.result == 'success' && inputs.upload-to-gcs-release-folder == true }}
+
+    strategy:
+      matrix:
+        os: [linux, darwin, windows, any]
+
+    steps:
+      - name: Download GitHub artifact
+        uses: actions/download-artifact@v4.1.8
+        with:
+          name: dist-artifacts
+          path: /tmp/dist-artifacts
+
+      - name: Login to Google Cloud
+        uses: google-github-actions/auth@v2.1.7
+        with:
+          workload_identity_provider: "projects/304398677251/locations/global/workloadIdentityPools/github/providers/github-provider"
+          service_account: github-plugin-ci-workflows@grafanalabs-workload-identity.iam.gserviceaccount.com
+
+      - name: Upload GCS release artifact
+        id: gcs-upload-release
+        uses: google-github-actions/upload-cloud-storage@v2.2.1
+        with:
+          path: /tmp/dist-artifacts
+          glob: "*${{ matrix.os }}*"
+          destination: "${{ env.GCS_ARTIFACTS_BUCKET }}/${{ fromJSON(needs.test-and-build.outputs.plugin).id }}/release/${{ fromJSON(needs.test-and-build.outputs.plugin).version }}"
+          parent: false
+          process_gcloudignore: falses
