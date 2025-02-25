@@ -482,12 +482,28 @@ jobs:
           workload_identity_provider: "projects/304398677251/locations/global/workloadIdentityPools/github/providers/github-provider"
           service_account: github-plugin-ci-workflows@grafanalabs-workload-identity.iam.gserviceaccount.com
 
-      - name: Upload GCS release artifact
-        id: gcs-upload-release
+      - name: Determine GCS artifacts paths
+        run: |
+          plugin_version='${{ fromJSON(needs.test-and-build.outputs.plugin).version }}'
+          gcs_artifacts_release_base="${{ env.GCS_ARTIFACTS_BUCKET }}/${{ fromJSON(needs.test-and-build.outputs.plugin).id }}/release"
+          echo "gcs_artifacts_release_path_latest=$gcs_artifacts_release_base/latest" >> "$GITHUB_ENV"
+          echo "gcs_artifacts_release_path_tag=$gcs_artifacts_release_base/$plugin_version" >> "$GITHUB_ENV"
+        shell: bash
+
+      - name: Upload GCS release artifact (tag)
         uses: google-github-actions/upload-cloud-storage@v2.2.1
         with:
           path: /tmp/dist-artifacts
           glob: "*${{ matrix.os }}*"
-          destination: "${{ env.GCS_ARTIFACTS_BUCKET }}/${{ fromJSON(needs.test-and-build.outputs.plugin).id }}/release/${{ fromJSON(needs.test-and-build.outputs.plugin).version }}"
+          destination: "${{ env.gcs_artifacts_release_path_tag }}/${{ matrix.os }}"
+          parent: false
+          process_gcloudignore: falses
+
+      - name: Upload GCS release artifact (latest)
+        uses: google-github-actions/upload-cloud-storage@v2.2.1
+        with:
+          path: /tmp/dist-artifacts
+          glob: "*${{ matrix.os }}*"
+          destination: "${{ env.gcs_artifacts_release_path_latest }}/${{ matrix.os }}"
           parent: false
           process_gcloudignore: falses
