@@ -459,6 +459,7 @@ jobs:
     runs-on: ubuntu-latest
 
     needs:
+      - test-and-build
       - upload-to-gcs
 
     if: ${{ needs.upload-to-gcs.result == 'success' && inputs.upload-to-gcs-release-folder == true }}
