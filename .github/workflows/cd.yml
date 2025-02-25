@@ -183,8 +183,7 @@ jobs:
 
   ci:
     name: CI
-    # TODO: switch branch after testing
-    uses: grafana/plugin-ci-workflows/.github/workflows/ci.yml@giuseppe/drone-release-artifacts
+    uses: grafana/plugin-ci-workflows/.github/workflows/ci.yml@main
     needs:
       - setup
     with:
@@ -362,8 +361,8 @@ jobs:
           gcom-publish-token: ${{ env.GCOM_PUBLISH_TOKEN }}
           gcloud-auth-token: ${{ steps.gcloud.outputs.id_token }}
 
-  upload-gcs-release:
-    name: Upload GCS artifacts (release)
+  upload-to-gcs-release:
+    name: Upload to GCS (release)
     runs-on: ubuntu-latest
 
     needs:
