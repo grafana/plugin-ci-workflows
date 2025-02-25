@@ -182,6 +182,7 @@ jobs:
 
   ci:
     name: CI
+    # TODO: switch branch after testing
     uses: grafana/plugin-ci-workflows/.github/workflows/ci.yml@giuseppe/drone-release-artifacts
     needs:
       - setup
