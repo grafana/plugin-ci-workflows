@@ -89,6 +89,17 @@ on:
         type: string
         required: false
 
+      # GCS/provisioned plugins options
+      upload-to-gcs-release-folder:
+        description: |
+          If true, the plugin will be uploaded to the release folder in GCS.
+          (`integration-artifacts/${PLUGIN_NAME}/release/${VERSION}`).
+          Default is false.
+          This should be true only when calling CI for deployments.
+        required: false
+        type: boolean
+        default: false
+
       # Options for building PRs. Those values should come from the PR event and should not be set manually.
       plugin-version-suffix:
         description: |
@@ -337,7 +348,7 @@ jobs:
     runs-on: ubuntu-latest
 
     # Skip the GCS upload for PRs from forks (no access to the GCS bucket)
-    # This is equivalent to !env.IS_FORK equivalent (we don't have access to the env context at this level)
+    # This is equivalent to !env.IS_FORK (we don't have access to the env context at this level)
     if: ${{ !(github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository) }}
 
     permissions:
@@ -368,13 +379,16 @@ jobs:
           service_account: github-plugin-ci-workflows@grafanalabs-workload-identity.iam.gserviceaccount.com
 
       - name: Determine GCS artifacts paths
+        # TODO: for release artifacts: windows, darwin, linux, any
+        #   (https://github.com/grafana/grafana-drone-extension/blob/411172f4e3681acb2e78d2ed0d42ba8e1fc093c7/pluginjson/pipeline-deploy.go#L142-L153)
         run: |
           plugin_version='${{ fromJSON(needs.test-and-build.outputs.plugin).version }}'
           # Strip the SHA suffix from the version, if present.
           plugin_version="${plugin_version%%+*}"
-          gcs_artifacts_base="${{ env.GCS_ARTIFACTS_BUCKET }}/${{ fromJSON(needs.test-and-build.outputs.plugin).id }}/$plugin_version"
-          echo "gcs_artifacts_path_latest=$gcs_artifacts_base/main/latest" >> "$GITHUB_ENV"
-          echo "gcs_artifacts_path_commit=$gcs_artifacts_base/${{ github.event.pull_request.base.ref || 'main' }}/${{ github.event.pull_request.head.sha || github.sha }}" >> "$GITHUB_ENV"
+          gcs_artifacts_base="${{ env.GCS_ARTIFACTS_BUCKET }}/${{ fromJSON(needs.test-and-build.outputs.plugin).id }}"
+          echo "gcs_artifacts_path_latest=$gcs_artifacts_base/$plugin_version/main/latest" >> "$GITHUB_ENV"
+          echo "gcs_artifacts_path_commit=$gcs_artifacts_base/$plugin_version/${{ github.event.pull_request.base.ref || 'main' }}/${{ github.event.pull_request.head.sha || github.sha }}" >> "$GITHUB_ENV"
+          echo "gcs_artifacts_path_release=$gcs_artifacts_base/release/$plugin_version" >> "$GITHUB_ENV"
         shell: bash
 
       - name: Upload GCS artifacts (latest)
@@ -393,6 +407,16 @@ jobs:
         with:
           path: /tmp/dist-artifacts
           destination: ${{ env.gcs_artifacts_path_commit }}
+          parent: false
+          process_gcloudignore: false
+
+      - name: Upload GCS artifacts (release)
+        id: gcs-upload-release
+        if: ${{ inputs.upload-to-gcs-release-folder == true }}
+        uses: google-github-actions/upload-cloud-storage@v2.2.1
+        with:
+          path: /tmp/dist-artifacts
+          destination: ${{ env.gcs_artifacts_path_release }}
           parent: false
           process_gcloudignore: false
 

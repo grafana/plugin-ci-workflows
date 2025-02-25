@@ -205,6 +205,7 @@ jobs:
           && needs.setup.outputs.commit-sha
           || ''
         }}
+      upload-to-gcs-release-folder: true
 
   build-attestation:
     name: Build attestation
