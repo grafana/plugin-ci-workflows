@@ -240,7 +240,6 @@ jobs:
     outputs:
       environments: ${{ steps.vars.outputs.environments }}
       publish-docs: ${{ steps.vars.outputs.publish-docs }}
-      prod: ${{ steps.vars.outputs.prod }}
 
     steps:
       - name: Define variables
@@ -251,7 +250,6 @@ jobs:
             {
               echo 'environments=[]'
               echo 'publish-docs=true'
-              echo 'prod=false'
             } >> "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -262,20 +260,17 @@ jobs:
             {
               echo 'environments=["dev"]'
               echo 'publish-docs=false'
-              echo 'prod=false' 
             } >> "$GITHUB_OUTPUT"
           elif [ "${{ inputs.environment }}" == 'ops' ]; then
             {
               echo 'environments=["dev", "ops"]'
               echo 'publish-docs=false'
-              echo 'prod=false'
             } >> "$GITHUB_OUTPUT"
             
           elif [ "${{ inputs.environment }}" == 'prod' ]; then
             {
               echo 'environments=["dev", "ops", "prod"]'
               echo 'publish-docs=true'
-              echo 'prod=true'
             } >> "$GITHUB_OUTPUT"
             
           else
