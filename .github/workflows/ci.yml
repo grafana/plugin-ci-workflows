@@ -460,6 +460,7 @@ jobs:
 
     needs:
       - test-and-build
+      # Depend on "upload-to-gcs" to avoid repeating the if condition for GCS uploads here as well (fork check).
       - upload-to-gcs
 
     if: ${{ needs.upload-to-gcs.result == 'success' && inputs.upload-to-gcs-release-folder == true }}
