@@ -386,9 +386,11 @@ jobs:
           # Strip the SHA suffix from the version, if present.
           plugin_version="${plugin_version%%+*}"
           gcs_artifacts_base="${{ env.GCS_ARTIFACTS_BUCKET }}/${{ fromJSON(needs.test-and-build.outputs.plugin).id }}"
-          echo "gcs_artifacts_path_latest=$gcs_artifacts_base/$plugin_version/main/latest" >> "$GITHUB_ENV"
-          echo "gcs_artifacts_path_commit=$gcs_artifacts_base/$plugin_version/${{ github.event.pull_request.base.ref || 'main' }}/${{ github.event.pull_request.head.sha || github.sha }}" >> "$GITHUB_ENV"
-          echo "gcs_artifacts_path_release=$gcs_artifacts_base/release/$plugin_version" >> "$GITHUB_ENV"
+          {
+            echo "gcs_artifacts_path_latest=$gcs_artifacts_base/$plugin_version/main/latest"
+            echo "gcs_artifacts_path_commit=$gcs_artifacts_base/$plugin_version/${{ github.event.pull_request.base.ref || 'main' }}/${{ github.event.pull_request.head.sha || github.sha }}"
+            echo "gcs_artifacts_path_release=$gcs_artifacts_base/release/$plugin_version"
+          } >> "$GITHUB_ENV"
         shell: bash
 
       - name: Upload GCS artifacts (latest)
