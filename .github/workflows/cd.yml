@@ -376,8 +376,7 @@ jobs:
 
     strategy:
       matrix:
-        # TODO: any if frontend only, archs if has backend
-        os: [linux, darwin, windows, any]
+        os: ${{ fromJson(needs.ci.outputs.plugin).has-backend == 'true' && '["linux", "darwin", "windows", "any"]' || '["any"]' }}
 
     steps:
       - name: Download GitHub artifact
