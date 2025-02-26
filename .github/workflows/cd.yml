@@ -412,10 +412,12 @@ jobs:
           {
             echo "gcs_artifacts_release_path_latest=$gcs_artifacts_release_base/latest"
             echo "gcs_artifacts_release_path_tag=$gcs_artifacts_release_base/$plugin_version"
+            fn=$(basename ${{ needs.ci.outputs.gcs-universal-zip-url-commit }})
             if [ "${{ matrix.platform }}" == 'any' ]; then
-              echo "gcs_upload_glob=$(basename ${{ needs.ci.outputs.gcs-universal-zip-url-commit }})*"
+              echo "gcs_upload_glob=$fn*"
             else
-              echo "gcs_upload_glob=$(basename ${{ needs.ci.outputs.gcs-universal-zip-url-commit }}).${{ matrix.platform }}*"
+              # strip the extension (.zip) and append the platform instead
+              echo "gcs_upload_glob=${fn%.*}.${{ matrix.platform }}*"
             fi
           } >> "$GITHUB_ENV"
         shell: bash
