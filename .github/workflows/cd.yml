@@ -413,13 +413,9 @@ jobs:
             echo "gcs_artifacts_release_path_latest=$gcs_artifacts_release_base/latest"
             echo "gcs_artifacts_release_path_tag=$gcs_artifacts_release_base/$plugin_version"
             if [ "${{ matrix.platform }}" == 'any' ]; then
-              # For "any" platform (universal zip), the platform name is not included in the file names.
-              # Get the url of the universal zip, get the file name from it, and add "*" at the end
-              # (so we also upload the hash files).
               echo "gcs_upload_glob=$(basename ${{ needs.ci.outputs.gcs-universal-zip-url-commit }})*"
             else
-              # For other platforms it's easier, because the platform is in the filename
-              echo "gcs_upload_glob=*${{ matrix.platform }}*"
+              echo "gcs_upload_glob=$(basename ${{ needs.ci.outputs.gcs-universal-zip-url-commit }}).${{ matrix.platform }}*"
             fi
           } >> "$GITHUB_ENV"
         shell: bash
