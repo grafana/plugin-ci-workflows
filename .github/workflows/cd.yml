@@ -417,7 +417,7 @@ jobs:
               # Get the url of the universal zip, get the file name from it,
               # strip the extension and replace it with ".*" (so we also upload the hash files)
               fn=$(basename ${{ needs.ci.outputs.gcs-universal-zip-url-commit }})
-              echo "gcs_upload_glob=${fn%.*}.*"
+              echo "gcs_upload_glob=${fn%.*}.{zip,md5,sha1}"
             else
               # For other platforms it's easier, because the platform is in the filename
               echo "gcs_upload_glob=*${{ matrix.platform }}*"
