@@ -409,15 +409,27 @@ jobs:
         run: |
           plugin_version='${{ fromJSON(needs.ci.outputs.plugin).version }}'
           gcs_artifacts_release_base="${{ env.GCS_ARTIFACTS_BUCKET }}/${{ fromJSON(needs.ci.outputs.plugin).id }}/release"
-          echo "gcs_artifacts_release_path_latest=$gcs_artifacts_release_base/latest" >> "$GITHUB_ENV"
-          echo "gcs_artifacts_release_path_tag=$gcs_artifacts_release_base/$plugin_version" >> "$GITHUB_ENV"
+          {
+            echo "gcs_artifacts_release_path_latest=$gcs_artifacts_release_base/latest"
+            echo "gcs_artifacts_release_path_tag=$gcs_artifacts_release_base/$plugin_version"
+            if [ "${{ matrix.platform }}" == 'any' ]; then
+              # For "any" platform (universal zip), the platform name is not included in the file names.
+              # Get the url of the universal zip, get the file name from it,
+              # strip the extension and replace it with ".*" (so we also upload the hash files)
+              fn=$(basename ${{ needs.ci.outputs.gcs-universal-zip-url-commit }})
+              echo "gcs_upload_glob=${fn%.*}.*"
+            else
+              # For other platforms it's easier, because the platform is in the filename
+              echo "gcs_upload_glob=*${{ matrix.platform }}*"
+            fi
+          } >> "$GITHUB_ENV"
         shell: bash
 
       - name: Upload GCS release artifact (tag)
         uses: google-github-actions/upload-cloud-storage@v2.2.1
         with:
           path: /tmp/dist-artifacts
-          glob: "*${{ matrix.platform }}*"
+          glob: ${{ env.gcs_upload_glob }}
           destination: "${{ env.gcs_artifacts_release_path_tag }}/${{ matrix.platform }}"
           parent: false
           process_gcloudignore: false
@@ -426,7 +438,7 @@ jobs:
         uses: google-github-actions/upload-cloud-storage@v2.2.1
         with:
           path: /tmp/dist-artifacts
-          glob: "*${{ matrix.platform }}*"
+          glob: ${{ env.gcs_upload_glob }}
           destination: "${{ env.gcs_artifacts_release_path_latest }}/${{ matrix.platform }}"
           parent: false
           process_gcloudignore: false
