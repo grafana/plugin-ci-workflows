@@ -437,6 +437,4 @@ jobs:
             echo universal_zip_url_latest="$gcs_artifacts_path_latest/$universal_zip_file_name" >> "$GITHUB_OUTPUT"
             echo universal_zip_url_commit="$gcs_artifacts_path_commit/$universal_zip_file_name" >> "$GITHUB_OUTPUT"
           fi
-          # TODO: remove
-          cat "$GITHUB_OUTPUT"
         shell: bash
