@@ -221,7 +221,7 @@ jobs:
 
     steps:
       - name: Download GitHub artifact
-        uses: actions/download-artifact@v4.1.8
+        uses: actions/download-artifact@v4.1.9
         with:
           name: dist-artifacts
           path: /tmp/dist-artifacts
@@ -311,7 +311,7 @@ jobs:
 
       - name: Login to Google Cloud (ID token for IAP)
         id: gcloud
-        uses: google-github-actions/auth@v2.1.7
+        uses: google-github-actions/auth@v2.1.8
         if: ${{ matrix.environment != 'prod' }}
         with:
           workload_identity_provider: "projects/304398677251/locations/global/workloadIdentityPools/github/providers/github-provider"
@@ -480,7 +480,7 @@ jobs:
 
       - name: Generate GitHub token
         id: generate-github-token
-        uses: actions/create-github-app-token@v1.11.2
+        uses: actions/create-github-app-token@v1.11.5
         with:
           app-id: ${{ env.GITHUB_APP_ID }}
           private-key: ${{ env.GITHUB_APP_PRIVATE_KEY }}
@@ -515,7 +515,7 @@ jobs:
           ref: ${{ inputs.branch }}
 
       - name: Download GitHub artifact
-        uses: actions/download-artifact@v4.1.8
+        uses: actions/download-artifact@v4.1.9
         with:
           name: dist-artifacts
           path: /tmp/dist-artifacts
