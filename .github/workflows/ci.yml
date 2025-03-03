@@ -155,7 +155,7 @@ env:
   DEFAULT_GOLANGCI_LINT_VERSION: "1.61.0"
   DEFAULT_TRUFFLEHOG_VERSION: "3.88.1"
 
-  GCS_ARTIFACTS_BUCKET: "integration-artifacts"
+  GCS_ARTIFACTS_BUCKET: integration-artifacts
   VAULT_INSTANCE: ops
 
   IS_FORK: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
@@ -337,7 +337,7 @@ jobs:
     runs-on: ubuntu-latest
 
     # Skip the GCS upload for PRs from forks (no access to the GCS bucket)
-    # This is equivalent to !env.IS_FORK equivalent (we don't have access to the env context at this level)
+    # This is equivalent to !env.IS_FORK (we don't have access to the env context at this level)
     if: ${{ !(github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository) }}
 
     permissions:
@@ -437,5 +437,4 @@ jobs:
             echo universal_zip_url_latest="$gcs_artifacts_path_latest/$universal_zip_file_name" >> "$GITHUB_OUTPUT"
             echo universal_zip_url_commit="$gcs_artifacts_path_commit/$universal_zip_file_name" >> "$GITHUB_OUTPUT"
           fi
-          cat "$GITHUB_OUTPUT"
         shell: bash
