@@ -382,7 +382,6 @@ jobs:
 
     strategy:
       matrix:
-        # TODO: 'any' doesn't upload anything?
         platform: ${{ fromJson(needs.define-variables.outputs.platforms) }}
 
     steps:
