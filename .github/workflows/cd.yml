@@ -382,10 +382,11 @@ jobs:
     # TODO: change to "ops || prod" after testing
     # TODO: ensure it works with gcs-only = true (deploy is skipped, but we have "deploy" in needs)
     if: >-
-      ${{ contains(fromJSON(needs.define-variables.outputs.environments), 'dev') && (
-        (needs.deploy.result == 'success' && !inputs.gcs-only) ||
-        (needs.deploy.result == 'skipped' && inputs.gcs-only)
-      ) }}
+      ${{ !inputs.docs-only &&
+        contains(fromJSON(needs.define-variables.outputs.environments), 'dev') && (
+          (needs.deploy.result == 'success' && !inputs.gcs-only) ||
+          (needs.deploy.result == 'skipped' && inputs.gcs-only)
+        ) }}
 
     strategy:
       matrix:
