@@ -378,13 +378,7 @@ jobs:
       - ci
       - define-variables
 
-    # TODO: change to "ops || prod" after testing
-    # TODO: ensure it works with gcs-only = true (deploy is skipped, but we have "deploy" in needs)
-    if: >-
-      ${{
-        !inputs.docs-only &&
-        (contains(fromJSON(needs.define-variables.outputs.environments), 'dev'))
-      }}
+    if: ${{ !inputs.docs-only }}
 
     strategy:
       matrix:
