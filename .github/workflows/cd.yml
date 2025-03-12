@@ -396,8 +396,6 @@ jobs:
           cp -r /tmp/dist-artifacts /tmp/dist-artifacts-latest
           # Replace the version with "latest" in the zip file name
           find /tmp/dist-artifacts-latest -type f -exec bash -c 'mv "$1" "${1//${{ fromJSON(needs.ci.outputs.plugin).version }}/latest}"' _ {} \;
-          # TODO: remove, debug
-          ls -1 /tmp/dist-artifacts-latest
         shell: bash
 
       - name: Login to Google Cloud
