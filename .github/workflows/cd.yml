@@ -407,31 +407,33 @@ jobs:
           service_account: github-plugin-ci-workflows@grafanalabs-workload-identity.iam.gserviceaccount.com
 
       - name: Determine GCS artifacts paths
+        id: paths
         run: |
           plugin_version='${{ fromJSON(needs.ci.outputs.plugin).version }}'
           gcs_artifacts_release_base="${{ env.GCS_ARTIFACTS_BUCKET }}/${{ fromJSON(needs.ci.outputs.plugin).id }}/release"
           {
+            echo "gcs_artifacts_release_base=$gcs_artifacts_release_base"
             echo "gcs_artifacts_release_path_latest=$gcs_artifacts_release_base/latest"
             echo "gcs_artifacts_release_path_tag=$gcs_artifacts_release_base/$plugin_version"
             fn=$(basename ${{ needs.ci.outputs.gcs-universal-zip-url-commit }})
             latest_fn=${fn//${{ fromJSON(needs.ci.outputs.plugin).version }}/latest}
             if [ "${{ matrix.platform }}" == 'any' ]; then
               echo "gcs_upload_glob=$fn*"
-              echo "gcs_upload_glob_latest=$latest_fn*"
+              echo "gcs_upload_glob_latest=$latest_fn"
             else
               # strip the extension (.zip) and append the platform instead
               echo "gcs_upload_glob=${fn%.*}.${{ matrix.platform }}*"
               echo "gcs_upload_glob_latest=${latest_fn%.*}.${{ matrix.platform }}*"
             fi
-          } >> "$GITHUB_ENV"
+          } >> "$GITHUB_OUTPUT"
         shell: bash
 
       - name: Upload GCS release artifact (tag)
         uses: google-github-actions/upload-cloud-storage@v2.2.2
         with:
           path: /tmp/dist-artifacts
-          glob: ${{ env.gcs_upload_glob }}
-          destination: "${{ env.gcs_artifacts_release_path_tag }}/${{ matrix.platform }}"
+          glob: ${{ steps.paths.outputs.gcs_upload_glob }}
+          destination: "${{ steps.paths.outputs.gcs_artifacts_release_path_tag }}/${{ matrix.platform }}"
           parent: false
           process_gcloudignore: false
 
@@ -439,8 +441,17 @@ jobs:
         uses: google-github-actions/upload-cloud-storage@v2.2.2
         with:
           path: /tmp/dist-artifacts-latest
-          glob: ${{ env.gcs_upload_glob_latest }}
-          destination: "${{ env.gcs_artifacts_release_path_latest }}/${{ matrix.platform }}"
+          glob: ${{ steps.paths.outputs.gcs_upload_glob_latest }}
+          destination: "${{ steps.paths.outputs.gcs_artifacts_release_path_latest }}/${{ matrix.platform }}"
+          parent: false
+          process_gcloudignore: false
+
+      - name: Upload GCS release artifacst (latest, any)
+        if: ${{ matrix.platform == 'any' }}
+        uses: google-github-actions/upload-cloud-storage@v2.2.2
+        with:
+          path: /tmp/dist-artifacts-latest/${{ steps.paths.outputs.gcs_upload_glob_latest }}
+          destination: "${{ steps.paths.outputs.gcs_artifacts_release_base }}/${{ fromJSON(needs.ci.outputs.plugin).id }}-latest.zip"
           parent: false
           process_gcloudignore: false
 
