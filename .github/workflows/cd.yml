@@ -449,7 +449,7 @@ jobs:
         uses: google-github-actions/upload-cloud-storage@v2.2.2
         with:
           path: /tmp/dist-artifacts-latest/${{ fromJSON(needs.ci.outputs.plugin).id }}-latest.zip
-          destination: "${{ steps.paths.outputs.gcs_artifacts_release_base }}"
+          destination: "${{ steps.paths.outputs.gcs_artifacts_release_path_latest }}"
           parent: false
           process_gcloudignore: false
 
