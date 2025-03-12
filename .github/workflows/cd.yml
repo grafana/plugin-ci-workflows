@@ -419,7 +419,7 @@ jobs:
             latest_fn=${fn//${{ fromJSON(needs.ci.outputs.plugin).version }}/latest}
             if [ "${{ matrix.platform }}" == 'any' ]; then
               echo "gcs_upload_glob=$fn*"
-              echo "gcs_upload_glob_latest=$latest_fn"
+              echo "gcs_upload_glob_latest=$latest_fn*"
             else
               # strip the extension (.zip) and append the platform instead
               echo "gcs_upload_glob=${fn%.*}.${{ matrix.platform }}*"
