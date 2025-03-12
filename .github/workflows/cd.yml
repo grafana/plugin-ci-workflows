@@ -391,6 +391,15 @@ jobs:
           name: dist-artifacts
           path: /tmp/dist-artifacts
 
+      - name: Prepare "latest" artifacts
+        run: |
+          cp -r /tmp/dist-artifacts /tmp/dist-artifacts-latest
+          # Replace the version with "latest" in the zip file name
+          find /tmp/dist-artifacts-latest -type f -name "*.zip" -exec bash -c 'mv "$1" "${1//${{ fromJSON(needs.ci.outputs.plugin).version }}/latest}"' _ {} \;
+          # TODO: remove, debug
+          ls -1 /tmp/dist-artifacts-latest
+        shell: bash
+
       - name: Login to Google Cloud
         uses: google-github-actions/auth@v2.1.8
         with:
@@ -405,11 +414,14 @@ jobs:
             echo "gcs_artifacts_release_path_latest=$gcs_artifacts_release_base/latest"
             echo "gcs_artifacts_release_path_tag=$gcs_artifacts_release_base/$plugin_version"
             fn=$(basename ${{ needs.ci.outputs.gcs-universal-zip-url-commit }})
+            latest_fn=${fn//${{ fromJSON(needs.ci.outputs.plugin).version }}/latest}
             if [ "${{ matrix.platform }}" == 'any' ]; then
               echo "gcs_upload_glob=$fn*"
+              echo "gcs_upload_glob_latest=$latest_fn*"
             else
               # strip the extension (.zip) and append the platform instead
               echo "gcs_upload_glob=${fn%.*}.${{ matrix.platform }}*"
+              echo "gcs_upload_glob_latest=${latest_fn%.*}.${{ matrix.platform }}*"
             fi
           } >> "$GITHUB_ENV"
         shell: bash
@@ -426,8 +438,8 @@ jobs:
       - name: Upload GCS release artifact (latest)
         uses: google-github-actions/upload-cloud-storage@v2.2.2
         with:
-          path: /tmp/dist-artifacts
-          glob: ${{ env.gcs_upload_glob }}
+          path: /tmp/dist-artifacts-latest
+          glob: ${{ env.gcs_upload_glob_latest }}
           destination: "${{ env.gcs_artifacts_release_path_latest }}/${{ matrix.platform }}"
           parent: false
           process_gcloudignore: false
