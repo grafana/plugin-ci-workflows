@@ -31,6 +31,16 @@ on:
         required: false
         type: boolean
         default: false
+      docker-compose-file:
+        required: false
+        type: string
+        default: docker-compose.yml
+        description: Path to the docker-compose file to use for testing
+      playwright-config:
+        required: false
+        type: string
+        default: playwright.config.ts
+        description: Path to the Playwright config file to use for testing
 
 permissions:
   contents: read
@@ -106,15 +116,15 @@ jobs:
 
       - name: Start Grafana
         run: |
-          docker compose pull
-          GRAFANA_VERSION=${{ matrix.GRAFANA_IMAGE.VERSION }} GRAFANA_IMAGE=${{ matrix.GRAFANA_IMAGE.NAME }} docker compose up -d
+          docker compose -f ${{ inputs.docker-compose-file }} pull
+          GRAFANA_VERSION=${{ matrix.GRAFANA_IMAGE.VERSION }} GRAFANA_IMAGE=${{ matrix.GRAFANA_IMAGE.NAME }} docker compose -f ${{ inputs.docker-compose-file }} up -d
 
       - name: Wait for Grafana to start
         uses: grafana/plugin-actions/wait-for-grafana@main
 
       - name: Run Playwright tests
         id: run-tests
-        run: npx playwright test
+        run: npx playwright test --config ${{ inputs.playwright-config }}
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4.6.1
