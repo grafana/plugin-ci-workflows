@@ -210,6 +210,16 @@ jobs:
           vault_instance: ${{ env.VAULT_INSTANCE }}
           common_secrets: |
             SIGN_PLUGIN_ACCESS_POLICY_TOKEN=plugins/sign-plugin-access-policy-token:token
+            GITHUB_APP_ID=plugins-platform-bot-app:app-id
+            GITHUB_APP_PRIVATE_KEY=plugins-platform-bot-app:private-key
+
+      - name: Generate GitHub token
+        id: generate-github-token
+        uses: actions/create-github-app-token@v1.11.5
+        with:
+          app-id: ${{ env.GITHUB_APP_ID }}
+          private-key: ${{ env.GITHUB_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
 
       - name: Spellcheck
         run: |
@@ -244,6 +254,8 @@ jobs:
       - name: Test and build backend
         if: ${{ steps.check-for-backend.outputs.has-backend == 'true' }}
         uses: grafana/plugin-ci-workflows/actions/plugins/backend@main
+        with:
+          github-token: ${{ steps.generate-github-token.outputs.token }}
 
       - name: Package universal ZIP
         id: universal-zip
