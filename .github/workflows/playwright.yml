@@ -31,6 +31,24 @@ on:
         required: false
         type: boolean
         default: false
+      docker-compose-file:
+        required: false
+        type: string
+        default: docker-compose.yml
+        description: Path to the docker-compose file to use for testing
+      playwright-config:
+        required: false
+        type: string
+        default: playwright.config.ts
+        description: Path to the docker-compose file(s) to use for testing. Can be a single file or comma-separated list of files.
+      dockerized-playwright-prepare:
+        required: false
+        type: string
+        description: Custom npm command to prepare Playwright environment in a container. If provided, dockerized-playwright-command must also be provided.
+      dockerized-playwright-command:
+        required: false
+        type: string
+        description: Custom command to run Playwright tests in a container. Must be provided if dockerized-playwright-prepare is used.
 
 permissions:
   contents: read
@@ -67,12 +85,26 @@ jobs:
     steps:
       - uses: actions/checkout@v4.2.2
 
+      - name: Validate dockerized inputs
+        if: ${{ inputs.dockerized-playwright-prepare || inputs.dockerized-playwright-command }}
+        run: |
+          if [ -n "${{ inputs.dockerized-playwright-prepare }}" ] && [ -z "${{ inputs.dockerized-playwright-command }}" ]; then
+            echo "Error: dockerized-playwright-command must be provided when using dockerized-playwright-prepare"
+            exit 1
+          fi
+          if [ -z "${{ inputs.dockerized-playwright-prepare }}" ] && [ -n "${{ inputs.dockerized-playwright-command }}" ]; then
+            echo "Error: dockerized-playwright-prepare must be provided when using dockerized-playwright-command"
+            exit 1
+          fi
+
       - name: Setup Node.js environment
+        if: ${{ !inputs.dockerized-playwright-prepare }}
         uses: actions/setup-node@v4.2.0
         with:
           node-version-file: .nvmrc
 
       - name: Install npm dependencies
+        if: ${{ !inputs.dockerized-playwright-prepare }}
         # TODO: find a better way
         run: |
           if [ -f yarn.lock ]; then
@@ -83,7 +115,12 @@ jobs:
         shell: bash
 
       - name: Install Playwright Browsers
+        if: ${{ !inputs.dockerized-playwright-prepare }}
         run: npx playwright install --with-deps chromium
+
+      - name: Prepare Playwright environment in container
+        if: ${{ inputs.dockerized-playwright-prepare }}
+        run: ${{ inputs.dockerized-playwright-prepare }}
 
       - name: Download GitHub artifact
         uses: actions/download-artifact@v4.1.9
@@ -104,7 +141,14 @@ jobs:
           cd "$(ls -1)"
           mv ./* "$src/dist/"
 
+      - name: Start Grafana Custom Location
+        if: ${{ inputs.docker-compose-file }}
+        run: |
+          docker compose -f ${{ inputs.docker-compose-file }} pull
+          GRAFANA_VERSION=${{ matrix.GRAFANA_IMAGE.VERSION }} GRAFANA_IMAGE=${{ matrix.GRAFANA_IMAGE.NAME }} docker compose -f ${{ inputs.docker-compose-file }} up -d
+
       - name: Start Grafana
+        if: ${{ !inputs.docker-compose-file }}
         run: |
           docker compose pull
           GRAFANA_VERSION=${{ matrix.GRAFANA_IMAGE.VERSION }} GRAFANA_IMAGE=${{ matrix.GRAFANA_IMAGE.NAME }} docker compose up -d
@@ -112,9 +156,15 @@ jobs:
       - name: Wait for Grafana to start
         uses: grafana/plugin-actions/wait-for-grafana@main
 
+      - name: Run Dockerized Playwright tests
+        if: ${{ inputs.dockerized-playwright-command }}
+        id: run-tests-in-container
+        run: ${{ inputs.dockerized-playwright-command }}
+
       - name: Run Playwright tests
+        if: ${{ !inputs.dockerized-playwright-command }}
         id: run-tests
-        run: npx playwright test
+        run: npx playwright test --config ${{ inputs.playwright-config }}
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4.6.1
