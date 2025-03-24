@@ -40,7 +40,7 @@ on:
         required: false
         type: string
         default: playwright.config.ts
-        description: Path to the docker-compose file(s) to use for testing. Can be a single file or comma-separated list of files.
+        description: Path to the Playwright config file to use for testing
       dockerized-playwright-prepare:
         required: false
         type: string
