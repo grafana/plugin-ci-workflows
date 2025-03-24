@@ -141,17 +141,13 @@ jobs:
           cd "$(ls -1)"
           mv ./* "$src/dist/"
 
-      - name: Start Grafana Custom Location
-        if: ${{ inputs.docker-compose-file }}
-        run: |
-          docker compose -f ${{ inputs.docker-compose-file }} pull
-          GRAFANA_VERSION=${{ matrix.GRAFANA_IMAGE.VERSION }} GRAFANA_IMAGE=${{ matrix.GRAFANA_IMAGE.NAME }} docker compose -f ${{ inputs.docker-compose-file }} up -d
-
       - name: Start Grafana
-        if: ${{ !inputs.docker-compose-file }}
+        # add the -f argument only if "inputs.docker-compose-file" is defined
         run: |
-          docker compose pull
-          GRAFANA_VERSION=${{ matrix.GRAFANA_IMAGE.VERSION }} GRAFANA_IMAGE=${{ matrix.GRAFANA_IMAGE.NAME }} docker compose up -d
+          $dcf="${{ inputs.docker-compose-file }}"
+          $dc="docker compose ${dcf:+-f "$dcf"}"
+          $dc pull
+          GRAFANA_VERSION=${{ matrix.GRAFANA_IMAGE.VERSION }} GRAFANA_IMAGE=${{ matrix.GRAFANA_IMAGE.NAME }} $dc up -d
 
       - name: Wait for Grafana to start
         uses: grafana/plugin-actions/wait-for-grafana@main
