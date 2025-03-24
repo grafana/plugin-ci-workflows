@@ -34,7 +34,6 @@ on:
       docker-compose-file:
         required: false
         type: string
-        default: docker-compose.yml
         description: Path to the docker-compose file to use for testing
       playwright-config:
         required: false
