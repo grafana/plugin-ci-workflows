@@ -191,8 +191,9 @@ jobs:
         uses: grafana/shared-workflows/actions/get-vault-secrets@main
         with:
           vault_instance: ${{ env.VAULT_INSTANCE }}
+          repo_secrets: |
+            SIGN_PLUGIN_ACCESS_POLICY_TOKEN=sign-plugin-access-policy-token:token
           common_secrets: |
-            SIGN_PLUGIN_ACCESS_POLICY_TOKEN=plugins/sign-plugin-access-policy-token:token
             GITHUB_APP_ID=plugins-platform-bot-app:app-id
             GITHUB_APP_PRIVATE_KEY=plugins-platform-bot-app:private-key
 
