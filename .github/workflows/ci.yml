@@ -73,14 +73,6 @@ on:
         type: string
         default: playwright.config.ts
         description: Path to the Playwright config file to use for testing
-      playwright-docker-prepare-command:
-        required: false
-        type: string
-        description: Custom npm command to prepare Playwright environment in a container. If provided, run-playwright-with-command must also be provided.
-      playwright-docker-run-command:
-        required: false
-        type: string
-        description: Custom command to run Playwright tests in a container. Must be provided if run-playwright-with-prepare is used.
 
       # Trufflehog
       run-trufflehog:
@@ -362,8 +354,6 @@ jobs:
       upload-artifacts: ${{ inputs.upload-playwright-artifacts }}
       docker-compose-file: ${{ inputs.playwright-docker-compose-file }}
       playwright-config: ${{ inputs.playwright-config }}
-      dockerized-playwright-prepare: ${{ inputs.playwright-docker-prepare-command }}
-      dockerized-playwright-command: ${{ inputs.playwright-docker-run-command }}
 
   upload-to-gcs:
     name: Upload to GCS

@@ -40,14 +40,6 @@ on:
         type: string
         default: playwright.config.ts
         description: Path to the Playwright config file to use for testing
-      dockerized-playwright-prepare:
-        required: false
-        type: string
-        description: Custom npm command to prepare Playwright environment in a container. If provided, dockerized-playwright-command must also be provided.
-      dockerized-playwright-command:
-        required: false
-        type: string
-        description: Custom command to run Playwright tests in a container. Must be provided if dockerized-playwright-prepare is used.
 
 permissions:
   contents: read
@@ -84,26 +76,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4.2.2
 
-      - name: Validate dockerized inputs
-        if: ${{ inputs.dockerized-playwright-prepare || inputs.dockerized-playwright-command }}
-        run: |
-          if [ -n "${{ inputs.dockerized-playwright-prepare }}" ] && [ -z "${{ inputs.dockerized-playwright-command }}" ]; then
-            echo "Error: dockerized-playwright-command must be provided when using dockerized-playwright-prepare"
-            exit 1
-          fi
-          if [ -z "${{ inputs.dockerized-playwright-prepare }}" ] && [ -n "${{ inputs.dockerized-playwright-command }}" ]; then
-            echo "Error: dockerized-playwright-prepare must be provided when using dockerized-playwright-command"
-            exit 1
-          fi
-
       - name: Setup Node.js environment
-        if: ${{ !inputs.dockerized-playwright-prepare }}
         uses: actions/setup-node@v4.2.0
         with:
           node-version-file: .nvmrc
 
       - name: Install npm dependencies
-        if: ${{ !inputs.dockerized-playwright-prepare }}
         # TODO: find a better way
         run: |
           if [ -f yarn.lock ]; then
@@ -114,12 +92,7 @@ jobs:
         shell: bash
 
       - name: Install Playwright Browsers
-        if: ${{ !inputs.dockerized-playwright-prepare }}
         run: npx playwright install --with-deps chromium
-
-      - name: Prepare Playwright environment in container
-        if: ${{ inputs.dockerized-playwright-prepare }}
-        run: ${{ inputs.dockerized-playwright-prepare }}
 
       - name: Download GitHub artifact
         uses: actions/download-artifact@v4.1.9
@@ -151,13 +124,7 @@ jobs:
       - name: Wait for Grafana to start
         uses: grafana/plugin-actions/wait-for-grafana@main
 
-      - name: Run Dockerized Playwright tests
-        if: ${{ inputs.dockerized-playwright-command }}
-        id: run-tests-in-container
-        run: ${{ inputs.dockerized-playwright-command }}
-
       - name: Run Playwright tests
-        if: ${{ !inputs.dockerized-playwright-command }}
         id: run-tests
         run: npx playwright test --config ${{ inputs.playwright-config }}
 
