@@ -116,10 +116,8 @@ jobs:
       - name: Start Grafana
         # add the -f argument only if "inputs.docker-compose-file" is defined
         run: |
-          dcf="${{ inputs.docker-compose-file }}"
-          dc="docker compose ${dcf:+-f "$dcf"}"
-          dc pull
-          GRAFANA_VERSION=${{ matrix.GRAFANA_IMAGE.VERSION }} GRAFANA_IMAGE=${{ matrix.GRAFANA_IMAGE.NAME }} $dc up -d
+         dcf="${{ inputs.docker-compose-file }}"
+         GRAFANA_VERSION=${{ matrix.GRAFANA_IMAGE.VERSION }} GRAFANA_IMAGE=${{ matrix.GRAFANA_IMAGE.NAME }} docker compose ${dcf:+-f "$dcf"} up -d
 
       - name: Wait for Grafana to start
         uses: grafana/plugin-actions/wait-for-grafana@main
