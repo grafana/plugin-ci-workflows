@@ -64,6 +64,15 @@ on:
         required: false
         type: boolean
         default: false
+      playwright-docker-compose-file:
+        required: false
+        type: string
+        description: Path to the docker-compose file to use for testing
+      playwright-config:
+        required: false
+        type: string
+        default: playwright.config.ts
+        description: Path to the Playwright config file to use for testing
 
       # Trufflehog
       run-trufflehog:
@@ -343,6 +352,8 @@ jobs:
       skip-grafana-dev-image: ${{ inputs.run-playwright-with-skip-grafana-dev-image }}
       version-resolver-type: ${{ inputs.run-playwright-with-version-resolver-type }}
       upload-artifacts: ${{ inputs.upload-playwright-artifacts }}
+      docker-compose-file: ${{ inputs.playwright-docker-compose-file }}
+      playwright-config: ${{ inputs.playwright-config }}
 
   upload-to-gcs:
     name: Upload to GCS
