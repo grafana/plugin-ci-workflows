@@ -340,7 +340,7 @@ jobs:
 
   playwright:
     name: Playwright E2E tests
-    uses: grafana/plugin-ci-workflows/.github/workflows/playwright.yml@main
+    uses: grafana/plugin-ci-workflows/.github/workflows/playwright.yml@giuseppe/dockerized-playwright-pr
     if: ${{ inputs.run-playwright == true }}
     needs:
       - test-and-build
