@@ -174,7 +174,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: ${{ inputs.branch }}
 
@@ -198,7 +198,7 @@ jobs:
 
       - name: Generate GitHub token
         id: generate-github-token
-        uses: actions/create-github-app-token@v1.11.5
+        uses: actions/create-github-app-token@0d564482f06ca65fa9e77e2510873638c82206f2 # v1.11.5
         with:
           app-id: ${{ env.GITHUB_APP_ID }}
           private-key: ${{ env.GITHUB_APP_PRIVATE_KEY }}
@@ -292,7 +292,7 @@ jobs:
         shell: bash
 
       - name: Upload GitHub artifacts
-        uses: actions/upload-artifact@v4.6.1
+        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4.6.1
         with:
           name: dist-artifacts
           path: dist-artifacts/
@@ -314,7 +314,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: ${{ inputs.branch }}
 
@@ -368,13 +368,13 @@ jobs:
 
     steps:
       - name: Download GitHub artifact
-        uses: actions/download-artifact@v4.1.9
+        uses: actions/download-artifact@cc203385981b70ca67e1cc392babf9cc229d5806 # v4.1.9
         with:
           name: dist-artifacts
           path: /tmp/dist-artifacts
 
       - name: Login to Google Cloud
-        uses: google-github-actions/auth@v2.1.8
+        uses: google-github-actions/auth@71f986410dfbc7added4569d411d040a91dc6935 # v2.1.8
         with:
           workload_identity_provider: "projects/304398677251/locations/global/workloadIdentityPools/github/providers/github-provider"
           service_account: github-plugin-ci-workflows@grafanalabs-workload-identity.iam.gserviceaccount.com
@@ -392,7 +392,7 @@ jobs:
       - name: Upload GCS artifacts (latest)
         id: gcs-upload-latest
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main'}}
-        uses: google-github-actions/upload-cloud-storage@v2.2.2
+        uses: google-github-actions/upload-cloud-storage@7c6e11cb7291594c5dfe0bc1dd9cd905e31e600c # v2.2.2
         with:
           path: /tmp/dist-artifacts
           destination: ${{ env.gcs_artifacts_path_latest }}
@@ -401,7 +401,7 @@ jobs:
 
       - name: Upload GCS artifacts (commit)
         id: gcs-upload-commit
-        uses: google-github-actions/upload-cloud-storage@v2.2.2
+        uses: google-github-actions/upload-cloud-storage@7c6e11cb7291594c5dfe0bc1dd9cd905e31e600c # v2.2.2
         with:
           path: /tmp/dist-artifacts
           destination: ${{ env.gcs_artifacts_path_commit }}
