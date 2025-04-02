@@ -1,6 +1,7 @@
 # Description:
 # Run Dockerized Playwright E2E tests for the plugin.
 # The plugin must be built via the "ci" workflow and available as a GitHub artifact before running this workflow.
+# make sure your docker
 
 name: Plugins - Dockerized Playwright E2E tests
 
@@ -40,6 +41,11 @@ on:
         type: string
         description: Path to the docker-compose file to use for testing
         default: docker-compose.playwright.yaml
+      report-path:
+        required: false
+        type: string
+        description: Path to the folder to use to upload the artifacts
+        default: playwright-report/
 
 permissions:
   contents: read
@@ -71,7 +77,7 @@ jobs:
       fail-fast: false
       matrix:
         GRAFANA_IMAGE: ${{fromJson(needs.resolve-versions.outputs.matrix)}}
-    name: e2e ${{ matrix.GRAFANA_IMAGE.name }}@${{ matrix.GRAFANA_IMAGE.VERSION }}
+    name: e2e ${r{ matrix.GRAFANA_IMAGE.name }}@${{ matrix.GRAFANA_IMAGE.VERSION }}
     runs-on: ubuntu-latest-8-cores
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -118,5 +124,5 @@ jobs:
         if: ${{ (inputs.upload-artifacts == true) && ((always() && steps.run-tests.outcome == 'success') || (failure() && steps.run-tests.outcome == 'failure')) }}
         with:
           name: playwright-report-${{ matrix.GRAFANA_IMAGE.NAME }}-v${{ matrix.GRAFANA_IMAGE.VERSION }}-${{github.run_id}}
-          path: playwright-report/
+          path: ${{ inputs.report-path }}
           retention-days: 30
