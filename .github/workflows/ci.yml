@@ -87,6 +87,11 @@ on:
         type: string
         description: Path to the folder to use to upload the artifacts
         default: playwright-report/
+      grafana-url:
+        description: "The URL to check"
+        type: string
+        required: false
+        default: "http://localhost:3000/"
 
       # Trufflehog
       run-trufflehog:
@@ -386,6 +391,7 @@ jobs:
       grafana-compose-file: ${{ inputs.playwright-docker-compose-file }}
       playwright-compose-file: ${{ inputs.e2e-compose-file }}
       report-path: ${{ inputs.playwright-report-path }}
+      grafana-url: ${{ inputs.grafana-url }}
 
   upload-to-gcs:
     name: Upload to GCS

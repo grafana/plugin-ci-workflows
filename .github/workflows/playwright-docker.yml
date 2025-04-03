@@ -46,6 +46,11 @@ on:
         type: string
         description: Path to the folder to use to upload the artifacts
         default: playwright-report/
+      grafana-url:
+        description: "The URL to check"
+        type: string
+        required: true
+        default: "http://localhost:3000/"
 
 permissions:
   contents: read
@@ -109,6 +114,8 @@ jobs:
 
       - name: Wait for Grafana to start
         uses: grafana/plugin-actions/wait-for-grafana@main
+        with:
+          url: "${{ inputs.grafana-url }}"
 
       - name: Run Playwright tests
         id: run-tests
