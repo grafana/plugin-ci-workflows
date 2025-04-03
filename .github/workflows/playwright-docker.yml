@@ -49,7 +49,7 @@ on:
       grafana-url:
         description: "The URL to check"
         type: string
-        required: true
+        required: false
         default: "http://localhost:3000/"
 
 permissions:
