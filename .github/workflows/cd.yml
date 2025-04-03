@@ -28,6 +28,15 @@ on:
         required: false
         default: universal
         type: string
+      grafana-cloud:
+        description: |
+          If true, trigger Argo Workflow to deploy the plugin to the specified environment(s) in Grafana Cloud.
+          Currently, this only works for provisioned plugins that have migrated to grafana_cloud-scoped plugins in the plugins catalog.
+          `gcs_only` must be false for this to work.
+          Default is 'false'.
+        required: false
+        default: false
+        type: boolean
 
       # Those inputs are used to customize the CI workflow, before publishing the plugin.
       # They should match with the ones used in CI (ci.yml/push.yml).
@@ -291,8 +300,8 @@ jobs:
           fi
         shell: bash
 
-  deploy:
-    name: Deploy to ${{ matrix.environment }}
+  publish-to-catalog:
+    name: Publish to catalog (${{ matrix.environment }})
     if: ${{ !inputs.docs-only && !inputs.gcs-only }}
     needs:
       - define-variables
@@ -367,6 +376,32 @@ jobs:
           scopes: ${{ inputs.scopes }}
           gcom-publish-token: ${{ env.GCOM_PUBLISH_TOKEN }}
           gcloud-auth-token: ${{ steps.gcloud.outputs.id_token }}
+
+  deploy-to-grafana-cloud:
+    name: Deploy to Grafana Cloud
+    runs-on: ubuntu-latest
+
+    needs:
+      - ci
+      - publish-to-catalog
+
+    if: ${{ inputs.grafana-cloud }}
+
+    # Allow the job to fail because this is opt-in and experimental.
+    # TODO: remove once the workflow is stable.
+    continue-on-error: true
+
+    steps:
+      - name: Deploy to Grafana Cloud
+        if: ${{ inputs.grafana-cloud }}
+        uses: grafana/shared-workflows/actions/trigger-argo-workflow@main
+        with:
+          namespace: grafana-plugins-cd
+          workflow_template: grafana-plugins-deploy
+          parameters: |
+            environment=dev
+            slug=${{ fromJSON(needs.ci.outputs.plugin).id }}
+            version=${{ fromJSON(needs.ci.outputs.plugin).version }}
 
   # Note: This job can be removed once provisioned plugins releases are moved to the
   # tailored plugins catalog instead of using GCS.
@@ -461,7 +496,7 @@ jobs:
       # Update the docs only after a successful GCOM deployment
       # This dependency can be skipped if gcs-only is true. In that case, this step
       # is still executed due to the "!(failure() || cancelled())" condition.
-      - deploy
+      - publish-to-catalog
     if: >-
       ${{
         (needs.ci.outputs.has-docs == 'true')
@@ -515,7 +550,7 @@ jobs:
       # Create the release only after a successful GCOM deployment
       # This dependency can be skipped if gcs-only is true. In that case, this step
       # is still executed due to the "!(failure() || cancelled())" condition.
-      - deploy
+      - publish-to-catalog
     if: >-
       ${{
         contains(fromJSON(needs.define-variables.outputs.environments), 'prod')
