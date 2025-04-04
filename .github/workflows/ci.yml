@@ -91,7 +91,7 @@ on:
         description: The URL where Grafana is available at when running Playwright tests
         type: string
         required: false
-        default: "http://localhost:3000/"
+        default: http://localhost:3000/
 
       # Trufflehog
       run-trufflehog:
