@@ -69,6 +69,11 @@ on:
         required: false
         type: boolean
         default: false
+      playwright-report-path:
+        required: false
+        type: string
+        description: Path to the folder to use to upload the artifacts
+        default: playwright-report/
       playwright-docker-compose-file:
         required: false
         type: string
@@ -82,11 +87,6 @@ on:
         required: false
         type: string
         description: Path to the playwright docker-compose file
-      playwright-report-path:
-        required: false
-        type: string
-        description: Path to the folder to use to upload the artifacts
-        default: playwright-report/
       grafana-url:
         description: The URL where Grafana is available at when running Playwright tests
         type: string
@@ -363,7 +363,6 @@ jobs:
     if: ${{ inputs.run-playwright == true }}
     needs:
       - test-and-build
-
     with:
       id: ${{ fromJSON(needs.test-and-build.outputs.plugin).id}}
       version: ${{ fromJSON(needs.test-and-build.outputs.plugin).version}}
@@ -373,6 +372,8 @@ jobs:
       upload-artifacts: ${{ inputs.upload-playwright-artifacts }}
       docker-compose-file: ${{ inputs.playwright-docker-compose-file }}
       playwright-config: ${{ inputs.playwright-config }}
+      report-path: ${{ inputs.playwright-report-path }}
+      grafana-url: ${{ inputs.grafana-url }}
 
   playwright-docker:
     name: Plugins - Dockerized Playwright E2E tests
@@ -380,7 +381,6 @@ jobs:
     if: ${{ inputs.run-playwright-docker == true }}
     needs:
       - test-and-build
-
     with:
       id: ${{ fromJSON(needs.test-and-build.outputs.plugin).id}}
       version: ${{ fromJSON(needs.test-and-build.outputs.plugin).version}}

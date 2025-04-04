@@ -31,6 +31,11 @@ on:
         required: false
         type: boolean
         default: false
+      report-path:
+        required: false
+        type: string
+        description: Path to the folder to use to upload the artifacts
+        default: playwright-report/
       docker-compose-file:
         required: false
         type: string
@@ -40,6 +45,11 @@ on:
         type: string
         default: playwright.config.ts
         description: Path to the Playwright config file to use for testing
+      grafana-url:
+        description: "The URL to check"
+        type: string
+        required: false
+        default: "http://localhost:3000/"
 
 permissions:
   contents: read
@@ -116,11 +126,13 @@ jobs:
       - name: Start Grafana
         # add the -f argument only if "inputs.docker-compose-file" is defined
         run: |
-         dcf="${{ inputs.docker-compose-file }}"
-         GRAFANA_VERSION=${{ matrix.GRAFANA_IMAGE.VERSION }} GRAFANA_IMAGE=${{ matrix.GRAFANA_IMAGE.NAME }} docker compose ${dcf:+-f "$dcf"} up -d
+          dcf="${{ inputs.docker-compose-file }}"
+          GRAFANA_VERSION=${{ matrix.GRAFANA_IMAGE.VERSION }} GRAFANA_IMAGE=${{ matrix.GRAFANA_IMAGE.NAME }} docker compose ${dcf:+-f "$dcf"} up -d
 
       - name: Wait for Grafana to start
         uses: grafana/plugin-actions/wait-for-grafana@main
+        with:
+          url: "${{ inputs.grafana-url }}"
 
       - name: Run Playwright tests
         id: run-tests
@@ -131,5 +143,5 @@ jobs:
         if: ${{ (inputs.upload-artifacts == true) && ((always() && steps.run-tests.outcome == 'success') || (failure() && steps.run-tests.outcome == 'failure')) }}
         with:
           name: playwright-report-${{ matrix.GRAFANA_IMAGE.NAME }}-v${{ matrix.GRAFANA_IMAGE.VERSION }}-${{github.run_id}}
-          path: playwright-report/
+          path: ${{ inputs.report-path }}
           retention-days: 30
