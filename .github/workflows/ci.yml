@@ -376,7 +376,7 @@ jobs:
 
   playwright-docker:
     name: Plugins - Dockerized Playwright E2E tests
-    uses: grafana/plugin-ci-workflows/.github/workflows/playwright-docker.yml@main
+    uses: grafana/plugin-ci-workflows/.github/workflows/playwright-docker.yml@giuseppe/container-pw
     if: ${{ inputs.run-playwright-docker == true }}
     needs:
       - test-and-build
