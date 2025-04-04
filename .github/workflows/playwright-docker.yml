@@ -119,7 +119,7 @@ jobs:
 
       - name: Run Playwright tests
         id: run-tests
-        run: docker compose -f ${{ inputs.playwright-compose-file }} up
+        run: docker compose -f ${{ inputs.playwright-compose-file }} up --exit-code-from playwright
 
       - name: Upload artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
