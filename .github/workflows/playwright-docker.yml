@@ -48,7 +48,7 @@ on:
         description: Path to the folder to use to upload the artifacts
         default: playwright-report/
       grafana-url:
-        description: The URL to check
+        description: The Grafana URL to wait for before running the tests
         type: string
         required: false
         default: http://localhost:3000/

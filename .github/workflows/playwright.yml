@@ -46,7 +46,7 @@ on:
         default: playwright.config.ts
         description: Path to the Playwright config file to use for testing
       grafana-url:
-        description: The URL to check
+        description: The Grafana URL to wait for before running the tests
         type: string
         required: false
         default: http://localhost:3000/
