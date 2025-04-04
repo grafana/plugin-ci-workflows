@@ -48,10 +48,10 @@ on:
         description: Path to the folder to use to upload the artifacts
         default: playwright-report/
       grafana-url:
-        description: "The URL to check"
+        description: The URL to check
         type: string
         required: false
-        default: "http://localhost:3000/"
+        default: http://localhost:3000/
 
 permissions:
   contents: read

@@ -48,11 +48,14 @@ on:
         default: false
       # https://github.com/grafana/plugin-actions/blob/main/e2e-version/action.yml
       run-playwright-with-grafana-dependency:
-        description: "Optionally, use this input to pass a semver range of supported Grafana versions to test against. This is only used when version-resolver-type is plugin-grafana-dependency. If not provided, the action will try to read grafanaDependency from the plugin.json file."
+        description: |
+          Optionally, use this input to pass a semver range of supported Grafana versions to test against.
+          This is only used when version-resolver-type is plugin-grafana-dependency.
+          If not provided, the action will try to read grafanaDependency from the plugin.json file.
         type: string
         required: false
       run-playwright-with-skip-grafana-dev-image:
-        description: "Optionally, you can skip the Grafana dev image"
+        description: Optionally, you can skip the Grafana dev image
         type: boolean
         required: false
         default: false
