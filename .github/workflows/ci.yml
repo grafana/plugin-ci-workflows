@@ -87,7 +87,7 @@ on:
         required: false
         type: string
         description: Path to the playwright docker-compose file
-      grafana-url:
+      playwright-grafana-url:
         description: The URL where Grafana is available at when running Playwright tests
         type: string
         required: false
@@ -373,7 +373,7 @@ jobs:
       docker-compose-file: ${{ inputs.playwright-docker-compose-file }}
       playwright-config: ${{ inputs.playwright-config }}
       report-path: ${{ inputs.playwright-report-path }}
-      grafana-url: ${{ inputs.grafana-url }}
+      grafana-url: ${{ inputs.playwright-grafana-url }}
 
   playwright-docker:
     name: Plugins - Dockerized Playwright E2E tests
@@ -391,7 +391,7 @@ jobs:
       grafana-compose-file: ${{ inputs.playwright-docker-compose-file }}
       playwright-compose-file: ${{ inputs.e2e-compose-file }}
       report-path: ${{ inputs.playwright-report-path }}
-      grafana-url: ${{ inputs.grafana-url }}
+      grafana-url: ${{ inputs.playwright-grafana-url }}
 
   upload-to-gcs:
     name: Upload to GCS
