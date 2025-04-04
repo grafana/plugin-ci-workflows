@@ -1,7 +1,8 @@
 # Description:
 # Run Dockerized Playwright E2E tests for the plugin.
 # The plugin must be built via the "ci" workflow and available as a GitHub artifact before running this workflow.
-# make sure your docker
+# make sure your docker volume maps to the `report-path` for your artifacts to be uploaded.
+# eg e2e:/app/e2e
 
 name: Plugins - Dockerized Playwright E2E tests
 
