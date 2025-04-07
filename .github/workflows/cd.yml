@@ -397,7 +397,7 @@ jobs:
         uses: grafana/shared-workflows/actions/trigger-argo-workflow@main
         with:
           namespace: grafana-plugins-cd
-          workflow_template: provisioned-plugins-deploy
+          workflow_template: grafana-plugins-deploy
           parameters: |
             environment=dev
             slug=${{ fromJSON(needs.ci.outputs.plugin).id }}
