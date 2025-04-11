@@ -28,15 +28,20 @@ on:
         required: false
         default: universal
         type: string
-      grafana-cloud:
+      # TODO: 'managed' deployment_type will be added here in the future.
+      grafana-cloud-deployment-type:
         description: |
-          If true, trigger Argo Workflow to deploy the plugin to the specified environment(s) in Grafana Cloud.
-          Currently, this only works for provisioned plugins that have migrated to grafana_cloud-scoped plugins in the plugins catalog.
+          If set, trigger Argo Workflow to deploy the plugin to the specified environment(s) in Grafana Cloud.
           `gcs_only` must be false for this to work.
-          Default is 'false'.
+
+          Supported values:
+            - provisioned
+
+          Currently, this only works for provisioned plugins that have migrated to grafana_cloud-scoped plugins in the plugins catalog.
+          Default is empty (do not trigger Argo Workflow).
         required: false
-        default: false
-        type: boolean
+        default:
+        type: string
 
       # Those inputs are used to customize the CI workflow, before publishing the plugin.
       # They should match with the ones used in CI (ci.yml/push.yml).
@@ -136,6 +141,13 @@ on:
           Only publish docs to the website, do not publish the plugin.
         default: false
         type: boolean
+      argo-workflow-slack-channel:
+        description: |
+          Slack channel to use for Argo Workflow deployment notifications.
+          This is only used when deploying to Grafana Cloud.
+          Default is '#grafana-plugins-platform-ci'.
+        default: "#grafana-plugins-platform-ci"
+        type: string
 
       # Options for deploying PRs. Those values should come from the PR event and should not be set manually.
       branch:
@@ -399,9 +411,12 @@ jobs:
           namespace: grafana-plugins-cd
           workflow_template: grafana-plugins-deploy
           parameters: |
-            environment=dev
             slug=${{ fromJSON(needs.ci.outputs.plugin).id }}
             version=${{ fromJSON(needs.ci.outputs.plugin).version }}
+            environment=${{ inputs.environment }}
+            slack_channel=${{ inputs.argo-workflow-slack-channel }}
+            commit=${{ github.sha}}
+            commit_link=https://${{ github.repository_owner }}/${{ github.event.repository.name }}/commit/${{ github.sha }}
 
   # Note: This job can be removed once provisioned plugins releases are moved to the
   # tailored plugins catalog instead of using GCS.
