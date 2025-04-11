@@ -41,13 +41,21 @@ on:
         type: boolean
         required: false
         default: true
+      run-playwright-docker:
+        description: Whether to run dockerized Playwright E2E tests.
+        type: boolean
+        required: false
+        default: false
       # https://github.com/grafana/plugin-actions/blob/main/e2e-version/action.yml
       run-playwright-with-grafana-dependency:
-        description: "Optionally, use this input to pass a semver range of supported Grafana versions to test against. This is only used when version-resolver-type is plugin-grafana-dependency. If not provided, the action will try to read grafanaDependency from the plugin.json file."
+        description: |
+          Optionally, use this input to pass a semver range of supported Grafana versions to test against.
+          This is only used when version-resolver-type is plugin-grafana-dependency.
+          If not provided, the action will try to read grafanaDependency from the plugin.json file.
         type: string
         required: false
       run-playwright-with-skip-grafana-dev-image:
-        description: "Optionally, you can skip the Grafana dev image"
+        description: Optionally, you can skip the Grafana dev image
         type: boolean
         required: false
         default: false
@@ -64,6 +72,11 @@ on:
         required: false
         type: boolean
         default: false
+      playwright-report-path:
+        required: false
+        type: string
+        description: Path to the folder to use to upload the artifacts
+        default: playwright-report/
       playwright-docker-compose-file:
         required: false
         type: string
@@ -73,6 +86,15 @@ on:
         type: string
         default: playwright.config.ts
         description: Path to the Playwright config file to use for testing
+      playwright-e2e-docker-compose-file:
+        required: false
+        type: string
+        description: Path to the playwright docker-compose file
+      playwright-grafana-url:
+        description: The URL where Grafana is available at when running Playwright tests
+        type: string
+        required: false
+        default: http://localhost:3000/
 
       # Trufflehog
       run-trufflehog:
@@ -344,7 +366,6 @@ jobs:
     if: ${{ inputs.run-playwright == true }}
     needs:
       - test-and-build
-
     with:
       id: ${{ fromJSON(needs.test-and-build.outputs.plugin).id}}
       version: ${{ fromJSON(needs.test-and-build.outputs.plugin).version}}
@@ -354,6 +375,26 @@ jobs:
       upload-artifacts: ${{ inputs.upload-playwright-artifacts }}
       docker-compose-file: ${{ inputs.playwright-docker-compose-file }}
       playwright-config: ${{ inputs.playwright-config }}
+      report-path: ${{ inputs.playwright-report-path }}
+      grafana-url: ${{ inputs.playwright-grafana-url }}
+
+  playwright-docker:
+    name: Plugins - Dockerized Playwright E2E tests
+    uses: grafana/plugin-ci-workflows/.github/workflows/playwright-docker.yml@main
+    if: ${{ inputs.run-playwright-docker == true }}
+    needs:
+      - test-and-build
+    with:
+      id: ${{ fromJSON(needs.test-and-build.outputs.plugin).id}}
+      version: ${{ fromJSON(needs.test-and-build.outputs.plugin).version}}
+      grafana-dependency: ${{ inputs.run-playwright-with-grafana-dependency }}
+      skip-grafana-dev-image: ${{ inputs.run-playwright-with-skip-grafana-dev-image }}
+      version-resolver-type: ${{ inputs.run-playwright-with-version-resolver-type }}
+      upload-artifacts: ${{ inputs.upload-playwright-artifacts }}
+      grafana-compose-file: ${{ inputs.playwright-docker-compose-file }}
+      playwright-compose-file: ${{ inputs.playwright-e2e-docker-compose-file }}
+      report-path: ${{ inputs.playwright-report-path }}
+      grafana-url: ${{ inputs.playwright-grafana-url }}
 
   upload-to-gcs:
     name: Upload to GCS
