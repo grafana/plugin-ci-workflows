@@ -449,7 +449,6 @@ jobs:
         shell: bash
 
       - name: Trigger Argo Workflow
-        if: ${{ inputs.grafana-cloud }}
         uses: grafana/shared-workflows/actions/trigger-argo-workflow@main
         with:
           namespace: grafana-plugins-cd
