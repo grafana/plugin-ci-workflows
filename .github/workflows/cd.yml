@@ -431,7 +431,7 @@ jobs:
       - ci
       - publish-to-catalog
 
-    if: ${{ inputs.grafana-cloud }}
+    if: ${{ inputs.grafana-cloud-deployment-type != '' }}
 
     # Allow the job to fail because this is opt-in and experimental.
     # TODO: remove once the workflow is stable.
