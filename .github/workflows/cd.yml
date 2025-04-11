@@ -28,6 +28,20 @@ on:
         required: false
         default: universal
         type: string
+      # TODO: 'managed' deployment_type will be added here in the future.
+      grafana-cloud-deployment-type:
+        description: |
+          If set, trigger Argo Workflow to deploy the plugin to the specified environment(s) in Grafana Cloud.
+          `gcs_only` must be false for this to work.
+
+          Supported values:
+            - provisioned
+
+          Currently, this only works for provisioned plugins that have migrated to grafana_cloud-scoped plugins in the plugins catalog.
+          Default is empty (do not trigger Argo Workflow).
+        required: false
+        default:
+        type: string
 
       # Those inputs are used to customize the CI workflow, before publishing the plugin.
       # They should match with the ones used in CI (ci.yml/push.yml).
@@ -155,6 +169,13 @@ on:
           Only publish docs to the website, do not publish the plugin.
         default: false
         type: boolean
+      argo-workflow-slack-channel:
+        description: |
+          Slack channel to use for Argo Workflow deployment notifications.
+          This is only used when deploying to Grafana Cloud.
+          Default is '#grafana-plugins-platform-ci'.
+        default: "#grafana-plugins-platform-ci"
+        type: string
 
       # Options for deploying PRs. Those values should come from the PR event and should not be set manually.
       branch:
@@ -325,8 +346,8 @@ jobs:
           fi
         shell: bash
 
-  deploy:
-    name: Deploy to ${{ matrix.environment }}
+  publish-to-catalog:
+    name: Publish to catalog (${{ matrix.environment }})
     if: ${{ !inputs.docs-only && !inputs.gcs-only }}
     needs:
       - define-variables
@@ -401,6 +422,44 @@ jobs:
           scopes: ${{ inputs.scopes }}
           gcom-publish-token: ${{ env.GCOM_PUBLISH_TOKEN }}
           gcloud-auth-token: ${{ steps.gcloud.outputs.id_token }}
+
+  trigger-argo-workflow:
+    name: Trigger Argo Workflow for Grafana Cloud deployment
+    runs-on: ubuntu-latest
+
+    needs:
+      - ci
+      - publish-to-catalog
+
+    if: ${{ inputs.grafana-cloud-deployment-type != '' }}
+
+    # Allow the job to fail because this is opt-in and experimental.
+    # TODO: remove once the workflow is stable.
+    continue-on-error: true
+
+    steps:
+      - name: Check deployment type
+        # Right now we only support provisioned plugins.
+        # In the future, we will support managed plugins as well.
+        run: |
+          if [ "${{ inputs.grafana-cloud-deployment-type }}" != 'provisioned' ]; then
+            echo "Invalid deployment type '${{ inputs.grafana-cloud-deployment-type }}', must be 'provisioned'"
+            exit 1
+          fi
+        shell: bash
+
+      - name: Trigger Argo Workflow
+        uses: grafana/shared-workflows/actions/trigger-argo-workflow@main
+        with:
+          namespace: grafana-plugins-cd
+          workflow_template: grafana-plugins-deploy
+          parameters: |
+            slug=${{ fromJSON(needs.ci.outputs.plugin).id }}
+            version=${{ fromJSON(needs.ci.outputs.plugin).version }}
+            environment=${{ inputs.environment }}
+            slack_channel=${{ inputs.argo-workflow-slack-channel }}
+            commit=${{ github.sha}}
+            commit_link=https://${{ github.repository_owner }}/${{ github.event.repository.name }}/commit/${{ github.sha }}
 
   # Note: This job can be removed once provisioned plugins releases are moved to the
   # tailored plugins catalog instead of using GCS.
@@ -495,7 +554,7 @@ jobs:
       # Update the docs only after a successful GCOM deployment
       # This dependency can be skipped if gcs-only is true. In that case, this step
       # is still executed due to the "!(failure() || cancelled())" condition.
-      - deploy
+      - publish-to-catalog
     if: >-
       ${{
         (needs.ci.outputs.has-docs == 'true')
@@ -549,7 +608,7 @@ jobs:
       # Create the release only after a successful GCOM deployment
       # This dependency can be skipped if gcs-only is true. In that case, this step
       # is still executed due to the "!(failure() || cancelled())" condition.
-      - deploy
+      - publish-to-catalog
     if: >-
       ${{
         contains(fromJSON(needs.define-variables.outputs.environments), 'prod')
