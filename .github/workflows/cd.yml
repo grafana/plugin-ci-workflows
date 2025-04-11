@@ -438,6 +438,16 @@ jobs:
     continue-on-error: true
 
     steps:
+      - name: Check deployment type
+        # Right now we only support provisioned plugins.
+        # In the future, we will support managed plugins as well.
+        run: |
+          if [ "${{ inputs.grafana-cloud-deployment-type }}" != 'provisioned' ]; then
+            echo "Invalid deployment type '${{ inputs.grafana-cloud-deployment-type }}', must be 'provisioned'"
+            exit 1
+          fi
+        shell: bash
+
       - name: Trigger Argo Workflow
         if: ${{ inputs.grafana-cloud }}
         uses: grafana/shared-workflows/actions/trigger-argo-workflow@main
