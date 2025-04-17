@@ -415,13 +415,15 @@ jobs:
           gcloud-auth-token: ${{ steps.gcloud.outputs.id_token }}
 
       - name: Publish to catalog
-        uses: grafana/plugin-ci-workflows/actions/plugins/publish/publish@main
+        uses: grafana/plugin-ci-workflows/actions/plugins/publish/publish@giuseppe/publish-plugin-args
         with:
           zips: ${{ needs.ci.outputs.gcs-zip-urls-commit }}
           environment: ${{ matrix.environment }}
           scopes: ${{ inputs.scopes }}
           gcom-publish-token: ${{ env.GCOM_PUBLISH_TOKEN }}
           gcloud-auth-token: ${{ steps.gcloud.outputs.id_token }}
+          # TODO: remove
+          local-md5: true
 
   trigger-argo-workflow:
     name: Trigger Argo Workflow for Grafana Cloud deployment
