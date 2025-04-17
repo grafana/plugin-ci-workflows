@@ -112,7 +112,7 @@ for zip_url in $gcs_zip_urls; do
         pushd "$tmp" > /dev/null
         echo "Downloading $zip_url to calculate MD5"
         curl -o "$file" "$zip_url"
-        md5=$(md5sum "$file")
+        md5=$(md5sum "$file" | cut -d ' ' -f 1)
         popd
         rm -rf "$tmp"
     else
@@ -123,8 +123,8 @@ for zip_url in $gcs_zip_urls; do
             echo "Failed to fetch md5: $md5_url"
             exit 1
         fi
-        md5=$(echo $md5 | tr -d '\n')
     fi
+    md5=$(echo $md5 | tr -d '\n')
 
     # Make sure the md5 is valid length (valid response)
     if [ ${#md5} -ne 32 ]; then
