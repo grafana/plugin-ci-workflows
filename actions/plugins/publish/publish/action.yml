@@ -60,10 +60,8 @@ runs:
         fi
         args+=($(echo '${{ inputs.zips }}' | jq -r 'join(" ")'))
 
-        # TODO: REMOVE --dry-run
         ${{ github.action_path }}/publish.sh \
           --environment "${{ inputs.environment }}" \
           --scopes '${{ inputs.scopes }}' \
-          --dry-run \
           "${args[@]}"
       shell: bash
