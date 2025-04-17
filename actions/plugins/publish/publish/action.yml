@@ -58,7 +58,7 @@ runs:
         if [[ ${{ inputs.local-md5 }} == 'true' ]]; then
           args+=("--local-md5")
         fi
-        args+=$(echo '${{ inputs.zips }}' | jq -r 'join(" ")')
+        args+=($(echo '${{ inputs.zips }}' | jq -r 'join(" ")'))
 
         # TODO: REMOVE --dry-run
         ${{ github.action_path }}/publish.sh \
