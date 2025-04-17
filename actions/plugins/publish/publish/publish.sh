@@ -111,7 +111,7 @@ for zip_url in $gcs_zip_urls; do
         tmp=$(mktemp -d)
         pushd "$tmp" > /dev/null
         echo "Downloading $zip_url to calculate MD5"
-        curl -o "$file" "$zip_url"
+        curl -s -o "$file" "$zip_url"
         md5=$(md5sum "$file" | cut -d ' ' -f 1)
         popd
         rm -rf "$tmp"
