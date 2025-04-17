@@ -10,6 +10,15 @@ inputs:
       - a combination of both.
     required: true
 
+  local-md5:
+    description: |
+      If true, download the ZIP files and calculate their MD5 hashes locally.
+      Otherwise, get them from the URLs, by appending ".md5" to each URL.
+      Default is false. It's recommended to keep it set to false if possible,
+      unless you are not uploading to the "integration-artifacts" bucket.
+    required: false
+    default: "false"
+
   environment:
     description: |
       Environment to publish to.
@@ -45,10 +54,16 @@ runs:
 
         # Convert the "zips" JSON array to a space-separated string
         # (used to pass each ZIP in the JSON array as a separate argument)
-        files=$(echo '${{ inputs.zips }}' | jq -r 'join(" ")')
+        args=()
+        if [[ ${{ inputs.local-md5 }} == 'true' ]]; then
+          args+=("--local-md5")
+        fi
+        args+=($(echo '${{ inputs.zips }}' | jq -r 'join(" ")'))
 
+        # TODO: REMOVE --dry-run
         ${{ github.action_path }}/publish.sh \
           --environment "${{ inputs.environment }}" \
           --scopes '${{ inputs.scopes }}' \
-          "${files[@]}"
+          --dry-run \
+          "${args[@]}"
       shell: bash
