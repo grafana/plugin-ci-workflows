@@ -422,8 +422,6 @@ jobs:
           scopes: ${{ inputs.scopes }}
           gcom-publish-token: ${{ env.GCOM_PUBLISH_TOKEN }}
           gcloud-auth-token: ${{ steps.gcloud.outputs.id_token }}
-          # TODO: remove
-          local-md5: true
 
   trigger-argo-workflow:
     name: Trigger Argo Workflow for Grafana Cloud deployment
