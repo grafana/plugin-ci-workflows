@@ -29,7 +29,6 @@ while [[ "$#" -gt 0 ]]; do
             ;;
     esac
 done
-echo $gcs_zip_urls
 
 if [ -z "$gcs_zip_urls" ]; then
     echo "Plugin ZIP URLs not provided."
@@ -91,7 +90,7 @@ fi
 
 # Build JSON payload for publishing
 jq_download_args=()
-for zip_url in $gcs_zip_urls; do
+for zip_url in ${gcs_zip_urls[@]}; do
     platform=any
     os=""
     arch=""
