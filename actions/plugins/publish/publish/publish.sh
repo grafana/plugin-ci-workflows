@@ -1,4 +1,6 @@
 #!/bin/bash
+env
+
 set -e
 if [ $ACTIONS_STEP_DEBUG == "true" ]; then
     set -x
