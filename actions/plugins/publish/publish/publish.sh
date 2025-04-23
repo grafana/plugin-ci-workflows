@@ -1,5 +1,8 @@
 #!/bin/bash
 set -e
+if [[ $ACTIONS_STEP_DEBUG == "true" ]]; then
+    set -x
+fi
 
 usage() {
     echo "Usage: $0 --environment <dev|ops|prod> [--scopes <comma_separated_scopes>] [--dry-run] <plugin_zip_urls...>"
