@@ -33,6 +33,8 @@ while [[ "$#" -gt 0 ]]; do
     esac
 done
 
+exit 1
+
 if [ -z "$gcs_zip_urls" ]; then
     echo "Plugin ZIP URLs not provided."
     usage
