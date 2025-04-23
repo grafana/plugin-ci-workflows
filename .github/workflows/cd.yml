@@ -416,6 +416,8 @@ jobs:
 
       - name: Publish to catalog
         uses: grafana/plugin-ci-workflows/actions/plugins/publish/publish@giuseppe/debug-publish-action
+        env:
+          ACTIONS_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG || env.ACTIONS_STEP_DEBUG }}
         with:
           zips: ${{ needs.ci.outputs.gcs-zip-urls-commit }}
           environment: ${{ matrix.environment }}

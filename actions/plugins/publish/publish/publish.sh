@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-if [[ $ACTIONS_STEP_DEBUG == "true" ]]; then
+if [ $ACTIONS_STEP_DEBUG == "true" ]; then
     set -x
 fi
 
