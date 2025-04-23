@@ -2,7 +2,7 @@
 env
 
 set -e
-if [ $ACTIONS_STEP_DEBUG == "true" ]; then
+if [ $RUNNER_DEBUG == "1" ]; then
     set -x
 fi
 
