@@ -4,6 +4,20 @@ description: Tests, lints, typechecks and builds the frontend.
 runs:
   using: composite
   steps:
+    - name: Set up cache key
+      id: cache-key
+      shell: bash
+      run: echo "key=node-modules-${{ hashFiles('**/package-lock.json', '**/yarn.lock') }}" >> $GITHUB_OUTPUT
+
+    - name: Cache node_modules
+      uses: actions/cache@v4
+      with:
+        path: |
+          **/node_modules
+        key: ${{ steps.cache-key.outputs.key }}
+        restore-keys: |
+          node-modules-
+
     - name: Install dependencies
       shell: bash
       run: ${{ github.action_path }}/pm.sh install
