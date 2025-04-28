@@ -249,10 +249,12 @@ jobs:
         if: ${{ inputs.plugin-version-suffix != '' }}
         run: |
           version=$(jq -r .version package.json)
-          pr_version="$version+${{ inputs.plugin-version-suffix }}"
+          pr_version="$version+${PLUGIN_VERSION_SUFFIX}"
           echo "Replacing plugin version \"$version\" with \"$pr_version\" in package.json"
           jq --arg pr_version "$pr_version" '.version = $pr_version' package.json > /tmp/package.json
           mv /tmp/package.json package.json
+        env:
+          PLUGIN_VERSION_SUFFIX: ${{ inputs.plugin-version-suffix }}
         shell: bash
 
       - name: Check for backend
@@ -303,24 +305,29 @@ jobs:
 
       - name: Define outputs
         id: outputs
+        # TODO: bash quotes for steps.os-arch-zips.outputs.zip
         run: |
           {
             echo plugin="$(jq -n -c \
                 --arg id "$(jq -r .id dist/plugin.json)" \
                 --arg version "$(jq -r .info.version dist/plugin.json)" \
-                --arg has-backend "${{ steps.check-for-backend.outputs.has-backend }}" \
+                --arg has-backend "${HAS_BACKEND}" \
                 --arg executable "$(jq -r .executable dist/plugin.json)" \
                 '$ARGS.named'
               )"
 
-            echo universal-zip='${{ steps.universal-zip.outputs.zip }}'
-            echo os-arch-zips='${{ steps.os-arch-zips.outputs.zip }}'
+            echo universal-zip="${UNIVERSAL_ZIP}"
+            echo os-arch-zips="${OS_ARCH_ZIPS}"
 
             # combine universal zip string with os-arch zips into a single array
-            zips=$(echo -e '["${{ steps.universal-zip.outputs.zip }}"]\n${{ steps.os-arch-zips.outputs.zip }}' | jq -cs 'add')
+            zips=$(echo -e '["${UNIVERSAL_ZIP}"]\n${{ steps.os-arch-zips.outputs.zip }}' | jq -cs 'add')
             echo zips="$zips"
           }  >> "$GITHUB_OUTPUT"
           cat "$GITHUB_OUTPUT"
+        env:
+          HAS_BACKEND: ${{ steps.check-for-backend.outputs.has-backend }}
+          UNIVERSAL_ZIP: ${{ steps.universal-zip.outputs.zip }}
+          OS_ARCH_ZIPS: ${{ steps.os-arch-zips.outputs.zip }}
         shell: bash
 
       - name: Upload GitHub artifacts
@@ -435,12 +442,17 @@ jobs:
 
       - name: Determine GCS artifacts paths
         run: |
-          plugin_version='${{ fromJSON(needs.test-and-build.outputs.plugin).version }}'
+          plugin_version="${PLUGIN_VERSION}"
           # Strip the SHA suffix from the version, if present.
           plugin_version="${plugin_version%%+*}"
-          gcs_artifacts_base="${{ env.GCS_ARTIFACTS_BUCKET }}/${{ fromJSON(needs.test-and-build.outputs.plugin).id }}/$plugin_version"
+          gcs_artifacts_base="${{ env.GCS_ARTIFACTS_BUCKET }}/${PLUGIN_ID}/$plugin_version"
           echo "gcs_artifacts_path_latest=$gcs_artifacts_base/main/latest" >> "$GITHUB_ENV"
-          echo "gcs_artifacts_path_commit=$gcs_artifacts_base/${{ github.event.pull_request.base.ref || 'main' }}/${{ github.event.pull_request.head.sha || github.sha }}" >> "$GITHUB_ENV"
+          echo "gcs_artifacts_path_commit=$gcs_artifacts_base/${GCS_GIT_REF}/${GCS_GIT_SHA}" >> "$GITHUB_ENV"
+        env:
+          PLUGIN_ID: ${{ fromJSON(needs.test-and-build.outputs.plugin).id }}
+          PLUGIN_VERSION: ${{ fromJSON(needs.test-and-build.outputs.plugin).version }}
+          GCS_GIT_REF: ${{ github.event.pull_request.base.ref || 'main' }}
+          GCS_GIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         shell: bash
 
       - name: Upload GCS artifacts (latest)
@@ -468,7 +480,7 @@ jobs:
           gcs_prefix="https://storage.googleapis.com/${{ env.GCS_ARTIFACTS_BUCKET }}"
 
           zip_urls_latest=$(jq -n '[]')
-          files='${{ steps.gcs-upload-latest.outputs.uploaded }}'
+          files="${GCS_UPLOADED_FILES_LATEST}"
           echo files: $files
 
           IFS=','
@@ -482,7 +494,7 @@ jobs:
           unset IFS
 
           zip_urls_commit=$(jq -n '[]')
-          files='${{ steps.gcs-upload-commit.outputs.uploaded }}'
+          files="${GCS_UPLOADED_FILES_COMMIT}"
           echo files: $files
 
           IFS=','
@@ -498,9 +510,13 @@ jobs:
           echo zip_urls_latest="$zip_urls_latest" >> "$GITHUB_OUTPUT"
           echo zip_urls_commit="$zip_urls_commit" >> "$GITHUB_OUTPUT"
 
-          universal_zip_file_name=$(basename "${{ needs.test-and-build.outputs.universal-zip }}")
+          universal_zip_file_name=$(basename "${UNIVERSAL_ZIP}")
           if [ -n "$universal_zip_file_name" ]; then
             echo universal_zip_url_latest="$gcs_artifacts_path_latest/$universal_zip_file_name" >> "$GITHUB_OUTPUT"
             echo universal_zip_url_commit="$gcs_artifacts_path_commit/$universal_zip_file_name" >> "$GITHUB_OUTPUT"
           fi
+        env:
+          GCS_UPLOADED_FILES_LATEST: ${{ steps.gcs-upload-latest.outputs.uploaded }}
+          GCS_UPLOADED_FILES_COMMIT: ${{ steps.gcs-upload-commit.outputs.uploaded }}
+          UNIVERSAL_ZIP: ${{ needs.test-and-build.outputs.universal-zip }}
         shell: bash
