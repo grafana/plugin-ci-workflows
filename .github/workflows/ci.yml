@@ -208,9 +208,10 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: ${{ inputs.branch }}
+          persist-credentials: false
 
       - name: Setup
-        uses: grafana/plugin-ci-workflows/actions/plugins/setup@main
+        uses: grafana/plugin-ci-workflows/actions/plugins/setup@main # zizmor: ignore[unpinned-uses]
         with:
           go-version: ${{ inputs.go-version || env.DEFAULT_GO_VERSION }}
           node-version: ${{ inputs.node-version || env.DEFAULT_NODE_VERSION }}
@@ -219,7 +220,7 @@ jobs:
       - name: Get secrets from Vault
         id: get-secrets
         if: ${{ env.IS_FORK == 'false' }}
-        uses: grafana/shared-workflows/actions/get-vault-secrets@main
+        uses: grafana/shared-workflows/actions/get-vault-secrets@main # zizmor: ignore[unpinned-uses]
         with:
           vault_instance: ${{ env.VAULT_INSTANCE }}
           common_secrets: |
@@ -263,17 +264,17 @@ jobs:
         shell: bash
 
       - name: Test and build frontend
-        uses: grafana/plugin-ci-workflows/actions/plugins/frontend@main
+        uses: grafana/plugin-ci-workflows/actions/plugins/frontend@main # zizmor: ignore[unpinned-uses]
 
       - name: Test and build backend
         if: ${{ steps.check-for-backend.outputs.has-backend == 'true' }}
-        uses: grafana/plugin-ci-workflows/actions/plugins/backend@main
+        uses: grafana/plugin-ci-workflows/actions/plugins/backend@main # zizmor: ignore[unpinned-uses]
         with:
           github-token: ${{ steps.generate-github-token.outputs.token }}
 
       - name: Package universal ZIP
         id: universal-zip
-        uses: grafana/plugin-ci-workflows/actions/plugins/package@main
+        uses: grafana/plugin-ci-workflows/actions/plugins/package@main # zizmor: ignore[unpinned-uses]
         with:
           universal: "true"
           dist-folder: dist
@@ -283,7 +284,7 @@ jobs:
 
       - name: Package os/arch ZIPs
         id: os-arch-zips
-        uses: grafana/plugin-ci-workflows/actions/plugins/package@main
+        uses: grafana/plugin-ci-workflows/actions/plugins/package@main # zizmor: ignore[unpinned-uses]
         with:
           universal: "false"
           dist-folder: dist
@@ -293,7 +294,7 @@ jobs:
 
       - name: Trufflehog secrets scanning
         if: ${{ inputs.run-trufflehog == true }}
-        uses: grafana/plugin-ci-workflows/actions/plugins/trufflehog@main
+        uses: grafana/plugin-ci-workflows/actions/plugins/trufflehog@main # zizmor: ignore[unpinned-uses]
         with:
           trufflehog-version: ${{ inputs.trufflehog-version || env.DEFAULT_TRUFFLEHOG_VERSION }}
           folder: dist-artifacts
@@ -348,6 +349,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: ${{ inputs.branch }}
+          persist-credentials: false
 
       - name: Check docs exist
         id: exist
@@ -358,11 +360,11 @@ jobs:
         shell: bash
 
       - name: Test docs
-        uses: grafana/plugin-ci-workflows/actions/plugins/docs/test@main
+        uses: grafana/plugin-ci-workflows/actions/plugins/docs/test@main # zizmor: ignore[unpinned-uses]
 
   playwright:
     name: Playwright E2E tests
-    uses: grafana/plugin-ci-workflows/.github/workflows/playwright.yml@main
+    uses: grafana/plugin-ci-workflows/.github/workflows/playwright.yml@main # zizmor: ignore[unpinned-uses]
     if: ${{ inputs.run-playwright == true }}
     needs:
       - test-and-build
@@ -380,7 +382,7 @@ jobs:
 
   playwright-docker:
     name: Plugins - Dockerized Playwright E2E tests
-    uses: grafana/plugin-ci-workflows/.github/workflows/playwright-docker.yml@main
+    uses: grafana/plugin-ci-workflows/.github/workflows/playwright-docker.yml@main # zizmor: ignore[unpinned-uses]
     if: ${{ inputs.run-playwright-docker == true }}
     needs:
       - test-and-build

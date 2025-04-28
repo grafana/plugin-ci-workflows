@@ -229,10 +229,11 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: ${{ inputs.branch }}
+          persist-credentials: false
 
   ci:
     name: CI
-    uses: grafana/plugin-ci-workflows/.github/workflows/ci.yml@main
+    uses: grafana/plugin-ci-workflows/.github/workflows/ci.yml@main # zizmor: ignore[unpinned-uses]
     needs:
       - setup
     with:
@@ -363,6 +364,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: ${{ inputs.branch }}
+          persist-credentials: false
 
       - name: Login to Google Cloud (ID token for IAP)
         id: gcloud
@@ -379,7 +381,7 @@ jobs:
 
       - name: Get secrets from Vault
         id: get-secrets
-        uses: grafana/shared-workflows/actions/get-vault-secrets@main
+        uses: grafana/shared-workflows/actions/get-vault-secrets@main # zizmor: ignore[unpinned-uses]
         with:
           vault_instance: ${{ env.VAULT_INSTANCE }}
           common_secrets: |
@@ -406,7 +408,7 @@ jobs:
         shell: bash
 
       - name: Check and create stub
-        uses: grafana/plugin-ci-workflows/actions/plugins/publish/check-and-create-stub@main
+        uses: grafana/plugin-ci-workflows/actions/plugins/publish/check-and-create-stub@main # zizmor: ignore[unpinned-uses]
         if: ${{ matrix.environment != 'prod' }}
         with:
           plugin-id: ${{ fromJSON(needs.ci.outputs.plugin).id }}
@@ -415,7 +417,7 @@ jobs:
           gcloud-auth-token: ${{ steps.gcloud.outputs.id_token }}
 
       - name: Publish to catalog
-        uses: grafana/plugin-ci-workflows/actions/plugins/publish/publish@main
+        uses: grafana/plugin-ci-workflows/actions/plugins/publish/publish@main # zizmor: ignore[unpinned-uses]
         with:
           zips: ${{ needs.ci.outputs.gcs-zip-urls-commit }}
           environment: ${{ matrix.environment }}
@@ -449,7 +451,7 @@ jobs:
         shell: bash
 
       - name: Trigger Argo Workflow
-        uses: grafana/shared-workflows/actions/trigger-argo-workflow@main
+        uses: grafana/shared-workflows/actions/trigger-argo-workflow@main # zizmor: ignore[unpinned-uses]
         with:
           namespace: grafana-plugins-cd
           workflow_template: grafana-plugins-deploy
@@ -574,10 +576,11 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: ${{ inputs.branch }}
+          persist-credentials: false
 
       - name: Get secrets from Vault
         id: get-secrets
-        uses: grafana/shared-workflows/actions/get-vault-secrets@main
+        uses: grafana/shared-workflows/actions/get-vault-secrets@main # zizmor: ignore[unpinned-uses]
         with:
           vault_instance: ${{ env.VAULT_INSTANCE }}
           common_secrets: |
@@ -593,7 +596,7 @@ jobs:
           owner: ${{ github.repository_owner }}
 
       - name: Publish docs
-        uses: grafana/plugin-ci-workflows/actions/plugins/docs/publish@main
+        uses: grafana/plugin-ci-workflows/actions/plugins/docs/publish@main # zizmor: ignore[unpinned-uses]
         with:
           id: ${{ fromJSON(needs.ci.outputs.plugin).id }}
           version: ${{ fromJSON(needs.ci.outputs.plugin).version }}
@@ -619,6 +622,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: ${{ inputs.branch }}
+          persist-credentials: false
 
       - name: Download GitHub artifact
         uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e # v4.2.1
@@ -628,7 +632,7 @@ jobs:
 
       - name: Parse changelog
         id: changelog
-        uses: grafana/plugin-ci-workflows/actions/plugins/changelog@main
+        uses: grafana/plugin-ci-workflows/actions/plugins/changelog@main # zizmor: ignore[unpinned-uses]
 
       - name: Print changelog
         run: |
