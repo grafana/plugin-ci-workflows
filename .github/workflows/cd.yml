@@ -516,13 +516,13 @@ jobs:
       - name: Determine GCS artifacts paths
         id: paths
         run: |
-          plugin_version='${{ fromJSON(needs.ci.outputs.plugin).version }}'
+          plugin_version="${PLUGIN_VERSION}"
           gcs_artifacts_release_base="${{ env.GCS_ARTIFACTS_BUCKET }}/${PLUGIN_ID}/release"
           {
             echo "gcs_artifacts_release_base=$gcs_artifacts_release_base"
             echo "gcs_artifacts_release_path_latest=$gcs_artifacts_release_base/latest"
             echo "gcs_artifacts_release_path_tag=$gcs_artifacts_release_base/$plugin_version"
-            fn=$(basename ${{ needs.ci.outputs.gcs-universal-zip-url-commit }})
+            fn=$(basename ${GCS_UNIVERSAL_ZIP_URL_COMMIT})
             latest_fn=${fn//${{ fromJSON(needs.ci.outputs.plugin).version }}/latest}
             if [ "${PLATFORM}" == 'any' ]; then
               echo "gcs_upload_glob=$fn*"
@@ -536,8 +536,8 @@ jobs:
         env:
           PLATFORM: ${{ matrix.platform }}
           PLUGIN_ID: ${{ fromJSON(needs.ci.outputs.plugin).id }}
-          # TODO: PLUGIN_VERSION: ${{ fromJSON(needs.ci.outputs.plugin).version }}
-          # TODO: GCS_UNIVERSAL_ZIP_URL_COMMIT: ${{ needs.ci.outputs.gcs-universal-zip-url-commit }}
+          PLUGIN_VERSION: ${{ fromJSON(needs.ci.outputs.plugin).version }}
+          GCS_UNIVERSAL_ZIP_URL_COMMIT: ${{ needs.ci.outputs.gcs-universal-zip-url-commit }}
         shell: bash
 
       - name: Upload GCS release artifact (tag)
@@ -656,8 +656,10 @@ jobs:
       - name: Print changelog
         run: |
           cat <<EOF
-          ${{ steps.changelog.outputs.changelog }}
+          ${CHANGELOG}
           EOF
+        env:
+          CHANGELOG: ${{ steps.changelog.outputs.changelog }}
         shell: bash
 
       - name: Create tag
