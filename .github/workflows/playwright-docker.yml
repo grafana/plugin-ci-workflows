@@ -105,17 +105,21 @@ jobs:
 
           cd /tmp/dist-artifacts
           # unzip the universal zip
-          unzip ${{ inputs.id }}-${{ inputs.version }}.zip -d out
+          unzip ${PLUGIN_ID}-${PLUGIN_VERSION}.zip -d out
           # Folder structure: /tmp/dist-artifacts/out/$PLUGIN_ID/plugin.json
           cd out
           cd "$(ls -1)"
           mv ./* "$src/dist/"
+        env:
+          PLUGIN_ID: ${{ inputs.id }}
+          PLUGIN_VERSION: ${{ inputs.version }}
 
       - name: Start Grafana
         # add the -f argument only if "inputs.grafana-compose-file" is defined
         run: |
-          dcf="${{ inputs.grafana-compose-file }}"
-          GRAFANA_VERSION=${{ matrix.GRAFANA_IMAGE.VERSION }} GRAFANA_IMAGE=${{ matrix.GRAFANA_IMAGE.NAME }} docker compose ${dcf:+-f "$dcf"} up -d
+          GRAFANA_VERSION=${{ matrix.GRAFANA_IMAGE.VERSION }} GRAFANA_IMAGE=${{ matrix.GRAFANA_IMAGE.NAME }} docker compose ${DOCKER_COMPOSE_FILE:+-f "$DOCKER_COMPOSE_FILE"} up -d
+        env:
+          DOCKER_COMPOSE_FILE: ${{ inputs.grafana-compose-file }}
 
       - name: Wait for Grafana to start
         uses: grafana/plugin-actions/wait-for-grafana@main # zizmor: ignore[unpinned-uses]
@@ -124,7 +128,9 @@ jobs:
 
       - name: Run Playwright tests
         id: run-tests
-        run: docker compose -f ${{ inputs.playwright-compose-file }} up --exit-code-from playwright
+        run: docker compose -f ${PLAYWRIGHT_COMPOSE_FILE} up --exit-code-from playwright
+        env:
+          PLAYWRIGHT_COMPOSE_FILE: ${{ inputs.playwright-compose-file }}
 
       - name: Upload artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
