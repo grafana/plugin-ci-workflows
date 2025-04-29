@@ -323,8 +323,6 @@ jobs:
 
             # combine universal zip string with os-arch zips into a single array
             zips=$(echo -e '["'${UNIVERSAL_ZIP}'"]' '\n' ${OS_ARCH_ZIPS} | jq -cs 'add')
-
-            echo -e ["${A}"]'\n'${B} | jq -cs 'add'
             echo zips="$zips"
           }  >> "$GITHUB_OUTPUT"
           cat "$GITHUB_OUTPUT"
