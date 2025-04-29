@@ -20,8 +20,10 @@ runs:
     - name: Parse changelog
       id: parse
       run: |
-        changelog=`${{ github.action_path }}/parse-changelog.sh ${{ inputs.changelog-path || 'CHANGELOG.md' }}`
+        changelog=`${{ github.action_path }}/parse-changelog.sh ${CHANGELOG_PATH}`
         echo 'changelog<<EOF' >> "$GITHUB_OUTPUT"
         echo "$changelog" >> "$GITHUB_OUTPUT"
         echo 'EOF' >> "$GITHUB_OUTPUT"
+      env:
+        CHANGELOG_PATH: ${{ inputs.changelog-path || 'CHANGELOG.md' }}
       shell: bash

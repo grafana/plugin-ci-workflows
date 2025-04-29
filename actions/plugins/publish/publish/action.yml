@@ -46,22 +46,28 @@ runs:
   using: composite
   steps:
     - name: Publish to catalog
-      env:
-        GCLOUD_AUTH_TOKEN: ${{ inputs.gcloud-auth-token }}
-        GCOM_PUBLISH_TOKEN: ${{ inputs.gcom-publish-token }}
       run: |
-        cd ${{ inputs.zips-folder }}
+        cd ${ZIPS_FOLDER}
 
         # Convert the "zips" JSON array to a space-separated string
         # (used to pass each ZIP in the JSON array as a separate argument)
         args=()
-        if [[ ${{ inputs.local-md5 }} == 'true' ]]; then
+        if [[ ${LOCAL_MD5} == 'true' ]]; then
           args+=("--local-md5")
         fi
-        args+=($(echo '${{ inputs.zips }}' | jq -r 'join(" ")'))
+        args+=($(echo "${ZIPS}" | jq -r 'join(" ")'))
 
         ${{ github.action_path }}/publish.sh \
-          --environment "${{ inputs.environment }}" \
-          --scopes '${{ inputs.scopes }}' \
+          --environment "${ENVIRONMENT}" \
+          --scopes '${SCOPES}' \
           "${args[@]}"
+      env:
+        GCLOUD_AUTH_TOKEN: ${{ inputs.gcloud-auth-token }}
+        GCOM_PUBLISH_TOKEN: ${{ inputs.gcom-publish-token }}
+
+        ZIPS_FOLDER: ${{ inputs.zips-folder }}
+        LOCAL_MD5: ${{ inputs.local-md5 }}
+        ZIPS: ${{ inputs.zips }}
+        ENVIRONMENT: ${{ inputs.environment }}
+        SCOPES: ${{ inputs.scopes }}
       shell: bash

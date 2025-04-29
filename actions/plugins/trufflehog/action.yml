@@ -33,18 +33,19 @@ runs:
     - name: Install Trufflehog
       shell: bash
       run: |
-        curl -sSfL https://raw.githubusercontent.com/trufflesecurity/trufflehog/v${{ inputs.trufflehog-version }}/scripts/install.sh | sh
+        curl -sSfL https://raw.githubusercontent.com/trufflesecurity/trufflehog/v${TRUFFLEHOG_VERSION}/scripts/install.sh | sh
+      env:
+        TRUFFLEHOG_VERSION: ${{ inputs.trufflehog-version }}
 
     - name: Run Trufflehog
       shell: bash
       run: |
-        include_detectors="all"
-        if [ -n "${{ inputs.include-detectors }}" ]; then
-          include_detectors="${{ inputs.include-detectors }}"
-        fi
-
-        ./bin/trufflehog filesystem "${{ inputs.folder }}" \
+        ./bin/trufflehog filesystem "${FOLDER}" \
         --no-update --fail --github-actions \
         --results=verified,unknown \
-        --include-detectors="${include_detectors}" \
-        --exclude-detectors="${{ inputs.exclude-detectors }}"
+        --include-detectors="${INCLUDE_DETECTORS}" \
+        --exclude-detectors="${EXCLUDE_DETECTORS}"
+      env:
+        INCLUDE_DETECTORS: ${{ inputs.include-detectors || 'all' }}
+        EXCLUDE_DETECTORS: ${{ inputs.exclude-detectors }}
+        FOLDER: ${{ inputs.folder }}

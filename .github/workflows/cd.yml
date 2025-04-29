@@ -523,7 +523,7 @@ jobs:
             echo "gcs_artifacts_release_path_latest=$gcs_artifacts_release_base/latest"
             echo "gcs_artifacts_release_path_tag=$gcs_artifacts_release_base/$plugin_version"
             fn=$(basename ${GCS_UNIVERSAL_ZIP_URL_COMMIT})
-            latest_fn=${fn//${{ fromJSON(needs.ci.outputs.plugin).version }}/latest}
+            latest_fn=${fn//${PLUGIN_VERSION}/latest}
             if [ "${PLATFORM}" == 'any' ]; then
               echo "gcs_upload_glob=$fn*"
               echo "gcs_upload_glob_latest=$latest_fn*"
@@ -665,14 +665,16 @@ jobs:
       - name: Create tag
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         with:
-          # TODO: this is not bash, not sure how to deal with it
           script: |
+            const { PLUGIN_VERSION } = process.env
             github.rest.git.createRef({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              ref: 'refs/tags/v${{ fromJSON(needs.ci.outputs.plugin).version }}',
+              ref: 'refs/tags/v${PLUGIN_VERSION}',
               sha: context.sha
             })
+        env:
+          PLUGIN_VERSION: ${{ fromJSON(needs.ci.outputs.plugin).version }}
 
       - name: Create Github release
         uses: softprops/action-gh-release@c95fe1489396fe8a9eb87c0abf8aa5b2ef267fda # v2.2.1

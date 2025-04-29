@@ -10,7 +10,9 @@ runs:
   using: composite
   steps:
     - name: Config git to use GitHub token
-      run: git config --global url."https://oauth2:${{ inputs.github-token }}@github.com/".insteadOf "https://github.com/"
+      run: git config --global url."https://oauth2:${INPUT_GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
+      env:
+        INPUT_GITHUB_TOKEN: ${{ inputs.github-token }}
       shell: bash
 
     - name: Install dependencies

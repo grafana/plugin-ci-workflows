@@ -305,7 +305,6 @@ jobs:
 
       - name: Define outputs
         id: outputs
-        # TODO: bash quotes for steps.os-arch-zips.outputs.zip
         run: |
           {
             echo plugin="$(jq -n -c \
@@ -320,7 +319,9 @@ jobs:
             echo os-arch-zips="${OS_ARCH_ZIPS}"
 
             # combine universal zip string with os-arch zips into a single array
-            zips=$(echo -e '["${UNIVERSAL_ZIP}"]\n${{ steps.os-arch-zips.outputs.zip }}' | jq -cs 'add')
+            zips=$(echo -e '["'${UNIVERSAL_ZIP}'"]' '\n' ${OS_ARCH_ZIPS} | jq -cs 'add')
+
+            echo -e ["${A}"]'\n'${B} | jq -cs 'add'
             echo zips="$zips"
           }  >> "$GITHUB_OUTPUT"
           cat "$GITHUB_OUTPUT"
