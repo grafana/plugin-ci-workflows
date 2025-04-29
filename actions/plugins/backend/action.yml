@@ -4,13 +4,12 @@ description: Tests, lints and builds the backend.
 inputs:
   github-token:
     description: GitHub token for downloading dependencies from private repos, if necessary
-    required: false
+    required: true
 
 runs:
   using: composite
   steps:
     - name: Config git to use GitHub token
-      if: ${{ inputs.github-token != '' }}
       run: git config --global url."https://oauth2:${INPUT_GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
       env:
         INPUT_GITHUB_TOKEN: ${{ inputs.github-token }}
