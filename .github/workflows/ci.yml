@@ -414,10 +414,6 @@ jobs:
     # This is equivalent to !env.IS_FORK (we don't have access to the env context at this level)
     if: ${{ !(github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository) }}
 
-    permissions:
-      contents: read
-      id-token: write
-
     needs:
       - test-and-build
 
