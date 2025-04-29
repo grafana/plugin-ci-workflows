@@ -59,7 +59,7 @@ runs:
 
         ${{ github.action_path }}/publish.sh \
           --environment "${ENVIRONMENT}" \
-          --scopes '${SCOPES}' \
+          --scopes "${SCOPES}" \
           "${args[@]}"
       env:
         GCLOUD_AUTH_TOKEN: ${{ inputs.gcloud-auth-token }}
