@@ -576,11 +576,16 @@ jobs:
       # This dependency can be skipped if gcs-only is true. In that case, this step
       # is still executed due to the "!(failure() || cancelled())" condition.
       - publish-to-catalog
+
+    # TODO: Temporarily disabled until IT re-enables the GitHub App.
+    #   See https://raintank-corp.slack.com/archives/C024NL6AEJH/p1745860508760709.
+    # Remove the "&& false" condition to enable again.
     if: >-
       ${{
         (needs.ci.outputs.has-docs == 'true')
         && (needs.define-variables.outputs.publish-docs == 'true')
         && !(failure() || cancelled())
+        && false
       }}
     runs-on: ubuntu-latest
     container:

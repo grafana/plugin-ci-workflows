@@ -228,13 +228,15 @@ jobs:
             GITHUB_APP_ID=plugins-platform-bot-app:app-id
             GITHUB_APP_PRIVATE_KEY=plugins-platform-bot-app:private-key
 
-      - name: Generate GitHub token
-        id: generate-github-token
-        uses: actions/create-github-app-token@d72941d797fd3113feb6b93fd0dec494b13a2547 # v1.12.0
-        with:
-          app-id: ${{ env.GITHUB_APP_ID }}
-          private-key: ${{ env.GITHUB_APP_PRIVATE_KEY }}
-          owner: ${{ github.repository_owner }}
+      # TODO: Temporarily disabled until IT re-enables the GitHub App.
+      #   See https://raintank-corp.slack.com/archives/C024NL6AEJH/p1745860508760709.
+      #- name: Generate GitHub token
+      #  id: generate-github-token
+      #  uses: actions/create-github-app-token@d72941d797fd3113feb6b93fd0dec494b13a2547 # v1.12.0
+      #  with:
+      #    app-id: ${{ env.GITHUB_APP_ID }}
+      #    private-key: ${{ env.GITHUB_APP_PRIVATE_KEY }}
+      #    owner: ${{ github.repository_owner }}
 
       - name: Spellcheck
         run: |
@@ -271,8 +273,9 @@ jobs:
       - name: Test and build backend
         if: ${{ steps.check-for-backend.outputs.has-backend == 'true' }}
         uses: grafana/plugin-ci-workflows/actions/plugins/backend@giuseppe/gha-zizmor # zizmor: ignore[unpinned-uses]
-        with:
-          github-token: ${{ steps.generate-github-token.outputs.token }}
+        # TODO: Temporariy disabled until IT re-enables the GitHub App.
+        #with:
+        #  github-token: ${{ steps.generate-github-token.outputs.token }}
 
       - name: Package universal ZIP
         id: universal-zip
