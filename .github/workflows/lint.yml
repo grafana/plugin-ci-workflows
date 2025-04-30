@@ -7,18 +7,26 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
 jobs:
   actionlint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
       - name: Enable action lint matcher
-        run:  echo "::add-matcher::.github/actionlint-matcher.json"
+        run: echo "::add-matcher::.github/actionlint-matcher.json"
       - name: Download actionlint
         id: get_actionlint
-        # v1.7.4
+        # v1.7.3
         run: bash <(curl https://raw.githubusercontent.com/rhysd/actionlint/5db9d9cde2f3deb5035dea3e45f0a9fff2f29448/scripts/download-actionlint.bash)
         shell: bash
       - name: Check workflow files
+        # This workflow comes from the testing instructions of the actionlint project.
+        # This templated run be safe because the install script is pinned and the output is pretty much fixed.
+        # zizmor: ignore[template-injection]
         run: ${{ steps.get_actionlint.outputs.executable }} -color
         shell: bash

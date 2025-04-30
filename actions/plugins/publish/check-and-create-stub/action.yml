@@ -31,11 +31,14 @@ runs:
   using: composite
   steps:
     - name: Check and create stub.
+      run: |
+        ${{ github.action_path }}/check-and-create-stub.sh \
+          --environment "${ENVIRONMENT}" \
+          --plugin-id "${PLUGIN_ID}"
       env:
         GCLOUD_AUTH_TOKEN: ${{ inputs.gcloud-auth-token }}
         GCOM_PUBLISH_TOKEN: ${{ inputs.gcom-publish-token }}
-      run: |
-        ${{ github.action_path }}/check-and-create-stub.sh \
-          --environment "${{ inputs.environment }}" \
-          --plugin-id "${{ inputs.plugin-id }}"
+
+        ENVIRONMENT: ${{ inputs.environment }}
+        PLUGIN_ID: ${{ inputs.plugin-id }}
       shell: bash

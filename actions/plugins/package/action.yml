@@ -42,14 +42,17 @@ runs:
   steps:
     - name: Environment check
       run: |
-        if [ -z "${{ inputs.access-policy-token }}" ]; then
+        if [ -z "${ACCESS_POLICY_TOKEN}" ]; then
           echo "Warning: No access policy token provided, plugin will not be signed."
-          if [ "${{ inputs.allow-unsigned }}" != "true" ]; then
+          if [ "${ALLOW_UNSIGNED}" != "true" ]; then
             echo "Error: Packaging unsigned plugins is not allowed."
             echo "Please provide a Grafana access policy token."
             exit 1
           fi
         fi
+      env:
+        ACCESS_POLICY_TOKEN: ${{ inputs.access-policy-token }}
+        ALLOW_UNSIGNED: ${{ inputs.allow-unsigned }}
       shell: bash
 
     - name: Package universal ZIP
@@ -58,26 +61,33 @@ runs:
       run: >
         ${{ github.action_path }}/package.sh
         --universal
-        ${{ inputs.dist-folder }} ${{ inputs.output-folder }}
+        ${DIST_FOLDER} ${OUTPUT_FOLDER}
       env:
         GRAFANA_ACCESS_POLICY_TOKEN: ${{ inputs.access-policy-token }}
+        DIST_FOLDER: ${{ inputs.dist-folder }}
+        OUTPUT_FOLDER: ${{ inputs.output-folder }}
 
     - name: Package os/arch ZIPs
       if: inputs.universal != 'true'
       shell: bash
       run: >
         ${{ github.action_path }}/package.sh
-        ${{ inputs.dist-folder }} ${{ inputs.output-folder }}
+        ${DIST_FOLDER} ${OUTPUT_FOLDER}
       env:
         GRAFANA_ACCESS_POLICY_TOKEN: ${{ inputs.access-policy-token }}
+        DIST_FOLDER: ${{ inputs.dist-folder }}
+        OUTPUT_FOLDER: ${{ inputs.output-folder }}
 
     - name: Output
       id: output
       shell: bash
       run: |
-        cd ${{ inputs.output-folder }}
-        if [ ${{ inputs.universal }} == 'true' ]; then
+        cd ${OUTPUT_FOLDER}
+        if [ ${UNIVERSAL} == 'true' ]; then
           echo "zip=$(ls -1 *.zip)" >> "$GITHUB_OUTPUT"
         else
           echo "zip=$(ls -1 *.zip | jq -RncM '[inputs]')" >> "$GITHUB_OUTPUT"
         fi
+      env:
+        OUTPUT_FOLDER: ${{ inputs.output-folder }}
+        UNIVERSAL: ${{ inputs.universal }}

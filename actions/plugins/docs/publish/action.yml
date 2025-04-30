@@ -16,10 +16,10 @@ runs:
   using: composite
   steps:
     - name: Publish docs
+      run: |
+        ${{ github.action_path }}/script.sh ${PLUGIN_ID} ${PLUGIN_VERSION}
       env:
         GITHUB_TOKEN: ${{ inputs.github-token }}
-      run: |
-        ${{ github.action_path }}/script.sh \
-          ${{ inputs.id }} \
-          ${{ inputs.version }}
+        PLUGIN_ID: ${{ inputs.id }}
+        PLUGIN_VERSION: ${{ inputs.version }}
       shell: bash

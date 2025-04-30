@@ -206,22 +206,26 @@ jobs:
     steps:
       - name: Check environment
         run: |
-          if [ "${{ inputs.environment }}" != 'dev' ] && [ "${{ inputs.branch }}" != 'main' ]; then
+          if [ "${ENVIRONMENT}" != 'dev' ] && [ "${BRANCH}" != 'main' ]; then
             echo "Only 'dev' environment is allowed for non-main branches."
             exit 1
           fi
 
-          if [ "${{ inputs.docs-only }}" == 'true' ]; then
-            if [ "${{ inputs.environment }}" != 'prod' ]; then
+          if [ "${DOCS_ONLY}" == 'true' ]; then
+            if [ "${ENVIRONMENT}" != 'prod' ]; then
               echo "Only 'prod' environment is allowed for docs publishing."
               exit 1
             fi
 
-            if [ "${{ inputs.branch }}" != 'main' ]; then
+            if [ "${BRANCH}" != 'main' ]; then
               echo "Only 'main' branch can be used for docs publishing."
               exit 1
             fi
           fi
+        env:
+          ENVIRONMENT: ${{ inputs.environment }}
+          BRANCH: ${{ inputs.branch }}
+          DOCS_ONLY: ${{ inputs.docs-only }}
         shell: bash
 
       - name: Checkout specified branch
@@ -229,10 +233,11 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: ${{ inputs.branch }}
+          persist-credentials: false
 
   ci:
     name: CI
-    uses: grafana/plugin-ci-workflows/.github/workflows/ci.yml@main
+    uses: grafana/plugin-ci-workflows/.github/workflows/ci.yml@main # zizmor: ignore[unpinned-uses]
     needs:
       - setup
     with:
@@ -305,7 +310,7 @@ jobs:
         id: vars
         run: |
           # Platforms matrix
-          if [ "${{ fromJSON(needs.ci.outputs.plugin).has-backend }}" == 'true' ]; then
+          if [ "${HAS_BACKEND}" == 'true' ]; then
             platforms='["linux", "darwin", "windows", "any"]'
           else
             platforms='["any"]'
@@ -313,7 +318,7 @@ jobs:
           echo "platforms=$platforms" >> "$GITHUB_OUTPUT"
 
           # If we are publishing docs only, we don't need to deploy the plugin
-          if [ "${{ inputs.docs-only }}" == 'true' ]; then
+          if [ "${DOCS_ONLY}" == 'true' ]; then
             {
               echo 'environments=[]'
               echo 'publish-docs=true'
@@ -323,27 +328,31 @@ jobs:
 
           # Define environments matrix,
           # and deploy docs only if we are publishing to prod
-          if [ "${{ inputs.environment }}" == 'dev' ]; then
+          if [ "${ENVIRONMENT}" == 'dev' ]; then
             {
               echo 'environments=["dev"]'
               echo 'publish-docs=false'
             } >> "$GITHUB_OUTPUT"
-          elif [ "${{ inputs.environment }}" == 'ops' ]; then
+          elif [ "${ENVIRONMENT}" == 'ops' ]; then
             {
               echo 'environments=["dev", "ops"]'
               echo 'publish-docs=false'
             } >> "$GITHUB_OUTPUT"
             
-          elif [ "${{ inputs.environment }}" == 'prod' ]; then
+          elif [ "${ENVIRONMENT}" == 'prod' ]; then
             {
               echo 'environments=["dev", "ops", "prod"]'
               echo 'publish-docs=true'
             } >> "$GITHUB_OUTPUT"
             
           else
-            echo "Invalid environment '${{ inputs.environment }}'"
+            echo "Invalid environment '${ENVIRONMENT}'"
             exit 1
           fi
+        env:
+          ENVIRONMENT: ${{ inputs.environment }}
+          DOCS_ONLY: ${{ inputs.docs-only }}
+          HAS_BACKEND: ${{ fromJSON(needs.ci.outputs.plugin).has-backend }}
         shell: bash
 
   publish-to-catalog:
@@ -363,6 +372,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: ${{ inputs.branch }}
+          persist-credentials: false
 
       - name: Login to Google Cloud (ID token for IAP)
         id: gcloud
@@ -379,7 +389,7 @@ jobs:
 
       - name: Get secrets from Vault
         id: get-secrets
-        uses: grafana/shared-workflows/actions/get-vault-secrets@main
+        uses: grafana/shared-workflows/actions/get-vault-secrets@main # zizmor: ignore[unpinned-uses]
         with:
           vault_instance: ${{ env.VAULT_INSTANCE }}
           common_secrets: |
@@ -389,24 +399,26 @@ jobs:
 
       - name: Determine which token to use
         run: |
-          if [ "${{ matrix.environment }}" == 'dev' ]; then
+          if [ "${ENVIRONMENT}" == 'dev' ]; then
             echo "Picked dev token"
             token="${{ env.GCOM_PUBLISH_TOKEN_DEV }}"
-          elif [ "${{ matrix.environment }}" == 'ops' ]; then
+          elif [ "${ENVIRONMENT}" == 'ops' ]; then
             echo "Picked ops token"
             token="${{ env.GCOM_PUBLISH_TOKEN_OPS }}"
-          elif [ "${{ matrix.environment }}" == 'prod' ]; then
+          elif [ "${ENVIRONMENT}" == 'prod' ]; then
             echo "Picked prod token"
             token="${{ env.GCOM_PUBLISH_TOKEN_PROD }}"
           else
-            echo "Invalid environment '${{ matrix.environment }}'"
+            echo "Invalid environment: ${ENVIRONMENT}"
             exit 1
           fi
           echo "GCOM_PUBLISH_TOKEN=$token" >> "$GITHUB_ENV"
         shell: bash
+        env:
+          ENVIRONMENT: ${{ matrix.environment }}
 
       - name: Check and create stub
-        uses: grafana/plugin-ci-workflows/actions/plugins/publish/check-and-create-stub@main
+        uses: grafana/plugin-ci-workflows/actions/plugins/publish/check-and-create-stub@main # zizmor: ignore[unpinned-uses]
         if: ${{ matrix.environment != 'prod' }}
         with:
           plugin-id: ${{ fromJSON(needs.ci.outputs.plugin).id }}
@@ -415,7 +427,7 @@ jobs:
           gcloud-auth-token: ${{ steps.gcloud.outputs.id_token }}
 
       - name: Publish to catalog
-        uses: grafana/plugin-ci-workflows/actions/plugins/publish/publish@main
+        uses: grafana/plugin-ci-workflows/actions/plugins/publish/publish@main # zizmor: ignore[unpinned-uses]
         with:
           zips: ${{ needs.ci.outputs.gcs-zip-urls-commit }}
           environment: ${{ matrix.environment }}
@@ -442,14 +454,16 @@ jobs:
         # Right now we only support provisioned plugins.
         # In the future, we will support managed plugins as well.
         run: |
-          if [ "${{ inputs.grafana-cloud-deployment-type }}" != 'provisioned' ]; then
-            echo "Invalid deployment type '${{ inputs.grafana-cloud-deployment-type }}', must be 'provisioned'"
+          if [ "${GRAFANA_CLOUD_DEPLOYMENT_TYPE}" != 'provisioned' ]; then
+            echo "Invalid deployment type '${GRAFANA_CLOUD_DEPLOYMENT_TYPE}', must be 'provisioned'"
             exit 1
           fi
+        env:
+          GRAFANA_CLOUD_DEPLOYMENT_TYPE: ${{ inputs.grafana-cloud-deployment-type }}
         shell: bash
 
       - name: Trigger Argo Workflow
-        uses: grafana/shared-workflows/actions/trigger-argo-workflow@main
+        uses: grafana/shared-workflows/actions/trigger-argo-workflow@main # zizmor: ignore[unpinned-uses]
         with:
           namespace: grafana-plugins-cd
           workflow_template: grafana-plugins-deploy
@@ -488,7 +502,9 @@ jobs:
         run: |
           cp -r /tmp/dist-artifacts /tmp/dist-artifacts-latest
           # Replace the version with "latest" in the zip file name
-          find /tmp/dist-artifacts-latest -type f -exec bash -c 'mv "$1" "${1//${{ fromJSON(needs.ci.outputs.plugin).version }}/latest}"' _ {} \;
+          find /tmp/dist-artifacts-latest -type f -exec bash -c 'mv "$1" "${1//${PLUGIN_VERSION}/latest}"' _ {} \;
+        env:
+          PLUGIN_VERSION: ${{ fromJSON(needs.ci.outputs.plugin).version }}
         shell: bash
 
       - name: Login to Google Cloud
@@ -500,23 +516,28 @@ jobs:
       - name: Determine GCS artifacts paths
         id: paths
         run: |
-          plugin_version='${{ fromJSON(needs.ci.outputs.plugin).version }}'
-          gcs_artifacts_release_base="${{ env.GCS_ARTIFACTS_BUCKET }}/${{ fromJSON(needs.ci.outputs.plugin).id }}/release"
+          plugin_version="${PLUGIN_VERSION}"
+          gcs_artifacts_release_base="${{ env.GCS_ARTIFACTS_BUCKET }}/${PLUGIN_ID}/release"
           {
             echo "gcs_artifacts_release_base=$gcs_artifacts_release_base"
             echo "gcs_artifacts_release_path_latest=$gcs_artifacts_release_base/latest"
             echo "gcs_artifacts_release_path_tag=$gcs_artifacts_release_base/$plugin_version"
-            fn=$(basename ${{ needs.ci.outputs.gcs-universal-zip-url-commit }})
-            latest_fn=${fn//${{ fromJSON(needs.ci.outputs.plugin).version }}/latest}
-            if [ "${{ matrix.platform }}" == 'any' ]; then
+            fn=$(basename ${GCS_UNIVERSAL_ZIP_URL_COMMIT})
+            latest_fn=${fn//${PLUGIN_VERSION}/latest}
+            if [ "${PLATFORM}" == 'any' ]; then
               echo "gcs_upload_glob=$fn*"
               echo "gcs_upload_glob_latest=$latest_fn*"
             else
               # strip the extension (.zip) and append the platform instead
-              echo "gcs_upload_glob=${fn%.*}.${{ matrix.platform }}*"
-              echo "gcs_upload_glob_latest=${latest_fn%.*}.${{ matrix.platform }}*"
+              echo "gcs_upload_glob=${fn%.*}.${PLATFORM}*"
+              echo "gcs_upload_glob_latest=${latest_fn%.*}.${PLATFORM}*"
             fi
           } >> "$GITHUB_OUTPUT"
+        env:
+          PLATFORM: ${{ matrix.platform }}
+          PLUGIN_ID: ${{ fromJSON(needs.ci.outputs.plugin).id }}
+          PLUGIN_VERSION: ${{ fromJSON(needs.ci.outputs.plugin).version }}
+          GCS_UNIVERSAL_ZIP_URL_COMMIT: ${{ needs.ci.outputs.gcs-universal-zip-url-commit }}
         shell: bash
 
       - name: Upload GCS release artifact (tag)
@@ -574,10 +595,11 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: ${{ inputs.branch }}
+          persist-credentials: false
 
       - name: Get secrets from Vault
         id: get-secrets
-        uses: grafana/shared-workflows/actions/get-vault-secrets@main
+        uses: grafana/shared-workflows/actions/get-vault-secrets@main # zizmor: ignore[unpinned-uses]
         with:
           vault_instance: ${{ env.VAULT_INSTANCE }}
           common_secrets: |
@@ -593,7 +615,7 @@ jobs:
           owner: ${{ github.repository_owner }}
 
       - name: Publish docs
-        uses: grafana/plugin-ci-workflows/actions/plugins/docs/publish@main
+        uses: grafana/plugin-ci-workflows/actions/plugins/docs/publish@main # zizmor: ignore[unpinned-uses]
         with:
           id: ${{ fromJSON(needs.ci.outputs.plugin).id }}
           version: ${{ fromJSON(needs.ci.outputs.plugin).version }}
@@ -619,6 +641,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: ${{ inputs.branch }}
+          persist-credentials: false
 
       - name: Download GitHub artifact
         uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e # v4.2.1
@@ -628,25 +651,30 @@ jobs:
 
       - name: Parse changelog
         id: changelog
-        uses: grafana/plugin-ci-workflows/actions/plugins/changelog@main
+        uses: grafana/plugin-ci-workflows/actions/plugins/changelog@main # zizmor: ignore[unpinned-uses]
 
       - name: Print changelog
         run: |
           cat <<EOF
-          ${{ steps.changelog.outputs.changelog }}
+          ${CHANGELOG}
           EOF
+        env:
+          CHANGELOG: ${{ steps.changelog.outputs.changelog }}
         shell: bash
 
       - name: Create tag
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         with:
           script: |
+            const { PLUGIN_VERSION } = process.env
             github.rest.git.createRef({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              ref: 'refs/tags/v${{ fromJSON(needs.ci.outputs.plugin).version }}',
+              ref: 'refs/tags/v${PLUGIN_VERSION}',
               sha: context.sha
             })
+        env:
+          PLUGIN_VERSION: ${{ fromJSON(needs.ci.outputs.plugin).version }}
 
       - name: Create Github release
         uses: softprops/action-gh-release@c95fe1489396fe8a9eb87c0abf8aa5b2ef267fda # v2.2.1
