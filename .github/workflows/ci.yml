@@ -319,7 +319,7 @@ jobs:
             echo os-arch-zips="${OS_ARCH_ZIPS}"
 
             # combine universal zip string with os-arch zips into a single array
-            zips=$(echo -e '["'${UNIVERSAL_ZIP}'"]' '\n' "${OS_ARCH_ZIPS}" | jq -cs 'add')
+            zips=$(echo -e '["'"${UNIVERSAL_ZIP}"'"]' '\n' "${OS_ARCH_ZIPS}" | jq -cs 'add')
             echo zips="$zips"
           }  >> "$GITHUB_OUTPUT"
           cat "$GITHUB_OUTPUT"
@@ -475,7 +475,7 @@ jobs:
 
           zip_urls_latest=$(jq -n '[]')
           files="${GCS_UPLOADED_FILES_LATEST}"
-          echo files: $files
+          echo gcs latest files: "$files"
 
           IFS=','
           for file in $files; do
@@ -489,7 +489,7 @@ jobs:
 
           zip_urls_commit=$(jq -n '[]')
           files="${GCS_UPLOADED_FILES_COMMIT}"
-          echo files: $files
+          echo gcs commit files: "$files"
 
           IFS=','
           for file in $files; do
