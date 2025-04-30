@@ -670,7 +670,7 @@ jobs:
             github.rest.git.createRef({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              ref: 'refs/tags/v${PLUGIN_VERSION}',
+              ref: `refs/tags/v${PLUGIN_VERSION}`,
               sha: context.sha
             })
         env:
