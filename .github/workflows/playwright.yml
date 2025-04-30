@@ -121,7 +121,7 @@ jobs:
 
           cd /tmp/dist-artifacts
           # unzip the universal zip
-          unzip ${PLUGIN_ID}-${PLUGIN_VERSION}.zip -d out
+          unzip "${PLUGIN_ID}-${PLUGIN_VERSION}.zip" -d out
           # Folder structure: /tmp/dist-artifacts/out/$PLUGIN_ID/plugin.json
           cd out
           cd "$(ls -1)"
@@ -144,7 +144,7 @@ jobs:
 
       - name: Run Playwright tests
         id: run-tests
-        run: npx playwright test --config ${PLAYWRIGHT_CONFIG}
+        run: npx playwright test --config "${PLAYWRIGHT_CONFIG}"
         env:
           PLAYWRIGHT_CONFIG: ${{ inputs.playwright-config }}
 

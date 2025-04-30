@@ -346,7 +346,7 @@ jobs:
             } >> "$GITHUB_OUTPUT"
             
           else
-            echo "Invalid environment '${ENVIRONMENT}'"
+            echo "Invalid environment: ${ENVIRONMENT}"
             exit 1
           fi
         env:
@@ -516,13 +516,12 @@ jobs:
       - name: Determine GCS artifacts paths
         id: paths
         run: |
-          plugin_version="${PLUGIN_VERSION}"
           gcs_artifacts_release_base="${{ env.GCS_ARTIFACTS_BUCKET }}/${PLUGIN_ID}/release"
           {
             echo "gcs_artifacts_release_base=$gcs_artifacts_release_base"
             echo "gcs_artifacts_release_path_latest=$gcs_artifacts_release_base/latest"
-            echo "gcs_artifacts_release_path_tag=$gcs_artifacts_release_base/$plugin_version"
-            fn=$(basename ${GCS_UNIVERSAL_ZIP_URL_COMMIT})
+            echo "gcs_artifacts_release_path_tag=$gcs_artifacts_release_base/${PLUGIN_VERSION}"
+            fn=$(basename "${GCS_UNIVERSAL_ZIP_URL_COMMIT}")
             latest_fn=${fn//${PLUGIN_VERSION}/latest}
             if [ "${PLATFORM}" == 'any' ]; then
               echo "gcs_upload_glob=$fn*"
