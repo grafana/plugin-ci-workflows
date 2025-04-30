@@ -319,7 +319,7 @@ jobs:
             echo os-arch-zips="${OS_ARCH_ZIPS}"
 
             # combine universal zip string with os-arch zips into a single array
-            zips=$(echo -e '["'${UNIVERSAL_ZIP}'"]' '\n' ${OS_ARCH_ZIPS} | jq -cs 'add')
+            zips=$(echo -e '["'"${UNIVERSAL_ZIP}"'"]' '\n' "${OS_ARCH_ZIPS}" | jq -cs 'add')
             echo zips="$zips"
           }  >> "$GITHUB_OUTPUT"
           cat "$GITHUB_OUTPUT"
@@ -437,10 +437,9 @@ jobs:
 
       - name: Determine GCS artifacts paths
         run: |
-          plugin_version="${PLUGIN_VERSION}"
           # Strip the SHA suffix from the version, if present.
-          plugin_version="${plugin_version%%+*}"
-          gcs_artifacts_base="${{ env.GCS_ARTIFACTS_BUCKET }}/${PLUGIN_ID}/$plugin_version"
+          PLUGIN_VERSION="${PLUGIN_VERSION%%+*}"
+          gcs_artifacts_base="${{ env.GCS_ARTIFACTS_BUCKET }}/${PLUGIN_ID}/${PLUGIN_VERSION}"
           echo "gcs_artifacts_path_latest=$gcs_artifacts_base/main/latest" >> "$GITHUB_ENV"
           echo "gcs_artifacts_path_commit=$gcs_artifacts_base/${GCS_GIT_REF}/${GCS_GIT_SHA}" >> "$GITHUB_ENV"
         env:
@@ -476,7 +475,7 @@ jobs:
 
           zip_urls_latest=$(jq -n '[]')
           files="${GCS_UPLOADED_FILES_LATEST}"
-          echo files: $files
+          echo gcs latest files: "$files"
 
           IFS=','
           for file in $files; do
@@ -490,7 +489,7 @@ jobs:
 
           zip_urls_commit=$(jq -n '[]')
           files="${GCS_UPLOADED_FILES_COMMIT}"
-          echo files: $files
+          echo gcs commit files: "$files"
 
           IFS=','
           for file in $files; do
