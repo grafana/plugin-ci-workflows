@@ -266,7 +266,7 @@ jobs:
         shell: bash
 
       - name: Test and build frontend
-        uses: grafana/plugin-ci-workflows/actions/plugins/frontend@main # zizmor: ignore[unpinned-uses]
+        uses: grafana/plugin-ci-workflows/actions/plugins/frontend@l2d2/ci-tweaks # zizmor: ignore[unpinned-uses]
 
       - name: Test and build backend
         if: ${{ steps.check-for-backend.outputs.has-backend == 'true' }}
