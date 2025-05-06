@@ -211,7 +211,7 @@ jobs:
           persist-credentials: false
 
       - name: Setup
-        uses: grafana/plugin-ci-workflows/actions/plugins/setup@main # zizmor: ignore[unpinned-uses]
+        uses: grafana/plugin-ci-workflows/actions/plugins/setup@l2d2/ci-tweaks # zizmor: ignore[unpinned-uses]
         with:
           go-version: ${{ inputs.go-version || env.DEFAULT_GO_VERSION }}
           node-version: ${{ inputs.node-version || env.DEFAULT_NODE_VERSION }}
@@ -370,7 +370,7 @@ jobs:
 
   playwright:
     name: Playwright E2E tests
-    uses: grafana/plugin-ci-workflows/.github/workflows/playwright.yml@main # zizmor: ignore[unpinned-uses]
+    uses: grafana/plugin-ci-workflows/.github/workflows/playwright.yml@l2d2/ci-tweaks # zizmor: ignore[unpinned-uses]
     if: ${{ inputs.run-playwright == true }}
     needs:
       - test-and-build
