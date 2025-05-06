@@ -101,6 +101,8 @@ jobs:
         with:
           path: |
             **/node_modules
+            .yarn/cache
+            .yarn/unplugged
           key: node-modules-${{ hashFiles('**/package-lock.json', '**/yarn.lock') }}
           restore-keys: |
             node-modules-
