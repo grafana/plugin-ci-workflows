@@ -96,22 +96,28 @@ jobs:
         with:
           persist-credentials: false
         
+     
       - name: Setup Node.js environment
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version-file: .nvmrc
-
-      - name: Restore node_modules cache
+            node-version-file: .nvmrc
+  
+      - name: Set up cache key
+        id: cache-key
+        shell: bash
+        run: echo "key=node-modules-${{ hashFiles('**/package-lock.json', '**/yarn.lock') }}" >> $GITHUB_OUTPUT
+    
+      - name: Cache node_modules
         uses: actions/cache@v4
         with:
-          path: |
-            **/node_modules
-            .yarn/cache
-            .yarn/unplugged
-          key: node-modules-${{ hashFiles('**/package-lock.json', '**/yarn.lock') }}
-          restore-keys: |
-            node-modules-
-
+              path: |
+                **/node_modules
+                .yarn/cache
+                .yarn/unplugged
+              key: ${{ steps.cache-key.outputs.key }}
+              restore-keys: |
+                node-modules-
+                  
       - name: Download GitHub artifact
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
