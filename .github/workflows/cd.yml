@@ -220,7 +220,7 @@ jobs:
     steps:
       - name: Check environment
         run: |
-          if [ "${ENVIRONMENT}" != 'dev' ] && [ "${BRANCH}" != 'main' ]; then
+          if [ -n "${ENVIRONMENT}" ] && [ "${ENVIRONMENT}" != 'none' ] && [ "${ENVIRONMENT}" != 'dev' ] && [ "${BRANCH}" != 'main' ]; then
             echo "Only 'dev' environment is allowed for non-main branches."
             exit 1
           fi
