@@ -522,7 +522,7 @@ jobs:
       - ci
       - define-variables
 
-    if: ${{ !inputs.docs-only }}
+    if: ${{ !inputs.docs-only && needs.define-variables.outputs.environments != '[]' }}
 
     strategy:
       matrix:
