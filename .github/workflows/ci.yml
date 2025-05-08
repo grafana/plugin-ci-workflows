@@ -123,8 +123,9 @@ on:
       # Options for building PRs. Those values should come from the PR event and should not be set manually.
       plugin-version-suffix:
         description: |
-          Suffix to append to plugin version before building it,
-          for example "+abcdef" for PRs.
+          Suffix to append to plugin version before building it, which will be separated by a "+" sign.
+          For example `abcdef` will set the plugin version to `1.2.3+abcdef`.
+          Useful for giving a unique version to the plugin built from a PR.
           Leave empty for no suffix (use the same version as in package.json).
         type: string
         required: false

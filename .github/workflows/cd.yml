@@ -153,13 +153,25 @@ on:
         required: false
 
       # User inputs
+      plugin-version-suffix:
+        description: |
+          Suffix to append to plugin version before building it, which will be separated by a "+" sign.
+          For example `abcdef` will set the plugin version to `1.2.3+abcdef`.
+          Useful for giving a unique version to the plugin built from a PR.
+
+          If not set (empty):
+          - On `main` inputs.branch, the version will be the same as the one in plugin.json.
+          - On other branches, the version of the final plugin will the `<VERSION_IN_PLUGIN_JSON>+<HEAD_COMMIT_SHA>`.
+        type: string
+        required: false
       environment:
         description: |
           Environment(s) to publish to.
-          Can be 'dev', 'ops', or 'prod'.
+          Can be 'none' (or empty string), 'dev', 'ops', or 'prod'.
 
           Publishing to 'ops' will also deploy to 'dev'.
           Publishing to 'prod' will also deploy to 'ops' and 'dev'.
+          Setting it to 'none' will skip the deployment and run CI only.
 
           Docs will only be published to the website when targeting 'prod'.
         required: true
@@ -182,6 +194,7 @@ on:
         description: Branch to publish from. Can be used to deploy PRs to dev.
         default: main
         type: string
+
 concurrency:
   group: cd-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
@@ -202,6 +215,7 @@ jobs:
 
     outputs:
       commit-sha: ${{ steps.checkout-specified-branch.outputs.commit }}
+      plugin-version-suffix: ${{ steps.plugin-version-suffix.outputs.plugin_version_suffix }}
 
     steps:
       - name: Check environment
@@ -235,6 +249,28 @@ jobs:
           ref: ${{ inputs.branch }}
           persist-credentials: false
 
+      - name: Determine plugin version suffix
+        id: plugin-version-suffix
+        run: |
+          if [ ! -z "$INPUT_PLUGIN_VERSION_SUFFIX" ]; then
+            # Give priority to the input value
+            echo "plugin_version_suffix=${INPUT_PLUGIN_VERSION_SUFFIX}" >> "$GITHUB_OUTPUT"
+          else
+            # Default behavior:
+            # - Use the commit SHA as the version suffix when not on main
+            # - Otherwise, do not set the suffix
+            if [ "${BRANCH}" != 'main' ]; then
+              echo "plugin_version_suffix=${COMMIT_SHA}" >> "$GITHUB_OUTPUT"
+            else
+              echo "plugin_version_suffix=" >> "$GITHUB_OUTPUT"
+            fi
+          fi
+        env:
+          INPUT_PLUGIN_VERSION_SUFFIX: ${{ inputs.plugin-version-suffix }}
+          BRANCH: ${{ inputs.branch }}
+          COMMIT_SHA: ${{ steps.checkout-specified-branch.outputs.commit }}
+        shell: bash
+
   ci:
     name: CI
     uses: grafana/plugin-ci-workflows/.github/workflows/ci.yml@main # zizmor: ignore[unpinned-uses]
@@ -260,12 +296,7 @@ jobs:
       trufflehog-version: ${{ inputs.trufflehog-version }}
       trufflehog-include-detectors: ${{ inputs.trufflehog-include-detectors }}
       trufflehog-exclude-detectors: ${{ inputs.trufflehog-exclude-detectors }}
-      plugin-version-suffix: >-
-        ${{
-          inputs.branch != 'main'
-          && needs.setup.outputs.commit-sha
-          || ''
-        }}
+      plugin-version-suffix: ${{ needs.setup.outputs.plugin-version-suffix }}
 
   build-attestation:
     name: Build attestation
@@ -344,6 +375,12 @@ jobs:
               echo 'environments=["dev", "ops", "prod"]'
               echo 'publish-docs=true'
             } >> "$GITHUB_OUTPUT"
+
+          elif [ -z "${ENVIRONMENT}" || "${ENVIRONMENT}" == 'none' ]; then
+            {
+              echo 'environments=[]'
+              echo 'publish-docs=false'
+            } >> "$GITHUB_OUTPUT"
             
           else
             echo "Invalid environment: ${ENVIRONMENT}"
@@ -357,7 +394,7 @@ jobs:
 
   publish-to-catalog:
     name: Publish to catalog (${{ matrix.environment }})
-    if: ${{ !inputs.docs-only && !inputs.gcs-only }}
+    if: ${{ !inputs.docs-only && !inputs.gcs-only && needs.define-variables.outputs.environments != '[]' }}
     needs:
       - define-variables
       - ci
@@ -557,7 +594,7 @@ jobs:
           parent: false
           process_gcloudignore: false
 
-      - name: Upload GCS release artifacst (latest, any)
+      - name: Upload GCS release artifacts (latest, any)
         if: ${{ matrix.platform == 'any' }}
         uses: google-github-actions/upload-cloud-storage@7c6e11cb7291594c5dfe0bc1dd9cd905e31e600c # v2.2.2
         with:
