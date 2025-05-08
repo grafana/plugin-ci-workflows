@@ -259,7 +259,7 @@ jobs:
             # Default behavior:
             # - Use the commit SHA as the version suffix when not on main
             # - Otherwise, do not set the suffix
-            if [ "${BRANCH}" != 'main' ]; then
+            if [ "${INPUT_BRANCH}" != 'main' ]; then
               echo "plugin_version_suffix=${COMMIT_SHA}" >> "$GITHUB_OUTPUT"
             else
               echo "plugin_version_suffix=" >> "$GITHUB_OUTPUT"
@@ -267,7 +267,7 @@ jobs:
           fi
         env:
           INPUT_PLUGIN_VERSION_SUFFIX: ${{ inputs.plugin-version-suffix }}
-          BRANCH: ${{ inputs.branch }}
+          INPUT_BRANCH: ${{ inputs.branch }}
           COMMIT_SHA: ${{ steps.checkout-specified-branch.outputs.commit }}
         shell: bash
 
