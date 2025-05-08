@@ -252,7 +252,7 @@ jobs:
       - name: Determine plugin version suffix
         id: plugin-version-suffix
         run: |
-          if [ ! -z "$INPUT_PLUGIN_VERSION_SUFFIX" ]; then
+          if [ -n "$INPUT_PLUGIN_VERSION_SUFFIX" ]; then
             # Give priority to the input value
             echo "plugin_version_suffix=${INPUT_PLUGIN_VERSION_SUFFIX}" >> "$GITHUB_OUTPUT"
           else
@@ -376,7 +376,7 @@ jobs:
               echo 'publish-docs=true'
             } >> "$GITHUB_OUTPUT"
 
-          elif [ -z "${ENVIRONMENT}" || "${ENVIRONMENT}" == 'none' ]; then
+          elif [ -z "${ENVIRONMENT}" ] || [ "${ENVIRONMENT}" == 'none' ]; then
             {
               echo 'environments=[]'
               echo 'publish-docs=false'
