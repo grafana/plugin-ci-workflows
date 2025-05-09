@@ -33,12 +33,21 @@ on:
         description: |
           If set, trigger Argo Workflow to deploy the plugin to the specified environment(s) in Grafana Cloud.
           `gcs_only` must be false for this to work.
+          `environment` must be be set.
 
           Supported values:
-            - provisioned
+            - `provisioned`
 
           Currently, this only works for provisioned plugins that have migrated to grafana_cloud-scoped plugins in the plugins catalog.
           Default is empty (do not trigger Argo Workflow).
+        required: false
+        default:
+        type: string
+      grafana-cloud-testing-instance:
+        description: |
+          Slug of the testing instance to update for the Grafana Cloud deployment.
+          If empty, the plugin will be deployed to the whole cluster, otherwise only to the instance with the specified slug.
+          `grafana-cloud-deployment-type` must be set to `provisioned`.
         required: false
         default:
         type: string
@@ -499,18 +508,38 @@ jobs:
           GRAFANA_CLOUD_DEPLOYMENT_TYPE: ${{ inputs.grafana-cloud-deployment-type }}
         shell: bash
 
+      - name: Determine Argo Workflow arguments
+        id: argo-workflow-args
+        run: |
+          args=$(cat <<EOF | sed 's/^[[:space:]]*//'
+            slug=${PLUGIN_ID}
+            version=${PLUGIN_VERSION}
+            environment=${ENVIRONMENT}
+            slack_channel=${SLACK_CHANNEL}
+            commit=${{ github.sha}}
+            commit_link=https://${GITHUB_REPOSITORY_OWNER}/${GITHUB_REPOSITORY_NAME}/commit/${{ github.sha }}
+          EOF
+          )
+          if [ -n "${GRAFANA_CLOUD_TESTING_INSTANCE}" ]; then
+            args="$args"$'\n'"testing_instance=${GRAFANA_CLOUD_TESTING_INSTANCE}"
+          fi
+          echo "args=$args" >> "$GITHUB_OUTPUT"
+        env:
+          GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
+          GITHUB_REPOSITORY_NAME: ${{ github.event.repository.name }}
+          PLUGIN_ID: ${{ fromJSON(needs.ci.outputs.plugin).id }}
+          PLUGIN_VERSION: ${{ fromJSON(needs.ci.outputs.plugin).version }}
+          ENVIRONMENT: ${{ inputs.environment }}
+          SLACK_CHANNEL: ${{ inputs.argo-workflow-slack-channel }}
+          GRAFANA_CLOUD_TESTING_INSTANCE: ${{ inputs.grafana-cloud-testing-instance }}
+        shell: bash
+
       - name: Trigger Argo Workflow
         uses: grafana/shared-workflows/actions/trigger-argo-workflow@main # zizmor: ignore[unpinned-uses]
         with:
           namespace: grafana-plugins-cd
           workflow_template: grafana-plugins-deploy
-          parameters: |
-            slug=${{ fromJSON(needs.ci.outputs.plugin).id }}
-            version=${{ fromJSON(needs.ci.outputs.plugin).version }}
-            environment=${{ inputs.environment }}
-            slack_channel=${{ inputs.argo-workflow-slack-channel }}
-            commit=${{ github.sha}}
-            commit_link=https://${{ github.repository_owner }}/${{ github.event.repository.name }}/commit/${{ github.sha }}
+          parameters: ${{ steps.argo-workflow-args.outputs.args }}
 
   # Note: This job can be removed once provisioned plugins releases are moved to the
   # tailored plugins catalog instead of using GCS.
