@@ -703,12 +703,22 @@ jobs:
         with:
           script: |
             const { PLUGIN_VERSION } = process.env
-            github.rest.git.createRef({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              ref: `refs/tags/v${PLUGIN_VERSION}`,
-              sha: context.sha
-            })
+            try {
+              await github.rest.git.createRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: `refs/tags/v${PLUGIN_VERSION}`,
+                sha: context.sha
+              })
+            } catch (error) {
+              // Tag already exists, proceed with GitHub release
+              if (error.status === 422 && error.message.includes('Reference already exists')) {
+                console.log(`Tag v${PLUGIN_VERSION} already exists, proceeding with GitHub release`)
+              } else {
+                // If it's any other error, rethrow it
+                throw error
+              }
+            }
         env:
           PLUGIN_VERSION: ${{ fromJSON(needs.ci.outputs.plugin).version }}
 
