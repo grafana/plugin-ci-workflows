@@ -158,6 +158,7 @@ jobs:
 
   check-playwright-status:
     needs: playwright-tests
+    name: Check Playwright E2E matrix status
     runs-on: ubuntu-latest
     if: always()
     steps:
