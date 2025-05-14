@@ -41,30 +41,35 @@ runs:
         persist-credentials: true
 
     - name: Setup Git
+      shell: bash
       run: |
         git config user.name 'grafana-plugins-platform-bot[bot]'
         git config user.email '144369747+grafana-plugins-platform-bot[bot]@users.noreply.github.com'
 
     - name: Get latest tag before bumping
       id: latest_tag
+      shell: bash
       run: |
         LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
         echo "latest_tag=${LATEST_TAG}" >> $GITHUB_OUTPUT
 
     - name: Bump version
       id: bump
+      shell: bash
       run: |
         NEW_VERSION=$(npm version ${INPUT_VERSION} --no-git-tag-version)
         echo "new_version=${NEW_VERSION}" >> $GITHUB_OUTPUT
       env:
-        INPUT_VERSION: ${{ github.event.inputs.version }}
+        INPUT_VERSION: ${{ inputs.version }}
         GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
     
     - name: Create git tag
+      shell: bash
       run: git tag v${{ steps.bump.outputs.new_version }}
       
     - name: Generate changelog
       if: ${{ inputs.generate-changelog == 'true' }}
+      shell: bash
       run: |
         npm install -g generate-changelog
         generate-changelog -t ${{ steps.latest_tag.outputs.latest_tag }}...v${{ steps.bump.outputs.new_version }} -i CHANGELOG.md
@@ -74,12 +79,15 @@ runs:
         GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
 
     - name: Commit changes
+      shell: bash
       run: git add package.json && git commit -m "Bump version to ${{ steps.bump.outputs.new_version }}" && git push
       env:
         GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
 
     - name: Push latest version
+      shell: bash
       run: git push origin main
 
     - name: Push tags
+      shell: bash
       run: git push origin --tags

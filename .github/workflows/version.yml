@@ -1,6 +1,5 @@
+# Bump npm version, create a git tag and optionally generate a changelog on main.
 name: Bump Version and release
-description: |
-  Bump npm version, create a git tag and optionally generate a changelog on main.
 
 on:
   workflow_dispatch:
