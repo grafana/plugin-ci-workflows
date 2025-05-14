@@ -405,36 +405,6 @@ jobs:
       report-path: ${{ inputs.playwright-report-path }}
       grafana-url: ${{ inputs.playwright-grafana-url }}
 
-  check-playwright-status:
-    name: Check Playwright E2E status
-    needs:
-      - playwright
-      - playwright-docker
-    runs-on: ubuntu-latest
-    # TODO: ensure always() works if playwright is disabled
-    if: always()
-    steps:
-      - name: Check matrix job status
-        run: |
-          code=1
-          if [ "${RUN_PLAYWRIGHT}" == "true" && "${PLAYWRIGHT_SUCCESS}" == "true" ]; then
-            code=0
-          fi
-          if [ "${RUN_PLAYWRIGHT_DOCKER}" == "true" && "${PLAYWRIGHT_DOCKER_SUCCESS}" == "true" ]; then
-            code=0
-          fi
-          if [ $code == 0 ]; then
-            echo "All E2E test jobs succeeded"
-          else
-            echo "One or more jobs in the E2E testing matrix failed"
-          fi
-          exit $code
-    env:
-      RUN_PLAYWRIGHT: ${{ inputs.run-playwright }}
-      PLAYWRIGHT_SUCCESS: ${{ needs.playwright.outputs.success }}
-      RUN_PLAYWRIGHT_DOCKER: ${{ inputs.run-playwright-docker }}
-      PLAYWRIGHT_DOCKER_SUCCESS: ${{ needs.playwright-docker.outputs.success }}
-
   upload-to-gcs:
     name: Upload to GCS
     runs-on: ubuntu-latest

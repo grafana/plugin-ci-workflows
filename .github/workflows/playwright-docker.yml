@@ -52,9 +52,6 @@ on:
         type: string
         required: false
         default: http://localhost:3000/
-    outputs:
-      success:
-        value: ${{ jobs.check-playwright-matrix-status.outputs.success }}
 
 permissions:
   contents: read
@@ -143,17 +140,18 @@ jobs:
           path: ${{ inputs.report-path }}
           retention-days: 30
 
-  check-playwright-matrix-status:
+  check-playwright-status:
     needs: playwright-tests
     name: Check Playwright E2E matrix status
     runs-on: ubuntu-latest
     if: always()
     steps:
       - name: Check matrix job status
-        id: check
+        # This step will fail if any of the matrix jobs failed
         run: |
           if [ "${{ contains(needs.playwright-tests.result, 'failure') }}" = "true" ]; then
-            echo "success=false" >> $GITHUB_OUTPUT
+            echo "One or more jobs in the E2E testing matrix failed"
+            exit 1
           else
-            echo "success=true" >> $GITHUB_OUTPUT
+            echo "All E2E test jobs succeeded"
           fi
