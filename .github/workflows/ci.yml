@@ -134,7 +134,7 @@ on:
         description: Branch to build from. Can be used to build PRs.
         type: string
         required: false
-        default: ${{ github.head_ref || github.ref_name }}
+        default: ${{ github.ref || github.ref_name }}
 
     outputs:
       plugin:
