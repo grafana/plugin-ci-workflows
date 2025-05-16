@@ -70,7 +70,7 @@ runs:
     
     - name: Generate Changelog
       id: github-changelog-generator
-     if: ${{ inputs.generate-changelog == 'true' }} 
+      if: ${{ inputs.generate-changelog == 'true' }} 
       uses: janheinrichmerker/action-github-changelog-generator@e60b5a2bd9fcd88dadf6345ff8327863fb8b490f # v2.4
       with:
         token: ${{ steps.generate-github-token.outputs.token }}
