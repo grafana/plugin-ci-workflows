@@ -49,6 +49,14 @@ runs:
       run: |
         git config user.name 'grafana-plugins-platform-bot[bot]'
         git config user.email '144369747+grafana-plugins-platform-bot[bot]@users.noreply.github.com'
+      
+    - name: Get previous tag before bumping
+      id: previous-tag
+      if: ${{ inputs.generate-changelog == 'true' }}
+      shell: bash
+      run: |
+        PREVIOUS_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+        echo "previous-tag=${PREVIOUS_TAG}" >> $GITHUB_OUTPUT
 
     - name: Bump version
       id: bump
