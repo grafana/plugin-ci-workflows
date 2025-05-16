@@ -78,26 +78,19 @@ runs:
         if [[ "${{ steps.previous-tag.outputs.previous-tag }}" == "v0.0.0" ]]; then
           echo "No previous tag found ${{ steps.previous-tag.outputs.previous-tag }}, generating changelog for initial version only: v${{ steps.bump.outputs.new-version }}"
           # For initial version, get all commits up to HEAD
-          generate-changelog -t HEAD > new_changelog.md
+          generate-changelog -t HEAD
         else
           echo "Generating changelog from ${{ steps.previous-tag.outputs.previous-tag }} to ${{ steps.bump.outputs.new-version }}"
-          generate-changelog -t ${{ steps.previous-tag.outputs.previous-tag }}...v${{ steps.bump.outputs.new-version }} > new_changelog.md
+          generate-changelog -t ${{ steps.previous-tag.outputs.previous-tag }}...${{ steps.bump.outputs.new-version }}
         fi
 
-        # Combine changelogs
-        printf "# Changelog\n\n" > combined_changelog.md
-        sed '/^# Changelog$/d' new_changelog.md >> combined_changelog.md
-        if [ -f CHANGELOG.md ]; then
-          sed '/^# Changelog$/d' CHANGELOG.md >> combined_changelog.md
-        fi
+        # Remove existing "Changelog" header anywhere in the file
+        sed -i '' '/^# Changelog$/d' CHANGELOG.md
+        # Prepend the header to the top of the file
+        printf "# Changelog\n\n" | cat - CHANGELOG.md > temp && mv temp CHANGELOG.md
+        # Format headers remove dates and unreleased
+        sed -i '' -E 's/^(#+ [0-9]+\.[0-9]+\.[0-9]+) \(([Uu]released|[0-9]{4}-[0-9]{2}-[0-9]{2})\)/\1/' CHANGELOG.md
 
-        # Normalize headers
-        sed -i -E 's/^#{4,5}/###/' combined_changelog.md
-
-        # Replace final file
-        mv combined_changelog.md CHANGELOG.md
-        rm -f new_changelog.md
-        
       env:
         GITHUB_TOKEN: ${{ steps.generate-github-token.outputs.token }}
 
