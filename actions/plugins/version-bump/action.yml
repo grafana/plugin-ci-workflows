@@ -76,11 +76,11 @@ runs:
 
         # Determine the tag range
         if [[ "${{ steps.previous-tag.outputs.previous-tag }}" == "v0.0.0" ]]; then
-          echo "No previous tag found, generating changelog for initial version only"
-          generate-changelog -t v${{ steps.bump.outputs.new-version }} -i CHANGELOG.md
+          echo "No previous tag found: ${{ steps.previous-tag.outputs.previous-tag }}, generating changelog for initial version only ${{ steps.bump.outputs.new-version }}"
+          generate-changelog -t ${{ steps.bump.outputs.new-version }}
         else
           echo "Generating changelog from ${{ steps.previous-tag.outputs.previous-tag }} to v${{ steps.bump.outputs.new-version }}"
-          generate-changelog -t ${{ steps.previous-tag.outputs.previous-tag }}...v${{ steps.bump.outputs.new-version }} -i CHANGELOG.md
+          generate-changelog -t ${{ steps.previous-tag.outputs.previous-tag }}...${{ steps.bump.outputs.new-version }}
         fi
 
         # Clean up CHANGELOG formatting
