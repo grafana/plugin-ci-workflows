@@ -17,15 +17,14 @@ inputs:
     type: boolean
     default: true
 
-env:
-  VAULT_INSTANCE: ops
-
 runs:
   using: composite
   steps:
     - name: Get secrets from Vault
       id: get-secrets
       uses: grafana/shared-workflows/actions/get-vault-secrets@main # zizmor: ignore[unpinned-uses]
+      env:
+        VAULT_INSTANCE: ops
       with:
         vault_instance: ${{ env.VAULT_INSTANCE }}
         common_secrets: |
