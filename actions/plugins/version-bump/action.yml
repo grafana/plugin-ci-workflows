@@ -27,7 +27,7 @@ runs:
       id: get-secrets
       uses: grafana/shared-workflows/actions/get-vault-secrets@main # zizmor: ignore[unpinned-uses]
       with:
-        vault_instance: ${{ env.VAULT_INSTANCE }}
+        vault_instance: ops 
         common_secrets: |
           GITHUB_APP_ID=plugins-platform-bot-app:app-id
           GITHUB_APP_PRIVATE_KEY=plugins-platform-bot-app:private-key
