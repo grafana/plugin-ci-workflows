@@ -20,11 +20,6 @@ inputs:
 runs:
   using: composite
   steps:
-    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      with:
-        persist-credentials: false
-        fetch-depth: 0
-
     - name: Get secrets from Vault
       id: get-secrets
       uses: grafana/shared-workflows/actions/get-vault-secrets@main # zizmor: ignore[unpinned-uses]
@@ -44,12 +39,18 @@ runs:
         private-key: ${{ env.GITHUB_APP_PRIVATE_KEY }}
         owner: ${{ github.repository_owner }}
 
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      with:
+        token: ${{ steps.generate-github-token.outputs.token }}
+        persist-credentials: true
+        fetch-depth: 0
+
     - name: Setup Git
       shell: bash
       run: |
         git config user.name 'grafana-plugins-platform-bot[bot]'
         git config user.email '144369747+grafana-plugins-platform-bot[bot]@users.noreply.github.com'
-      
+
     - name: Get previous tag before bumping
       id: previous-tag
       if: ${{ inputs.generate-changelog == 'true' }}
