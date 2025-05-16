@@ -83,7 +83,7 @@ runs:
         includeLabels: "chore,bug,enhancement,feature"
         simpleList: true
     
-        - name: Read changelog
+    - name: Read changelog
       id: changelog
       run: |
         awk '/^## / {s++} s == 1 {print}' CHANGELOG.md > release_notes.md
