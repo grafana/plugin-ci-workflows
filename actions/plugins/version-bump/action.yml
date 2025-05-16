@@ -69,9 +69,7 @@ runs:
         output: CHANGELOG.md
         user: ${{ github.repository_owner }}
         project: ${{ github.event.repository.name }}
-        unreleased: true
         issues: true
-        pullRequests: true
         includeLabels: "chore,bug,fix,enhancement,feature,docs"
     
     - name: Read changelog
