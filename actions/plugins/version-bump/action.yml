@@ -76,8 +76,9 @@ runs:
 
         # Generate changelog into a temp file
         if [[ "${{ steps.previous-tag.outputs.previous-tag }}" == "v0.0.0" ]]; then
-          echo "No previous tag found, generating changelog for initial version only: v${{ steps.bump.outputs.new-version }}"
-          generate-changelog -t v${{ steps.bump.outputs.new-version }} > new_changelog.md
+          echo "No previous tag found ${{ steps.previous-tag.outputs.previous-tag }}, generating changelog for initial version only: v${{ steps.bump.outputs.new-version }}"
+          # For initial version, get all commits up to HEAD
+          generate-changelog -t HEAD > new_changelog.md
         else
           echo "Generating changelog from ${{ steps.previous-tag.outputs.previous-tag }} to v${{ steps.bump.outputs.new-version }}"
           generate-changelog -t ${{ steps.previous-tag.outputs.previous-tag }}...v${{ steps.bump.outputs.new-version }} > new_changelog.md
