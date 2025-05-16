@@ -73,7 +73,6 @@ runs:
         issues: true
         pullRequests: true
         includeLabels: "chore,bug,fix,enhancement,feature,docs"
-        simpleList: true
     
     - name: Read changelog
       id: changelog
