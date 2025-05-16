@@ -74,20 +74,35 @@ runs:
       run: |
         npm install -g generate-changelog
 
-        # Determine the tag range
+        # Generate changelog into a temp file
         if [[ "${{ steps.previous-tag.outputs.previous-tag }}" == "v0.0.0" ]]; then
-          echo "No previous tag found: ${{ steps.previous-tag.outputs.previous-tag }}, generating changelog for initial version only ${{ steps.bump.outputs.new-version }}"
-          generate-changelog -t ${{ steps.bump.outputs.new-version }} > CHANGELOG.md
+          echo "No previous tag found, generating changelog for initial version only: v${{ steps.bump.outputs.new-version }}"
+          generate-changelog -t v${{ steps.bump.outputs.new-version }} > new_changelog.md
         else
           echo "Generating changelog from ${{ steps.previous-tag.outputs.previous-tag }} to v${{ steps.bump.outputs.new-version }}"
-          generate-changelog -t ${{ steps.previous-tag.outputs.previous-tag }}...${{ steps.bump.outputs.new-version }} > CHANGELOG.md
+          generate-changelog -t ${{ steps.previous-tag.outputs.previous-tag }}...v${{ steps.bump.outputs.new-version }} > new_changelog.md
         fi
 
-        # Clean up CHANGELOG formatting
-        sed -i -E 's/(## [0-9]+\.[0-9]+\.[0-9]+)( \(([0-9]{4}-[0-9]{2}-[0-9]{2}|[Uu]nreleased)\))?/\1/' CHANGELOG.md
-        sed '/^# Changelog$/d' CHANGELOG.md | (printf "# Changelog\n\n"; cat -) > temp && mv temp CHANGELOG.md
+        # Remove redundant header from new changelog
+        sed '/^# Changelog$/d' new_changelog.md > new_changelog_cleaned.md
+
+        # Combine new and existing changelogs
+        if [ -f CHANGELOG.md ]; then
+          cat new_changelog_cleaned.md CHANGELOG.md > combined_changelog.md
+        else
+          printf "# Changelog\n\n" > combined_changelog.md
+          cat new_changelog_cleaned.md >> combined_changelog.md
+        fi
+
+        # Final formatting cleanup
+        sed -i -E 's/(## [0-9]+\.[0-9]+\.[0-9]+)( \(([0-9]{4}-[0-9]{2}-[0-9]{2}|[Uu]nreleased)\))?/\1/' combined_changelog.md
+
+        # Replace original file
+        mv combined_changelog.md CHANGELOG.md
+        rm -f new_changelog.md new_changelog_cleaned.md
       env:
         GITHUB_TOKEN: ${{ steps.generate-github-token.outputs.token }}
+
 
     - name: Commit changes
       shell: bash
