@@ -17,6 +17,9 @@ inputs:
     type: boolean
     default: true
 
+env:
+  VAULT_INSTANCE: ops
+
 runs:
   using: composite
   steps:
