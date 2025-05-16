@@ -77,10 +77,10 @@ runs:
         # Determine the tag range
         if [[ "${{ steps.previous-tag.outputs.previous-tag }}" == "v0.0.0" ]]; then
           echo "No previous tag found: ${{ steps.previous-tag.outputs.previous-tag }}, generating changelog for initial version only ${{ steps.bump.outputs.new-version }}"
-          generate-changelog -t ${{ steps.bump.outputs.new-version }}
+          generate-changelog -t ${{ steps.bump.outputs.new-version }} > CHANGELOG.md
         else
           echo "Generating changelog from ${{ steps.previous-tag.outputs.previous-tag }} to v${{ steps.bump.outputs.new-version }}"
-          generate-changelog -t ${{ steps.previous-tag.outputs.previous-tag }}...${{ steps.bump.outputs.new-version }}
+          generate-changelog -t ${{ steps.previous-tag.outputs.previous-tag }}...${{ steps.bump.outputs.new-version }} > CHANGELOG.md
         fi
 
         # Clean up CHANGELOG formatting
@@ -91,7 +91,10 @@ runs:
 
     - name: Commit changes
       shell: bash
-      run: git add package.json && git commit -m "Bump version to ${{ steps.bump.outputs.new-version }}" && git push
+      run: |
+        git add package.json CHANGELOG.md
+        git commit -m "Bump version to ${{ steps.bump.outputs.new-version }}"
+        git push origin main
       env:
         GITHUB_TOKEN: ${{ steps.generate-github-token.outputs.token }}
 
