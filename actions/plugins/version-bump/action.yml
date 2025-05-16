@@ -72,7 +72,7 @@ runs:
           # For initial version, get all commits up to HEAD
           generate-changelog -t HEAD > new_changelog.md
         else
-          echo "Generating changelog from ${{ steps.previous-tag.outputs.previous-tag }} to v${{ steps.bump.outputs.new-version }}"
+          echo "Generating changelog from ${{ steps.previous-tag.outputs.previous-tag }} to ${{ steps.bump.outputs.new-version }}"
           generate-changelog -t ${{ steps.previous-tag.outputs.previous-tag }}...v${{ steps.bump.outputs.new-version }} > new_changelog.md
         fi
 
