@@ -66,44 +66,29 @@ runs:
         echo "new-version=${NEW_VERSION}" >> $GITHUB_OUTPUT
       env:
         INPUT_VERSION: ${{ inputs.version }}
-        GITHUB_TOKEN: ${{ steps.generate-github-token.outputs.token }}
-
-    - name: Generate changelog
-      if: ${{ inputs.generate-changelog == 'true' }}
-      shell: bash
+        GITHUB_TOKEN: ${{ steps.generate-github-token.outputs.token }
+    
+    - name: Generate Changelog
+      id: github-changelog-generator
+     if: ${{ inputs.generate-changelog == 'true' }} 
+      uses: janheinrichmerker/action-github-changelog-generator@e60b5a2bd9fcd88dadf6345ff8327863fb8b490f # v2.4
+      with:
+        token: ${{ steps.generate-github-token.outputs.token }}
+        output: CHANGELOG.md
+        user: ${{ github.repository_owner }}
+        project: ${{ github.event.repository.name }}
+        unreleased: true
+        issues: true
+        pullRequests: true
+        includeLabels: "chore,bug,enhancement,feature"
+        simpleList: true
+    
+        - name: Read changelog
+      id: changelog
       run: |
-        npm install -g generate-changelog
-
-        # Generate changelog into a temp file
-        if [[ "${{ steps.previous-tag.outputs.previous-tag }}" == "v0.0.0" ]]; then
-          echo "No previous tag found ${{ steps.previous-tag.outputs.previous-tag }}, generating changelog for initial version only: v${{ steps.bump.outputs.new-version }}"
-          # For initial version, get all commits up to HEAD
-          generate-changelog -t HEAD > new_changelog.md
-        else
-          echo "Generating changelog from ${{ steps.previous-tag.outputs.previous-tag }} to v${{ steps.bump.outputs.new-version }}"
-          generate-changelog -t ${{ steps.previous-tag.outputs.previous-tag }}...v${{ steps.bump.outputs.new-version }} > new_changelog.md
-        fi
-
-        # Remove redundant header from new changelog
-        sed '/^# Changelog$/d' new_changelog.md > new_changelog_cleaned.md
-
-        # Combine new and existing changelogs
-        if [ -f CHANGELOG.md ]; then
-          cat new_changelog_cleaned.md CHANGELOG.md > combined_changelog.md
-        else
-          printf "# Changelog\n\n" > combined_changelog.md
-          cat new_changelog_cleaned.md >> combined_changelog.md
-        fi
-
-        # Final formatting cleanup
-        sed -i -E 's/(## [0-9]+\.[0-9]+\.[0-9]+)( \(([0-9]{4}-[0-9]{2}-[0-9]{2}|[Uu]nreleased)\))?/\1/' combined_changelog.md
-
-        # Replace original file
-        mv combined_changelog.md CHANGELOG.md
-        rm -f new_changelog.md new_changelog_cleaned.md
-      env:
-        GITHUB_TOKEN: ${{ steps.generate-github-token.outputs.token }}
-
+        awk '/^## / {s++} s == 1 {print}' CHANGELOG.md > release_notes.md
+        echo "path=release_notes.md" >> $GITHUB_OUTPUT
+      shell: bash
 
     - name: Commit changes
       shell: bash
