@@ -134,7 +134,7 @@ on:
         description: Branch to build from. Can be used to build PRs.
         type: string
         required: false
-        default: ${{ github.head_ref || github.ref_name }}
+        default: ${{ github.ref || github.ref_name }}
 
     outputs:
       plugin:
@@ -232,6 +232,7 @@ jobs:
       - name: Generate GitHub token
         id: generate-github-token
         uses: actions/create-github-app-token@3ff1caaa28b64c9cc276ce0a02e2ff584f3900c5 # v2.0.2
+        if: ${{ env.IS_FORK == 'false' }}
         with:
           app-id: ${{ env.GITHUB_APP_ID }}
           private-key: ${{ env.GITHUB_APP_PRIVATE_KEY }}
