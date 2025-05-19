@@ -667,10 +667,9 @@ jobs:
       # This dependency can be skipped if gcs-only is true. In that case, this step
       # is still executed due to the "!(failure() || cancelled())" condition.
       - publish-to-catalog
-    # TODO: REMOVE THE DEV CHECK
     if: >-
       ${{
-        contains(fromJSON(needs.define-variables.outputs.environments), 'dev')
+        contains(fromJSON(needs.define-variables.outputs.environments), 'prod')
         && !(failure() || cancelled())
       }}
     steps:
