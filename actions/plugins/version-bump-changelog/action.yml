@@ -96,12 +96,11 @@ runs:
         GITHUB_TOKEN: ${{ steps.generate-github-token.outputs.token }}
 
     - name: Commit changes
+      if: always()  # Ensure it runs even if previous steps are skipped
       shell: bash
       run: |
         git add package.json
-        if [ "${{ inputs.generate-changelog }}" == "true" ]; then
-          git add CHANGELOG.md
-        fi
+        git add CHANGELOG.md || true  # No-op if changelog not generated
         git commit -m "Bump version to ${{ steps.bump.outputs.new-version }}"
         git push origin main
       env:
