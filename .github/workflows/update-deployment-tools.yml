@@ -1,0 +1,45 @@
+# Update the version of a plugin in deployment_tools libsonnet files.
+# This action can update a single environment or all environments at once.
+# It will modify the version string in the specified libsonnet files and create a commit with the changes.
+name: Update Deployment Tools versions
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Plugin version to update deployment_tools to in the format 1.0.0"
+        required: true
+        type: string
+      env:
+        description: "Environment to update"
+        required: true
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod-canary
+          - prod
+          - all
+
+env:
+  PLUGIN_ID: <your-plugin-id>
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  bump-version:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Version bump
+        uses: grafana/plugin-ci-workflows/actions/plugins/update-deployment-tools@l2d2/update-deployment-tools # zizmor: ignore[unpinned-uses]    
+        with:
+          plugin_id: ${{ env.PLUGIN_ID }}
+          version: ${{ inputs.version }}
+          env: ${{ inputs.env }}
