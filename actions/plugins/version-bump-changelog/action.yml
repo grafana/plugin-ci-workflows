@@ -96,7 +96,6 @@ runs:
         GITHUB_TOKEN: ${{ steps.generate-github-token.outputs.token }}
 
     - name: Commit changes
-      if: always()  # Ensure it runs even if previous steps are skipped
       shell: bash
       run: |
         git add package.json
@@ -105,10 +104,6 @@ runs:
         git push origin main
       env:
         GITHUB_TOKEN: ${{ steps.generate-github-token.outputs.token }}
-
-    - name: Push latest version
-      shell: bash
-      run: git push origin main
 
     - name: Push tags
       shell: bash
