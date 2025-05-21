@@ -98,7 +98,7 @@ runs:
       run: |
         git add package.json
         git add CHANGELOG.md || true  # No-op if changelog not generated
-        git commit -m "chore(version):Bump version to ${{ steps.bump.outputs.new-version }}"
+        git commit -m "chore(version): bump version to ${{ steps.bump.outputs.new-version }}"
         git push origin main
       env:
         GITHUB_TOKEN: ${{ steps.generate-github-token.outputs.token }}
