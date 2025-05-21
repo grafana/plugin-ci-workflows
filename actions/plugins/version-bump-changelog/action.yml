@@ -86,7 +86,7 @@ runs:
         fi
 
         # Remove existing "Changelog" header anywhere in the file
-        sed -i '/^# Changelog$/d' CHANGELOG.md
+        sed -i '/^#\sChangelog$/Id' CHANGELOG.md
         # Prepend the header to the top of the file
         printf "# Changelog\n\n" | cat - CHANGELOG.md > temp && mv temp CHANGELOG.md
         # Format headers remove dates and unreleased
