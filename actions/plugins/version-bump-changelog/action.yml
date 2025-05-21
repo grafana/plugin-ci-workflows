@@ -63,7 +63,7 @@ runs:
       id: bump
       shell: bash
       run: |
-        NEW_VERSION=$(npm version ${INPUT_VERSION} --no-git-tag-version )
+        NEW_VERSION=$(npm version ${INPUT_VERSION} --no-git-tag-version)
         echo "new-version=${NEW_VERSION}" >> $GITHUB_OUTPUT
       env:
         INPUT_VERSION: ${{ inputs.version }}
@@ -73,14 +73,14 @@ runs:
       if: ${{ inputs.generate-changelog == 'true' }}
       shell: bash
       run: |
-        # Generate changelog into a temp file
+        # Generate changelog
         if [[ "${{ steps.previous-tag.outputs.previous-tag }}" == "v0.0.0" ]]; then
           echo "No previous tag found ${{ steps.previous-tag.outputs.previous-tag }}, generating changelog for initial version only: v${{ steps.bump.outputs.new-version }}"
           # For initial version, get all commits up to HEAD
           npx generate-changelog -t HEAD
         else
-          echo "Generating changelog from ${{ steps.previous-tag.outputs.previous-tag }} to ${{ steps.bump.outputs.new-version }}"
-          npx generate-changelog -t ${{ steps.previous-tag.outputs.previous-tag }}...${{ steps.bump.outputs.new-version }}
+          echo "Generating changelog from ${{ steps.previous-tag.outputs.previous-tag }} to HEAD"
+          npx generate-changelog -t ${{ steps.previous-tag.outputs.previous-tag }}...HEAD
         fi
 
         # Remove existing "Changelog" header anywhere in the file
@@ -101,7 +101,7 @@ runs:
         git push origin main
       env:
         GITHUB_TOKEN: ${{ steps.generate-github-token.outputs.token }}
-    
+
     - name: Create git tag
       shell: bash
       run: |
