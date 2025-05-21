@@ -96,6 +96,7 @@ runs:
     - name: Commit changes
       shell: bash
       run: |
+        git add package.json
         git add CHANGELOG.md || true  # No-op if changelog not generated
         git commit -m "chore(version):Bump version to ${{ steps.bump.outputs.new-version }}"
         git push origin main
