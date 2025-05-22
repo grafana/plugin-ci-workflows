@@ -122,7 +122,8 @@ jobs:
           url: "${{ inputs.grafana-url }}"
 
       - name: Run Playwright Tests
-        id: run-tests-profile
+        id: run-tests
+        # add the -f argument only if "inputs.grafana-compose-file" is defined
         run: |
           docker compose ${DOCKER_COMPOSE_FILE:+-f "$DOCKER_COMPOSE_FILE"} up --profile playwright --exit-code-from playwright
         env:
