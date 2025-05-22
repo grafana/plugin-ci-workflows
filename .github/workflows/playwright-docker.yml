@@ -5,6 +5,10 @@
 # eg e2e:/app/e2e
 
 name: Plugins - Dockerized Playwright E2E tests
+description: |
+  Make sure to have a both a 'playwright' service with a 'playwright' profile
+  in your docker-compose.yaml file for the tests to run against
+  see: https://docs.docker.com/compose/how-tos/profiles/
 
 on:
   workflow_call:
@@ -122,10 +126,6 @@ jobs:
           url: "${{ inputs.grafana-url }}"
 
       - name: Run Playwright Tests
-        description: |
-          Make sure to have a both a 'playwright' service with a 'playwright' profile
-          in your docker-compose.yaml file for the tests to run against
-          see: https://docs.docker.com/compose/how-tos/profiles/
         id: run-tests
         # add the -f argument only if "inputs.grafana-compose-file" is defined
         run: |
