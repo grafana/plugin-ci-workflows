@@ -122,10 +122,14 @@ jobs:
           url: "${{ inputs.grafana-url }}"
 
       - name: Run Playwright Tests
+        description: |
+          Make sure to have a both a 'playwright' service with a 'playwright' profile
+          in your docker-compose.yaml file for the tests to run against
+          see: https://docs.docker.com/compose/how-tos/profiles/
         id: run-tests
         # add the -f argument only if "inputs.grafana-compose-file" is defined
         run: |
-          docker compose ${DOCKER_COMPOSE_FILE:+-f "$DOCKER_COMPOSE_FILE"} up --profile playwright --exit-code-from playwright
+          docker compose --profile playwright ${DOCKER_COMPOSE_FILE:+-f "$DOCKER_COMPOSE_FILE"} up playwright --exit-code-from playwright
         env:
           DOCKER_COMPOSE_FILE: ${{ inputs.grafana-compose-file }}
 
