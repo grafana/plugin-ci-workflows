@@ -42,7 +42,11 @@ on:
         required: false
         default: true
       run-playwright-docker:
-        description: Whether to run dockerized Playwright E2E tests.
+        description: |
+          Whether to run dockerized Playwright E2E tests.
+          Make sure to have a both a 'playwright' service with a 'playwright' profile
+          in your docker-compose.yaml file for the tests to run against
+          see: https://docs.docker.com/compose/how-tos/profiles/
         type: boolean
         required: false
         default: false
