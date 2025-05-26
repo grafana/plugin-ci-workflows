@@ -28,8 +28,8 @@ mkdir -p "$docs_folder"
 cp -a "$GITHUB_WORKSPACE/docs/sources/." "$docs_folder/"
 
 git add "$docs_folder"
-git config user.name "grafanabot"
-git config user.email "bot@grafana.com"
+git config user.name "144369747+grafana-plugins-platform-bot[bot]@users.noreply.github.com"
+git config user.email "grafana-plugins-platform-bot[bot]"
 git commit -m "[plugins] Publish from $GITHUB_REPOSITORY:$GITHUB_REF_NAME/docs/sources"
 
 git push origin master
