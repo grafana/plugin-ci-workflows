@@ -112,10 +112,6 @@ on:
         type: string
         default: playwright.config.ts
         description: Path to the Playwright config file to use for testing
-      playwright-e2e-docker-compose-file:
-        required: false
-        type: string
-        description: Path to the playwright docker-compose file
       playwright-grafana-url:
         description: The URL where Grafana is available at when running Playwright tests
         type: string
@@ -290,7 +286,6 @@ jobs:
       playwright-report-path: ${{ inputs.playwright-report-path }}
       playwright-docker-compose-file: ${{ inputs.playwright-docker-compose-file }}
       playwright-config: ${{ inputs.playwright-config }}
-      playwright-e2e-docker-compose-file: ${{ inputs.playwright-e2e-docker-compose-file }}
       playwright-grafana-url: ${{ inputs.playwright-grafana-url }}
       run-trufflehog: ${{ inputs.run-trufflehog }}
       trufflehog-version: ${{ inputs.trufflehog-version }}
