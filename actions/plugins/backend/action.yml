@@ -5,6 +5,10 @@ inputs:
   github-token:
     description: GitHub token for downloading dependencies from private repos, if necessary
     required: true
+  plugin-directory:
+    description: Directory of the plugin, if not in the root of the repository. If provided, package-manager must also be provided.
+    required: false
+    default: .
 
 runs:
   using: composite
@@ -17,16 +21,33 @@ runs:
 
     - name: Install dependencies
       run: go mod download
+      working-directory: ${{ inputs.plugin-directory }}
       shell: bash
 
     - name: Lint
       run: golangci-lint run --timeout=5m
+      working-directory: ${{ inputs.plugin-directory }}
       shell: bash
 
     - name: Test
       run: mage -v test
+      working-directory: ${{ inputs.plugin-directory }}
       shell: bash
 
     - name: Build
       run: mage -v buildAll
+      working-directory: ${{ inputs.plugin-directory }}
       shell: bash
+
+    # The action should end up with a dist/ folder, but if the working directory is not the root of the repo,
+    # we need to copy the dist/ folder to the root of the repo.
+    - name: Copy dist if needed
+      run: |
+        if [ "$PLUGIN_DIRECTORY" != "." ]; then
+          mkdir -p dist
+          cp -r $PLUGIN_DIRECTORY/dist/* dist/
+        fi
+      shell: bash
+      env:
+        PLUGIN_DIRECTORY: ${{ inputs.plugin-directory }}
+      if: inputs.plugin-directory != '.'
