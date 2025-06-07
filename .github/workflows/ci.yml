@@ -37,10 +37,15 @@ on:
 
       # Build options.
       working-directory:
-        description: Working directory for the action
+        description: Working directory for the action. If provided, package-manager must also be provided.
         type: string
         required: false
         default: .
+      package-manager:
+        description: The package manager to use.
+        type: string
+        required: false
+        default: ""
 
       # Playwright
       run-playwright:
@@ -279,6 +284,7 @@ jobs:
       - name: Test and build frontend
         uses: grafana/plugin-ci-workflows/actions/plugins/frontend@custom-working-directory # zizmor: ignore[unpinned-uses]
         with:
+          package-manager: ${{ inputs.package-manager }}
           working-directory: ${{ inputs.working-directory }}
 
       - name: Test and build backend

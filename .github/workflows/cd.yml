@@ -66,10 +66,15 @@ on:
 
       # Build options.
       working-directory:
-        description: Working directory for the action
+        description: Working directory for the action. If provided, package-manager must also be provided.
         type: string
         required: false
         default: .
+      package-manager:
+        description: The package manager to use.
+        type: string
+        required: false
+        default: ""
 
       # Playwright
       run-playwright:

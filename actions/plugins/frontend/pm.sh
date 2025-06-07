@@ -14,8 +14,11 @@ install_pnpm_if_not_present() {
     fi
 }
 
+# Use provided package manager if set in PACKAGE_MANAGER environment variable
+if [ -n "$PACKAGE_MANAGER" ]; then
+	pm="$PACKAGE_MANAGER"
 # Detect the package manager
-if [ -f yarn.lock ]; then
+elif [ -f yarn.lock ]; then
 	pm="yarn"
 elif [ -f pnpm-lock.yaml ]; then
 	install_pnpm_if_not_present
