@@ -262,13 +262,14 @@ jobs:
       - name: Replace plugin version
         if: ${{ inputs.plugin-version-suffix != '' }}
         run: |
-          package_json_path="${{ inputs.plugin-directory }}/package.json"
+          package_json_path="$PLUGIN_DIRECTORY/package.json"
           version=$(jq -r .version "$package_json_path")
           pr_version="$version+${PLUGIN_VERSION_SUFFIX}"
           echo "Replacing plugin version \"$version\" with \"$pr_version\" in $package_json_path"
           jq --arg pr_version "$pr_version" '.version = $pr_version' "$package_json_path" > /tmp/package.json
           mv /tmp/package.json "$package_json_path"
         env:
+          PLUGIN_DIRECTORY: ${{ inputs.plugin-directory }}
           PLUGIN_VERSION_SUFFIX: ${{ inputs.plugin-version-suffix }}
         shell: bash
 
@@ -397,6 +398,7 @@ jobs:
     with:
       id: ${{ fromJSON(needs.test-and-build.outputs.plugin).id}}
       version: ${{ fromJSON(needs.test-and-build.outputs.plugin).version}}
+      plugin-directory: ${{ inputs.plugin-directory }}
       grafana-dependency: ${{ inputs.run-playwright-with-grafana-dependency }}
       skip-grafana-dev-image: ${{ inputs.run-playwright-with-skip-grafana-dev-image }}
       version-resolver-type: ${{ inputs.run-playwright-with-version-resolver-type }}

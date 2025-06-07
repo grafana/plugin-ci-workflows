@@ -53,9 +53,11 @@ runs:
     # we need to copy the dist/ folder to the root of the repo.
     - name: Copy dist if needed
       run: |
-        if [ "${{ inputs.plugin-directory }}" != "." ]; then
+        if [ "$PLUGIN_DIRECTORY" != "." ]; then
           mkdir -p dist
-          cp -r ${{ inputs.plugin-directory }}/dist/* dist/
+          cp -r $PLUGIN_DIRECTORY/dist/* dist/
         fi
       shell: bash
       if: inputs.plugin-directory != '.'
+      env:
+        PLUGIN_DIRECTORY: ${{ inputs.plugin-directory }}
