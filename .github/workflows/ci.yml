@@ -35,6 +35,13 @@ on:
         type: string
         required: false
 
+      # Build options.
+      working-directory:
+        description: Working directory for the action
+        type: string
+        required: false
+        default: .
+
       # Playwright
       run-playwright:
         description: Whether to run Playwright E2E tests.
@@ -250,11 +257,12 @@ jobs:
       - name: Replace plugin version
         if: ${{ inputs.plugin-version-suffix != '' }}
         run: |
-          version=$(jq -r .version package.json)
+          package_json_path="${{ inputs.working-directory }}/package.json"
+          version=$(jq -r .version "$package_json_path")
           pr_version="$version+${PLUGIN_VERSION_SUFFIX}"
-          echo "Replacing plugin version \"$version\" with \"$pr_version\" in package.json"
-          jq --arg pr_version "$pr_version" '.version = $pr_version' package.json > /tmp/package.json
-          mv /tmp/package.json package.json
+          echo "Replacing plugin version \"$version\" with \"$pr_version\" in $package_json_path"
+          jq --arg pr_version "$pr_version" '.version = $pr_version' "$package_json_path" > /tmp/package.json
+          mv /tmp/package.json "$package_json_path"
         env:
           PLUGIN_VERSION_SUFFIX: ${{ inputs.plugin-version-suffix }}
         shell: bash
