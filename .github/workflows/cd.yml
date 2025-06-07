@@ -65,8 +65,8 @@ on:
         required: false
 
       # Build options.
-      working-directory:
-        description: Working directory for the action. If provided, package-manager must also be provided.
+      plugin-directory:
+        description: Directory of the plugin, if not in the root of the repository. If provided, package-manager must also be provided.
         type: string
         required: false
         default: .
@@ -286,7 +286,7 @@ jobs:
       - setup
     with:
       branch: ${{ inputs.branch }}
-      working-directory: ${{ inputs.working-directory }}
+      plugin-directory: ${{ inputs.plugin-directory }}
       package-manager: ${{ inputs.package-manager }}
       go-version: ${{ inputs.go-version }}
       node-version: ${{ inputs.node-version }}

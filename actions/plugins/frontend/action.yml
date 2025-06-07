@@ -2,8 +2,8 @@ name: Plugins - Frontend - Test and build
 description: Tests, lints, typechecks and builds the frontend.
 
 inputs:
-  working-directory:
-    description: Working directory for the action. If provided, package-manager must also be provided.
+  plugin-directory:
+    description: Directory of the plugin, if not in the root of the repository. If provided, package-manager must also be provided.
     required: false
     default: .
   package-manager:
@@ -16,35 +16,35 @@ runs:
   steps:
     - name: Install dependencies
       shell: bash
-      working-directory: ${{ inputs.working-directory }}
+      working-directory: ${{ inputs.plugin-directory }}
       run: ${{ github.action_path }}/pm.sh install
       env:
         PACKAGE_MANAGER: ${{ inputs.package-manager }}
 
     - name: Lint
       shell: bash
-      working-directory: ${{ inputs.working-directory }}
+      working-directory: ${{ inputs.plugin-directory }}
       run: ${{ github.action_path }}/pm.sh lint
       env:
         PACKAGE_MANAGER: ${{ inputs.package-manager }}
 
     - name: Typecheck
       shell: bash
-      working-directory: ${{ inputs.working-directory }}
+      working-directory: ${{ inputs.plugin-directory }}
       run: ${{ github.action_path }}/pm.sh typecheck
       env:
         PACKAGE_MANAGER: ${{ inputs.package-manager }}
 
     - name: Test
       shell: bash
-      working-directory: ${{ inputs.working-directory }}
+      working-directory: ${{ inputs.plugin-directory }}
       run: ${{ github.action_path }}/pm.sh test:ci
       env:
         PACKAGE_MANAGER: ${{ inputs.package-manager }}
 
     - name: Build
       shell: bash
-      working-directory: ${{ inputs.working-directory }}
+      working-directory: ${{ inputs.plugin-directory }}
       run: ${{ github.action_path }}/pm.sh build
       env:
         PACKAGE_MANAGER: ${{ inputs.package-manager }}
@@ -53,9 +53,9 @@ runs:
     # we need to copy the dist/ folder to the root of the repo.
     - name: Copy dist if needed
       run: |
-        if [ "${{ inputs.working-directory }}" != "." ]; then
+        if [ "${{ inputs.plugin-directory }}" != "." ]; then
           mkdir -p dist
-          cp -r ${{ inputs.working-directory }}/dist/* dist/
+          cp -r ${{ inputs.plugin-directory }}/dist/* dist/
         fi
       shell: bash
-      if: inputs.working-directory != '.'
+      if: inputs.plugin-directory != '.'
