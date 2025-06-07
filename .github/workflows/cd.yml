@@ -287,6 +287,7 @@ jobs:
     with:
       branch: ${{ inputs.branch }}
       working-directory: ${{ inputs.working-directory }}
+      package-manager: ${{ inputs.package-manager }}
       go-version: ${{ inputs.go-version }}
       node-version: ${{ inputs.node-version }}
       golangci-lint-version: ${{ inputs.golangci-lint-version }}
