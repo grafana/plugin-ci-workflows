@@ -274,13 +274,14 @@ jobs:
           [ -f "Magefile.go" ] && r=true
           echo "has-backend=$r" >> "$GITHUB_OUTPUT"
         shell: bash
+        working-directory: ${{ inputs.working-directory }}
 
       - name: Test and build frontend
-        uses: grafana/plugin-ci-workflows/actions/plugins/frontend@main # zizmor: ignore[unpinned-uses]
+        uses: grafana/plugin-ci-workflows/actions/plugins/frontend@custom-working-directory # zizmor: ignore[unpinned-uses]
 
       - name: Test and build backend
         if: ${{ steps.check-for-backend.outputs.has-backend == 'true' }}
-        uses: grafana/plugin-ci-workflows/actions/plugins/backend@main # zizmor: ignore[unpinned-uses]
+        uses: grafana/plugin-ci-workflows/actions/plugins/backend@custom-working-directory # zizmor: ignore[unpinned-uses]
         with:
           github-token: ${{ steps.generate-github-token.outputs.token }}
 
