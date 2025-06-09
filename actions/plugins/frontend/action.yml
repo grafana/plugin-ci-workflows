@@ -1,25 +1,63 @@
 name: Plugins - Frontend - Test and build
 description: Tests, lints, typechecks and builds the frontend.
 
+inputs:
+  plugin-directory:
+    description: Directory of the plugin, if not in the root of the repository. If provided, package-manager must also be provided.
+    required: false
+    default: .
+  package-manager:
+    description: The package manager to use.
+    required: false
+    default: ""
+
 runs:
   using: composite
   steps:
     - name: Install dependencies
       shell: bash
+      working-directory: ${{ inputs.plugin-directory }}
       run: ${{ github.action_path }}/pm.sh install
+      env:
+        PACKAGE_MANAGER: ${{ inputs.package-manager }}
 
     - name: Lint
       shell: bash
+      working-directory: ${{ inputs.plugin-directory }}
       run: ${{ github.action_path }}/pm.sh lint
+      env:
+        PACKAGE_MANAGER: ${{ inputs.package-manager }}
 
     - name: Typecheck
       shell: bash
+      working-directory: ${{ inputs.plugin-directory }}
       run: ${{ github.action_path }}/pm.sh typecheck
+      env:
+        PACKAGE_MANAGER: ${{ inputs.package-manager }}
 
     - name: Test
       shell: bash
+      working-directory: ${{ inputs.plugin-directory }}
       run: ${{ github.action_path }}/pm.sh test:ci
+      env:
+        PACKAGE_MANAGER: ${{ inputs.package-manager }}
 
     - name: Build
       shell: bash
+      working-directory: ${{ inputs.plugin-directory }}
       run: ${{ github.action_path }}/pm.sh build
+      env:
+        PACKAGE_MANAGER: ${{ inputs.package-manager }}
+
+    # The action should end up with a dist/ folder, but if the working directory is not the root of the repo,
+    # we need to copy the dist/ folder to the root of the repo.
+    - name: Copy dist if needed
+      run: |
+        if [ "$PLUGIN_DIRECTORY" != "." ]; then
+          mkdir -p dist
+          cp -r $PLUGIN_DIRECTORY/dist/* dist/
+        fi
+      shell: bash
+      if: inputs.plugin-directory != '.'
+      env:
+        PLUGIN_DIRECTORY: ${{ inputs.plugin-directory }}

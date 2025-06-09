@@ -64,6 +64,18 @@ on:
         type: string
         required: false
 
+      # Build options.
+      plugin-directory:
+        description: Directory of the plugin, if not in the root of the repository. If provided, package-manager must also be provided.
+        type: string
+        required: false
+        default: .
+      package-manager:
+        description: The package manager to use.
+        type: string
+        required: false
+        default: ""
+
       # Playwright
       run-playwright:
         description: Whether to run Playwright E2E tests.
@@ -274,6 +286,8 @@ jobs:
       - setup
     with:
       branch: ${{ inputs.branch }}
+      plugin-directory: ${{ inputs.plugin-directory }}
+      package-manager: ${{ inputs.package-manager }}
       go-version: ${{ inputs.go-version }}
       node-version: ${{ inputs.node-version }}
       golangci-lint-version: ${{ inputs.golangci-lint-version }}
@@ -364,7 +378,7 @@ jobs:
               echo 'environments=["dev", "ops"]'
               echo 'publish-docs=false'
             } >> "$GITHUB_OUTPUT"
-            
+
           elif [ "${ENVIRONMENT}" == 'prod' ]; then
             {
               echo 'environments=["dev", "ops", "prod"]'
@@ -376,7 +390,7 @@ jobs:
               echo 'environments=[]'
               echo 'publish-docs=false'
             } >> "$GITHUB_OUTPUT"
-            
+
           else
             echo "Invalid environment: ${ENVIRONMENT}"
             exit 1

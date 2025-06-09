@@ -35,6 +35,18 @@ on:
         type: string
         required: false
 
+      # Build options.
+      plugin-directory:
+        description: Directory of the plugin, if not in the root of the repository. If provided, package-manager must also be provided.
+        type: string
+        required: false
+        default: .
+      package-manager:
+        description: The package manager to use.
+        type: string
+        required: false
+        default: ""
+
       # Playwright
       run-playwright:
         description: Whether to run Playwright E2E tests.
@@ -250,12 +262,14 @@ jobs:
       - name: Replace plugin version
         if: ${{ inputs.plugin-version-suffix != '' }}
         run: |
-          version=$(jq -r .version package.json)
+          package_json_path="$PLUGIN_DIRECTORY/package.json"
+          version=$(jq -r .version "$package_json_path")
           pr_version="$version+${PLUGIN_VERSION_SUFFIX}"
-          echo "Replacing plugin version \"$version\" with \"$pr_version\" in package.json"
-          jq --arg pr_version "$pr_version" '.version = $pr_version' package.json > /tmp/package.json
-          mv /tmp/package.json package.json
+          echo "Replacing plugin version \"$version\" with \"$pr_version\" in $package_json_path"
+          jq --arg pr_version "$pr_version" '.version = $pr_version' "$package_json_path" > /tmp/package.json
+          mv /tmp/package.json "$package_json_path"
         env:
+          PLUGIN_DIRECTORY: ${{ inputs.plugin-directory }}
           PLUGIN_VERSION_SUFFIX: ${{ inputs.plugin-version-suffix }}
         shell: bash
 
@@ -266,15 +280,20 @@ jobs:
           [ -f "Magefile.go" ] && r=true
           echo "has-backend=$r" >> "$GITHUB_OUTPUT"
         shell: bash
+        working-directory: ${{ inputs.plugin-directory }}
 
       - name: Test and build frontend
         uses: grafana/plugin-ci-workflows/actions/plugins/frontend@main # zizmor: ignore[unpinned-uses]
+        with:
+          package-manager: ${{ inputs.package-manager }}
+          plugin-directory: ${{ inputs.plugin-directory }}
 
       - name: Test and build backend
         if: ${{ steps.check-for-backend.outputs.has-backend == 'true' }}
         uses: grafana/plugin-ci-workflows/actions/plugins/backend@main # zizmor: ignore[unpinned-uses]
         with:
           github-token: ${{ steps.generate-github-token.outputs.token }}
+          plugin-directory: ${{ inputs.plugin-directory }}
 
       - name: Package universal ZIP
         id: universal-zip
@@ -379,6 +398,7 @@ jobs:
     with:
       id: ${{ fromJSON(needs.test-and-build.outputs.plugin).id}}
       version: ${{ fromJSON(needs.test-and-build.outputs.plugin).version}}
+      plugin-directory: ${{ inputs.plugin-directory }}
       grafana-dependency: ${{ inputs.run-playwright-with-grafana-dependency }}
       skip-grafana-dev-image: ${{ inputs.run-playwright-with-skip-grafana-dev-image }}
       version-resolver-type: ${{ inputs.run-playwright-with-version-resolver-type }}
