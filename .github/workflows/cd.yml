@@ -697,6 +697,8 @@ jobs:
       - name: Parse changelog
         id: changelog
         uses: grafana/plugin-ci-workflows/actions/plugins/changelog@main # zizmor: ignore[unpinned-uses]
+        with:
+          changelog-path: ${{ inputs.plugin-directory }}/CHANGELOG.md
 
       - name: Print changelog
         run: |
