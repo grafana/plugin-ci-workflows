@@ -16,6 +16,10 @@ inputs:
     required: false
     type: boolean
     default: true
+  plugin-directory:
+    description: Directory of the plugin, if not in the root of the repository.
+    required: false
+    default: .
 
 runs:
   using: composite
@@ -62,16 +66,18 @@ runs:
     - name: Bump version
       id: bump
       shell: bash
+      working-directory: ${{ inputs.plugin-directory }}
       run: |
         NEW_VERSION=$(npm version ${INPUT_VERSION} --no-git-tag-version)
         echo "new-version=${NEW_VERSION}" >> $GITHUB_OUTPUT
       env:
         INPUT_VERSION: ${{ inputs.version }}
         GITHUB_TOKEN: ${{ steps.generate-github-token.outputs.token }}
-    
+
     - name: Generate changelog
       if: ${{ inputs.generate-changelog == 'true' }}
       shell: bash
+      working-directory: ${{ inputs.plugin-directory }}
       run: |
         # Generate changelog
         if [[ "${{ steps.previous-tag.outputs.previous-tag }}" == "v0.0.0" ]]; then
@@ -95,6 +101,7 @@ runs:
 
     - name: Commit changes
       shell: bash
+      working-directory: ${{ inputs.plugin-directory }}
       run: |
         git add package.json
         git add CHANGELOG.md || true  # No-op if changelog not generated
