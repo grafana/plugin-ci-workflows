@@ -15,13 +15,11 @@ json_obj() {
 gcs_zip_urls=()
 scopes=''
 dry_run=false
-local_md5=false
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         --environment) gcom_env=$2; shift 2;;
         --scopes) scopes=$(echo $2 | jq -Rc 'split(",")'); shift 2;;
         --dry-run) dry_run=true; shift;;
-        --local-md5) local_md5=true; shift;;
         --help)
             usage
             exit 0
@@ -105,33 +103,6 @@ for zip_url in ${gcs_zip_urls[@]}; do
     if [ "$file" != "$os" ] && [ "$file" != "$arch" ]; then
         # os-arch zip
         platform="$os-$arch"
-    fi
-
-    
-    if [ $local_md5 == true ]; then
-        # Calculate md5 locally
-        tmp=$(mktemp -d)
-        pushd "$tmp" > /dev/null
-        echo "Downloading $zip_url to calculate MD5"
-        curl -s -o "$file" "$zip_url"
-        md5=$(md5sum "$file" | cut -d ' ' -f 1)
-        popd
-        rm -rf "$tmp"
-    else
-        # Try to get the .md5 for the zip file from GCS
-        md5_url="$zip_url.md5"
-        md5=$(curl --fail -s "$md5_url")
-        if [ $? -ne 0 ]; then
-            echo "Failed to fetch md5: $md5_url"
-            exit 1
-        fi
-    fi
-    md5=$(echo $md5 | tr -d '\n')
-
-    # Make sure the md5 is valid length (valid response)
-    if [ ${#md5} -ne 32 ]; then
-        echo "Invalid md5 ($md5): $md5_url"
-        exit 1
     fi
 
     # Add URL to JSON payload
