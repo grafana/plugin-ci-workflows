@@ -134,8 +134,8 @@ for zip_url in ${gcs_zip_urls[@]}; do
         exit 1
     fi
 
-    # Add URL + md5 to JSON payload
-    json_artifact=$(json_obj --arg url "$zip_url" --arg md5 "$md5")
+    # Add URL to JSON payload
+    json_artifact=$(json_obj --arg url "$zip_url")
     jq_download_args+=("--argjson" "$platform" "$json_artifact")
 done
 
