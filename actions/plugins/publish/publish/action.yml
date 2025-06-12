@@ -12,6 +12,7 @@ inputs:
 
   local-md5:
     description: |
+      DEPRECATED: This input is no longer used - we only calculate MD5 hashes on the gcom.
       If true, download the ZIP files and calculate their MD5 hashes locally.
       Otherwise, get them from the URLs, by appending ".md5" to each URL.
       Default is false. It's recommended to keep it set to false if possible,
@@ -52,9 +53,6 @@ runs:
         # Convert the "zips" JSON array to a space-separated string
         # (used to pass each ZIP in the JSON array as a separate argument)
         args=()
-        if [[ ${LOCAL_MD5} == 'true' ]]; then
-          args+=("--local-md5")
-        fi
         args+=($(echo "${ZIPS}" | jq -r 'join(" ")'))
 
         ${{ github.action_path }}/publish.sh \
@@ -66,7 +64,6 @@ runs:
         GCOM_PUBLISH_TOKEN: ${{ inputs.gcom-publish-token }}
 
         ZIPS_FOLDER: ${{ inputs.zips-folder }}
-        LOCAL_MD5: ${{ inputs.local-md5 }}
         ZIPS: ${{ inputs.zips }}
         ENVIRONMENT: ${{ inputs.environment }}
         SCOPES: ${{ inputs.scopes }}
