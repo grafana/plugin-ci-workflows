@@ -80,7 +80,6 @@ jobs:
           skip-grafana-dev-image: ${{ inputs.skip-grafana-dev-image }}
           version-resolver-type: ${{ inputs.version-resolver-type }}
           grafana-dependency: ${{ inputs.grafana-dependency }}
-          plugin-directory: ${{ inputs.plugin-directory }}
 
   playwright-tests:
     needs: resolve-versions
