@@ -23,7 +23,7 @@ inputs:
   environment:
     description: |
       Environment to publish to.
-      Can be 'dev', 'ops', or 'prod'.
+      Can be 'dev', 'ops' (alias: 'staging'), or 'prod'.
     required: true
 
   scopes:
