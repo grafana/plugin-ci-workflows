@@ -75,7 +75,7 @@ jobs:
 
       - name: Resolve Grafana E2E versions
         id: resolve-versions
-        uses: grafana/plugin-actions/e2e-version@main # zizmor: ignore[unpinned-uses]
+        uses: grafana/plugin-actions/e2e-version@giuseppe/e2e-versions-working-directory # zizmor: ignore[unpinned-uses]
         with:
           skip-grafana-dev-image: ${{ inputs.skip-grafana-dev-image }}
           version-resolver-type: ${{ inputs.version-resolver-type }}
