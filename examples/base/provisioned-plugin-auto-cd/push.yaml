@@ -1,0 +1,51 @@
+# This workflow:
+# - Runs CI + CD for each push to main
+# - Runs CI for each PR (no CD)
+name: Plugins - CI / CD
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions: {}
+
+env:
+  # Scope for the plugin when publishing it to the catalog.
+  # Choose between:
+  # - 'universal': on-prem + cloud (default)
+  # - 'grafana_cloud': cloud only, hidden for on-prem users
+  SCOPES: grafana_cloud # TODO: Choose the appropriate scope for your plugin.
+  ARGO_WORKFLOW_SLACK_CHANNEL: "#grafana-plugins-platform-ci" # TODO: Change with your own Slack channel
+
+  # Final environment to deploy to for each push to main.
+  # - 'dev' = dev
+  # - 'ops' = dev + ops
+  # - 'prod' = dev + ops + prod
+  CD_ENVIRONMENT: dev
+
+jobs:
+  cd:
+    name: CI / CD
+    uses: grafana/plugin-ci-workflows/.github/workflows/cd.yml@main # zizmor: ignore[unpinned-uses]
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    with:
+      # Checkout/build PR or main branch, depending on event
+      branch: ${{ github.event_name == 'push' && github.ref_name || github.ref }}
+
+      # When pushing to "main", publish and deploy to Grafana Cloud (CD).
+      # For PRs, skip publishing and deploying (run CI only).
+      environment: ${{ (github.event_name == 'push' && github.ref_name == 'main') && env.CD_ENVIRONMENT || 'none' }}
+      scopes: ${{ env.SCOPES }}
+      grafana-cloud-deployment-type: provisioned
+      argo-workflow-slack-channel: ${{ env.ARGO_WORKFLOW_SLACK_CHANNEL }}
+
+      # Add the git head ref sha to the plugin version as suffix (`+abcdef`). This is required for CD builds.
+      plugin-version-suffix: ${{ github.event_name == 'push' && github.sha || github.event.pull_request.head.sha }}
+
+      # TODO: add here any other CI custom inputs you may need:
+      #   https://enghub.grafana-ops.net/docs/default/component/grafana-plugins-platform/plugins-ci-github-actions/010-plugins-ci-github-actions/#customizing-the-workflows-with-inputs
