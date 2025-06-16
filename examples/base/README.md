@@ -32,3 +32,4 @@ An example setup for a provisioned plugin with continuous delivery from the `mai
 
 - CI for each PR
 - CI + CD for each push to main: deployment to the catalog and Grafana Cloud ("dev", and optionally also "ops") via Argo workflow + deployment_tools
+- Manual deployment to the catalog and Grafana Cloud via Argo workflow + deployment_tools (for prod deployment)
