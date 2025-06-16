@@ -12,21 +12,21 @@ They should be put in your repository's `.github/workflows` folder, and customiz
 
 ## Example setups
 
-### Simple
+### [`simple`](./simple/)
 
 A simple setup for a non-provisioned plugin
 
 - CI for each PR and push to main
 - Manual deployment to the catalog
 
-### provisioned-plugin-manual-deployment
+### [`provisioned-plugin-manual-deployment`](./provisioned-plugin-manual-deployment/)
 
 An example setup for a provisioned plugin
 
 - CI for each PR and push to main
 - Manual deployment to the catalog and Grafana Cloud via Argo workflow + deployment_tools
 
-### `provisioned-plugin-auto-cd`
+### [`provisioned-plugin-auto-cd`](./provisioned-plugin-auto-cd/)
 
 An example setup for a provisioned plugin with continuous delivery from the `main` branch
 
