@@ -398,6 +398,7 @@ jobs:
     with:
       id: ${{ fromJSON(needs.test-and-build.outputs.plugin).id}}
       version: ${{ fromJSON(needs.test-and-build.outputs.plugin).version}}
+      plugin-directory: ${{ inputs.plugin-directory }}
       grafana-dependency: ${{ inputs.run-playwright-with-grafana-dependency }}
       skip-grafana-dev-image: ${{ inputs.run-playwright-with-skip-grafana-dev-image }}
       version-resolver-type: ${{ inputs.run-playwright-with-version-resolver-type }}
