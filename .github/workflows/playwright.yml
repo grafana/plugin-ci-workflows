@@ -141,6 +141,8 @@ jobs:
       - name: Start Grafana
         # add the -f argument only if "inputs.docker-compose-file" is defined
         run: |
+          echo wd: $(pwd)
+          echo $(ls -1)
           GRAFANA_VERSION=${{ matrix.GRAFANA_IMAGE.VERSION }} GRAFANA_IMAGE=${{ matrix.GRAFANA_IMAGE.NAME }} docker compose ${DOCKER_COMPOSE_FILE:+-f "$DOCKER_COMPOSE_FILE"} up -d
         working-directory: ${{ inputs.plugin-directory }}
         env:
