@@ -123,6 +123,10 @@ jobs:
 
       - name: Move dist artifacts
         run: |
+          echo wd: $(pwd)
+          tree
+
+          rm -rf dist
           mkdir -p dist
           src=$(pwd)
 
@@ -131,7 +135,7 @@ jobs:
           unzip "${PLUGIN_ID}-${PLUGIN_VERSION}.zip" -d out
           # Folder structure: /tmp/dist-artifacts/out/$PLUGIN_ID/plugin.json
           cd out
-          cd "$(ls -1)"
+          ls -1
           mv ./* "$src/dist/"
         env:
           PLUGIN_ID: ${{ inputs.id }}
@@ -142,7 +146,7 @@ jobs:
         # add the -f argument only if "inputs.docker-compose-file" is defined
         run: |
           echo wd: $(pwd)
-          echo $(ls -1)
+          ls -1
           GRAFANA_VERSION=${{ matrix.GRAFANA_IMAGE.VERSION }} GRAFANA_IMAGE=${{ matrix.GRAFANA_IMAGE.NAME }} docker compose ${DOCKER_COMPOSE_FILE:+-f "$DOCKER_COMPOSE_FILE"} up -d
         working-directory: ${{ inputs.plugin-directory }}
         env:
