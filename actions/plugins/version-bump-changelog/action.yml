@@ -22,7 +22,7 @@ runs:
   steps:
     - name: Get secrets from Vault
       id: get-secrets
-      uses: grafana/shared-workflows/actions/get-vault-secrets@main # zizmor: ignore[unpinned-uses]
+      uses: grafana/shared-workflows/actions/get-vault-secrets@9f37f656e063f0ad0b0bfc38d49894b57d363936 # v1.2.1
       env:
         VAULT_INSTANCE: ops
       with:
@@ -30,13 +30,14 @@ runs:
         common_secrets: |
           GITHUB_APP_ID=plugins-platform-bot-app:app-id
           GITHUB_APP_PRIVATE_KEY=plugins-platform-bot-app:private-key
+        export_env: false
 
     - name: Generate GitHub token
       id: generate-github-token
       uses: actions/create-github-app-token@df432ceedc7162793a195dd1713ff69aefc7379e # v2.0.6
       with:
-        app-id: ${{ env.GITHUB_APP_ID }}
-        private-key: ${{ env.GITHUB_APP_PRIVATE_KEY }}
+        app-id: ${{ fromJSON(steps.get-secrets.outputs.secrets).GITHUB_APP_ID }}
+        private-key: ${{ fromJSON(steps.get-secrets.outputs.secrets).GITHUB_APP_PRIVATE_KEY }}
         owner: ${{ github.repository_owner }}
 
     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -68,7 +69,7 @@ runs:
       env:
         INPUT_VERSION: ${{ inputs.version }}
         GITHUB_TOKEN: ${{ steps.generate-github-token.outputs.token }}
-    
+
     - name: Generate changelog
       if: ${{ inputs.generate-changelog == 'true' }}
       shell: bash
