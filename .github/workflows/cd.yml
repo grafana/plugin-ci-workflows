@@ -443,25 +443,26 @@ jobs:
 
       - name: Get secrets from Vault
         id: get-secrets
-        uses: grafana/shared-workflows/actions/get-vault-secrets@main # zizmor: ignore[unpinned-uses]
+        uses: grafana/shared-workflows/actions/get-vault-secrets@9f37f656e063f0ad0b0bfc38d49894b57d363936 # v1.2.1
         with:
           vault_instance: ${{ env.VAULT_INSTANCE }}
           common_secrets: |
             GCOM_PUBLISH_TOKEN_DEV=plugins/gcom-publish-token:dev
             GCOM_PUBLISH_TOKEN_OPS=plugins/gcom-publish-token:ops
             GCOM_PUBLISH_TOKEN_PROD=plugins/gcom-publish-token:prod
+          export_env: false
 
       - name: Determine which token to use
         run: |
           if [ "${ENVIRONMENT}" == 'dev' ]; then
             echo "Picked dev token"
-            token="${{ env.GCOM_PUBLISH_TOKEN_DEV }}"
+            token="${{ fromJSON(steps.get-secrets.outputs.secrets).GCOM_PUBLISH_TOKEN_DEV }}"
           elif [ "${ENVIRONMENT}" == 'ops' ]; then
             echo "Picked ops token"
-            token="${{ env.GCOM_PUBLISH_TOKEN_OPS }}"
+            token="${{ fromJSON(steps.get-secrets.outputs.secrets).GCOM_PUBLISH_TOKEN_OPS }}"
           elif [ "${ENVIRONMENT}" == 'prod' ]; then
             echo "Picked prod token"
-            token="${{ env.GCOM_PUBLISH_TOKEN_PROD }}"
+            token="${{ fromJSON(steps.get-secrets.outputs.secrets).GCOM_PUBLISH_TOKEN_PROD }}"
           else
             echo "Invalid environment: ${ENVIRONMENT}"
             exit 1

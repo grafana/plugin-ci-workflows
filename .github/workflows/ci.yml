@@ -233,21 +233,22 @@ jobs:
       - name: Get secrets from Vault
         id: get-secrets
         if: ${{ env.IS_FORK == 'false' }}
-        uses: grafana/shared-workflows/actions/get-vault-secrets@main # zizmor: ignore[unpinned-uses]
+        uses: grafana/shared-workflows/actions/get-vault-secrets@9f37f656e063f0ad0b0bfc38d49894b57d363936 # v1.2.1
         with:
           vault_instance: ${{ env.VAULT_INSTANCE }}
           common_secrets: |
             SIGN_PLUGIN_ACCESS_POLICY_TOKEN=plugins/sign-plugin-access-policy-token:token
             GITHUB_APP_ID=plugins-platform-bot-app:app-id
             GITHUB_APP_PRIVATE_KEY=plugins-platform-bot-app:private-key
+          export_env: false
 
       - name: Generate GitHub token
         id: generate-github-token
         uses: actions/create-github-app-token@df432ceedc7162793a195dd1713ff69aefc7379e # v2.0.6
         if: ${{ env.IS_FORK == 'false' }}
         with:
-          app-id: ${{ env.GITHUB_APP_ID }}
-          private-key: ${{ env.GITHUB_APP_PRIVATE_KEY }}
+          app-id: ${{ fromJSON(steps.get-secrets.outputs.secrets).GITHUB_APP_ID }}
+          private-key: ${{ fromJSON(steps.get-secrets.outputs.secrets).GITHUB_APP_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
 
       - name: Spellcheck
@@ -302,7 +303,7 @@ jobs:
           universal: "true"
           dist-folder: dist
           output-folder: dist-artifacts
-          access-policy-token: ${{ env.SIGN_PLUGIN_ACCESS_POLICY_TOKEN || '' }}
+          access-policy-token: ${{ fromJSON(steps.get-secrets.outputs.secrets).SIGN_PLUGIN_ACCESS_POLICY_TOKEN || '' }}
           allow-unsigned: ${{ env.IS_FORK == 'true' }}
 
       - name: Package os/arch ZIPs
@@ -312,7 +313,7 @@ jobs:
           universal: "false"
           dist-folder: dist
           output-folder: dist-artifacts
-          access-policy-token: ${{ env.SIGN_PLUGIN_ACCESS_POLICY_TOKEN || '' }}
+          access-policy-token: ${{ fromJSON(steps.get-secrets.outputs.secrets).SIGN_PLUGIN_ACCESS_POLICY_TOKEN || '' }}
           allow-unsigned: ${{ env.IS_FORK == 'true' }}
 
       - name: Trufflehog secrets scanning
