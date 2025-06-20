@@ -568,6 +568,12 @@ jobs:
           workload_identity_provider: "projects/304398677251/locations/global/workloadIdentityPools/github/providers/github-provider"
           service_account: github-plugin-ci-workflows@grafanalabs-workload-identity.iam.gserviceaccount.com
 
+      
+      - name: 'Set up Cloud SDK'
+        uses: 'google-github-actions/setup-gcloud@v2'
+        with:
+          version: '>= 363.0.0'
+
       - name: Determine GCS artifacts paths
         id: paths
         run: |
@@ -592,6 +598,26 @@ jobs:
           PLUGIN_ID: ${{ fromJSON(needs.ci.outputs.plugin).id }}
           PLUGIN_VERSION: ${{ fromJSON(needs.ci.outputs.plugin).version }}
           GCS_UNIVERSAL_ZIP_URL_COMMIT: ${{ needs.ci.outputs.gcs-universal-zip-url-commit }}
+        shell: bash
+
+      - name: Check if artifacts already exist
+        run: |
+          bucket_path="gs://${GCS_ARTIFACTS_RELEASE_PATH_TAG}/${PLATFORM}/"
+          
+          echo "Checking for any existing artifacts in: $bucket_path"
+          
+          if gsutil ls "$bucket_path" 2>/dev/null | grep -q "."; then
+            echo "❌ Artifacts already exist:"
+            gsutil ls "$bucket_path"
+            echo "::error::Release artifacts already exist for version $PLUGIN_VERSION platform $PLATFORM"
+            exit 1
+          else
+            echo "✅ No existing artifacts found, proceeding with upload"
+          fi
+        env:
+          PLATFORM: ${{ matrix.platform }}
+          PLUGIN_VERSION: ${{ fromJSON(needs.ci.outputs.plugin).version }}
+          GCS_ARTIFACTS_RELEASE_PATH_TAG: ${{ steps.paths.outputs.gcs_artifacts_release_path_tag }}
         shell: bash
 
       - name: Upload GCS release artifact (tag)
