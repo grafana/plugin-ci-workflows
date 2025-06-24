@@ -123,6 +123,7 @@ jobs:
 
       - name: Move dist artifacts
         run: |
+          rm -rf dist
           mkdir -p dist
           src=$(pwd)
 
