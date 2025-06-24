@@ -206,8 +206,10 @@ on:
         type: string
 
       # Options for deploying PRs. Those values should come from the PR event and should not be set manually.
-      branch:
-        description: Branch to publish from. Can be used to deploy PRs to dev.
+      git-ref:
+        description: |
+          Git reference (branch or tag) to publish from. Can be used to deploy PRs to dev or release specific tags.
+          Examples: main, feature-branch, v1.0.0
         default: main
         type: string
 
@@ -232,11 +234,24 @@ jobs:
     outputs:
       commit-sha: ${{ steps.checkout-specified-branch.outputs.commit }}
       plugin-version-suffix: ${{ steps.plugin-version-suffix.outputs.plugin_version_suffix }}
+      git-ref: ${{ steps.check-environment.outputs.git_ref }}
 
     steps:
       - name: Check environment
+        id: check-environment
         run: |
-          if [ -n "${ENVIRONMENT}" ] && [ "${ENVIRONMENT}" != 'none' ] && [ "${ENVIRONMENT}" != 'dev' ] && [ "${BRANCH}" != 'main' ]; then
+          # Determine if the git ref is a tag or branch
+          if [[ "${GIT_REF}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+.*$ ]]; then
+            IS_TAG=true
+          else
+            IS_TAG=false
+          fi
+
+          # Set the git ref as output
+          echo "git_ref=${GIT_REF}" >> "$GITHUB_OUTPUT"
+
+          # For environment restrictions, treat tags like main branch
+          if [ -n "${ENVIRONMENT}" ] && [ "${ENVIRONMENT}" != 'none' ] && [ "${ENVIRONMENT}" != 'dev' ] && [ "${IS_TAG}" != 'true' ] && [ "${GIT_REF}" != 'main' ]; then
             echo "Only 'dev' environment is allowed for non-main branches."
             exit 1
           fi
@@ -247,14 +262,14 @@ jobs:
               exit 1
             fi
 
-            if [ "${BRANCH}" != 'main' ]; then
-              echo "Only 'main' branch can be used for docs publishing."
+            if [ "${IS_TAG}" != 'true' ] && [ "${GIT_REF}" != 'main' ]; then
+              echo "Only 'main' branch or tags can be used for docs publishing."
               exit 1
             fi
           fi
         env:
           ENVIRONMENT: ${{ inputs.environment }}
-          BRANCH: ${{ inputs.branch }}
+          GIT_REF: ${{ inputs.git-ref }}
           DOCS_ONLY: ${{ inputs.docs-only }}
         shell: bash
 
@@ -262,28 +277,36 @@ jobs:
         id: checkout-specified-branch
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
-          ref: ${{ inputs.branch }}
+          ref: ${{ needs.setup.outputs.git-ref }}
+          fetch-depth: 0
           persist-credentials: false
 
       - name: Determine plugin version suffix
         id: plugin-version-suffix
         run: |
+          # Determine if the git ref is a tag or branch
+          if [[ "${INPUT_GIT_REF}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+.*$ ]]; then
+            IS_TAG=true
+          else
+            IS_TAG=false
+          fi
+
           if [ -n "$INPUT_PLUGIN_VERSION_SUFFIX" ]; then
             # Give priority to the input value
             echo "plugin_version_suffix=${INPUT_PLUGIN_VERSION_SUFFIX}" >> "$GITHUB_OUTPUT"
           else
             # Default behavior:
-            # - Use the commit SHA as the version suffix when not on main
+            # - Use the commit SHA as the version suffix when not on main and not a tag
             # - Otherwise, do not set the suffix
-            if [ "${INPUT_BRANCH}" != 'main' ]; then
-              echo "plugin_version_suffix=${COMMIT_SHA}" >> "$GITHUB_OUTPUT"
-            else
+            if [ "${IS_TAG}" == 'true' ] || [ "${INPUT_GIT_REF}" == 'main' ]; then
               echo "plugin_version_suffix=" >> "$GITHUB_OUTPUT"
+            else
+              echo "plugin_version_suffix=${COMMIT_SHA}" >> "$GITHUB_OUTPUT"
             fi
           fi
         env:
           INPUT_PLUGIN_VERSION_SUFFIX: ${{ inputs.plugin-version-suffix }}
-          INPUT_BRANCH: ${{ inputs.branch }}
+          INPUT_GIT_REF: ${{ inputs.git-ref }}
           COMMIT_SHA: ${{ steps.checkout-specified-branch.outputs.commit }}
         shell: bash
 
@@ -293,7 +316,7 @@ jobs:
     needs:
       - setup
     with:
-      branch: ${{ inputs.branch }}
+      branch: ${{ needs.setup.outputs.git-ref }}
       plugin-directory: ${{ inputs.plugin-directory }}
       package-manager: ${{ inputs.package-manager }}
       go-version: ${{ inputs.go-version }}
@@ -425,7 +448,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
-          ref: ${{ inputs.branch }}
+          ref: ${{ needs.setup.outputs.git-ref }}
           persist-credentials: false
 
       - name: Login to Google Cloud (ID token for IAP)
@@ -648,7 +671,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
-          ref: ${{ inputs.branch }}
+          ref: ${{ needs.setup.outputs.git-ref }}
           persist-credentials: false
 
       - name: Get secrets from Vault
@@ -694,7 +717,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
-          ref: ${{ inputs.branch }}
+          ref: ${{ needs.setup.outputs.git-ref }}
           persist-credentials: false
 
       - name: Download GitHub artifact
