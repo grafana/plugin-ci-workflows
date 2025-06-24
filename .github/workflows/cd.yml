@@ -607,12 +607,11 @@ jobs:
           echo "Checking for any existing artifacts in: $bucket_path"
           
           if gsutil ls "$bucket_path" 2>/dev/null | grep -q "."; then
-            echo "❌ Artifacts already exist:"
-            gsutil ls "$bucket_path"
-            echo "::error::Release artifacts already exist for version $PLUGIN_VERSION platform $PLATFORM"
-            exit 1
+            echo "⚠️Existing artifact found, skipping upload"
+            echo "gcs_artifacts_exist=true" >> "$GITHUB_OUTPUT"
           else
             echo "✅ No existing artifacts found, proceeding with upload"
+            echo "gcs_artifacts_exist=false" >> "$GITHUB_OUTPUT"
           fi
         env:
           PLATFORM: ${{ matrix.platform }}
@@ -621,6 +620,7 @@ jobs:
         shell: bash
 
       - name: Upload GCS release artifact (tag)
+        if: ${{ steps.paths.outputs.gcs_artifacts_exist == 'false' }}
         uses: google-github-actions/upload-cloud-storage@7c6e11cb7291594c5dfe0bc1dd9cd905e31e600c # v2.2.2
         with:
           path: /tmp/dist-artifacts
@@ -630,6 +630,7 @@ jobs:
           process_gcloudignore: false
 
       - name: Upload GCS release artifact (latest)
+        if: ${{ steps.paths.outputs.gcs_artifacts_exist == 'false' }}
         uses: google-github-actions/upload-cloud-storage@7c6e11cb7291594c5dfe0bc1dd9cd905e31e600c # v2.2.2
         with:
           path: /tmp/dist-artifacts-latest
@@ -639,7 +640,7 @@ jobs:
           process_gcloudignore: false
 
       - name: Upload GCS release artifacts (latest, any)
-        if: ${{ matrix.platform == 'any' }}
+        if: ${{ matrix.platform == 'any' && steps.paths.outputs.gcs_artifacts_exist == 'false' }}
         uses: google-github-actions/upload-cloud-storage@7c6e11cb7291594c5dfe0bc1dd9cd905e31e600c # v2.2.2
         with:
           path: /tmp/dist-artifacts-latest/${{ fromJSON(needs.ci.outputs.plugin).id }}-latest.zip
