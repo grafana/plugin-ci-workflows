@@ -428,6 +428,22 @@ jobs:
           ref: ${{ inputs.branch }}
           persist-credentials: false
 
+      - name: Determine if it should continue the pipeline if a publishing conflict was detected
+        id: determine-continue
+        run: |
+          # when we deploy to prod, we also deploy to ops and dev by default
+          # when deploying to prod we ignore conflict errors in ops and dev
+          # because it is likely the plugin was deployed previously to those environments for testing
+          # we don't allow prod to fail on republishing
+          if [ "${is_cd_to_prod}" == 'true' ] && [ "${current_environment}" != 'prod' ]; then
+            echo "ignore_conflicts=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ignore_conflicts=false" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          is_cd_to_prod: ${{ contains(needs.define-variables.outputs.environments, 'prod') }}
+          current_environment: ${{ matrix.environment }}
+
       - name: Login to Google Cloud (ID token for IAP)
         id: gcloud
         uses: google-github-actions/auth@ba79af03959ebeac9769e648f473a284504d9193 # v2.1.10
@@ -488,6 +504,8 @@ jobs:
           scopes: ${{ inputs.scopes }}
           gcom-publish-token: ${{ env.GCOM_PUBLISH_TOKEN }}
           gcloud-auth-token: ${{ steps.gcloud.outputs.id_token }}
+          ignore-conflicts: ${{ steps.determine-continue.outputs.ignore_conflicts }}
+
 
   trigger-argo-workflow:
     name: Trigger Argo Workflow for Grafana Cloud deployment
