@@ -619,7 +619,7 @@ jobs:
         shell: bash
 
       # if an artifact already exists we don't want to overwrite it
-      # this createse conflicts with checksums and will break the release
+      # this creates conflicts with checksums and will break the release
       # all environments use the same artifacts
       - name: Check if artifacts already exist
         id: gcs_artifacts_exist
