@@ -622,6 +622,7 @@ jobs:
       # this createse conflicts with checksums and will break the release
       # all environments use the same artifacts
       - name: Check if artifacts already exist
+        id: gcs_artifacts_exist
         run: |
           bucket_path="gs://${GCS_ARTIFACTS_RELEASE_PATH_TAG}/${PLATFORM}/"
           
@@ -641,7 +642,7 @@ jobs:
         shell: bash
 
       - name: Upload GCS release artifact (tag)
-        if: ${{ steps.paths.outputs.gcs_artifacts_exist == 'false' }}
+        if: ${{ steps.gcs_artifacts_exist.outputs.gcs_artifacts_exist == 'false' }}
         uses: google-github-actions/upload-cloud-storage@7c6e11cb7291594c5dfe0bc1dd9cd905e31e600c # v2.2.2
         with:
           path: /tmp/dist-artifacts
@@ -651,7 +652,7 @@ jobs:
           process_gcloudignore: false
 
       - name: Upload GCS release artifact (latest)
-        if: ${{ steps.paths.outputs.gcs_artifacts_exist == 'false' }}
+        if: ${{ steps.gcs_artifacts_exist.outputs.gcs_artifacts_exist == 'false' }}
         uses: google-github-actions/upload-cloud-storage@7c6e11cb7291594c5dfe0bc1dd9cd905e31e600c # v2.2.2
         with:
           path: /tmp/dist-artifacts-latest
@@ -661,7 +662,7 @@ jobs:
           process_gcloudignore: false
 
       - name: Upload GCS release artifacts (latest, any)
-        if: ${{ matrix.platform == 'any' && steps.paths.outputs.gcs_artifacts_exist == 'false' }}
+        if: ${{ matrix.platform == 'any' && steps.gcs_artifacts_exist.outputs.gcs_artifacts_exist == 'false' }}
         uses: google-github-actions/upload-cloud-storage@7c6e11cb7291594c5dfe0bc1dd9cd905e31e600c # v2.2.2
         with:
           path: /tmp/dist-artifacts-latest/${{ fromJSON(needs.ci.outputs.plugin).id }}-latest.zip
