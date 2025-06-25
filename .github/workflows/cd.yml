@@ -383,7 +383,7 @@ jobs:
             } >> "$GITHUB_OUTPUT"
           elif [ "${ENVIRONMENT}" == 'ops' ]; then
             {
-              echo 'environments=["dev", "ops"]'
+              echo 'environments=["ops"]'
               echo 'publish-docs=false'
             } >> "$GITHUB_OUTPUT"
 
