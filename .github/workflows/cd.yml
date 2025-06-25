@@ -600,6 +600,9 @@ jobs:
           GCS_UNIVERSAL_ZIP_URL_COMMIT: ${{ needs.ci.outputs.gcs-universal-zip-url-commit }}
         shell: bash
 
+      # if an artifact already exists we don't want to overwrite it
+      # this createse conflicts with checksums and will break the release
+      # all environments use the same artifacts
       - name: Check if artifacts already exist
         run: |
           bucket_path="gs://${GCS_ARTIFACTS_RELEASE_PATH_TAG}/${PLATFORM}/"
