@@ -383,7 +383,7 @@ jobs:
             } >> "$GITHUB_OUTPUT"
           elif [ "${ENVIRONMENT}" == 'ops' ]; then
             {
-              echo 'environments=["dev", "ops"]'
+              echo 'environments=["ops"]'
               echo 'publish-docs=false'
             } >> "$GITHUB_OUTPUT"
 
@@ -427,6 +427,22 @@ jobs:
         with:
           ref: ${{ inputs.branch }}
           persist-credentials: false
+
+      - name: Determine if it should continue the pipeline if a publishing conflict was detected
+        id: determine-continue
+        run: |
+          # when we deploy to prod, we also deploy to ops and dev by default
+          # when deploying to prod we ignore conflict errors in ops and dev
+          # because it is likely the plugin was deployed previously to those environments for testing
+          # we don't allow prod to fail on republishing
+          if [ "${is_cd_to_prod}" == 'true' ] && [ "${current_environment}" != 'prod' ]; then
+            echo "ignore_conflicts=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ignore_conflicts=false" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          is_cd_to_prod: ${{ contains(needs.define-variables.outputs.environments, 'prod') }}
+          current_environment: ${{ matrix.environment }}
 
       - name: Login to Google Cloud (ID token for IAP)
         id: gcloud
@@ -489,6 +505,8 @@ jobs:
           scopes: ${{ inputs.scopes }}
           gcom-publish-token: ${{ env.GCOM_PUBLISH_TOKEN }}
           gcloud-auth-token: ${{ steps.gcloud.outputs.id_token }}
+          ignore-conflicts: ${{ steps.determine-continue.outputs.ignore_conflicts }}
+
 
   trigger-argo-workflow:
     name: Trigger Argo Workflow for Grafana Cloud deployment
@@ -569,6 +587,12 @@ jobs:
           workload_identity_provider: "projects/304398677251/locations/global/workloadIdentityPools/github/providers/github-provider"
           service_account: github-plugin-ci-workflows@grafanalabs-workload-identity.iam.gserviceaccount.com
 
+      
+      - name: 'Set up Cloud SDK'
+        uses: 'google-github-actions/setup-gcloud@77e7a554d41e2ee56fc945c52dfd3f33d12def9a' # v2.1.4
+        with:
+          version: '>= 363.0.0'
+
       - name: Determine GCS artifacts paths
         id: paths
         run: |
@@ -595,7 +619,31 @@ jobs:
           GCS_UNIVERSAL_ZIP_URL_COMMIT: ${{ needs.ci.outputs.gcs-universal-zip-url-commit }}
         shell: bash
 
+      # if an artifact already exists we don't want to overwrite it
+      # this creates conflicts with checksums and will break the release
+      # all environments use the same artifacts
+      - name: Check if artifacts already exist
+        id: gcs_artifacts_exist
+        run: |
+          bucket_path="gs://${GCS_ARTIFACTS_RELEASE_PATH_TAG}/${PLATFORM}/"
+          
+          echo "Checking for any existing artifacts in: $bucket_path"
+          
+          if gsutil ls "$bucket_path" 2>/dev/null | grep -q "."; then
+            echo "⚠️Existing artifact found, skipping upload"
+            echo "gcs_artifacts_exist=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "✅ No existing artifacts found, proceeding with upload"
+            echo "gcs_artifacts_exist=false" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          PLATFORM: ${{ matrix.platform }}
+          PLUGIN_VERSION: ${{ fromJSON(needs.ci.outputs.plugin).version }}
+          GCS_ARTIFACTS_RELEASE_PATH_TAG: ${{ steps.paths.outputs.gcs_artifacts_release_path_tag }}
+        shell: bash
+
       - name: Upload GCS release artifact (tag)
+        if: ${{ steps.gcs_artifacts_exist.outputs.gcs_artifacts_exist == 'false' }}
         uses: google-github-actions/upload-cloud-storage@7c6e11cb7291594c5dfe0bc1dd9cd905e31e600c # v2.2.2
         with:
           path: /tmp/dist-artifacts
@@ -605,6 +653,7 @@ jobs:
           process_gcloudignore: false
 
       - name: Upload GCS release artifact (latest)
+        if: ${{ steps.gcs_artifacts_exist.outputs.gcs_artifacts_exist == 'false' }}
         uses: google-github-actions/upload-cloud-storage@7c6e11cb7291594c5dfe0bc1dd9cd905e31e600c # v2.2.2
         with:
           path: /tmp/dist-artifacts-latest
@@ -614,7 +663,7 @@ jobs:
           process_gcloudignore: false
 
       - name: Upload GCS release artifacts (latest, any)
-        if: ${{ matrix.platform == 'any' }}
+        if: ${{ matrix.platform == 'any' && steps.gcs_artifacts_exist.outputs.gcs_artifacts_exist == 'false' }}
         uses: google-github-actions/upload-cloud-storage@7c6e11cb7291594c5dfe0bc1dd9cd905e31e600c # v2.2.2
         with:
           path: /tmp/dist-artifacts-latest/${{ fromJSON(needs.ci.outputs.plugin).id }}-latest.zip

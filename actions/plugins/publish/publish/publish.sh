@@ -146,9 +146,17 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+# Determine if publish succeeded
 if [[ $(echo "$out" | jq -r '.plugin.id? // empty') != "" ]]; then
     echo -e "\nPlugin published successfully"
 else
+    error_code=$(echo "$out" | jq -r '.code? // empty')
+    error_message=$(echo "$out" | jq -r '.message? // empty')
+    if [[ "${IGNORE_CONFLICTS,,}" == "true" && "${error_code}" == "InvalidArgument" && "${error_message}" == *"version already exists"* ]]; then
+        echo -e "\nPlugin version already exists; IGNORE_CONFLICTS=true so treating as success"
+        exit 0
+    fi
+
     echo -e "\nPlugin publish failed"
     exit 1
 fi
