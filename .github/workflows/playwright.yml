@@ -166,7 +166,7 @@ jobs:
       - name: Set secrets
         if: github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]' && inputs.secrets != ''
         run: |
-          echo "${{ fromJson(steps.get-secrets.outputs.secrets) }}" >> .env
+          echo '${{ steps.get-secrets.outputs.secrets }}' | jq -r 'to_entries[] | "\(.key)=\(.value)"' >> .env
           cat .env
         working-directory: ${{ inputs.plugin-directory }}
 
