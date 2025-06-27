@@ -156,9 +156,16 @@ jobs:
         with:
           url: "${{ inputs.grafana-url }}"
 
+      - name: Get secrets from vault
+        if: github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]' && inputs.secrets != ''
+        id: get-secrets
+        uses: grafana/shared-workflows/actions/get-vault-secrets@get-vault-secrets/v1.2.1
+        with:
+          repo_secrets: ${{ inputs.secrets }}
+          export_env: false
       - name: Set secrets
         run: |
-          echo "${{ fromJson(inputs.secrets) }}" > .env
+          echo "${{ steps.get-secrets.outputs.secrets }}" >> .env
           cat .env
         working-directory: ${{ inputs.plugin-directory }}
 
