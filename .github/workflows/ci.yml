@@ -107,6 +107,11 @@ on:
         type: string
         required: false
         default: http://localhost:3000/
+      playwright-secrets:
+        description: The secrets to use for Playwright tests
+        type: string
+        required: false
+        default: ""
 
       # Trufflehog
       run-trufflehog:
@@ -408,6 +413,7 @@ jobs:
       playwright-config: ${{ inputs.playwright-config }}
       report-path: ${{ inputs.playwright-report-path }}
       grafana-url: ${{ inputs.playwright-grafana-url }}
+      secrets: ${{ inputs.playwright-secrets }}
 
   playwright-docker:
     name: Plugins - Dockerized Playwright E2E tests
