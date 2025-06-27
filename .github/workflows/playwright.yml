@@ -158,7 +158,7 @@ jobs:
 
       - name: Set secrets
         run: |
-          echo "${{ inputs.secrets }}" > .env
+          echo "${{ fromJson(inputs.secrets) }}" > .env
           cat .env
         working-directory: ${{ inputs.plugin-directory }}
 
