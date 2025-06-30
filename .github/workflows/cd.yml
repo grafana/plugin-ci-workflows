@@ -397,7 +397,7 @@ jobs:
               echo 'environments=[]'
               echo 'publish-docs=true'
             } >> "$GITHUB_OUTPUT"
-          elif [ "${environments}" == 'prod' ]; then
+          elif echo "${environments}" | jq 'index("prod") != null'; then
             # Special case: 'prod' deploys to all environments, to keep the catalogs in sync.
             environments="$allowed_environments"
           elif [ "${environments}" == "[]" ]; then
