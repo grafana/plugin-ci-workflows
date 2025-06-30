@@ -382,19 +382,23 @@ jobs:
           # Define environments matrix,
           # and deploy docs only if we are publishing to prod
           # Split ENVIRONMENT by comma, remove spaces, and filter only allowed values
-          allowed_environments="dev|ops|prod"
+          allowed_environments='["dev", "ops", "prod"]'
+          allowed_environments_regex=$(echo "${allowed_environments}" | jq -r 'join("|")')
           environments=$(echo "${ENVIRONMENT}" | tr ',' '\n' | sed 's/ //g' | grep -E "^(${allowed_environments})$" | jq -R . | jq -s 'unique')
           # If empty or 'none', set to empty array
           if [ -z "${ENVIRONMENT}" ] || [ "${ENVIRONMENT}" == 'none' ]; then
-          {
-            echo 'environments=[]'
-            echo 'publish-docs=false'
-          } >> "$GITHUB_OUTPUT"
+            {
+              echo 'environments=[]'
+              echo 'publish-docs=false'
+            } >> "$GITHUB_OUTPUT"
           elif [ "${DOCS_ONLY}" == 'true' ]; then
-          {
-            echo 'environments=[]'
-            echo 'publish-docs=true'
-          } >> "$GITHUB_OUTPUT"
+            {
+              echo 'environments=[]'
+              echo 'publish-docs=true'
+            } >> "$GITHUB_OUTPUT"
+          elif [ "${environments}" == 'prod' ]; then
+            # Special case: 'prod' deploys to all environments, to keep the catalogs in sync.
+            environments="$allowed_environments"
           elif [ "${environments}" == "[]" ]; then
             echo "Invalid environment(s): ${ENVIRONMENT}"
             exit 1
