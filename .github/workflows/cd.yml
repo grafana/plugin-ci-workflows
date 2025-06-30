@@ -397,19 +397,21 @@ jobs:
               echo 'environments=[]'
               echo 'publish-docs=true'
             } >> "$GITHUB_OUTPUT"
-          elif echo "${environments}" | jq 'index("prod") != null'; then
+          elif [[ "${environments}" == *"prod"* ]]; then
             # Special case: 'prod' deploys to all environments, to keep the catalogs in sync.
             environments="$allowed_environments"
           elif [ "${environments}" == "[]" ]; then
             echo "Invalid environment(s): ${ENVIRONMENT}"
             exit 1
           else
-          # publish-docs is true if 'prod' is in the environments list
-          publish_docs=$(echo "${environments}" | jq 'index("prod") != null')
-          {
-            echo "environments=${environments}"
-            echo "publish-docs=${publish_docs}"
-          } >> "$GITHUB_OUTPUT"
+            # publish-docs is true if 'prod' is in the environments list
+            publish_docs=$(echo "${environments}" | jq 'index("prod") != null')
+            # minify "environments" to a single line, or it won't be parsed properly
+            environments=$(echo "${environments}" | jq -Mc .)
+            {
+              echo "environments=${environments}"
+              echo "publish-docs=${publish_docs}"
+            } >> "$GITHUB_OUTPUT"
           fi
         env:
           ENVIRONMENT: ${{ inputs.environment }}
