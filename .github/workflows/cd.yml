@@ -379,12 +379,13 @@ jobs:
             exit 0
           fi
 
+          allowed_environments='["dev", "ops", "prod"]'
+          allowed_environments_regex=$(echo "${allowed_environments}" | jq -r 'join("|")')
+
           # Define environments matrix,
           # and deploy docs only if we are publishing to prod
           # Split ENVIRONMENT by comma, remove spaces, and filter only allowed values
-          allowed_environments='["dev", "ops", "prod"]'
-          allowed_environments_regex=$(echo "${allowed_environments}" | jq -r 'join("|")')
-          environments=$(echo "${ENVIRONMENT}" | tr ',' '\n' | sed 's/ //g' | grep -E "^(${allowed_environments})$" | jq -R . | jq -s 'unique')
+          environments=$(echo "${ENVIRONMENT}" | tr ',' '\n' | sed 's/ //g' | grep -E "^(${allowed_environments_regex})$" | jq -R . | jq -s 'unique')
           # If empty or 'none', set to empty array
           if [ -z "${ENVIRONMENT}" ] || [ "${ENVIRONMENT}" == 'none' ]; then
             {
