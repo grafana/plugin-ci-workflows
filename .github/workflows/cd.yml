@@ -175,13 +175,18 @@ on:
       environment:
         description: |
           Environment(s) to publish to.
-          Can be 'none' (or empty string), 'dev', 'ops', or 'prod'.
+          This will decide which environment(s) are used to publish to:
+          - The plugins catalog
+          - Grafana Cloud (if configured)
 
-          Publishing to 'ops' will also deploy to 'dev'.
-          Publishing to 'prod' will also deploy to 'ops' and 'dev'.
-          Setting it to 'none' will skip the deployment and run CI only.
+          Allowed values:
+          - `none` (or empty string): Skip deployment (run only CI)
+          - `dev`: Deploy to dev catalog
+          - `ops`: Deploy to ops catalog
+          - `prod`: Deploy to dev AND ops AND prod
+          - A comma separated combination of the values above. E.g.: `dev,ops`
 
-          Docs will only be published to the website when targeting 'prod'.
+          Docs will only be published to the website when targeting `prod`.
         required: true
         type: string
       docs-only:
@@ -376,32 +381,30 @@ jobs:
 
           # Define environments matrix,
           # and deploy docs only if we are publishing to prod
-          if [ "${ENVIRONMENT}" == 'dev' ]; then
-            {
-              echo 'environments=["dev"]'
-              echo 'publish-docs=false'
-            } >> "$GITHUB_OUTPUT"
-          elif [ "${ENVIRONMENT}" == 'ops' ]; then
-            {
-              echo 'environments=["ops"]'
-              echo 'publish-docs=false'
-            } >> "$GITHUB_OUTPUT"
-
-          elif [ "${ENVIRONMENT}" == 'prod' ]; then
-            {
-              echo 'environments=["dev", "ops", "prod"]'
-              echo 'publish-docs=true'
-            } >> "$GITHUB_OUTPUT"
-
-          elif [ -z "${ENVIRONMENT}" ] || [ "${ENVIRONMENT}" == 'none' ]; then
-            {
-              echo 'environments=[]'
-              echo 'publish-docs=false'
-            } >> "$GITHUB_OUTPUT"
-
-          else
-            echo "Invalid environment: ${ENVIRONMENT}"
+          # Split ENVIRONMENT by comma, remove spaces, and filter only allowed values
+          allowed_environments="dev|ops|prod"
+          environments=$(echo "${ENVIRONMENT}" | tr ',' '\n' | sed 's/ //g' | grep -E "^(${allowed_environments})$" | jq -R . | jq -s 'unique')
+          # If empty or 'none', set to empty array
+          if [ -z "${ENVIRONMENT}" ] || [ "${ENVIRONMENT}" == 'none' ]; then
+          {
+            echo 'environments=[]'
+            echo 'publish-docs=false'
+          } >> "$GITHUB_OUTPUT"
+          elif [ "${DOCS_ONLY}" == 'true' ]; then
+          {
+            echo 'environments=[]'
+            echo 'publish-docs=true'
+          } >> "$GITHUB_OUTPUT"
+          elif [ "${environments}" == "[]" ]; then
+            echo "Invalid environment(s): ${ENVIRONMENT}"
             exit 1
+          else
+          # publish-docs is true if 'prod' is in the environments list
+          publish_docs=$(echo "${environments}" | jq 'index("prod") != null')
+          {
+            echo "environments=${environments}"
+            echo "publish-docs=${publish_docs}"
+          } >> "$GITHUB_OUTPUT"
           fi
         env:
           ENVIRONMENT: ${{ inputs.environment }}
