@@ -225,6 +225,27 @@ env:
   GCS_ARTIFACTS_BUCKET: integration-artifacts
 
 jobs:
+  summary-test:
+    name: Summary test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Print job summary
+        run: |
+          echo "# 🐙 Deployment to Grafana Cloud triggered successfully via Argo
+
+          A deployment to Grafana Cloud via Argo Workflow has successfully been triggered.
+          - Plugin Version: `1.0.0`
+          - Environment(s): ${{ env.ENVIRONMENT }}
+
+          **You can follow the deployment [here](https://argo-workflows.grafana.net/)**
+          " >> "$GITHUB_STEP_SUMMARY"
+        shell: bash
+        # - Plugin Version: ${{ fromJSON(needs.ci.outputs.plugin).version }}
+        # **You can follow the deployment [here](${{ steps.trigger-argo-workflow.outputs.uri }})**
+        env:
+          ENVIRONMENT: ${{ inputs.environment }}
+
   setup:
     name: Check and setup environment
     runs-on: ubuntu-latest
@@ -507,7 +528,6 @@ jobs:
           gcloud-auth-token: ${{ steps.gcloud.outputs.id_token }}
           ignore-conflicts: ${{ steps.determine-continue.outputs.ignore_conflicts }}
 
-
   trigger-argo-workflow:
     name: Trigger Argo Workflow for Grafana Cloud deployment
     runs-on: ubuntu-latest
@@ -536,6 +556,7 @@ jobs:
         shell: bash
 
       - name: Trigger Argo Workflow
+        id: trigger-argo-workflow
         uses: grafana/shared-workflows/actions/trigger-argo-workflow@main # zizmor: ignore[unpinned-uses]
         with:
           namespace: grafana-plugins-cd
@@ -587,11 +608,10 @@ jobs:
           workload_identity_provider: "projects/304398677251/locations/global/workloadIdentityPools/github/providers/github-provider"
           service_account: github-plugin-ci-workflows@grafanalabs-workload-identity.iam.gserviceaccount.com
 
-      
-      - name: 'Set up Cloud SDK'
-        uses: 'google-github-actions/setup-gcloud@77e7a554d41e2ee56fc945c52dfd3f33d12def9a' # v2.1.4
+      - name: "Set up Cloud SDK"
+        uses: "google-github-actions/setup-gcloud@77e7a554d41e2ee56fc945c52dfd3f33d12def9a" # v2.1.4
         with:
-          version: '>= 363.0.0'
+          version: ">= 363.0.0"
 
       - name: Determine GCS artifacts paths
         id: paths
@@ -626,9 +646,9 @@ jobs:
         id: gcs_artifacts_exist
         run: |
           bucket_path="gs://${GCS_ARTIFACTS_RELEASE_PATH_TAG}/${PLATFORM}/"
-          
+
           echo "Checking for any existing artifacts in: $bucket_path"
-          
+
           if gsutil ls "$bucket_path" 2>/dev/null | grep -q "."; then
             echo "⚠️Existing artifact found, skipping upload"
             echo "gcs_artifacts_exist=true" >> "$GITHUB_OUTPUT"
