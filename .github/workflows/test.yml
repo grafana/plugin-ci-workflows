@@ -3,7 +3,7 @@ name: Matrix Output Test
 on:
   push:
     branches:
-      - academo/use-release-gcs-for-catalogue
+      - academo/test-release
 
 jobs:
   generate-matrix:
