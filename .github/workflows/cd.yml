@@ -551,7 +551,7 @@ jobs:
 
       - name: Print job summary
         run: |
-          echo '# 🐙 Grafana Cloud deployment via Argo Workflow
+          echo '# 🐙 Grafana Cloud deployment via Argo Workflows
 
           A deployment to Grafana Cloud via the plugins CD Argo Workflow has successfully been triggered.
           - Plugin Version: `${{ fromJSON(needs.ci.outputs.plugin).version }}`
