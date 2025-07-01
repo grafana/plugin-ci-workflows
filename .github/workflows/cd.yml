@@ -389,7 +389,7 @@ jobs:
               return;
             }
 
-            // Speical case to skip deployment
+            // Special case to skip deployment
             if (!ENVIRONMENT || ENVIRONMENT === 'none') {
               core.setOutput('environments', JSON.stringify([]));
               core.setOutput('publish-docs', 'false');
