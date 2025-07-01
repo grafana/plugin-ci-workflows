@@ -361,59 +361,69 @@ jobs:
     steps:
       - name: Define variables
         id: vars
-        run: |
-          # Platforms matrix
-          if [ "${HAS_BACKEND}" == 'true' ]; then
-            platforms='["linux", "darwin", "windows", "any"]'
-          else
-            platforms='["any"]'
-          fi
-          echo "platforms=$platforms" >> "$GITHUB_OUTPUT"
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        with:
+          script: |
+            // Helper to get input/env values
+            const getInput = (name, fallback = '') => {
+              return process.env[name] !== undefined ? process.env[name] : fallback;
+            };
 
-          # If we are publishing docs only, we don't need to deploy the plugin
-          if [ "${DOCS_ONLY}" == 'true' ]; then
-            {
-              echo 'environments=[]'
-              echo 'publish-docs=true'
-            } >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
+            const ENVIRONMENT = getInput('ENVIRONMENT');
+            const DOCS_ONLY = getInput('DOCS_ONLY');
+            const HAS_BACKEND = getInput('HAS_BACKEND');
 
-          allowed_environments='["dev", "ops", "prod"]'
-          allowed_environments_regex=$(echo "${allowed_environments}" | jq -r 'join("|")')
+            // Platforms matrix
+            let platforms;
+            if (HAS_BACKEND === 'true') {
+              platforms = ['linux', 'darwin', 'windows', 'any'];
+            } else {
+              platforms = ['any'];
+            }
+            core.setOutput('platforms', JSON.stringify(platforms));
 
-          # Define environments matrix,
-          # and deploy docs only if we are publishing to prod
-          # Split ENVIRONMENT by comma, remove spaces, and filter only allowed values
-          environments=$(echo "${ENVIRONMENT}" | tr ',' '\n' | sed 's/ //g' | grep -E "^(${allowed_environments_regex})$" | jq -R . | jq -s 'unique')
-          # If empty or 'none', set to empty array
-          if [ -z "${ENVIRONMENT}" ] || [ "${ENVIRONMENT}" == 'none' ]; then
-            {
-              echo 'environments=[]'
-              echo 'publish-docs=false'
-            } >> "$GITHUB_OUTPUT"
-            exit 0
-          elif [[ "${environments}" == *"prod"* ]]; then
-            # Special case: 'prod' deploys to all environments, to keep the catalogs in sync.
-            environments="$allowed_environments"
-          elif [ "${environments}" == "[]" ]; then
-            echo "Invalid environment(s): ${ENVIRONMENT}"
-            exit 1
-          fi
+            // Docs only: skip plugin deployment
+            if (DOCS_ONLY === 'true') {
+              core.setOutput('environments', JSON.stringify([]));
+              core.setOutput('publish-docs', 'true');
+              return;
+            }
 
-          # publish-docs is true if 'prod' is in the environments list
-          publish_docs=$(echo "${environments}" | jq 'index("prod") != null')
-          # minify "environments" to a single line, or it won't be parsed properly
-          environments=$(echo "${environments}" | jq -Mc .)
-          {
-            echo "environments=${environments}"
-            echo "publish-docs=${publish_docs}"
-          } >> "$GITHUB_OUTPUT"
+            // Speical case to skip deployment
+            if (!ENVIRONMENT || ENVIRONMENT === 'none') {
+              core.setOutput('environments', JSON.stringify([]));
+              core.setOutput('publish-docs', 'false');
+              return;
+            }
+
+            // Parse and filter environments
+            const allowedEnvironments = ['dev', 'ops', 'prod'];
+            let environments = [];
+            environments = ENVIRONMENT.split(',')
+              .map(e => e.trim())
+              .filter(e => allowedEnvironments.includes(e));
+
+            // Special case: 'prod' means all environments
+            if (environments.includes('prod')) {
+              environments = allowedEnvironments;
+            }
+
+            // Remove duplicates and sort
+            environments = Array.from(new Set(environments));
+
+            if (environments.length === 0) {
+              core.setFailed(`Invalid environment(s): ${ENVIRONMENT}`);
+              return;
+            }
+
+            // publish-docs is true if 'prod' is in the environments list
+            const publishDocs = environments.includes('prod');
+            core.setOutput('environments', JSON.stringify(environments));
+            core.setOutput('publish-docs', String(publishDocs));
         env:
           ENVIRONMENT: ${{ inputs.environment }}
           DOCS_ONLY: ${{ inputs.docs-only }}
           HAS_BACKEND: ${{ fromJSON(needs.ci.outputs.plugin).has-backend }}
-        shell: bash
 
   publish-to-catalog:
     name: Publish to catalog (${{ matrix.environment }})
@@ -630,9 +640,9 @@ jobs:
         id: gcs_artifacts_exist
         run: |
           bucket_path="gs://${GCS_ARTIFACTS_RELEASE_PATH_TAG}/${PLATFORM}/"
-          
+
           echo "Checking for any existing artifacts in: $bucket_path"
-          
+
           if gsutil ls "$bucket_path" 2>/dev/null | grep -q "."; then
             echo "⚠️Existing artifact found, skipping upload"
             echo "gcs_artifacts_exist=true" >> "$GITHUB_OUTPUT"
