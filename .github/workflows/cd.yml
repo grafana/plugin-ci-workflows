@@ -551,14 +551,14 @@ jobs:
 
       - name: Print job summary
         run: |
-          echo '# 🐙 Grafana Cloud deployment via Argo Workflows
+          echo "# 🐙 Grafana Cloud deployment via Argo Workflows
 
           A deployment to Grafana Cloud via the plugins CD Argo Workflow has successfully been triggered.
-          - Plugin Version: `${{ fromJSON(needs.ci.outputs.plugin).version }}`
-          - Environment(s): `'"${ENVIRONMENT}"'`
+          - Plugin Version: \`${{ fromJSON(needs.ci.outputs.plugin).version }}\`
+          - Environment(s): \`${ENVIRONMENT}\`
 
           **👉 You can follow the deployment [here](${{ steps.trigger-argo-workflow.outputs.uri }})**
-          ' >> "$GITHUB_STEP_SUMMARY"
+          " >> "$GITHUB_STEP_SUMMARY"
         shell: bash
         env:
           ENVIRONMENT: ${{ inputs.environment }}
