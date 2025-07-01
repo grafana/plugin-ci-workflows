@@ -232,14 +232,14 @@ jobs:
     steps:
       - name: Print job summary
         run: |
-          echo "# 🐙 Deployment to Grafana Cloud triggered successfully via Argo
+          echo '# 🐙 Grafana Cloud deployment via Argo
 
           A deployment to Grafana Cloud via Argo Workflow has successfully been triggered.
           - Plugin Version: `1.0.0`
-          - Environment(s): ${{ env.ENVIRONMENT }}
+          - Environment(s): '"${ENVIRONMENT}"'
 
-          **You can follow the deployment [here](https://argo-workflows.grafana.net/)**
-          " >> "$GITHUB_STEP_SUMMARY"
+          **👉 You can follow the deployment [here](https://argo-workflows.grafana.net/)**
+          ' >> "$GITHUB_STEP_SUMMARY"
         shell: bash
         # - Plugin Version: ${{ fromJSON(needs.ci.outputs.plugin).version }}
         # **You can follow the deployment [here](${{ steps.trigger-argo-workflow.outputs.uri }})**
