@@ -415,6 +415,7 @@ jobs:
     needs:
       - define-variables
       - ci
+      - upload-to-gcs-release
     strategy:
       # Allow each stage to be deployed independently, even if others fails
       fail-fast: false
@@ -500,13 +501,13 @@ jobs:
       - name: Publish to catalog
         uses: grafana/plugin-ci-workflows/actions/plugins/publish/publish@main # zizmor: ignore[unpinned-uses]
         with:
+          # TODO: change
           zips: ${{ needs.ci.outputs.gcs-zip-urls-commit }}
           environment: ${{ matrix.environment }}
           scopes: ${{ inputs.scopes }}
           gcom-publish-token: ${{ env.GCOM_PUBLISH_TOKEN }}
           gcloud-auth-token: ${{ steps.gcloud.outputs.id_token }}
           ignore-conflicts: ${{ steps.determine-continue.outputs.ignore_conflicts }}
-
 
   trigger-argo-workflow:
     name: Trigger Argo Workflow for Grafana Cloud deployment
@@ -549,8 +550,6 @@ jobs:
             commit_link=https://${{ github.repository_owner }}/${{ github.event.repository.name }}/commit/${{ github.sha }}
             auto_merge_environments=${{ inputs.auto-merge-environments }}
 
-  # Note: This job can be removed once provisioned plugins releases are moved to the
-  # tailored plugins catalog instead of using GCS.
   upload-to-gcs-release:
     name: Upload to GCS (release)
     runs-on: ubuntu-latest
@@ -560,6 +559,10 @@ jobs:
       - define-variables
 
     if: ${{ !inputs.docs-only && needs.define-variables.outputs.environments != '[]' }}
+
+    outputs:
+      # Not quite sure how to combine the matrix output since the matrix values come from a variable...
+      tagged-release-artifacts: ${{ steps.outputs.outputs.tagged_release_artifacts }}
 
     strategy:
       matrix:
@@ -587,11 +590,10 @@ jobs:
           workload_identity_provider: "projects/304398677251/locations/global/workloadIdentityPools/github/providers/github-provider"
           service_account: github-plugin-ci-workflows@grafanalabs-workload-identity.iam.gserviceaccount.com
 
-      
-      - name: 'Set up Cloud SDK'
-        uses: 'google-github-actions/setup-gcloud@77e7a554d41e2ee56fc945c52dfd3f33d12def9a' # v2.1.4
+      - name: "Set up Cloud SDK"
+        uses: "google-github-actions/setup-gcloud@77e7a554d41e2ee56fc945c52dfd3f33d12def9a" # v2.1.4
         with:
-          version: '>= 363.0.0'
+          version: ">= 363.0.0"
 
       - name: Determine GCS artifacts paths
         id: paths
@@ -626,9 +628,9 @@ jobs:
         id: gcs_artifacts_exist
         run: |
           bucket_path="gs://${GCS_ARTIFACTS_RELEASE_PATH_TAG}/${PLATFORM}/"
-          
+
           echo "Checking for any existing artifacts in: $bucket_path"
-          
+
           if gsutil ls "$bucket_path" 2>/dev/null | grep -q "."; then
             echo "⚠️Existing artifact found, skipping upload"
             echo "gcs_artifacts_exist=true" >> "$GITHUB_OUTPUT"
@@ -670,6 +672,13 @@ jobs:
           destination: "${{ steps.paths.outputs.gcs_artifacts_release_path_latest }}"
           parent: false
           process_gcloudignore: false
+
+      - name: Determine outputs
+        id: outputs
+        run: |
+          tagged_release_artifacts=$(ls -1 /tmp/dist-artifacts/*.zip | jq -MRsc 'split("\n")[:-1]')
+          echo "$tagged_release_artifacts" >> "$GITHUB_OUTPUT"
+        shell: bash
 
   publish-docs:
     name: Publish docs
