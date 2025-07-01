@@ -1,0 +1,68 @@
+name: Matrix Output Test
+
+on:
+  push:
+    branches:
+      - academo/use-release-gcs-for-catalogue
+
+jobs:
+  generate-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - name: Generate random strings array
+        id: set-matrix
+        run: |
+          # Generate 1-5 random strings
+          count=$((RANDOM % 5 + 1))
+          strings=()
+          
+          for ((i=1; i<=count; i++)); do
+            # Generate random string of 8 characters
+            random_string=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 8 | head -n 1)
+            strings+=("\"$random_string\"")
+          done
+          
+          # Join array elements with commas
+          matrix_json="[$(IFS=,; echo "${strings[*]}")]"
+          echo "Generated matrix: $matrix_json"
+          echo "matrix=$matrix_json" >> $GITHUB_OUTPUT
+
+  matrix-job:
+    runs-on: ubuntu-latest
+    needs: generate-matrix
+    strategy:
+      matrix:
+        value: ${{ fromJSON(needs.generate-matrix.outputs.matrix) }}
+    outputs:
+      # Create unique output names using matrix values
+      result-${{ matrix.value }}: ${{ steps.process.outputs.result }}
+    steps:
+      - name: Process matrix value
+        id: process
+        run: |
+          echo "Processing value: ${{ matrix.value }}"
+          result="processed-${{ matrix.value }}-$(date +%s)"
+          echo "result=$result" >> $GITHUB_OUTPUT
+          echo "Generated result: $result"
+
+  collect-results:
+    runs-on: ubuntu-latest
+    needs: 
+      - generate-matrix
+      - matrix-job
+    steps:
+      - name: Display all matrix job outputs
+        run: |
+          echo "All outputs from matrix job:"
+          echo '${{ toJSON(needs.matrix-job.outputs) }}'
+          
+          # Parse and display each output individually
+          echo ""
+          echo "Individual results:"
+          matrix='${{ needs.generate-matrix.outputs.matrix }}'
+          echo "Original matrix: $matrix"
+          
+          # Note: In a real scenario, you'd need to iterate through the matrix
+          # values to access each specific output. This shows the combined results.
