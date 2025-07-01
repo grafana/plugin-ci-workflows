@@ -3,7 +3,7 @@ name: Matrix Output Test
 on:
   push:
     branches:
-      - academo/test-release
+      - *
 
 jobs:
   generate-matrix:
