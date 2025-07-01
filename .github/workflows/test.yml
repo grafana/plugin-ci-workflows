@@ -19,9 +19,9 @@ jobs:
           strings=()
           
           for ((i=1; i<=count; i++)); do
-            # Generate random string of 8 characters
-            random_string=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 8 | head -n 1)
-            strings+=("\"$random_string\"")
+            # Generate random string using openssl
+            random_string=$(openssl rand -hex 4)
+            strings+=("\"str-$random_string\"")
           done
           
           # Join array elements with commas
