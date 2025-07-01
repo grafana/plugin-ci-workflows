@@ -225,27 +225,6 @@ env:
   GCS_ARTIFACTS_BUCKET: integration-artifacts
 
 jobs:
-  summary-test:
-    name: Summary test
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Print job summary
-        run: |
-          echo '# 🐙 Grafana Cloud deployment via Argo
-
-          A deployment to Grafana Cloud via Argo Workflow has successfully been triggered.
-          - Plugin Version: `1.0.0`
-          - Environment(s): '"${ENVIRONMENT}"'
-
-          **👉 You can follow the deployment [here](https://argo-workflows.grafana.net/)**
-          ' >> "$GITHUB_STEP_SUMMARY"
-        shell: bash
-        # - Plugin Version: ${{ fromJSON(needs.ci.outputs.plugin).version }}
-        # **You can follow the deployment [here](${{ steps.trigger-argo-workflow.outputs.uri }})**
-        env:
-          ENVIRONMENT: ${{ inputs.environment }}
-
   setup:
     name: Check and setup environment
     runs-on: ubuntu-latest
@@ -569,6 +548,20 @@ jobs:
             commit=${{ github.sha }}
             commit_link=https://${{ github.repository_owner }}/${{ github.event.repository.name }}/commit/${{ github.sha }}
             auto_merge_environments=${{ inputs.auto-merge-environments }}
+
+      - name: Print job summary
+        run: |
+          echo '# 🐙 Grafana Cloud deployment via Argo Workflow
+
+          A deployment to Grafana Cloud via the plugins CD Argo Workflow has successfully been triggered.
+          - Plugin Version: `${{ fromJSON(needs.ci.outputs.plugin).version }}`
+          - Environment(s): '"${ENVIRONMENT}"'
+
+          **👉 You can follow the deployment [here](${{ steps.trigger-argo-workflow.outputs.uri }})**
+          ' >> "$GITHUB_STEP_SUMMARY"
+        shell: bash
+        env:
+          ENVIRONMENT: ${{ inputs.environment }}
 
   # Note: This job can be removed once provisioned plugins releases are moved to the
   # tailored plugins catalog instead of using GCS.
