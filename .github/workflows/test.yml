@@ -36,8 +36,8 @@ jobs:
       matrix:
         value: ${{ fromJSON(needs.generate-matrix.outputs.matrix) }}
     outputs:
-      # Create unique output names using matrix values
-      result-${{ matrix.value }}: ${{ steps.process.outputs.result }}
+      # Matrix jobs with same output name will overwrite each other
+      result: ${{ steps.process.outputs.result }}
     steps:
       - name: Process matrix value
         id: process
@@ -53,16 +53,14 @@ jobs:
       - generate-matrix
       - matrix-job
     steps:
-      - name: Display all matrix job outputs
+      - name: Display matrix job output
         run: |
-          echo "All outputs from matrix job:"
+          echo "Output from matrix job:"
+          echo "result: ${{ needs.matrix-job.outputs.result }}"
+          
+          echo ""
+          echo "All outputs object:"
           echo '${{ toJSON(needs.matrix-job.outputs) }}'
           
-          # Parse and display each output individually
           echo ""
-          echo "Individual results:"
-          matrix='${{ needs.generate-matrix.outputs.matrix }}'
-          echo "Original matrix: $matrix"
-          
-          # Note: In a real scenario, you'd need to iterate through the matrix
-          # values to access each specific output. This shows the combined results.
+          echo "This will show only the result from the last matrix job that completed"
