@@ -727,16 +727,20 @@ jobs:
       - name: Create GCS release URL artifact
         run: |
           # Create JSON with single URL for this platform
-          gcs_prefix="https://storage.googleapis.com/${{ env.GCS_ARTIFACTS_BUCKET }}"
+          gcs_prefix="https://storage.googleapis.com"
           
-          # Find the single zip file for this platform
-          zip_file=$(find /tmp/dist-artifacts -name "${{ steps.paths.outputs.gcs_upload_glob }}" -type f | head -1)
+          # Find the single zip file (not sha1/md5) for this platform
+          zip_file=$(find /tmp/dist-artifacts -name "$GCS_UPLOAD_GLOB" -type f -name "*.zip" | head -1)
           filename=$(basename "$zip_file")
-          gcs_url="$gcs_prefix/${{ steps.paths.outputs.gcs_artifacts_release_path_tag }}/${{ matrix.platform }}/$filename"
+          gcs_url="$gcs_prefix/$GCS_ARTIFACTS_RELEASE_PATH_TAG/$PLATFORM/$filename"
           
-          echo "Generated GCS URL for platform ${{ matrix.platform }}: $gcs_url"
-          echo "\"$gcs_url\"" > gcs-release-url-${{ matrix.platform }}.json
-          cat gcs-release-url-${{ matrix.platform }}.json
+          echo "Generated GCS URL for platform $PLATFORM: $gcs_url"
+          echo "\"$gcs_url\"" > gcs-release-url-$PLATFORM.json
+          cat gcs-release-url-$PLATFORM.json
+        env:
+          GCS_UPLOAD_GLOB: ${{ steps.paths.outputs.gcs_upload_glob }}
+          GCS_ARTIFACTS_RELEASE_PATH_TAG: ${{ steps.paths.outputs.gcs_artifacts_release_path_tag }}
+          PLATFORM: ${{ matrix.platform }}
         shell: bash
 
       - name: Upload GCS URL artifact
