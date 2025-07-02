@@ -553,7 +553,7 @@ jobs:
       - name: Publish to catalog
         uses: grafana/plugin-ci-workflows/actions/plugins/publish/publish@main # zizmor: ignore[unpinned-uses]
         with:
-          zips: ${{ needs.ci.outputs.gcs-zip-urls-commit }}
+          zips: ${{ steps.collect-gcs-urls.outputs.gcs-zip-urls }}
           environment: ${{ matrix.environment }}
           scopes: ${{ inputs.scopes }}
           gcom-publish-token: ${{ env.GCOM_PUBLISH_TOKEN }}
