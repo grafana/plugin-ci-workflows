@@ -676,6 +676,10 @@ jobs:
           parent: false
           process_gcloudignore: false
 
+      # all zip artifacts are already present in /tmp/dist-artifacts
+      # we can generate all the urls here in a single step 
+      # as a matrix job this will run for each platform 
+      # and we will keep the last one. They all generate the same urls.
       - name: Generate GCS release URLs
         id: generate-urls
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
