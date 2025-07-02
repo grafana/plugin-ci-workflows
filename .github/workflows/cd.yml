@@ -440,7 +440,7 @@ jobs:
       - name: Download GCS release URL artifacts
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
-          pattern: gcs-release-url-*
+          pattern: gcs-release-urls-*
           merge-multiple: true
 
       - name: Collect and merge GCS release URLs
@@ -451,7 +451,7 @@ jobs:
             const fs = require('fs');
             
             // Find all GCS URL files
-            const files = fs.readdirSync('.').filter(file => file.startsWith('gcs-release-url-') && file.endsWith('.json'));
+            const files = fs.readdirSync('.').filter(file => file.startsWith('gcs-release-urls-') && file.endsWith('.json'));
             console.log('Found GCS URL files:', files);
             
             // Collect all URLs into a single array
@@ -460,9 +460,10 @@ jobs:
             for (const file of files) {
               try {
                 const content = fs.readFileSync(file, 'utf8');
-                const url = JSON.parse(content);
-                allUrls.push(url);
-                console.log(`Added URL from ${file}: ${url}`);
+                const urls = JSON.parse(content);
+                // urls is now an array, so spread it into allUrls
+                allUrls.push(...urls);
+                console.log(`Added ${urls.length} URLs from ${file}:`, urls);
               } catch (error) {
                 console.error(`Error processing ${file}:`, error.message);
               }
@@ -725,29 +726,49 @@ jobs:
           process_gcloudignore: false
 
       - name: Create GCS release URL artifact
-        run: |
-          # Create JSON with single URL for this platform
-          gcs_prefix="https://storage.googleapis.com"
-          
-          # Find the single zip file (not sha1/md5) for this platform
-          zip_file=$(find /tmp/dist-artifacts -name "$GCS_UPLOAD_GLOB" -type f -name "*.zip" | head -1)
-          filename=$(basename "$zip_file")
-          gcs_url="$gcs_prefix/$GCS_ARTIFACTS_RELEASE_PATH_TAG/$PLATFORM/$filename"
-          
-          echo "Generated GCS URL for platform $PLATFORM: $gcs_url"
-          echo "\"$gcs_url\"" > gcs-release-url-$PLATFORM.json
-          cat gcs-release-url-$PLATFORM.json
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         env:
-          GCS_UPLOAD_GLOB: ${{ steps.paths.outputs.gcs_upload_glob }}
           GCS_ARTIFACTS_RELEASE_PATH_TAG: ${{ steps.paths.outputs.gcs_artifacts_release_path_tag }}
           PLATFORM: ${{ matrix.platform }}
-        shell: bash
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            
+            const gcsPrefix = 'https://storage.googleapis.com';
+            const gcsPath = process.env.GCS_ARTIFACTS_RELEASE_PATH_TAG;
+            const platform = process.env.PLATFORM;
+            const platformUrls = [];
+            
+            // Find all zip files in the artifacts directory
+            const artifactsDir = '/tmp/dist-artifacts';
+            const files = fs.readdirSync(artifactsDir);
+            
+            console.log(`Found files in ${artifactsDir}:`, files);
+            
+            // Filter for zip files only
+            const zipFiles = files.filter(file => file.endsWith('.zip'));
+            console.log(`Found zip files for platform ${platform}:`, zipFiles);
+            
+            // Create GCS URLs for all zip files
+            for (const zipFile of zipFiles) {
+              const gcsUrl = `${gcsPrefix}/${gcsPath}/${platform}/${zipFile}`;
+              platformUrls.push(gcsUrl);
+              console.log(`Generated GCS URL for ${zipFile}: ${gcsUrl}`);
+            }
+            
+            // Write the URLs array to artifact file
+            const outputFile = `gcs-release-urls-${platform}.json`;
+            fs.writeFileSync(outputFile, JSON.stringify(platformUrls, null, 2));
+            
+            console.log(`Generated ${platformUrls.length} URLs for platform ${platform}:`);
+            console.log(JSON.stringify(platformUrls, null, 2));
 
       - name: Upload GCS URL artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: gcs-release-url-${{ matrix.platform }}
-          path: gcs-release-url-${{ matrix.platform }}.json
+          name: gcs-release-urls-${{ matrix.platform }}
+          path: gcs-release-urls-${{ matrix.platform }}.json
           retention-days: 1
 
   publish-docs:
