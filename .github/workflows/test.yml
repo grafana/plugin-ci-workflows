@@ -65,7 +65,10 @@ jobs:
       - name: Process results
         run: |
           echo "Processing results..."
-          for artifact in result-*.json; do
-            echo "Processing artifact: $artifact"
-            cat "$artifact"
+          ls -la
+          for artifact in result-*/result.json; do
+            if [ -f "$artifact" ]; then
+              echo "Processing artifact: $artifact"
+              cat "$artifact"
+            fi
           done
