@@ -429,22 +429,6 @@ jobs:
           ref: ${{ inputs.branch }}
           persist-credentials: false
 
-      - name: debug, print ci commit urls
-        run: |
-          echo "CI zip urls"
-          echo "$URLS"
-        env:
-          URLS: ${{ needs.ci.outputs.gcs-zip-urls-commit }}
-        shell: bash
-
-      - name: Debug - Show GCS release URLs
-        run: |
-          echo "=== DEBUG: GCS Release URLs ==="
-          echo "$GCS_URLS"
-          echo ""
-        env:
-          GCS_URLS: ${{ needs.upload-to-gcs-release.outputs.gcs-zip-urls }}
-        shell: bash
 
       - name: Determine if it should continue the pipeline if a publishing conflict was detected
         id: determine-continue
