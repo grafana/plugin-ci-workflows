@@ -35,17 +35,21 @@ jobs:
     strategy:
       matrix:
         value: ${{ fromJSON(needs.generate-matrix.outputs.matrix) }}
-    outputs:
-      # Matrix jobs with same output name will overwrite each other
-      result: ${{ steps.process.outputs.result }}
     steps:
       - name: Process matrix value
         id: process
         run: |
           echo "Processing value: ${{ matrix.value }}"
           result="processed-${{ matrix.value }}-$(date +%s)"
-          echo "result=$result" >> $GITHUB_OUTPUT
           echo "Generated result: $result"
+          echo "{\"${matrix.value}\": \"$result\"}" > result.json
+
+      - name: Upload result to artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: result-${{ matrix.value }}
+          path: result.json
+          retention-days: 1
 
   collect-results:
     runs-on: ubuntu-latest
@@ -53,14 +57,15 @@ jobs:
       - generate-matrix
       - matrix-job
     steps:
-      - name: Display matrix job output
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: result-*
+          merge-multiple: true
+      - name: Process results
         run: |
-          echo "Output from matrix job:"
-          echo "result: ${{ needs.matrix-job.outputs.result }}"
-          
-          echo ""
-          echo "All outputs object:"
-          echo '${{ toJSON(needs.matrix-job.outputs) }}'
-          
-          echo ""
-          echo "This will show only the result from the last matrix job that completed"
+          echo "Processing results..."
+          for artifact in result-*.json; do
+            echo "Processing artifact: $artifact"
+            cat "$artifact"
+          done
