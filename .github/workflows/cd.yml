@@ -414,6 +414,7 @@ jobs:
     if: ${{ !inputs.docs-only && !inputs.gcs-only && needs.define-variables.outputs.environments != '[]' }}
     needs:
       - define-variables
+      - upload-to-gcs-release
       - ci
     strategy:
       # Allow each stage to be deployed independently, even if others fails
@@ -427,6 +428,58 @@ jobs:
         with:
           ref: ${{ inputs.branch }}
           persist-credentials: false
+
+      - name: debug, print ci commit urls
+        run: |
+          echo "CI zip urls"
+          echo "$URLS"
+        env:
+          URLS: ${{ needs.ci.outputs.gcs-zip-urls-commit }}
+        shell: bash
+
+      - name: Download GCS release URL artifacts
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: gcs-release-url-*
+          merge-multiple: true
+
+      - name: Collect and merge GCS release URLs
+        id: collect-gcs-urls
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        with:
+          script: |
+            const fs = require('fs');
+            
+            // Find all GCS URL files
+            const files = fs.readdirSync('.').filter(file => file.startsWith('gcs-release-url-') && file.endsWith('.json'));
+            console.log('Found GCS URL files:', files);
+            
+            // Collect all URLs into a single array
+            const allUrls = [];
+            
+            for (const file of files) {
+              try {
+                const content = fs.readFileSync(file, 'utf8');
+                const url = JSON.parse(content);
+                allUrls.push(url);
+                console.log(`Added URL from ${file}: ${url}`);
+              } catch (error) {
+                console.error(`Error processing ${file}:`, error.message);
+              }
+            }
+            
+            const gcsZipUrls = JSON.stringify(allUrls);
+            console.log('Final GCS release URLs:', gcsZipUrls);
+            core.setOutput('gcs-zip-urls', gcsZipUrls);
+
+      - name: Debug - Show collected GCS release URLs
+        run: |
+          echo "=== DEBUG: Collected GCS Release URLs ==="
+          echo "$GCS_URLS"
+          echo ""
+        env:
+          GCS_URLS: ${{ steps.collect-gcs-urls.outputs.gcs-zip-urls }}
+        shell: bash
 
       - name: Determine if it should continue the pipeline if a publishing conflict was detected
         id: determine-continue
@@ -670,6 +723,28 @@ jobs:
           destination: "${{ steps.paths.outputs.gcs_artifacts_release_path_latest }}"
           parent: false
           process_gcloudignore: false
+
+      - name: Create GCS release URL artifact
+        run: |
+          # Create JSON with single URL for this platform
+          gcs_prefix="https://storage.googleapis.com/${{ env.GCS_ARTIFACTS_BUCKET }}"
+          
+          # Find the single zip file for this platform
+          zip_file=$(find /tmp/dist-artifacts -name "${{ steps.paths.outputs.gcs_upload_glob }}" -type f | head -1)
+          filename=$(basename "$zip_file")
+          gcs_url="$gcs_prefix/${{ steps.paths.outputs.gcs_artifacts_release_path_tag }}/${{ matrix.platform }}/$filename"
+          
+          echo "Generated GCS URL for platform ${{ matrix.platform }}: $gcs_url"
+          echo "\"$gcs_url\"" > gcs-release-url-${{ matrix.platform }}.json
+          cat gcs-release-url-${{ matrix.platform }}.json
+        shell: bash
+
+      - name: Upload GCS URL artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: gcs-release-url-${{ matrix.platform }}
+          path: gcs-release-url-${{ matrix.platform }}.json
+          retention-days: 1
 
   publish-docs:
     name: Publish docs
