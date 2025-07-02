@@ -42,13 +42,13 @@ jobs:
           echo "Processing value: ${{ matrix.value }}"
           result="processed-${{ matrix.value }}-$(date +%s)"
           echo "Generated result: $result"
-          echo "{\"${{ matrix.value }}\": \"$result\"}" > result.json
+          echo "{\"${{ matrix.value }}\": \"$result\"}" > result-${{ matrix.value }}.json
 
       - name: Upload result to artifact
         uses: actions/upload-artifact@v4
         with:
           name: result-${{ matrix.value }}
-          path: result.json
+          path: result-${{ matrix.value }}.json
           retention-days: 1
 
   collect-results:
@@ -66,10 +66,9 @@ jobs:
         run: |
           echo "Processing results..."
           ls -la
-          cat result.json
-          # for artifact in result-*/result.json; do
-          #   if [ -f "$artifact" ]; then
-          #     echo "Processing artifact: $artifact"
-          #     cat "$artifact"
-          #   fi
-          # done
+          for json_file in *.json; do
+            if [ -f "$json_file" ]; then
+              echo "Processing file: $json_file"
+              cat "$json_file"
+            fi
+          done
