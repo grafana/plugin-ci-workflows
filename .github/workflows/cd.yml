@@ -236,10 +236,10 @@ jobs:
     steps:
       - name: Check environment
         run: |
-          # if [ -n "${ENVIRONMENT}" ] && [ "${ENVIRONMENT}" != 'none' ] && [ "${ENVIRONMENT}" != 'dev' ] && [ "${BRANCH}" != 'main' ]; then
-          #   echo "Only 'dev' environment is allowed for non-main branches."
-          #   exit 1
-          # fi
+          if [ -n "${ENVIRONMENT}" ] && [ "${ENVIRONMENT}" != 'none' ] && [ "${ENVIRONMENT}" != 'dev' ] && [ "${BRANCH}" != 'main' ]; then
+            echo "Only 'dev' environment is allowed for non-main branches."
+            exit 1
+          fi
 
           if [ "${DOCS_ONLY}" == 'true' ]; then
             if [ "${ENVIRONMENT}" != 'prod' ]; then
