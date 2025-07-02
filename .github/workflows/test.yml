@@ -42,7 +42,7 @@ jobs:
           echo "Processing value: ${{ matrix.value }}"
           result="processed-${{ matrix.value }}-$(date +%s)"
           echo "Generated result: $result"
-          echo "{\"${matrix.value}\": \"$result\"}" > result.json
+          echo "{\"${{ matrix.value }}\": \"$result\"}" > result.json
 
       - name: Upload result to artifact
         uses: actions/upload-artifact@v4
