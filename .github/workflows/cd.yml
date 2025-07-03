@@ -414,6 +414,7 @@ jobs:
     if: ${{ !inputs.docs-only && !inputs.gcs-only && needs.define-variables.outputs.environments != '[]' }}
     needs:
       - define-variables
+      - upload-to-gcs-release
       - ci
     strategy:
       # Allow each stage to be deployed independently, even if others fails
@@ -427,6 +428,7 @@ jobs:
         with:
           ref: ${{ inputs.branch }}
           persist-credentials: false
+
 
       - name: Determine if it should continue the pipeline if a publishing conflict was detected
         id: determine-continue
@@ -500,7 +502,7 @@ jobs:
       - name: Publish to catalog
         uses: grafana/plugin-ci-workflows/actions/plugins/publish/publish@main # zizmor: ignore[unpinned-uses]
         with:
-          zips: ${{ needs.ci.outputs.gcs-zip-urls-commit }}
+          zips: ${{ needs.upload-to-gcs-release.outputs.gcs-zip-urls }}
           environment: ${{ matrix.environment }}
           scopes: ${{ inputs.scopes }}
           gcom-publish-token: ${{ env.GCOM_PUBLISH_TOKEN }}
@@ -560,6 +562,9 @@ jobs:
       - define-variables
 
     if: ${{ !inputs.docs-only && needs.define-variables.outputs.environments != '[]' }}
+
+    outputs:
+      gcs-zip-urls: ${{ steps.generate-urls.outputs.gcs-zip-urls }}
 
     strategy:
       matrix:
@@ -670,6 +675,59 @@ jobs:
           destination: "${{ steps.paths.outputs.gcs_artifacts_release_path_latest }}"
           parent: false
           process_gcloudignore: false
+
+      # all zip artifacts are already present in /tmp/dist-artifacts
+      # we can generate all the urls here in a single step 
+      # as a matrix job this will run for each platform 
+      # and we will keep the last one. They all generate the same urls.
+      - name: Generate GCS release URLs
+        id: generate-urls
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        env:
+          GCS_ARTIFACTS_RELEASE_PATH_TAG: ${{ steps.paths.outputs.gcs_artifacts_release_path_tag }}
+        with:
+          script: |
+            const fs = require('fs');
+            
+            const gcsPrefix = 'https://storage.googleapis.com';
+            const gcsPath = process.env.GCS_ARTIFACTS_RELEASE_PATH_TAG;
+            const allUrls = [];
+            
+            // Find all zip files in the artifacts directory
+            const artifactsDir = '/tmp/dist-artifacts';
+            const files = fs.readdirSync(artifactsDir);
+            const zipFiles = files.filter(file => file.endsWith('.zip'));
+            
+            console.log(`Found ${zipFiles.length} zip files:`, zipFiles);
+            
+            // Create GCS URLs for all zip files, each in its correct platform directory
+            for (const zipFile of zipFiles) {
+              let targetPlatform;
+              
+              // Determine platform directory based on filename pattern
+              switch (true) {
+                case zipFile.includes('.darwin_'):
+                  targetPlatform = 'darwin';
+                  break;
+                case zipFile.includes('.linux_'):
+                  targetPlatform = 'linux';
+                  break;
+                case zipFile.includes('.windows_'):
+                  targetPlatform = 'windows';
+                  break;
+                default:
+                  targetPlatform = 'any';
+                  break;
+              }
+              
+              const gcsUrl = `${gcsPrefix}/${gcsPath}/${targetPlatform}/${zipFile}`;
+              allUrls.push(gcsUrl);
+              console.log(`Generated GCS URL: ${gcsUrl}`);
+            }
+            
+            const gcsZipUrls = JSON.stringify(allUrls);
+            console.log(`Generated ${allUrls.length} total URLs:`, gcsZipUrls);
+            core.setOutput('gcs-zip-urls', gcsZipUrls);
 
   publish-docs:
     name: Publish docs
