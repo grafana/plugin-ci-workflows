@@ -183,13 +183,18 @@ on:
       environment:
         description: |
           Environment(s) to publish to.
-          Can be 'none' (or empty string), 'dev', 'ops', or 'prod'.
+          This will decide which environment(s) are used to publish to:
+          - The plugins catalog
+          - Grafana Cloud (if configured)
 
-          Publishing to 'ops' will also deploy to 'dev'.
-          Publishing to 'prod' will also deploy to 'ops' and 'dev'.
-          Setting it to 'none' will skip the deployment and run CI only.
+          Allowed values:
+          - `none` (or empty string): Skip deployment (run only CI)
+          - `dev`: Deploy to dev catalog
+          - `ops`: Deploy to ops catalog
+          - `prod`: Deploy to dev AND ops AND prod
+          - A comma separated combination of the values above. E.g.: `dev,ops`
 
-          Docs will only be published to the website when targeting 'prod'.
+          Docs will only be published to the website when targeting `prod`.
         required: true
         type: string
       docs-only:
@@ -346,7 +351,7 @@ jobs:
       - name: Generate artifact attestation
         if: ${{ inputs.attestation }}
         id: attestation
-        uses: actions/attest-build-provenance@db473fddc028af60658334401dc6fa3ffd8669fd # v2.3.0
+        uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2.4.0
         with:
           subject-path: /tmp/dist-artifacts/*.zip
 
@@ -365,64 +370,74 @@ jobs:
     steps:
       - name: Define variables
         id: vars
-        run: |
-          # Platforms matrix
-          if [ "${HAS_BACKEND}" == 'true' ]; then
-            platforms='["linux", "darwin", "windows", "any"]'
-          else
-            platforms='["any"]'
-          fi
-          echo "platforms=$platforms" >> "$GITHUB_OUTPUT"
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        with:
+          script: |
+            // Helper to get input/env values
+            function getInput(name, fallback = '') {
+              return process.env[name] !== undefined ? process.env[name] : fallback;
+            }
 
-          # If we are publishing docs only, we don't need to deploy the plugin
-          if [ "${DOCS_ONLY}" == 'true' ]; then
-            {
-              echo 'environments=[]'
-              echo 'publish-docs=true'
-            } >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
+            const ENVIRONMENT = getInput('ENVIRONMENT', 'none');
+            const DOCS_ONLY = getInput('DOCS_ONLY');
+            const HAS_BACKEND = getInput('HAS_BACKEND');
 
-          # Define environments matrix,
-          # and deploy docs only if we are publishing to prod
-          if [ "${ENVIRONMENT}" == 'dev' ]; then
-            {
-              echo 'environments=["dev"]'
-              echo 'publish-docs=false'
-            } >> "$GITHUB_OUTPUT"
-          elif [ "${ENVIRONMENT}" == 'ops' ]; then
-            {
-              echo 'environments=["ops"]'
-              echo 'publish-docs=false'
-            } >> "$GITHUB_OUTPUT"
+            // Platforms matrix
+            let platforms = ['any'];
+            if (HAS_BACKEND === 'true') {
+              platforms = ['linux', 'darwin', 'windows', 'any'];
+            }
+            core.setOutput('platforms', JSON.stringify(platforms));
 
-          elif [ "${ENVIRONMENT}" == 'prod' ]; then
-            {
-              echo 'environments=["dev", "ops", "prod"]'
-              echo 'publish-docs=true'
-            } >> "$GITHUB_OUTPUT"
+            // Docs only: skip plugin deployment
+            if (DOCS_ONLY === 'true') {
+              core.setOutput('environments', JSON.stringify([]));
+              core.setOutput('publish-docs', 'true');
+              return;
+            }
 
-          elif [ -z "${ENVIRONMENT}" ] || [ "${ENVIRONMENT}" == 'none' ]; then
-            {
-              echo 'environments=[]'
-              echo 'publish-docs=false'
-            } >> "$GITHUB_OUTPUT"
+            // Special case to skip deployment
+            if (ENVIRONMENT === 'none') {
+              core.setOutput('environments', JSON.stringify([]));
+              core.setOutput('publish-docs', 'false');
+              return;
+            }
 
-          else
-            echo "Invalid environment: ${ENVIRONMENT}"
-            exit 1
-          fi
+            // Parse and filter environments
+            const allowedEnvironments = ['dev', 'ops', 'prod'];
+            let environments = [];
+            environments = ENVIRONMENT.split(',')
+              .map(e => e.trim())
+              .filter(e => allowedEnvironments.includes(e));
+
+            // Special case: 'prod' means we deploy to all environments
+            if (environments.includes('prod')) {
+              environments = allowedEnvironments;
+            }
+
+            // Remove duplicates and sort
+            environments = Array.from(new Set(environments)).sort();
+
+            if (environments.length === 0) {
+              core.setFailed(`Invalid environment(s): ${ENVIRONMENT}`);
+              return;
+            }
+
+            // publish-docs is true if 'prod' is in the environments list
+            const publishDocs = environments.includes('prod');
+            core.setOutput('environments', JSON.stringify(environments));
+            core.setOutput('publish-docs', String(publishDocs));
         env:
           ENVIRONMENT: ${{ inputs.environment }}
           DOCS_ONLY: ${{ inputs.docs-only }}
           HAS_BACKEND: ${{ fromJSON(needs.ci.outputs.plugin).has-backend }}
-        shell: bash
 
   publish-to-catalog:
     name: Publish to catalog (${{ matrix.environment }})
     if: ${{ !inputs.docs-only && !inputs.gcs-only && needs.define-variables.outputs.environments != '[]' }}
     needs:
       - define-variables
+      - upload-to-gcs-release
       - ci
     strategy:
       # Allow each stage to be deployed independently, even if others fails
@@ -436,6 +451,7 @@ jobs:
         with:
           ref: ${{ inputs.branch }}
           persist-credentials: false
+
 
       - name: Determine if it should continue the pipeline if a publishing conflict was detected
         id: determine-continue
@@ -509,7 +525,7 @@ jobs:
       - name: Publish to catalog
         uses: grafana/plugin-ci-workflows/actions/plugins/publish/publish@main # zizmor: ignore[unpinned-uses]
         with:
-          zips: ${{ needs.ci.outputs.gcs-zip-urls-commit }}
+          zips: ${{ needs.upload-to-gcs-release.outputs.gcs-zip-urls }}
           environment: ${{ matrix.environment }}
           scopes: ${{ inputs.scopes }}
           gcom-publish-token: ${{ env.GCOM_PUBLISH_TOKEN }}
@@ -544,6 +560,7 @@ jobs:
         shell: bash
 
       - name: Trigger Argo Workflow
+        id: trigger-argo-workflow
         uses: grafana/shared-workflows/actions/trigger-argo-workflow@main # zizmor: ignore[unpinned-uses]
         with:
           namespace: grafana-plugins-cd
@@ -557,6 +574,20 @@ jobs:
             commit_link=https://${{ github.repository_owner }}/${{ github.event.repository.name }}/commit/${{ github.sha }}
             auto_merge_environments=${{ inputs.auto-merge-environments }}
 
+      - name: Print job summary
+        run: |
+          echo "# 🐙 Grafana Cloud deployment via Argo Workflows
+
+          A deployment to Grafana Cloud via the plugins CD Argo Workflow has successfully been triggered.
+          - Plugin Version: \`${{ fromJSON(needs.ci.outputs.plugin).version }}\`
+          - Environment(s): \`${ENVIRONMENT}\`
+
+          **👉 You can follow the deployment [here](${{ steps.trigger-argo-workflow.outputs.uri }})**
+          " >> "$GITHUB_STEP_SUMMARY"
+        shell: bash
+        env:
+          ENVIRONMENT: ${{ inputs.environment }}
+
   # Note: This job can be removed once provisioned plugins releases are moved to the
   # tailored plugins catalog instead of using GCS.
   upload-to-gcs-release:
@@ -568,6 +599,9 @@ jobs:
       - define-variables
 
     if: ${{ !inputs.docs-only && needs.define-variables.outputs.environments != '[]' }}
+
+    outputs:
+      gcs-zip-urls: ${{ steps.generate-urls.outputs.gcs-zip-urls }}
 
     strategy:
       matrix:
@@ -677,6 +711,59 @@ jobs:
           destination: "${{ steps.paths.outputs.gcs_artifacts_release_path_latest }}"
           parent: false
           process_gcloudignore: false
+
+      # all zip artifacts are already present in /tmp/dist-artifacts
+      # we can generate all the urls here in a single step 
+      # as a matrix job this will run for each platform 
+      # and we will keep the last one. They all generate the same urls.
+      - name: Generate GCS release URLs
+        id: generate-urls
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        env:
+          GCS_ARTIFACTS_RELEASE_PATH_TAG: ${{ steps.paths.outputs.gcs_artifacts_release_path_tag }}
+        with:
+          script: |
+            const fs = require('fs');
+            
+            const gcsPrefix = 'https://storage.googleapis.com';
+            const gcsPath = process.env.GCS_ARTIFACTS_RELEASE_PATH_TAG;
+            const allUrls = [];
+            
+            // Find all zip files in the artifacts directory
+            const artifactsDir = '/tmp/dist-artifacts';
+            const files = fs.readdirSync(artifactsDir);
+            const zipFiles = files.filter(file => file.endsWith('.zip'));
+            
+            console.log(`Found ${zipFiles.length} zip files:`, zipFiles);
+            
+            // Create GCS URLs for all zip files, each in its correct platform directory
+            for (const zipFile of zipFiles) {
+              let targetPlatform;
+              
+              // Determine platform directory based on filename pattern
+              switch (true) {
+                case zipFile.includes('.darwin_'):
+                  targetPlatform = 'darwin';
+                  break;
+                case zipFile.includes('.linux_'):
+                  targetPlatform = 'linux';
+                  break;
+                case zipFile.includes('.windows_'):
+                  targetPlatform = 'windows';
+                  break;
+                default:
+                  targetPlatform = 'any';
+                  break;
+              }
+              
+              const gcsUrl = `${gcsPrefix}/${gcsPath}/${targetPlatform}/${zipFile}`;
+              allUrls.push(gcsUrl);
+              console.log(`Generated GCS URL: ${gcsUrl}`);
+            }
+            
+            const gcsZipUrls = JSON.stringify(allUrls);
+            console.log(`Generated ${allUrls.length} total URLs:`, gcsZipUrls);
+            core.setOutput('gcs-zip-urls', gcsZipUrls);
 
   publish-docs:
     name: Publish docs
@@ -793,7 +880,7 @@ jobs:
           PLUGIN_VERSION: ${{ fromJSON(needs.ci.outputs.plugin).version }}
 
       - name: Create Github release
-        uses: softprops/action-gh-release@da05d552573ad5aba039eaac05058a918a7bf631 # v2.2.2
+        uses: softprops/action-gh-release@72f2c25fcb47643c292f7107632f7a47c1df5cd8 # v2.3.2
         with:
           draft: true
           name: ${{ fromJSON(needs.ci.outputs.plugin).id }} v${{ fromJSON(needs.ci.outputs.plugin).version }}
