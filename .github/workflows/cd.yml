@@ -365,9 +365,9 @@ jobs:
         with:
           script: |
             // Helper to get input/env values
-            const getInput = (name, fallback = '') => {
-              return process.env[name] !== undefined ? process.env[name] : fallback;
-            };
+            function getInput(name) {
+              return process.env[name] !== undefined ? process.env[name] : '';
+            }
 
             const ENVIRONMENT = getInput('ENVIRONMENT');
             const DOCS_ONLY = getInput('DOCS_ONLY');
