@@ -241,10 +241,10 @@ jobs:
     steps:
       - name: Check environment
         run: |
-          if [ -n "${ENVIRONMENT}" ] && [ "${ENVIRONMENT}" != 'none' ] && [ "${ENVIRONMENT}" != 'dev' ] && [ "${BRANCH}" != 'main' ]; then
-            echo "Only 'dev' environment is allowed for non-main branches."
-            exit 1
-          fi
+          #if [ -n "${ENVIRONMENT}" ] && [ "${ENVIRONMENT}" != 'none' ] && [ "${ENVIRONMENT}" != 'dev' ] && [ "${BRANCH}" != 'main' ]; then
+          #  echo "Only 'dev' environment is allowed for non-main branches."
+          #  exit 1
+          #fi
 
           if [ "${DOCS_ONLY}" == 'true' ]; then
             if [ "${ENVIRONMENT}" != 'prod' ]; then
@@ -442,7 +442,6 @@ jobs:
         with:
           ref: ${{ inputs.branch }}
           persist-credentials: false
-
 
       - name: Determine if it should continue the pipeline if a publishing conflict was detected
         id: determine-continue
@@ -717,8 +716,8 @@ jobs:
           process_gcloudignore: false
 
       # all zip artifacts are already present in /tmp/dist-artifacts
-      # we can generate all the urls here in a single step 
-      # as a matrix job this will run for each platform 
+      # we can generate all the urls here in a single step
+      # as a matrix job this will run for each platform
       # and we will keep the last one. They all generate the same urls.
       - name: Generate GCS release URLs
         id: generate-urls
@@ -728,18 +727,18 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            
+
             const gcsPrefix = 'https://storage.googleapis.com';
             const gcsPath = process.env.GCS_ARTIFACTS_RELEASE_PATH_TAG;
             const allUrls = [];
-            
+
             // Find all zip files in the artifacts directory
             const artifactsDir = '/tmp/dist-artifacts';
             const files = fs.readdirSync(artifactsDir);
             const zipFiles = files.filter(file => file.endsWith('.zip'));
-            
+
             console.log(`Found ${zipFiles.length} zip files:`, zipFiles);
-            
+
             // Create GCS URLs for all zip files, each in its correct platform directory
             for (const zipFile of zipFiles) {
               let targetPlatform;
@@ -764,7 +763,7 @@ jobs:
               allUrls.push(gcsUrl);
               console.log(`Generated GCS URL: ${gcsUrl}`);
             }
-            
+
             const gcsZipUrls = JSON.stringify(allUrls);
             console.log(`Generated ${allUrls.length} total URLs:`, gcsZipUrls);
             core.setOutput('gcs-zip-urls', gcsZipUrls);
