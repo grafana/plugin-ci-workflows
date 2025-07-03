@@ -159,7 +159,7 @@ jobs:
       - name: Determine if secrets should be fetched
         id: fetch-secrets
         run: |
-          echo "should-fetch=${{ github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]' && inputs.secrets != '' }}" >> $GITHUB_OUTPUT
+          echo "should-fetch=${{ github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]' && inputs.secrets != '' }}" >> "$GITHUB_OUTPUT"
         shell: bash
 
       - name: Get secrets from Vault
