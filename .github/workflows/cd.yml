@@ -374,11 +374,9 @@ jobs:
             const HAS_BACKEND = getInput('HAS_BACKEND');
 
             // Platforms matrix
-            let platforms;
+            let platforms = ['any'];
             if (HAS_BACKEND === 'true') {
               platforms = ['linux', 'darwin', 'windows', 'any'];
-            } else {
-              platforms = ['any'];
             }
             core.setOutput('platforms', JSON.stringify(platforms));
 
@@ -403,13 +401,13 @@ jobs:
               .map(e => e.trim())
               .filter(e => allowedEnvironments.includes(e));
 
-            // Special case: 'prod' means all environments
+            // Special case: 'prod' means we deploy to all environments
             if (environments.includes('prod')) {
               environments = allowedEnvironments;
             }
 
             // Remove duplicates and sort
-            environments = Array.from(new Set(environments));
+            environments = Array.from(new Set(environments)).sort();
 
             if (environments.length === 0) {
               core.setFailed(`Invalid environment(s): ${ENVIRONMENT}`);
