@@ -129,6 +129,14 @@ on:
         type: string
         required: false
         default: http://localhost:3000/
+      playwright-secrets:
+        description: |
+          The secrets to use for Playwright tests.
+          This uses the grafana/shared-workflows/actions/get-vault-secrets action under the hood,
+          so the syntax is the same. It fetches from the repo's secrets.
+        type: string
+        required: false
+        default: ""
 
       # Trufflehog
       run-trufflehog:
@@ -309,6 +317,7 @@ jobs:
       playwright-docker-compose-file: ${{ inputs.playwright-docker-compose-file }}
       playwright-config: ${{ inputs.playwright-config }}
       playwright-grafana-url: ${{ inputs.playwright-grafana-url }}
+      playwright-secrets: ${{ inputs.playwright-secrets }}
       run-trufflehog: ${{ inputs.run-trufflehog }}
       trufflehog-version: ${{ inputs.trufflehog-version }}
       trufflehog-include-detectors: ${{ inputs.trufflehog-include-detectors }}
@@ -507,7 +516,6 @@ jobs:
           gcloud-auth-token: ${{ steps.gcloud.outputs.id_token }}
           ignore-conflicts: ${{ steps.determine-continue.outputs.ignore_conflicts }}
 
-
   trigger-argo-workflow:
     name: Trigger Argo Workflow for Grafana Cloud deployment
     runs-on: ubuntu-latest
@@ -587,11 +595,10 @@ jobs:
           workload_identity_provider: "projects/304398677251/locations/global/workloadIdentityPools/github/providers/github-provider"
           service_account: github-plugin-ci-workflows@grafanalabs-workload-identity.iam.gserviceaccount.com
 
-      
-      - name: 'Set up Cloud SDK'
-        uses: 'google-github-actions/setup-gcloud@77e7a554d41e2ee56fc945c52dfd3f33d12def9a' # v2.1.4
+      - name: "Set up Cloud SDK"
+        uses: "google-github-actions/setup-gcloud@77e7a554d41e2ee56fc945c52dfd3f33d12def9a" # v2.1.4
         with:
-          version: '>= 363.0.0'
+          version: ">= 363.0.0"
 
       - name: Determine GCS artifacts paths
         id: paths
@@ -626,9 +633,9 @@ jobs:
         id: gcs_artifacts_exist
         run: |
           bucket_path="gs://${GCS_ARTIFACTS_RELEASE_PATH_TAG}/${PLATFORM}/"
-          
+
           echo "Checking for any existing artifacts in: $bucket_path"
-          
+
           if gsutil ls "$bucket_path" 2>/dev/null | grep -q "."; then
             echo "⚠️Existing artifact found, skipping upload"
             echo "gcs_artifacts_exist=true" >> "$GITHUB_OUTPUT"
