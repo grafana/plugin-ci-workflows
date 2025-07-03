@@ -162,8 +162,6 @@ jobs:
         uses: grafana/shared-workflows/actions/get-vault-secrets@get-vault-secrets/v1.2.1
         with:
           repo_secrets: ${{ inputs.secrets }}
-          # TODO: remove
-          vault_instance: dev
           export_env: false
 
       - name: Set secrets
