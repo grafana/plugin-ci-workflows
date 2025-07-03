@@ -551,6 +551,7 @@ jobs:
         shell: bash
 
       - name: Trigger Argo Workflow
+        id: trigger-argo-workflow
         uses: grafana/shared-workflows/actions/trigger-argo-workflow@main # zizmor: ignore[unpinned-uses]
         with:
           namespace: grafana-plugins-cd
@@ -563,6 +564,20 @@ jobs:
             commit=${{ github.sha }}
             commit_link=https://${{ github.repository_owner }}/${{ github.event.repository.name }}/commit/${{ github.sha }}
             auto_merge_environments=${{ inputs.auto-merge-environments }}
+
+      - name: Print job summary
+        run: |
+          echo "# 🐙 Grafana Cloud deployment via Argo Workflows
+
+          A deployment to Grafana Cloud via the plugins CD Argo Workflow has successfully been triggered.
+          - Plugin Version: \`${{ fromJSON(needs.ci.outputs.plugin).version }}\`
+          - Environment(s): \`${ENVIRONMENT}\`
+
+          **👉 You can follow the deployment [here](${{ steps.trigger-argo-workflow.outputs.uri }})**
+          " >> "$GITHUB_STEP_SUMMARY"
+        shell: bash
+        env:
+          ENVIRONMENT: ${{ inputs.environment }}
 
   # Note: This job can be removed once provisioned plugins releases are moved to the
   # tailored plugins catalog instead of using GCS.
