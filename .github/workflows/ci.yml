@@ -108,7 +108,10 @@ on:
         required: false
         default: http://localhost:3000/
       playwright-secrets:
-        description: The secrets to use for Playwright tests
+        description: |
+          The secrets to use for Playwright tests.
+          This uses the grafana/shared-workflows/actions/get-vault-secrets action under the hood,
+          so the syntax is the same. It fetches from the repo's secrets.
         type: string
         required: false
         default: ""
@@ -397,7 +400,7 @@ jobs:
 
   playwright:
     name: Playwright E2E tests
-    uses: grafana/plugin-ci-workflows/.github/workflows/playwright.yml@playwrightsecrets # zizmor: ignore[unpinned-uses]
+    uses: grafana/plugin-ci-workflows/.github/workflows/playwright.yml@giuseppe/playwright-secrets # zizmor: ignore[unpinned-uses]
     if: ${{ inputs.run-playwright == true }}
     needs:
       - test-and-build

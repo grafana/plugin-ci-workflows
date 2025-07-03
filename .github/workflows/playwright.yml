@@ -156,15 +156,22 @@ jobs:
         with:
           url: "${{ inputs.grafana-url }}"
 
-      - name: Get secrets from vault
-        if: github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]' && inputs.secrets != ''
+      - name: Determine if secrets should be fetched
+        id: fetch-secrets
+        run: |
+          echo "should-fetch=${{ github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]' && inputs.secrets != '' }}" >> $GITHUB_OUTPUT
+        shell: bash
+
+      - name: Get secrets from Vault
+        if: steps.fetch-secrets.outputs.should-fetch == 'true'
         id: get-secrets
         uses: grafana/shared-workflows/actions/get-vault-secrets@get-vault-secrets/v1.2.1
         with:
           repo_secrets: ${{ inputs.secrets }}
           export_env: false
+
       - name: Set secrets
-        if: github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]' && inputs.secrets != ''
+        if: steps.fetch-secrets.outputs.should-fetch == 'true'
         run: |
           echo '${{ steps.get-secrets.outputs.secrets }}' | jq -r 'to_entries[] | "\(.key)=\(.value)"' >> .env
           cat .env
