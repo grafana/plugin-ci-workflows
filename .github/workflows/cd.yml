@@ -556,7 +556,7 @@ jobs:
           # This is required because the trigger-argo-workflow shared action
           # doesn't handle parameters with commas in them properly, so we replace them with '+'.
           echo "environment=${ENVIRONMENT//,/+}" >> "$GITHUB_OUTPUT"
-          echo "auto_merge_environments=${AUTO_MERGE_ENVIRONMENTS//,/+}"
+          echo "auto_merge_environments=${AUTO_MERGE_ENVIRONMENTS//,/+}" >> "$GITHUB_OUTPUT"
         env:
           ENVIRONMENT: ${{ inputs.environment }}
           AUTO_MERGE_ENVIRONMENTS: ${{ inputs.auto-merge-environments }}
