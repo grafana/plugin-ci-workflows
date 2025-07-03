@@ -365,11 +365,11 @@ jobs:
         with:
           script: |
             // Helper to get input/env values
-            function getInput(name) {
-              return process.env[name] !== undefined ? process.env[name] : '';
+            function getInput(name, fallback = '') {
+              return process.env[name] !== undefined ? process.env[name] : fallback;
             }
 
-            const ENVIRONMENT = getInput('ENVIRONMENT');
+            const ENVIRONMENT = getInput('ENVIRONMENT', 'none');
             const DOCS_ONLY = getInput('DOCS_ONLY');
             const HAS_BACKEND = getInput('HAS_BACKEND');
 
@@ -388,7 +388,7 @@ jobs:
             }
 
             // Special case to skip deployment
-            if (!ENVIRONMENT || ENVIRONMENT === 'none') {
+            if (ENVIRONMENT === 'none') {
               core.setOutput('environments', JSON.stringify([]));
               core.setOutput('publish-docs', 'false');
               return;
