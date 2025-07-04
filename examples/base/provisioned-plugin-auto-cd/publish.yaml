@@ -43,7 +43,7 @@ jobs:
       environment: ${{ github.event.inputs.environment }}
       docs-only: ${{ fromJSON(github.event.inputs.docs-only) }}
       scopes: ${{ env.SCOPES }}
-      DEPLOYMENT_TYPE: provisioned
+      grafana-cloud-deployment-type: provisioned
       argo-workflow-slack-channel: ${{ env.ARGO_WORKFLOW_SLACK_CHANNEL }}
 
       # TODO: add here any other CI custom inputs you may need:
