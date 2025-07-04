@@ -44,6 +44,8 @@ jobs:
       # When pushing to "main", publish and deploy to Grafana Cloud (CD).
       # For PRs, skip publishing and deploying (run CI only).
       environment: ${{ (github.event_name == 'push' && github.ref_name == 'main') && env.CD_ENVIRONMENT || 'none' }}
+      # Auto-merge all PRs in deployment_tools
+      auto-merge-environments: ${{ env.CD_ENVIRONMENT }}
       scopes: ${{ env.SCOPES }}
       grafana-cloud-deployment-type: provisioned
       argo-workflow-slack-channel: ${{ env.ARGO_WORKFLOW_SLACK_CHANNEL }}
