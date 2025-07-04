@@ -15,6 +15,11 @@ on:
         description: Plugin version
         type: string
         required: true
+      plugin-directory:
+        description: Directory of the plugin, if not in the root of the repository.
+        type: string
+        required: false
+        default: .
       # https://github.com/grafana/plugin-actions/blob/main/e2e-version/action.yml
       skip-grafana-dev-image:
         default: false
@@ -45,6 +50,10 @@ on:
         type: string
         default: playwright.config.ts
         description: Path to the Playwright config file to use for testing
+      secrets:
+        required: false
+        type: string
+        description: The secrets to use for Playwright tests
       grafana-url:
         description: The Grafana URL to wait for before running the tests
         type: string
@@ -75,6 +84,7 @@ jobs:
           skip-grafana-dev-image: ${{ inputs.skip-grafana-dev-image }}
           version-resolver-type: ${{ inputs.version-resolver-type }}
           grafana-dependency: ${{ inputs.grafana-dependency }}
+          plugin-directory: ${{ inputs.plugin-directory }}
 
   playwright-tests:
     needs: resolve-versions
@@ -93,7 +103,7 @@ jobs:
       - name: Setup Node.js environment
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version-file: .nvmrc
+          node-version-file: ${{ inputs.plugin-directory }}/.nvmrc
 
       - name: Install npm dependencies
         # TODO: find a better way
@@ -104,6 +114,7 @@ jobs:
             npm ci
           fi
         shell: bash
+        working-directory: ${{ inputs.plugin-directory }}
 
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps chromium
@@ -116,6 +127,7 @@ jobs:
 
       - name: Move dist artifacts
         run: |
+          rm -rf dist
           mkdir -p dist
           src=$(pwd)
 
@@ -129,11 +141,13 @@ jobs:
         env:
           PLUGIN_ID: ${{ inputs.id }}
           PLUGIN_VERSION: ${{ inputs.version }}
+        working-directory: ${{ inputs.plugin-directory }}
 
       - name: Start Grafana
         # add the -f argument only if "inputs.docker-compose-file" is defined
         run: |
           GRAFANA_VERSION=${{ matrix.GRAFANA_IMAGE.VERSION }} GRAFANA_IMAGE=${{ matrix.GRAFANA_IMAGE.NAME }} docker compose ${DOCKER_COMPOSE_FILE:+-f "$DOCKER_COMPOSE_FILE"} up -d
+        working-directory: ${{ inputs.plugin-directory }}
         env:
           DOCKER_COMPOSE_FILE: ${{ inputs.docker-compose-file }}
 
@@ -142,18 +156,34 @@ jobs:
         with:
           url: "${{ inputs.grafana-url }}"
 
+      - name: Get secrets from Vault
+        if: inputs.secrets != ''
+        id: get-secrets
+        uses: grafana/shared-workflows/actions/get-vault-secrets@get-vault-secrets/v1.2.1
+        with:
+          repo_secrets: ${{ inputs.secrets }}
+          export_env: false
+
+      - name: Set secrets
+        if: inputs.secrets != ''
+        run: |
+          echo '${{ steps.get-secrets.outputs.secrets }}' | jq -r 'to_entries[] | "\(.key)=\(.value)"' >> .env
+          cat .env
+        working-directory: ${{ inputs.plugin-directory }}
+
       - name: Run Playwright tests
         id: run-tests
         run: npx playwright test --config "${PLAYWRIGHT_CONFIG}"
         env:
           PLAYWRIGHT_CONFIG: ${{ inputs.playwright-config }}
+        working-directory: ${{ inputs.plugin-directory }}
 
       - name: Upload artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: ${{ (inputs.upload-artifacts == true) && ((always() && steps.run-tests.outcome == 'success') || (failure() && steps.run-tests.outcome == 'failure')) }}
         with:
           name: playwright-report-${{ matrix.GRAFANA_IMAGE.NAME }}-v${{ matrix.GRAFANA_IMAGE.VERSION }}-${{github.run_id}}
-          path: ${{ inputs.report-path }}
+          path: ${{ inputs.plugin-directory }}/${{ inputs.report-path }}
           retention-days: 30
 
   check-playwright-status:

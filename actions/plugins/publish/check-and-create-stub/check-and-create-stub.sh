@@ -88,6 +88,9 @@ gcom_signature_type=$(
 )
 if [ "$gcom_signature_type" == "null" ]; then
     echo "Invalid signature type in prod - make sure the stub exists in grafana.com"
+    echo "If this is a brand new plugin, you need to create the stub in grafana.com (prod) first, also when publishing to dev or ops."
+    echo "See the documentation for more details:"
+    echo "https://enghub.grafana-ops.net/docs/default/component/grafana-plugins-platform/plugins-ci-github-actions/010-plugins-ci-github-actions/#publishing-a-brand-new-plugin-for-the-first-time"
     exit 1
 fi
 echo "Signature type for $plugin_id is $gcom_signature_type"
