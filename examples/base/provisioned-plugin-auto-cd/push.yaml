@@ -1,6 +1,8 @@
 # This workflow:
 # - Runs CI + CD for each push to main
 # - Runs CI for each PR (no CD)
+
+# TODO: rename
 name: Plugins - CI / CD
 
 on:
@@ -19,10 +21,12 @@ env:
   SCOPES: grafana_cloud # TODO: Choose the appropriate scope for your plugin.
   ARGO_WORKFLOW_SLACK_CHANNEL: "#grafana-plugins-platform-ci" # TODO: Change with your own Slack channel
 
-  # Final environment to deploy to for each push to main.
-  # - 'dev' = dev
-  # - 'ops' = dev + ops
-  # - 'prod' = dev + ops + prod
+  # Grafana Cloud environment to deploy the provisioned plugin to.
+  # - 'dev': dev
+  # - 'ops': ops
+  # - 'prod': dev + ops + prod
+  # Can also be a comma-separated list of environments, e.g. 'dev,ops'.
+  # Change to 'dev,ops' to deploy each push to main to both dev and ops environments.
   CD_ENVIRONMENT: dev
 
 jobs:
