@@ -107,6 +107,14 @@ on:
         type: string
         required: false
         default: http://localhost:3000/
+      playwright-secrets:
+        description: |
+          The secrets to use for Playwright tests.
+          This uses the grafana/shared-workflows/actions/get-vault-secrets action under the hood,
+          so the syntax is the same. It fetches from the repo's secrets.
+        type: string
+        required: false
+        default: ""
 
       # Trufflehog
       run-trufflehog:
@@ -408,6 +416,7 @@ jobs:
       playwright-config: ${{ inputs.playwright-config }}
       report-path: ${{ inputs.playwright-report-path }}
       grafana-url: ${{ inputs.playwright-grafana-url }}
+      secrets: ${{ (github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]' && inputs.playwright-secrets != '') && inputs.playwright-secrets || '' }}
 
   playwright-docker:
     name: Plugins - Dockerized Playwright E2E tests
@@ -425,6 +434,7 @@ jobs:
       grafana-compose-file: ${{ inputs.playwright-docker-compose-file }}
       report-path: ${{ inputs.playwright-report-path }}
       grafana-url: ${{ inputs.playwright-grafana-url }}
+      secrets: ${{ (github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]' && inputs.playwright-secrets != '') && inputs.playwright-secrets || '' }}
 
   upload-to-gcs:
     name: Upload to GCS

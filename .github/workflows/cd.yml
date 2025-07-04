@@ -129,6 +129,14 @@ on:
         type: string
         required: false
         default: http://localhost:3000/
+      playwright-secrets:
+        description: |
+          The secrets to use for Playwright tests.
+          This uses the grafana/shared-workflows/actions/get-vault-secrets action under the hood,
+          so the syntax is the same. It fetches from the repo's secrets.
+        type: string
+        required: false
+        default: ""
 
       # Trufflehog
       run-trufflehog:
@@ -314,6 +322,7 @@ jobs:
       playwright-docker-compose-file: ${{ inputs.playwright-docker-compose-file }}
       playwright-config: ${{ inputs.playwright-config }}
       playwright-grafana-url: ${{ inputs.playwright-grafana-url }}
+      playwright-secrets: ${{ inputs.playwright-secrets }}
       run-trufflehog: ${{ inputs.run-trufflehog }}
       trufflehog-version: ${{ inputs.trufflehog-version }}
       trufflehog-include-detectors: ${{ inputs.trufflehog-include-detectors }}

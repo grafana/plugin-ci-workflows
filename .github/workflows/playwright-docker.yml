@@ -42,6 +42,10 @@ on:
         type: string
         description: Path to the folder to use to upload the artifacts
         default: playwright-report/
+      secrets:
+        required: false
+        type: string
+        description: The secrets to use for Playwright tests
       grafana-url:
         description: The Grafana URL to wait for before running the tests
         type: string
@@ -108,6 +112,22 @@ jobs:
         env:
           PLUGIN_ID: ${{ inputs.id }}
           PLUGIN_VERSION: ${{ inputs.version }}
+
+      - name: Get secrets from Vault
+        if: inputs.secrets != ''
+        id: get-secrets
+        uses: grafana/shared-workflows/actions/get-vault-secrets@get-vault-secrets/v1.2.1
+        with:
+          repo_secrets: ${{ inputs.secrets }}
+          export_env: false
+
+      - name: Set secrets
+        if: inputs.secrets != ''
+        run: |
+          echo '${{ steps.get-secrets.outputs.secrets }}' | jq -r 'to_entries[] | "\(.key)=\(.value)"' >> .env
+          cat .env
+        # No support for subdirectories when running with Docker
+        # working-directory: ${{ inputs.plugin-directory }}
 
       - name: Start Grafana
         # add the -f argument only if "inputs.grafana-compose-file" is defined

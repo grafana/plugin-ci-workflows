@@ -50,6 +50,10 @@ on:
         type: string
         default: playwright.config.ts
         description: Path to the Playwright config file to use for testing
+      secrets:
+        required: false
+        type: string
+        description: The secrets to use for Playwright tests
       grafana-url:
         description: The Grafana URL to wait for before running the tests
         type: string
@@ -151,6 +155,21 @@ jobs:
         uses: grafana/plugin-actions/wait-for-grafana@main # zizmor: ignore[unpinned-uses]
         with:
           url: "${{ inputs.grafana-url }}"
+
+      - name: Get secrets from Vault
+        if: inputs.secrets != ''
+        id: get-secrets
+        uses: grafana/shared-workflows/actions/get-vault-secrets@get-vault-secrets/v1.2.1
+        with:
+          repo_secrets: ${{ inputs.secrets }}
+          export_env: false
+
+      - name: Set secrets
+        if: inputs.secrets != ''
+        run: |
+          echo '${{ steps.get-secrets.outputs.secrets }}' | jq -r 'to_entries[] | "\(.key)=\(.value)"' >> .env
+          cat .env
+        working-directory: ${{ inputs.plugin-directory }}
 
       - name: Run Playwright tests
         id: run-tests
