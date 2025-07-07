@@ -46,5 +46,5 @@ jobs:
       grafana-cloud-deployment-type: provisioned
       argo-workflow-slack-channel: ${{ env.ARGO_WORKFLOW_SLACK_CHANNEL }}
 
-      # TODO: add here any other CI custom inputs you may need:
+      # TODO: add here any other CI custom inputs you may need. You most likely also have to add the same options to push.yaml:
       #   https://enghub.grafana-ops.net/docs/default/component/grafana-plugins-platform/plugins-ci-github-actions/010-plugins-ci-github-actions/#customizing-the-workflows-with-inputs
