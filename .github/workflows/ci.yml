@@ -311,7 +311,7 @@ jobs:
           universal: "true"
           dist-folder: dist
           output-folder: dist-artifacts
-          access-policy-token: ${{ fromJSON(steps.get-secrets.outputs.secrets).SIGN_PLUGIN_ACCESS_POLICY_TOKEN || '' }}
+          access-policy-token: ${{ env.IS_FORK == 'false' && fromJSON(steps.get-secrets.outputs.secrets).SIGN_PLUGIN_ACCESS_POLICY_TOKEN || '' }}
           allow-unsigned: ${{ env.IS_FORK == 'true' }}
 
       - name: Package os/arch ZIPs
@@ -321,7 +321,7 @@ jobs:
           universal: "false"
           dist-folder: dist
           output-folder: dist-artifacts
-          access-policy-token: ${{ fromJSON(steps.get-secrets.outputs.secrets).SIGN_PLUGIN_ACCESS_POLICY_TOKEN || '' }}
+          access-policy-token: ${{ env.IS_FORK == 'false' && fromJSON(steps.get-secrets.outputs.secrets).SIGN_PLUGIN_ACCESS_POLICY_TOKEN || '' }}
           allow-unsigned: ${{ env.IS_FORK == 'true' }}
 
       - name: Trufflehog secrets scanning
