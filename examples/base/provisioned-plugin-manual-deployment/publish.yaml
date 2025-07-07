@@ -1,3 +1,9 @@
+# Example for using the shared workflows for plugins provided by plugin-ci-workflows in a provisioned plugin with manual deployments.
+# All inputs are documented in the workflow files themselves:
+# https://github.com/grafana/plugin-ci-workflows/tree/main/.github/workflows
+# Additional documentation is also available on EngHub, here:
+# https://enghub.grafana-ops.net/docs/default/component/grafana-plugins-platform/plugins-ci-github-actions/010-plugins-ci-github-actions/#customizing-the-workflows-with-inputs
+
 name: Plugins - CD
 run-name: Deploy ${{ inputs.branch }} to ${{ inputs.environment }} by @${{ github.actor }}
 
