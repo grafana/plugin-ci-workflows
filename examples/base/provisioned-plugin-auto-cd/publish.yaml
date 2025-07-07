@@ -49,6 +49,7 @@ jobs:
       environment: ${{ github.event.inputs.environment }}
       docs-only: ${{ fromJSON(github.event.inputs.docs-only) }}
       scopes: ${{ env.SCOPES }}
+      # This will trigger the Argo Workflow to update your plugin version in Grafana Cloud via deployment_tools
       grafana-cloud-deployment-type: provisioned
       argo-workflow-slack-channel: ${{ env.ARGO_WORKFLOW_SLACK_CHANNEL }}
 
