@@ -87,7 +87,7 @@
       "package-name": "plugins-publish-publish"
     },
     ".github/workflows": {
-      "package-name": "ci-cd-workflows",
+      "package-name": "ci-cd-workflows"
     }
   },
   "release-type": "simple",
