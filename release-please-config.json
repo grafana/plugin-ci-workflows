@@ -53,36 +53,6 @@
   "draft-pull-request": true,
   "include-v-in-tag": true,
   "packages": {
-    "actions/plugins/setup": {
-      "package-name": "plugins-setup"
-    },
-    "actions/plugins/trufflehog": {
-      "package-name": "plugins-trufflehog"
-    },
-    "actions/plugins/package": {
-      "package-name": "plugins-package"
-    },
-    "actions/plugins/frontend": {
-      "package-name": "plugins-frontend"
-    },
-    "actions/plugins/backend": {
-      "package-name": "plugins-backend"
-    },
-    "actions/plugins/docs/test": {
-      "package-name": "plugins-docs-test"
-    },
-    "actions/plugins/docs/publish": {
-      "package-name": "plugins-docs-publish"
-    },
-    "actions/plugins/changelog": {
-      "package-name": "plugins-changelog"
-    },
-    "actions/plugins/version-bump-changelog": {
-      "package-name": "plugins-version-bump-changelog"
-    },
-    "actions/plugins/publish/check-and-create-stub": {
-      "package-name": "plugins-publish-check-and-create-stub"
-    },
     "actions/plugins/publish/publish": {
       "package-name": "plugins-publish-publish"
     },
