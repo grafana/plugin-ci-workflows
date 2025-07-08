@@ -1,0 +1,140 @@
+name: Release shared-workflows
+
+on:
+  push:
+    branches:
+      - academo/setup-release-please
+
+permissions:
+  contents: read
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write # Needed to create releases and tags
+      pull-requests: write # Needed to create release PRs
+      id-token: write
+
+    steps:
+      - name: Get secrets from Vault
+        id: get-secrets
+        if: ${{ env.IS_FORK == 'false' }}
+        uses: grafana/shared-workflows/actions/get-vault-secrets@9f37f656e063f0ad0b0bfc38d49894b57d363936 # v1.2.1
+        with:
+          vault_instance: ${{ env.VAULT_INSTANCE }}
+          common_secrets: |
+            GITHUB_APP_ID=plugins-platform-bot-app:app-id
+            GITHUB_APP_PRIVATE_KEY=plugins-platform-bot-app:private-key
+          export_env: false
+
+      - name: Generate GitHub token
+        id: generate-github-token
+        uses: actions/create-github-app-token@df432ceedc7162793a195dd1713ff69aefc7379e # v2.0.6
+        if: ${{ env.IS_FORK == 'false' }}
+        with:
+          app-id: ${{ fromJSON(steps.get-secrets.outputs.secrets).GITHUB_APP_ID }}
+          private-key: ${{ fromJSON(steps.get-secrets.outputs.secrets).GITHUB_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@6c439dc8bdf85cadbbce9ed30d1c7b959517bc49 # v2.12.2
+        with:
+          egress-policy: audit
+
+      - uses: googleapis/release-please-action@a02a34c4d625f9be7cb89156071d8567266a2445 # v4.2.0
+        id: release
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+          target-branch: ${{ github.ref_name }}
+
+      # We release full semver versions major.minor.patch. We need to make sure
+      # that v2 is updated as well as v2.0, so that people can pin to the major
+      # or major.minor versions if they want.
+      #
+      # `steps.release.outputs` will contain `<type>/<name>--release_created:
+      # true` for each component that was released.
+      # We then need to look at `<type>/<name>--tag_name to extract the tag
+      # name, which will be <name>-<semver>. From that, we can work out the
+      # major and minor tags and update them to point at the value of
+      # `<actions>/<name>--sha`.
+      - name: tag major and minor versions
+        if: steps.release.outputs.releases_created == 'true'
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        env:
+          RELEASES: ${{ toJSON(steps.release.outputs) }}
+        with:
+          github-token: ${{ steps.generate-github-token.outputs.token }}
+          script: |
+            const createOrUpdateTag = async (tag, sha) => {
+              const ref = `refs/tags/${tag}`;
+              let existingRef = null;
+              try {
+                const { data } = await github.rest.git.getRef({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  ref: `tags/${tag}`, // Use tags/${tag} for getRef - see https://github.com/octokit/rest.js/issues/339
+                });
+
+                existingRef = data;
+                console.log(`Tag ${tag} exists:`, existingRef);
+              } catch (e) {
+                if (e.status === 404) {
+                  console.log(`Tag ${tag} does not exist.`);
+                } else {
+                  console.error(`Error fetching tag ${tag}:`, e);
+                  throw e;
+                }
+              }
+
+              if (existingRef) {
+                console.log(`Updating tag ${tag} from ${existingRef.object.sha} to ${sha}`);
+                await github.rest.git.updateRef({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  ref: `tags/${tag}`, // Use tags/${tag} for updateRef - see https://github.com/octokit/rest.js/issues/339
+                  sha,
+                  force: true
+                });
+              } else {
+                console.log(`Creating tag ${tag} at ${sha}`);
+                await github.rest.git.createRef({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  ref,
+                  sha
+                });
+              }
+            }
+
+            const rsplit = (str, sep, maxsplit) => {
+              var split = str.split(sep);
+              return maxsplit ?
+                [split.slice(0, -maxsplit).join(sep)].concat(split.slice(-maxsplit)) :
+                split;
+            }
+
+            const releases = JSON.parse(process.env.RELEASES);
+            // Filter `releases` to get the `*--release_created` outputs where
+            // the value is `"true"`. Then strip off that suffix to get an array
+            // of components that were released.
+            const components = Object.entries(releases)
+              .filter(([key, value]) => key.endsWith('--release_created') && value === 'true')
+              .map(([key]) => key.replace(/--release_created$/, ''));
+
+            console.log(`Components released: ${components.join(', ')}`);
+
+            for (const component of components) {
+              const tag = releases[`${component}--tag_name`];
+              const sha = releases[`${component}--sha`];
+
+              console.log(`Updating major and minor tags for ${component} to ${sha}`);
+
+              const [name, semver] = rsplit(tag, '-', 1);
+              const [major, minor] = semver.split('.');
+
+              await createOrUpdateTag(`${name}-${major}`, sha);
+              await createOrUpdateTag(`${name}-${major}.${minor}`, sha);
+            }
