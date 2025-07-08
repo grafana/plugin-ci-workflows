@@ -14,7 +14,6 @@ on:
   workflow_call:
     inputs:
       # Those inputs can be customized depending on the plugin's needs:
-
       # Publishing options (GCS and/or catalog)
       gcs-only:
         description: |

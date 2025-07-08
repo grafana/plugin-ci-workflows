@@ -5,6 +5,7 @@ description: |
   The signature type is taken from the production catalog.
   If the plugin stub doesn't exist in prod, the action returns an error.
 
+
 inputs:
   plugin-id:
     description: |
