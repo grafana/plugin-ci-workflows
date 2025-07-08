@@ -2,7 +2,7 @@
   "actions/plugins/setup": "1.0.0",
   "actions/plugins/trufflehog": "1.0.0",
   "actions/plugins/package": "1.0.0",
-  "actions/plugins/frontend": "1.0.0",
+  "actions/plugins/frontend": "1.1.0",
   "actions/plugins/backend": "1.0.0",
   "actions/plugins/docs/test": "1.0.0",
   "actions/plugins/docs/publish": "1.0.0",
