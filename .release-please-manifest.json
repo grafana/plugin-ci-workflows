@@ -1,5 +1,5 @@
 {
-  "actions/plugins/setup": "1.0.0",
+  "actions/plugins/setup": "1.0.1",
   "actions/plugins/trufflehog": "1.0.0",
   "actions/plugins/package": "1.0.0",
   "actions/plugins/frontend": "1.0.0",
