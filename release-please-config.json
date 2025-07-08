@@ -10,44 +10,40 @@
       "type": "fix"
     },
     {
-      "section": "⚡ Performance Improvements",
-      "type": "perf"
-    },
-    {
-      "section": "🔗 Dependencies",
-      "type": "deps"
-    },
-    {
       "section": "📝 Documentation",
       "type": "docs"
     },
     {
-      "section": "🏗️ Build System",
-      "type": "build"
+      "section": "💄 Styles",
+      "type": "style"
     },
     {
-      "section": "🤖 Continuous Integration",
-      "type": "ci"
+      "section": "♻️ Code Refactoring",
+      "type": "refactor"
     },
     {
-      "section": "🔧 Miscellaneous Chores",
-      "type": "chore"
-    },
-    {
-      "section": "⏪ Reverts",
-      "type": "revert"
+      "section": "⚡ Performance Improvements",
+      "type": "perf"
     },
     {
       "section": "✅ Tests",
       "type": "test"
     },
     {
-      "section": "💄 Style",
-      "type": "style"
+      "section": "🏗️ Builds",
+      "type": "build"
     },
     {
-      "section": "♻️ Code Refactoring",
-      "type": "refactor"
+      "section": "🤖 Continuous Integrations",
+      "type": "ci"
+    },
+    {
+      "section": "🔧 Chores",
+      "type": "chore"
+    },
+    {
+      "section": "⏪ Reverts",
+      "type": "revert"
     }
   ],
   "draft-pull-request": true,
