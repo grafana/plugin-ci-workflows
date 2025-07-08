@@ -3,7 +3,7 @@ name: Release shared-workflows
 on:
   push:
     branches:
-      - academo/setup-release-please
+      - main
 
 permissions:
   contents: read
