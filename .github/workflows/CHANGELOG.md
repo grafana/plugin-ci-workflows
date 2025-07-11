@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v1.1.0...ci-cd-workflows/v1.1.1) (2025-07-11)
+
+
+### 📝 Documentation
+
+* Improvements to documentation and examples ([#159](https://github.com/grafana/plugin-ci-workflows/issues/159)) ([da3d700](https://github.com/grafana/plugin-ci-workflows/commit/da3d700ad152a55b04526cfefed731e858fcaa56))
+
 ## [1.1.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v1.0.0...ci-cd-workflows/v1.1.0) (2025-07-08)
 
 
