@@ -1,4 +1,4 @@
-name: Release shared-workflows
+name: Release plugin-ci-workflows
 
 on:
   push:
