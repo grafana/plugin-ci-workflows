@@ -143,19 +143,6 @@ jobs:
           PLUGIN_VERSION: ${{ inputs.version }}
         working-directory: ${{ inputs.plugin-directory }}
 
-      - name: Start Grafana
-        # add the -f argument only if "inputs.docker-compose-file" is defined
-        run: |
-          GRAFANA_VERSION=${{ matrix.GRAFANA_IMAGE.VERSION }} GRAFANA_IMAGE=${{ matrix.GRAFANA_IMAGE.NAME }} docker compose ${DOCKER_COMPOSE_FILE:+-f "$DOCKER_COMPOSE_FILE"} up -d
-        working-directory: ${{ inputs.plugin-directory }}
-        env:
-          DOCKER_COMPOSE_FILE: ${{ inputs.docker-compose-file }}
-
-      - name: Wait for Grafana to start
-        uses: grafana/plugin-actions/wait-for-grafana@main # zizmor: ignore[unpinned-uses]
-        with:
-          url: "${{ inputs.grafana-url }}"
-
       - name: Get secrets from Vault
         if: inputs.secrets != ''
         id: get-secrets
@@ -171,6 +158,19 @@ jobs:
           cat .env
         working-directory: ${{ inputs.plugin-directory }}
 
+      - name: Start Grafana
+        # add the -f argument only if "inputs.docker-compose-file" is defined
+        run: |
+          GRAFANA_VERSION=${{ matrix.GRAFANA_IMAGE.VERSION }} GRAFANA_IMAGE=${{ matrix.GRAFANA_IMAGE.NAME }} docker compose ${DOCKER_COMPOSE_FILE:+-f "$DOCKER_COMPOSE_FILE"} up -d
+        working-directory: ${{ inputs.plugin-directory }}
+        env:
+          DOCKER_COMPOSE_FILE: ${{ inputs.docker-compose-file }}
+
+      - name: Wait for Grafana to start
+        uses: grafana/plugin-actions/wait-for-grafana@main # zizmor: ignore[unpinned-uses]
+        with:
+          url: "${{ inputs.grafana-url }}"
+      
       - name: Run Playwright tests
         id: run-tests
         run: npx playwright test --config "${PLAYWRIGHT_CONFIG}"
