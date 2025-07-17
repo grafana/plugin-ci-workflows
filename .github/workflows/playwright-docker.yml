@@ -124,8 +124,7 @@ jobs:
       - name: Set secrets
         if: inputs.secrets != ''
         run: |
-          echo '${{ steps.get-secrets.outputs.secrets }}' | jq -r 'to_entries[] | "\(.key)=\(.value)"' >> .env
-          cat .env
+          echo '${{ steps.get-secrets.outputs.secrets }}' | jq -r 'to_entries[] | "\(.key)=\(.value)"' >> .env          
         # No support for subdirectories when running with Docker
         # working-directory: ${{ inputs.plugin-directory }}
 
