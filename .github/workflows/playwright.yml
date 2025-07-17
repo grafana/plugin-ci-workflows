@@ -154,8 +154,7 @@ jobs:
       - name: Set secrets
         if: inputs.secrets != ''
         run: |
-          echo '${{ steps.get-secrets.outputs.secrets }}' | jq -r 'to_entries[] | "\(.key)=\(.value)"' >> .env
-          cat .env
+          echo '${{ steps.get-secrets.outputs.secrets }}' | jq -r 'to_entries[] | "\(.key)=\(.value)"' >> .env          
         working-directory: ${{ inputs.plugin-directory }}
 
       - name: Start Grafana
