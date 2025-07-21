@@ -78,7 +78,7 @@ curl_args=(
     "-H" "Accept: application/json"
     "-H" "User-Agent: github-actions-shared-workflows:/plugins/publish"
 )
-if [ "$has_iap" = true ]; then  
+if [ "$has_iap" = true ]; then
     if [ -z "$GCLOUD_AUTH_TOKEN" ]; then
         echo "GCLOUD_AUTH_TOKEN environment variable not set."
         exit 1
@@ -129,13 +129,32 @@ if [ "$dry_run" = true ]; then
     echo "Dry run enabled, skipping publish"
     exit 0
 fi
-out=$(
-    curl -sSL \
-        -X POST \
-        "${curl_args[@]}" \
-        -d "$json_payload" \
-        $gcom_api_url/plugins
-)
+
+# Sometimes the API returns an error, but the plugin is published, so we retry a few times
+try_count=0
+max_retries=3
+sleep_time=3
+while [ $try_count -lt $max_retries ]; do
+    out=$(
+        curl -sSL \
+            -X POST \
+            "${curl_args[@]}" \
+            -d "$json_payload" \
+            $gcom_api_url/plugins
+    )
+    # check if out is a valid JSON object
+    if echo "$out" | jq -e . > /dev/null 2>&1; then
+        break
+    fi
+    try_count=$((try_count + 1))
+    echo "Attempt $try_count of $max_retries failed, retrying..."
+    sleep $sleep_time
+done
+
+if [ $try_count -eq $max_retries ]; then
+    echo "Failed to publish plugin after $max_retries attempts"
+    exit 1
+fi
 
 echo -e "\nResponse:"
 set +e
