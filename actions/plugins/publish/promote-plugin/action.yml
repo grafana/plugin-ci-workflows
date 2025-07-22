@@ -1,0 +1,42 @@
+name: Promote plugin
+
+inputs:
+  gcom-publish-token:
+    description: GCOM token used to publish the plugin to the catalog.
+    required: true
+  gcloud-auth-token:
+    description: |
+      Google Cloud auth token for IAP acccess.
+      Required only for publishing to dev or ops.
+    required: false
+    default: ""
+  environment:
+    description: |
+      Environment to publish to.
+      Can be 'dev', 'ops', or 'prod'.
+    required: true
+  plugin-id:
+    description: |
+      Plugin ID to promote.
+    required: true
+  plugin-version:
+    description: |
+      Plugin version to promote.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Promote plugin
+      run: |
+        ${{ github.action_path }}/promote-plugin.sh \
+          --environment "${ENVIRONMENT}" \
+          --plugin-id "${PLUGIN_ID}" \
+          --plugin-version "${PLUGIN_VERSION}"
+      env:
+        GCLOUD_AUTH_TOKEN: ${{ inputs.gcloud-auth-token }}
+        GCOM_PUBLISH_TOKEN: ${{ inputs.gcom-publish-token }}
+
+        ENVIRONMENT: ${{ inputs.environment }}
+        PLUGIN_ID: ${{ inputs.plugin-id }}
+        PLUGIN_VERSION: ${{ inputs.plugin-version }}
