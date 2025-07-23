@@ -40,3 +40,4 @@ runs:
         ENVIRONMENT: ${{ inputs.environment }}
         PLUGIN_ID: ${{ inputs.plugin-id }}
         PLUGIN_VERSION: ${{ inputs.plugin-version }}
+      shell: bash
