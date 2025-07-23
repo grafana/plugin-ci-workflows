@@ -29,7 +29,7 @@ runs:
   steps:
     - name: Promote plugin
       run: |
-        ${{ github.action_path }}/promote-plugin.sh \
+        ${{ github.action_path }}/change-plugin-scope.sh \
           --environment "${ENVIRONMENT}" \
           --plugin-id "${PLUGIN_ID}" \
           --plugin-version "${PLUGIN_VERSION}"
