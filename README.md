@@ -28,7 +28,7 @@ Can be [found here](https://github.com/grafana/plugin-ci-workflows/tree/main/exa
 ## 📖 Documentation
 
 - **EngHub Documentation**: [Plugins CI GitHub Actions](https://enghub.grafana-ops.net/docs/default/component/grafana-plugins-platform/plugins-ci-github-actions/010-plugins-ci-github-actions)
-- **Examples**: See `examples/` and `./github/workflows` directories for complete workflow examples
+- **Examples**: See `examples/` and `./.github/workflows` directories for complete workflow examples
 - **Action Documentation**: Each action includes detailed input/output documentation
 
 ## 🤝 Contributing
