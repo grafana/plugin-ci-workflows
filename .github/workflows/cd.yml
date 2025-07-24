@@ -750,7 +750,6 @@ jobs:
             // Create GCS URLs for all zip files, each in its correct platform directory
             for (const zipFile of zipFiles) {
               let targetPlatform;
-
               // Determine platform directory based on filename pattern
               switch (true) {
                 case zipFile.includes('.darwin_'):
@@ -766,7 +765,6 @@ jobs:
                   targetPlatform = 'any';
                   break;
               }
-
               const gcsUrl = `${gcsPrefix}/${gcsPath}/${targetPlatform}/${zipFile}`;
               allUrls.push(gcsUrl);
               console.log(`Generated GCS URL: ${gcsUrl}`);
