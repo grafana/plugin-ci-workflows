@@ -31,8 +31,8 @@ runs:
       run: |
         ${{ github.action_path }}/change-plugin-scope.sh \
           --environment "${ENVIRONMENT}" \
-          --plugin-id "${PLUGIN_ID}" \
-          --plugin-version "${PLUGIN_VERSION}"
+          "${PLUGIN_ID}" \
+          "${PLUGIN_VERSION}"
       env:
         GCLOUD_AUTH_TOKEN: ${{ inputs.gcloud-auth-token }}
         GCOM_PUBLISH_TOKEN: ${{ inputs.gcom-publish-token }}

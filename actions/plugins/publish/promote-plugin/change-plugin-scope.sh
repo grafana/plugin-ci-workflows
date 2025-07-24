@@ -22,12 +22,16 @@ while [[ "$#" -gt 0 ]]; do
             exit 0
             ;;
         *)
-            plugin_id=$1
-            plugin_version=$2
-            shift
+            # Break on first non-flag argument to handle positional args
+            break
             ;;
     esac
 done
+
+# Handle remaining positional arguments
+plugin_id=$1
+plugin_version=$2
+
 
 if [ -z $GCOM_PUBLISH_TOKEN ]; then
     echo "GCOM_PUBLISH_TOKEN environment variable not set."
