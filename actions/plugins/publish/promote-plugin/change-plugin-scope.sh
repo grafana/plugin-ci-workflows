@@ -29,12 +29,6 @@ while [[ "$#" -gt 0 ]]; do
     esac
 done
 
-if [ -z "$gcs_zip_urls" ]; then
-    echo "Plugin ZIP URLs not provided."
-    usage
-    exit 1
-fi
-
 if [ -z $GCOM_PUBLISH_TOKEN ]; then
     echo "GCOM_PUBLISH_TOKEN environment variable not set."
     exit 1
