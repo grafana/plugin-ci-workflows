@@ -119,7 +119,7 @@ if [ $? -ne 0 ]; then
 fi
 
 # Determine if publish succeeded
-if [[ $(echo "$out" | jq -r '.scope[]? | select(. == "universal")') == "universal" ]]; then
+if [[ $(echo "$out" | jq -r '.scopes[]? | select(. == "universal")') == "universal" ]]; then
     echo -e "\nPlugin scopes successfully changed"
 else
     echo -e "\nPlugin publish failed"
