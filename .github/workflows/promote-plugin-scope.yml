@@ -3,7 +3,7 @@
 # It uses action grafana/plugin-ci-workflows/actions/plugins/publish/promote-plugin
 # to change plugin scope to universal.
 # The following inputs should be provided:
-# - environment: Target environment (dev, stag, prod)
+# - environment: Target environment (dev, ops, prod)
 # - plugin_id: Plugin ID to promote
 # - plugin_version: Plugin version to promote
 #
@@ -20,7 +20,7 @@ on:
         type: choice
         options:
           - dev
-          - stag
+          - ops
           - prod
       plugin_id:
         description: 'Plugin ID to promote'
@@ -109,8 +109,8 @@ jobs:
             exit 1
           fi
           if [ -z "${{ steps.gcloud.outputs.id_token }}" ]; then
-            echo "GCloud auth token is required"
-            exit 1
+            echo "GCloud auth token is required prod and ops"
+            echo "Environment: ${ENVIRONMENT}"
           fi
 
       - name: Promote plugin
