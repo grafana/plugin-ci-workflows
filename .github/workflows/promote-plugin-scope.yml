@@ -39,11 +39,17 @@ jobs:
       id-token: write
       contents: read
 
+    env:
+      # Set defaults for PR triggers, use inputs for manual dispatch
+      ENVIRONMENT: ${{ inputs.environment || 'dev' }}
+      PLUGIN_ID: ${{ inputs.plugin_id || 'hugooshiro-dummy-datasource' }}
+      PLUGIN_VERSION: ${{ inputs.plugin_version || '1.0.5' }}
+
     steps:
       - name: Login to Google Cloud (ID token for IAP)
         id: gcloud
         uses: google-github-actions/auth@ba79af03959ebeac9769e648f473a284504d9193 # v2.1.10
-        if: ${{ inputs.environment != 'prod' }}
+        if: ${{ env.ENVIRONMENT != 'prod' }}
         with:
           workload_identity_provider: "projects/304398677251/locations/global/workloadIdentityPools/github/providers/github-provider"
           service_account: github-plugin-ci-workflows@grafanalabs-workload-identity.iam.gserviceaccount.com
@@ -57,7 +63,7 @@ jobs:
         id: get-secrets
         uses: grafana/shared-workflows/actions/get-vault-secrets@9f37f656e063f0ad0b0bfc38d49894b57d363936 # v1.2.1
         with:
-          vault_instance: ${{ inputs.vault_instance }}
+          vault_instance: ${{ env.VAULT_INSTANCE }}
           common_secrets: |
             GCOM_PUBLISH_TOKEN_DEV=plugins/gcom-publish-token:dev
             GCOM_PUBLISH_TOKEN_OPS=plugins/gcom-publish-token:ops
@@ -82,19 +88,19 @@ jobs:
           echo "GCOM_PUBLISH_TOKEN=$token" >> "$GITHUB_ENV"
         shell: bash
         env:
-          ENVIRONMENT: ${{ inputs.environment }}
+          ENVIRONMENT: ${{ env.ENVIRONMENT }}
 
       - name: Verify promote inputs
         run: |
-          if [ -z "${{ inputs.plugin_id }}" ]; then
+          if [ -z "${{ env.PLUGIN_ID }}" ]; then
             echo "Plugin ID is required"
             exit 1
           fi
-          if [ -z "${{ inputs.plugin_version }}" ]; then
+          if [ -z "${{ env.PLUGIN_VERSION }}" ]; then
             echo "Plugin version is required"
             exit 1
           fi
-          if [ -z "${{ inputs.environment }}" ]; then
+          if [ -z "${{ env.ENVIRONMENT }}" ]; then
             echo "Environment is required"
             exit 1
           fi
@@ -110,8 +116,8 @@ jobs:
       - name: Promote plugin
         uses: grafana/plugin-ci-workflows/actions/plugins/publish/promote-plugin@add-promote-plugin-action # zizmor: ignore[unpinned-uses]
         with:
-          plugin-id: ${{ inputs.plugin_id }}
-          plugin-version: ${{ inputs.plugin_version }}
-          environment: ${{ inputs.environment }}
+          plugin-id: ${{ env.PLUGIN_ID }}
+          plugin-version: ${{ env.PLUGIN_VERSION }}
+          environment: ${{ env.ENVIRONMENT }}
           gcom-publish-token: ${{ env.GCOM_PUBLISH_TOKEN }}
           gcloud-auth-token: ${{ steps.gcloud.outputs.id_token }}
