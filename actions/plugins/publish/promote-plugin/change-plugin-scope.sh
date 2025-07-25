@@ -33,8 +33,8 @@ plugin_id=$1
 plugin_version=$2
 
 
-if [ -z $GCOM_PUBLISH_TOKEN ]; then
-    echo "GCOM_PUBLISH_TOKEN environment variable not set."
+if [ -z $GCOM_TOKEN ]; then
+    echo "GCOM_TOKEN environment variable not set."
     exit 1
 fi
 
@@ -88,9 +88,9 @@ if [ "$has_iap" = true ]; then
         exit 1
     fi
     curl_args+=("-H" "Authorization: Bearer $GCLOUD_AUTH_TOKEN")
-    curl_args+=("-H" "X-Api-Key: $GCOM_PUBLISH_TOKEN")
+    curl_args+=("-H" "X-Api-Key: $GCOM_TOKEN")
 else
-    curl_args+=("-H" "Authorization: Bearer $GCOM_PUBLISH_TOKEN")
+    curl_args+=("-H" "Authorization: Bearer $GCOM_TOKEN")
 fi
 
 # Create a json payload that has a property "scopes": ["universal"]

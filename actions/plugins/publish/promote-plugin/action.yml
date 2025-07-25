@@ -1,8 +1,8 @@
 name: Promote plugin
 
 inputs:
-  gcom-publish-token:
-    description: GCOM token used to publish the plugin to the catalog.
+  gcom-token:
+    description: GCOM token with permissions to update a plugin version.
     required: true
   gcloud-auth-token:
     description: |
@@ -35,7 +35,7 @@ runs:
           "${PLUGIN_VERSION}"
       env:
         GCLOUD_AUTH_TOKEN: ${{ inputs.gcloud-auth-token }}
-        GCOM_PUBLISH_TOKEN: ${{ inputs.gcom-publish-token }}
+        GCOM_TOKEN: ${{ inputs.gcom-publish-token }}
 
         ENVIRONMENT: ${{ inputs.environment }}
         PLUGIN_ID: ${{ inputs.plugin-id }}
