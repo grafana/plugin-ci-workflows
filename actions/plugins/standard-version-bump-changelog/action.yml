@@ -73,42 +73,68 @@ runs:
         # Format headers to match parser expectations
         sed -i -E 's/^### ([0-9]+\.[0-9]+\.[0-9]+.*)$/## \1/' CHANGELOG.md
 
-    - name: Run manual standard-version
-      if: ${{ inputs.manual }}
+    - name: Run manual standard-version - major
+      if: ${{ inputs.manual == 'major' }}
       shell: bash
       run: |
-        # Validate input to prevent command injection
-        VERSION_TYPE="${{ inputs.manual }}"
-        if [[ ! "$VERSION_TYPE" =~ ^(patch|minor|major)$ ]]; then
-          echo "Error: Invalid version type '$VERSION_TYPE'. Must be one of: patch, minor, major"
-          exit 1
-        fi
-
-        echo "Running manual version bump for $VERSION_TYPE..."
+        echo "Running manual version bump for major..."
 
         # Get current version from package.json
         CURRENT_VERSION=$(node -p "require('./package.json').version")
 
-        # Calculate next version based on input type
-        if [ "$VERSION_TYPE" = "major" ]; then
-          # Increment major version, reset minor and patch
-          MAJOR=$(echo $CURRENT_VERSION | cut -d. -f1)
-          NEW_MAJOR=$((MAJOR + 1))
-          NEXT_VERSION="${NEW_MAJOR}.0.0"
-        elif [ "$VERSION_TYPE" = "minor" ]; then
-          # Increment minor version, reset patch
-          MAJOR=$(echo $CURRENT_VERSION | cut -d. -f1)
-          MINOR=$(echo $CURRENT_VERSION | cut -d. -f2)
-          NEW_MINOR=$((MINOR + 1))
-          NEXT_VERSION="${MAJOR}.${NEW_MINOR}.0"
-        else
-          # Increment patch version
-          MAJOR=$(echo $CURRENT_VERSION | cut -d. -f1)
-          MINOR=$(echo $CURRENT_VERSION | cut -d. -f2)
-          PATCH=$(echo $CURRENT_VERSION | cut -d. -f3)
-          NEW_PATCH=$((PATCH + 1))
-          NEXT_VERSION="${MAJOR}.${MINOR}.${NEW_PATCH}"
-        fi
+        # Increment major version, reset minor and patch
+        MAJOR=$(echo $CURRENT_VERSION | cut -d. -f1)
+        NEW_MAJOR=$((MAJOR + 1))
+        NEXT_VERSION="${NEW_MAJOR}.0.0"
+
+        echo "Current version: $CURRENT_VERSION"
+        echo "Next version: $NEXT_VERSION"
+
+        # Run standard-version with the calculated next version
+        npx standard-version --release-as $NEXT_VERSION
+
+        # Format headers to match parser expectations
+        sed -i -E 's/^### ([0-9]+\.[0-9]+\.[0-9]+.*)$/## \1/' CHANGELOG.md
+
+    - name: Run manual standard-version - minor
+      if: ${{ inputs.manual == 'minor' }}
+      shell: bash
+      run: |
+        echo "Running manual version bump for minor..."
+
+        # Get current version from package.json
+        CURRENT_VERSION=$(node -p "require('./package.json').version")
+
+        # Increment minor version, reset patch
+        MAJOR=$(echo $CURRENT_VERSION | cut -d. -f1)
+        MINOR=$(echo $CURRENT_VERSION | cut -d. -f2)
+        NEW_MINOR=$((MINOR + 1))
+        NEXT_VERSION="${MAJOR}.${NEW_MINOR}.0"
+
+        echo "Current version: $CURRENT_VERSION"
+        echo "Next version: $NEXT_VERSION"
+
+        # Run standard-version with the calculated next version
+        npx standard-version --release-as $NEXT_VERSION
+
+        # Format headers to match parser expectations
+        sed -i -E 's/^### ([0-9]+\.[0-9]+\.[0-9]+.*)$/## \1/' CHANGELOG.md
+
+    - name: Run manual standard-version - patch
+      if: ${{ inputs.manual == 'patch' }}
+      shell: bash
+      run: |
+        echo "Running manual version bump for patch..."
+
+        # Get current version from package.json
+        CURRENT_VERSION=$(node -p "require('./package.json').version")
+
+        # Increment patch version
+        MAJOR=$(echo $CURRENT_VERSION | cut -d. -f1)
+        MINOR=$(echo $CURRENT_VERSION | cut -d. -f2)
+        PATCH=$(echo $CURRENT_VERSION | cut -d. -f3)
+        NEW_PATCH=$((PATCH + 1))
+        NEXT_VERSION="${MAJOR}.${MINOR}.${NEW_PATCH}"
 
         echo "Current version: $CURRENT_VERSION"
         echo "Next version: $NEXT_VERSION"
