@@ -6,13 +6,13 @@ inputs:
     required: true
   gcloud-auth-token:
     description: |
-      Google Cloud auth token for IAP acccess.
-      Required only for publishing to dev or ops.
+      Google Cloud auth token for IAP access.
+      Required only for to dev or ops access.
     required: false
     default: ""
   environment:
     description: |
-      Environment to publish to.
+      Environment where the plugin is published.
       Can be 'dev', 'ops', or 'prod'.
     required: true
   plugin-id:
