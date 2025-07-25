@@ -77,18 +77,25 @@ runs:
       if: ${{ inputs.manual }}
       shell: bash
       run: |
-        echo "Running manual version bump for ${{ inputs.manual }}..."
+        # Validate input to prevent command injection
+        VERSION_TYPE="${{ inputs.manual }}"
+        if [[ ! "$VERSION_TYPE" =~ ^(patch|minor|major)$ ]]; then
+          echo "Error: Invalid version type '$VERSION_TYPE'. Must be one of: patch, minor, major"
+          exit 1
+        fi
+
+        echo "Running manual version bump for $VERSION_TYPE..."
 
         # Get current version from package.json
         CURRENT_VERSION=$(node -p "require('./package.json').version")
 
         # Calculate next version based on input type
-        if [ "${{ inputs.manual }}" = "major" ]; then
+        if [ "$VERSION_TYPE" = "major" ]; then
           # Increment major version, reset minor and patch
           MAJOR=$(echo $CURRENT_VERSION | cut -d. -f1)
           NEW_MAJOR=$((MAJOR + 1))
           NEXT_VERSION="${NEW_MAJOR}.0.0"
-        elif [ "${{ inputs.manual }}" = "minor" ]; then
+        elif [ "$VERSION_TYPE" = "minor" ]; then
           # Increment minor version, reset patch
           MAJOR=$(echo $CURRENT_VERSION | cut -d. -f1)
           MINOR=$(echo $CURRENT_VERSION | cut -d. -f2)
