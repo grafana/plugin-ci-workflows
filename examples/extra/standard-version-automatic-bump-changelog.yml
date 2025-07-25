@@ -1,0 +1,18 @@
+name: automatic standard version bump changelog
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  bump-version:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: standard version bump changelog
+        uses: grafana/plugin-ci-workflows/actions/plugins/standard-version-bump-changelog@main # zizmor: ignore[unpinned-uses]
+        with:
+          automatic: true

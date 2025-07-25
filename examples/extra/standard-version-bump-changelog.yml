@@ -1,0 +1,27 @@
+name: standard version bump changelog
+
+on:
+  workflow_dispatch:
+    inputs:
+      manual:
+        description: "Manual: Choose version bump type"
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+        default: patch
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  bump-version:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: standard version bump changelog
+        uses: grafana/plugin-ci-workflows/actions/plugins/standard-version-bump-changelog@main # zizmor: ignore[unpinned-uses]
+        with:
+          manual: ${{ inputs.manual }}

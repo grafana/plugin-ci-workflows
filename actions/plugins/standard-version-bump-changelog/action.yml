@@ -1,0 +1,119 @@
+name: standard version bump changelog
+
+on:
+  workflow_dispatch:
+    inputs:
+      automatic:
+        description: "Automatic: let standard-version do the version bump based on the commit messages"
+        required: false
+        type: boolean
+      manual:
+        description: "Manual: Choose version bump type"
+        required: false
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+        default: patch
+
+permissions:
+  id-token: write
+  contents: write
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get secrets from Vault
+        id: get-secrets
+        uses: grafana/shared-workflows/actions/get-vault-secrets@main
+        env:
+          VAULT_INSTANCE: ops
+        with:
+          vault_instance: ${{ env.VAULT_INSTANCE }}
+          common_secrets: |
+            GITHUB_APP_ID=plugins-platform-bot-app:app-id
+            GITHUB_APP_PRIVATE_KEY=plugins-platform-bot-app:private-key
+          export_env: false
+
+      - name: Generate GitHub token
+        id: generate-github-token
+        uses: actions/create-github-app-token@df432ceedc7162793a195dd1713ff69aefc7379e # v2.0.6
+        with:
+          app-id: ${{ fromJSON(steps.get-secrets.outputs.secrets).GITHUB_APP_ID }}
+          private-key: ${{ fromJSON(steps.get-secrets.outputs.secrets).GITHUB_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ steps.generate-github-token.outputs.token }}
+          persist-credentials: true
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install standard-version
+        run: npm install -g standard-version
+
+      - name: Configure Git
+        shell: bash
+        run: |
+          git config user.name 'grafana-plugins-platform-bot[bot]'
+          git config user.email '144369747+grafana-plugins-platform-bot[bot]@users.noreply.github.com'
+
+      - name: Run automatic standard-version
+        if: ${{ inputs.automatic == 'true' }}
+        run: |
+          echo "Running automatic version bump..."
+          npx standard-version
+          sed -i -E 's/^### ([0-9]+\.[0-9]+\.[0-9]+.*)$/## \1/' CHANGELOG.md
+
+      - name: Run manual standard-version
+        if: ${{ inputs.manual }}
+        run: |
+          echo "Running manual version bump for ${{ inputs.version }}..."
+
+          # Get current version from package.json
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+
+          # Calculate next version based on input type
+          if [ "${{ inputs.version }}" = "major" ]; then
+            # Increment major version, reset minor and patch
+            MAJOR=$(echo $CURRENT_VERSION | cut -d. -f1)
+            NEW_MAJOR=$((MAJOR + 1))
+            NEXT_VERSION="${NEW_MAJOR}.0.0"
+          elif [ "${{ inputs.version }}" = "minor" ]; then
+            # Increment minor version, reset patch
+            MAJOR=$(echo $CURRENT_VERSION | cut -d. -f1)
+            MINOR=$(echo $CURRENT_VERSION | cut -d. -f2)
+            NEW_MINOR=$((MINOR + 1))
+            NEXT_VERSION="${MAJOR}.${NEW_MINOR}.0"
+          else
+            # Increment patch version
+            MAJOR=$(echo $CURRENT_VERSION | cut -d. -f1)
+            MINOR=$(echo $CURRENT_VERSION | cut -d. -f2)
+            PATCH=$(echo $CURRENT_VERSION | cut -d. -f3)
+            NEW_PATCH=$((PATCH + 1))
+            NEXT_VERSION="${MAJOR}.${MINOR}.${NEW_PATCH}"
+          fi
+
+          echo "Current version: $CURRENT_VERSION"
+          echo "Next version: $NEXT_VERSION"
+
+          # Run standard-version with the calculated next version
+          npx standard-version --release-as $NEXT_VERSION
+
+          # Format headers to match parser expectations
+          sed -i -E 's/^### ([0-9]+\.[0-9]+\.[0-9]+.*)$/## \1/' CHANGELOG.md
+
+      - name: Push changes
+        env:
+          GITHUB_TOKEN: ${{ steps.generate-github-token.outputs.token }}
+        run: |
+          git push origin HEAD
+          git push origin --tags
