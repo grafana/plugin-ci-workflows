@@ -70,6 +70,7 @@ runs:
       run: |
         echo "Running automatic version bump..."
         npx standard-version
+        # Format headers to match parser expectations
         sed -i -E 's/^### ([0-9]+\.[0-9]+\.[0-9]+.*)$/## \1/' CHANGELOG.md
 
     - name: Run manual standard-version
