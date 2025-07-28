@@ -1,14 +1,16 @@
 # Description:
-# Promote plugin scope to universal.
+# Change plugin scope.
 # It uses action grafana/plugin-ci-workflows/actions/plugins/publish/promote-plugin
 # to change plugin scope to universal.
 # The following inputs should be provided:
 # - environment: Target environment (dev, ops, prod)
-# - plugin_id: Plugin ID to promote
-# - plugin_version: Plugin version to promote
+# - scopes: Scopes to change to. Can be 'universal', 'grafana_cloud', 'grafana_cloud_org' or 'grafana_cloud_instance'.
+#           Multiple values can be provided separated by commas.
+# - plugin_id: Plugin ID to change scope
+# - plugin_version: Plugin version to change scope
 #
 
-name: Plugins - Promote to Universal Scope
+name: Plugins - Change Plugin Scope
 
 on:
   workflow_dispatch:
@@ -23,12 +25,20 @@ on:
           - ops
           - prod
       plugin_id:
-        description: 'Plugin ID to promote'
+        description: 'Plugin ID to change scope'
         required: true
         type: string
       plugin_version:
-        description: 'Plugin version to promote'
+        description: 'Plugin version to change scope'
         required: true
+        type: string
+      scopes:
+        description: |
+          Scope to change the plugin to.
+          Can be 'universal', 'grafana_cloud', 'grafana_cloud_org' or 'grafana_cloud_instance'.
+          Multiple values can be provided separated by commas.
+        required: false
+        default: 'universal'
         type: string
 
 jobs:
@@ -44,6 +54,7 @@ jobs:
       ENVIRONMENT: ${{ inputs.environment || 'dev' }}
       PLUGIN_ID: ${{ inputs.plugin_id || 'hugooshiro-dummy-datasource' }}
       PLUGIN_VERSION: ${{ inputs.plugin_version || '1.0.5' }}
+      SCOPES: ${{ inputs.scopes || 'universal' }}
 
     steps:
       - name: Login to Google Cloud (ID token for IAP)
@@ -90,34 +101,13 @@ jobs:
         env:
           ENVIRONMENT: ${{ env.ENVIRONMENT }}
 
-      - name: Verify promote inputs
-        run: |
-          if [ -z "${{ env.PLUGIN_ID }}" ]; then
-            echo "Plugin ID is required"
-            exit 1
-          fi
-          if [ -z "${{ env.PLUGIN_VERSION }}" ]; then
-            echo "Plugin version is required"
-            exit 1
-          fi
-          if [ -z "${{ env.ENVIRONMENT }}" ]; then
-            echo "Environment is required"
-            exit 1
-          fi
-          if [ -z "${{ env.GCOM_PUBLISH_TOKEN }}" ]; then
-            echo "GCOM_PUBLISH_TOKEN is required"
-            exit 1
-          fi
-          if [ -z "${{ steps.gcloud.outputs.id_token }}" ]; then
-            echo "GCloud auth token is required prod and ops"
-            echo "Environment: ${ENVIRONMENT}"
-          fi
-
-      - name: Promote plugin
-        uses: grafana/plugin-ci-workflows/actions/plugins/publish/promote-plugin@add-promote-plugin-action # zizmor: ignore[unpinned-uses]
+      - name: Change plugin scope
+        # this branch will be change once accepted
+        uses: grafana/plugin-ci-workflows/actions/plugins/publish/change-plugin-scope@add-promote-plugin-action # zizmor: ignore[unpinned-uses]
         with:
           plugin-id: ${{ env.PLUGIN_ID }}
           plugin-version: ${{ env.PLUGIN_VERSION }}
           environment: ${{ env.ENVIRONMENT }}
-          gcom-publish-token: ${{ env.GCOM_PUBLISH_TOKEN }}
+          gcom-token: ${{ env.GCOM_PUBLISH_TOKEN }}
           gcloud-auth-token: ${{ steps.gcloud.outputs.id_token }}
+          scopes: ${{ env.SCOPE }}
