@@ -165,6 +165,7 @@ runs:
     - name: Commit format changes
       env:
         GITHUB_TOKEN: ${{ steps.generate-github-token.outputs.token }}
+      shell: bash
       run: |
         # Check if there are any changes from the sed command
         if ! git diff --quiet CHANGELOG.md; then
