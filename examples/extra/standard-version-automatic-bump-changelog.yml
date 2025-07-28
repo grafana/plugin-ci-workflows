@@ -16,3 +16,4 @@ jobs:
         uses: grafana/plugin-ci-workflows/actions/plugins/standard-version-bump-changelog@main # zizmor: ignore[unpinned-uses]
         with:
           automatic: true
+          github-draft-release: true

@@ -25,3 +25,4 @@ jobs:
         uses: grafana/plugin-ci-workflows/actions/plugins/standard-version-bump-changelog@main # zizmor: ignore[unpinned-uses]
         with:
           manual: ${{ inputs.manual }}
+          github-draft-release: true
