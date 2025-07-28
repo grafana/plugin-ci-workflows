@@ -1,4 +1,4 @@
-name: Promote plugin
+name: Change plugin scope
 
 inputs:
   gcom-token:
