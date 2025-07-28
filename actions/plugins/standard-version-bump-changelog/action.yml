@@ -65,7 +65,6 @@ runs:
         git config user.email '144369747+grafana-plugins-platform-bot[bot]@users.noreply.github.com'
 
     - name: Run automatic standard-version
-      id: run-standard-version
       if: ${{ inputs.automatic == 'true' }}
       shell: bash
       run: |
@@ -80,7 +79,6 @@ runs:
         echo "new-version=${NEW_VERSION}" >> $GITHUB_OUTPUT
 
     - name: Run manual standard-version - major
-      id: run-standard-version
       if: ${{ inputs.manual == 'major' }}
       shell: bash
       run: |
@@ -108,7 +106,6 @@ runs:
         echo "new-version=${NEW_VERSION}" >> $GITHUB_OUTPUT
 
     - name: Run manual standard-version - minor
-      id: run-standard-version
       if: ${{ inputs.manual == 'minor' }}
       shell: bash
       run: |
@@ -137,7 +134,6 @@ runs:
         echo "new-version=${NEW_VERSION}" >> $GITHUB_OUTPUT
 
     - name: Run manual standard-version - patch
-      id: run-standard-version
       if: ${{ inputs.manual == 'patch' }}
       shell: bash
       run: |
@@ -179,7 +175,8 @@ runs:
         fi
 
         # Create a new commit after the version bump to ensure unique content for next release
-        git commit --allow-empty -m "chore: bump version to ${{ steps.run-standard-version.outputs.new-version }}"
+        NEW_VERSION=$(node -p "require('./package.json').version")
+        git commit --allow-empty -m "chore: bump version to $NEW_VERSION"
 
     - name: Push changes
       env:
