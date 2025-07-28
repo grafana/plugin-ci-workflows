@@ -24,7 +24,7 @@ on:
         description: |
           Comma-separated list of scopes for the plugin version in the catalog.
           Default is 'universal'.
-          Can also be set to 'grafana_cloud' or a list of orgs like "grafana_cloud_org_{slug},grafana_cloud_org_{slug}"
+          Can also be set to 'grafana_cloud' or a list of grafana_cloud_org's or grafana_cloud_instance's like "grafana_cloud_org_{slug},grafana_cloud_org_{slug}" or "grafan_cloud_instance_{slug},grafan_cloud_instance_{slug}"
           More information about available scopes can be found here https://enghub.grafana-ops.net/docs/default/component/grafana-plugins-platform/grafana-com/gcom-cli-cheat-sheet/#scoping 
         required: false
         default: universal
