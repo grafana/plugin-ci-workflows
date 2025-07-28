@@ -16,6 +16,7 @@ dry_run=false
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         --environment) gcom_env=$2; shift 2;;
+        --scopes) scopes=$(echo $2 | jq -Rc 'split(",")'); shift 2;;
         --dry-run) dry_run=true; shift;;
         --help)
             usage
@@ -56,6 +57,10 @@ if [ -z $plugin_version ]; then
     exit 1
 fi
 
+if [ -z $scopes ]; then
+    scopes='["universal"]'
+fi
+
 has_iap=false
 case $gcom_env in
     dev)
@@ -93,8 +98,7 @@ else
     curl_args+=("-H" "Authorization: Bearer $GCOM_TOKEN")
 fi
 
-# Create a json payload that has a property "scopes": ["universal"]
-json_payload=$(json_obj --argjson scopes '["universal"]')
+json_payload=$(json_obj --argjson scopes "$scopes")
 
 echo $json_payload | jq
 if [ "$dry_run" = true ]; then
