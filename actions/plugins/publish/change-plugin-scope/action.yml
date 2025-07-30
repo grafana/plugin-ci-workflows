@@ -17,24 +17,24 @@ inputs:
     required: true
   scopes:
     description: |
-      Scope to promote the plugin to.
+      Scopes to apply to the plugin.
       Can be 'universal', 'grafana_cloud', 'grafana_cloud_org' or 'grafana_cloud_instance'.
       Multiple values can be provided separated by commas.
     required: true
     default: "universal"
   plugin-id:
     description: |
-      Plugin ID to promote.
+      Plugin ID.
     required: true
   plugin-version:
     description: |
-      Plugin version to promote.
+      Plugin version to affect.
     required: true
 
 runs:
   using: composite
   steps:
-    - name: Promote plugin
+    - name: Change plugin scope
       run: |
         ${{ github.action_path }}/change-plugin-scope.sh \
           --environment "${ENVIRONMENT}" \
