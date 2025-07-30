@@ -58,7 +58,9 @@ if [ -z $plugin_version ]; then
 fi
 
 if [ -z $scopes ]; then
-    scopes='["universal"]'
+    echo "Scopes not provided"
+    usage
+    exit 1
 fi
 
 has_iap=false
