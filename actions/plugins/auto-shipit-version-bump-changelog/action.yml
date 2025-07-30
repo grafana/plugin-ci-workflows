@@ -1,0 +1,148 @@
+name: Auto shipit version bump changelog
+description: |
+  Bump version and generate changelog using auto shipit.
+  Can run in automatic mode based on commit messages or manual mode with a specified version type.
+  A github draft release is automatically created by auto shipit.
+
+inputs:
+  automatic:
+    description: "Automatic: let auto shipit do the version bump based on the commit messages"
+    required: false
+    type: boolean
+    default: false
+  manual:
+    required: false
+    description: "Manual: Choose version bump type"
+    type: choice
+    options:
+      - patch
+      - minor
+      - major
+    default: patch
+
+runs:
+  using: composite
+  steps:
+    - name: Get secrets from Vault
+      id: get-secrets
+      uses: grafana/shared-workflows/actions/get-vault-secrets@main
+      env:
+        VAULT_INSTANCE: ops
+      with:
+        vault_instance: ops
+        common_secrets: |
+          GITHUB_APP_ID=plugins-platform-bot-app:app-id
+          GITHUB_APP_PRIVATE_KEY=plugins-platform-bot-app:private-key
+        export_env: false
+
+    - name: Generate GitHub token
+      id: generate-github-token
+      uses: actions/create-github-app-token@df432ceedc7162793a195dd1713ff69aefc7379e # v2.0.6
+      with:
+        app-id: ${{ fromJSON(steps.get-secrets.outputs.secrets).GITHUB_APP_ID }}
+        private-key: ${{ fromJSON(steps.get-secrets.outputs.secrets).GITHUB_APP_PRIVATE_KEY }}
+        owner: ${{ github.repository_owner }}
+
+    - uses: actions/checkout@v4
+      with:
+        token: ${{ steps.generate-github-token.outputs.token }}
+        persist-credentials: true
+        fetch-depth: 0
+
+    - name: Install standard-version
+      shell: bash
+      run: npm install -g standard-version
+
+    - name: Configure Git
+      shell: bash
+      run: |
+        git config user.name 'grafana-plugins-platform-bot[bot]'
+        git config user.email '144369747+grafana-plugins-platform-bot[bot]@users.noreply.github.com'
+
+    - name: Install dependencies
+      run: npm install -g auto @auto-it/omit-commits
+
+    - name: Run automatic auto shipit
+      if: ${{ inputs.mode == 'automatic' }}
+      env:
+        GH_TOKEN: ${{ steps.generate-github-token.outputs.token }}
+      run: |
+        echo "Running automatic version bump..."
+        auto shipit
+
+    - name: Run manual auto shipit - major
+      if: ${{ inputs.version == 'major' }}
+      env:
+        GH_TOKEN: ${{ steps.generate-github-token.outputs.token }}
+      shell: bash
+      run: |
+        echo "Running manual version bump for major..."
+
+        # Get current version from package.json
+        CURRENT_VERSION=$(node -p "require('./package.json').version")
+
+        # Increment major version, reset minor and patch
+        MAJOR=$(echo $CURRENT_VERSION | cut -d. -f1)
+        NEW_MAJOR=$((MAJOR + 1))
+        NEXT_VERSION="${NEW_MAJOR}.0.0"
+
+        echo "Current version: $CURRENT_VERSION"
+        echo "Next version: $NEXT_VERSION"
+
+        # Run auto shipit with the calculated next version
+        auto shipit --use-version $NEXT_VERSION
+
+    - name: Run manual auto shipit - minor
+      if: ${{ inputs.version == 'minor' }}
+      env:
+        GH_TOKEN: ${{ steps.generate-github-token.outputs.token }}
+      shell: bash
+      run: |
+        echo "Running manual version bump for minor..."
+
+        # Get current version from package.json
+        CURRENT_VERSION=$(node -p "require('./package.json').version")
+
+        # Increment minor version, reset patch
+        MAJOR=$(echo $CURRENT_VERSION | cut -d. -f1)
+        MINOR=$(echo $CURRENT_VERSION | cut -d. -f2)
+        NEW_MINOR=$((MINOR + 1))
+        NEXT_VERSION="${MAJOR}.${NEW_MINOR}.0"
+
+        echo "Current version: $CURRENT_VERSION"
+        echo "Next version: $NEXT_VERSION"
+
+        # Run auto shipit with the calculated next version
+        auto shipit --use-version $NEXT_VERSION
+
+    - name: Run manual auto shipit - patch
+      if: ${{ inputs.version == 'patch' }}
+      env:
+        GH_TOKEN: ${{ steps.generate-github-token.outputs.token }}
+      shell: bash
+      run: |
+        echo "Running manual version bump for patch..."
+
+        # Get current version from package.json
+        CURRENT_VERSION=$(node -p "require('./package.json').version")
+
+        # Increment patch version
+        MAJOR=$(echo $CURRENT_VERSION | cut -d. -f1)
+        MINOR=$(echo $CURRENT_VERSION | cut -d. -f2)
+        PATCH=$(echo $CURRENT_VERSION | cut -d. -f3)
+        NEW_PATCH=$((PATCH + 1))
+        NEXT_VERSION="${MAJOR}.${MINOR}.${NEW_PATCH}"
+
+        echo "Current version: $CURRENT_VERSION"
+        echo "Next version: $NEXT_VERSION"
+
+        # Run auto shipit with the calculated next version
+        auto shipit --use-version $NEXT_VERSION
+
+    - name: Push changes
+      env:
+        GITHUB_TOKEN: ${{ steps.generate-github-token.outputs.token }}
+      shell: bash
+      run: |
+        git push origin HEAD
+        git push origin --tags
