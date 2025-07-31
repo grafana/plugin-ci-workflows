@@ -71,10 +71,6 @@ runs:
         echo "Running automatic version bump..."
         npx standard-version
 
-        # Get the new version that was created
-        NEW_VERSION=$(node -p "require('./package.json').version")
-        echo "new-version=${NEW_VERSION}" >> $GITHUB_OUTPUT
-
     - name: Run manual standard-version - major
       if: ${{ inputs.version == 'major' }}
       shell: bash
@@ -94,10 +90,6 @@ runs:
 
         # Run standard-version with the calculated next version
         npx standard-version --release-as $NEXT_VERSION
-
-        # Get the new version that was created
-        NEW_VERSION=$(node -p "require('./package.json').version")
-        echo "new-version=${NEW_VERSION}" >> $GITHUB_OUTPUT
 
     - name: Run manual standard-version - minor
       if: ${{ inputs.version == 'minor' }}
@@ -119,10 +111,6 @@ runs:
 
         # Run standard-version with the calculated next version
         npx standard-version --release-as $NEXT_VERSION
-
-        # Get the new version that was created
-        NEW_VERSION=$(node -p "require('./package.json').version")
-        echo "new-version=${NEW_VERSION}" >> $GITHUB_OUTPUT
 
     - name: Run manual standard-version - patch
       if: ${{ inputs.version == 'patch' }}
@@ -158,6 +146,7 @@ runs:
       if: ${{ inputs.github-draft-release == 'true' }}
       env:
         GITHUB_TOKEN: ${{ steps.generate-github-token.outputs.token }}
+      shell: bash
       run: |
         VERSION=$(node -p "require('./package.json').version")
         TAG="v$VERSION"
