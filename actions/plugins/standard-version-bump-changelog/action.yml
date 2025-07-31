@@ -34,7 +34,7 @@ runs:
       env:
         VAULT_INSTANCE: ops
       with:
-        vault_instance: ops
+        vault_instance: ${{ env.VAULT_INSTANCE }}
         common_secrets: |
           GITHUB_APP_ID=plugins-platform-bot-app:app-id
           GITHUB_APP_PRIVATE_KEY=plugins-platform-bot-app:private-key

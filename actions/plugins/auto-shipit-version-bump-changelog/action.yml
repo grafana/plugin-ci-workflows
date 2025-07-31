@@ -56,12 +56,14 @@ runs:
         git config user.email '144369747+grafana-plugins-platform-bot[bot]@users.noreply.github.com'
 
     - name: Install dependencies
+      shell: bash
       run: npm install -g auto @auto-it/omit-commits
 
     - name: Run automatic auto shipit
-      if: ${{ inputs.mode == 'automatic' }}
+      if: ${{ inputs.automatic == 'true' }}
       env:
         GH_TOKEN: ${{ steps.generate-github-token.outputs.token }}
+      shell: bash
       run: |
         echo "Running automatic version bump..."
         auto shipit
