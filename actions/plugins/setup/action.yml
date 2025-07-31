@@ -19,6 +19,14 @@ inputs:
     description: Node.js version file to use.
     required: false
     default: ""
+  node-cache:
+    description: Used to specify a package manager for caching in the default directory. Supported values npm, yarn, pnpm (https://github.com/actions/setup-node#caching-global-packages-data)
+    required: false
+    default: ""
+  node-cache-dependency-path:
+    description: Used to specify the path to a dependency file - package-lock.json, yarn.lock, etc. Supports wildcards or a list of file names for caching multiple dependencies (https://github.com/actions/setup-node#caching-global-packages-data)
+    required: false
+    default: ""
 
 runs:
   using: composite
@@ -28,6 +36,8 @@ runs:
       with:
         node-version: "${{ inputs.node-version }}"
         node-version-file: "${{ inputs.node-version-file }}"
+        cache: "${{ inputs.node-cache }}"
+        cache-dependency-path: "${{ inputs.node-cache-dependency-path }}"
 
     - name: Go
       uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0

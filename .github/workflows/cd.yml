@@ -87,6 +87,10 @@ on:
         type: boolean
         required: false
         default: false
+      node-cache-dependency-path:
+        description: Used to specify the path to a dependency file - package-lock.json, yarn.lock, etc. Supports wildcards or a list of file names for caching multiple dependencies (https://github.com/actions/setup-node#caching-global-packages-data)
+        type: string
+        required: false
 
       # Playwright
       run-playwright:
@@ -334,6 +338,7 @@ jobs:
       npm-registry-auth: ${{ inputs.npm-registry-auth }}
       go-version: ${{ inputs.go-version }}
       go-setup-caching: ${{ inputs.go-setup-caching }}
+      node-cache-dependency-path: ${{ inputs.node-cache-dependency-path }}
       node-version: ${{ inputs.node-version }}
       golangci-lint-version: ${{ inputs.golangci-lint-version }}
       run-playwright: ${{ inputs.run-playwright }}

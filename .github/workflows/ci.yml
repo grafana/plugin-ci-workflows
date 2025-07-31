@@ -31,7 +31,7 @@ on:
         type: string
         required: false
       go-setup-caching:
-        description: Defines if setup-go action should have caching enabled (https://github.com/actions/setup-go#caching-dependency-files-and-build-outputs)olangci-lint version to use
+        description: Defines if setup-go action should have caching enabled (https://github.com/actions/setup-go#caching-dependency-files-and-build-outputs)
         type: boolean
         required: false
       trufflehog-version:
@@ -62,6 +62,10 @@ on:
         type: boolean
         required: false
         default: false
+      node-cache-dependency-path:
+        description: Used to specify the path to a dependency file - package-lock.json, yarn.lock, etc. Supports wildcards or a list of file names for caching multiple dependencies (https://github.com/actions/setup-node#caching-global-packages-data)
+        type: string
+        required: false
 
       # Playwright
       run-playwright:
@@ -279,6 +283,8 @@ jobs:
           node-version-file: ${{ inputs.plugin-directory }}/.nvmrc
           golangci-lint-version: ${{ inputs.golangci-lint-version || env.DEFAULT_GOLANGCI_LINT_VERSION }}
           go-setup-caching: ${{ inputs.go-setup-caching }}
+          node-cache: ${{ inputs.package-manager }}
+          node-cache-dependency-path: ${{ inputs.node-cache-dependency-path }}
 
       - name: Get secrets from Vault
         id: get-secrets
