@@ -6,11 +6,11 @@
 # - environment: Target environment (dev, ops, prod)
 # - scopes: Scopes to change to. Can be 'universal', 'grafana_cloud', 'grafana_cloud_org' or 'grafana_cloud_instance'.
 #           Multiple values can be provided separated by commas.
-# - plugin_id: Plugin ID to change scope
 # - plugin_version: Plugin version to change scope
 #
 
 name: Plugins - Change Plugin Scope
+
 
 on:
   workflow_dispatch:
@@ -24,10 +24,6 @@ on:
           - dev
           - ops
           - prod
-      plugin_id:
-        description: 'Plugin ID to change scope'
-        required: false
-        type: string
       plugin_version:
         description: 'Plugin version to change scope'
         required: true
@@ -40,6 +36,9 @@ on:
         required: false
         type: string
 
+env:
+  PLUGIN_ID: hugooshiro-dummy-datasource  # TODO: change with your plugin's slug
+
 jobs:
   promote:
     runs-on: ubuntu-latest
@@ -48,18 +47,11 @@ jobs:
       id-token: write
       contents: read
 
-    env:
-      # Set defaults for PR triggers, use inputs for manual dispatch
-      ENVIRONMENT: ${{ inputs.environment || 'dev' }}
-      PLUGIN_ID: ${{ inputs.plugin_id || 'hugooshiro-dummy-datasource' }}
-      PLUGIN_VERSION: ${{ inputs.plugin_version || '1.0.5' }}
-      SCOPES: ${{ inputs.scopes || 'universal' }}
-
     steps:
       - name: Login to Google Cloud (ID token for IAP)
         id: gcloud
         uses: google-github-actions/auth@ba79af03959ebeac9769e648f473a284504d9193 # v2.1.10
-        if: ${{ env.ENVIRONMENT != 'prod' }}
+        if: ${{ inputs.environment != 'prod' }}
         with:
           workload_identity_provider: "projects/304398677251/locations/global/workloadIdentityPools/github/providers/github-provider"
           service_account: github-plugin-ci-workflows@grafanalabs-workload-identity.iam.gserviceaccount.com
@@ -75,27 +67,27 @@ jobs:
         with:
           vault_instance: ${{ env.VAULT_INSTANCE }}
           common_secrets: |
-            GCOM_PUBLISH_TOKEN_DEV=plugins/gcom-publish-token:dev
-            GCOM_PUBLISH_TOKEN_OPS=plugins/gcom-publish-token:ops
-            GCOM_PUBLISH_TOKEN_PROD=plugins/gcom-publish-token:prod
+            GCOM_TOKEN_DEV=plugins/gcom-publish-token:dev
+            GCOM_TOKEN_OPS=plugins/gcom-publish-token:ops
+            GCOM_TOKEN_PROD=plugins/gcom-publish-token:prod
           export_env: false
 
       - name: Determine which token to use
         run: |
           if [ "${ENVIRONMENT}" == 'dev' ]; then
             echo "Picked dev token"
-            token="${{ fromJSON(steps.get-secrets.outputs.secrets).GCOM_PUBLISH_TOKEN_DEV }}"
+            token="${{ fromJSON(steps.get-secrets.outputs.secrets).GCOM_TOKEN_DEV }}"
           elif [ "${ENVIRONMENT}" == 'ops' ]; then
             echo "Picked ops token"
-            token="${{ fromJSON(steps.get-secrets.outputs.secrets).GCOM_PUBLISH_TOKEN_OPS }}"
+            token="${{ fromJSON(steps.get-secrets.outputs.secrets).GCOM_TOKEN_OPS }}"
           elif [ "${ENVIRONMENT}" == 'prod' ]; then
             echo "Picked prod token"
-            token="${{ fromJSON(steps.get-secrets.outputs.secrets).GCOM_PUBLISH_TOKEN_PROD }}"
+            token="${{ fromJSON(steps.get-secrets.outputs.secrets).GCOM_TOKEN_PROD }}"
           else
             echo "Invalid environment: ${ENVIRONMENT}"
             exit 1
           fi
-          echo "GCOM_PUBLISH_TOKEN=$token" >> "$GITHUB_ENV"
+          echo "GCOM_TOKEN=$token" >> "$GITHUB_ENV"
         shell: bash
         env:
           ENVIRONMENT: ${{ env.ENVIRONMENT }}
@@ -105,8 +97,8 @@ jobs:
         uses: grafana/plugin-ci-workflows/actions/plugins/publish/change-plugin-scope@add-promote-plugin-action # zizmor: ignore[unpinned-uses]
         with:
           plugin-id: ${{ env.PLUGIN_ID }}
-          plugin-version: ${{ env.PLUGIN_VERSION }}
-          environment: ${{ env.ENVIRONMENT }}
-          gcom-token: ${{ env.GCOM_PUBLISH_TOKEN }}
+          plugin-version: ${{ inputs.plugin_version }}
+          environment: ${{ inputs.environment }}
+          gcom-token: ${{ env.GCOM_TOKEN }}
           gcloud-auth-token: ${{ steps.gcloud.outputs.id_token }}
-          scopes: ${{ env.SCOPE }}
+          scopes: ${{ inputs.scopes }}
