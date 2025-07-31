@@ -33,7 +33,7 @@ on:
           Scope to change the plugin to.
           Can be 'universal', 'grafana_cloud', 'grafana_cloud_org' or 'grafana_cloud_instance'.
           Multiple values can be provided separated by commas.
-        required: false
+        required: true
         type: string
 
 env:
