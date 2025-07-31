@@ -124,10 +124,39 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Determine if publish succeeded
-if [[ $(echo "$out" | jq -r '.scopes[]? | select(. == "universal")') == "universal" ]]; then
+check_response_error() {
+    local response="$1"
+    local expected_scopes="$2"
+
+    local response_scopes_count
+    response_scopes_count=$(echo "$response" | jq -r '(.scopes // []) | length')
+    if [[ "$response_scopes_count" == "0" ]]; then
+        echo -e "\nPlugin scopes changed failed"
+        return 1
+    fi
+
+    local response_scopes
+    response_scopes=$(echo "$response" | jq -r '.scopes // []')
+
+    IFS=',' read -ra expected_scopes_array <<< "$expected_scopes"
+    for expected_scope in "${expected_scopes_array[@]}"; do
+        expected_scope=$(echo "$expected_scope" | xargs)
+
+        local scope_found
+        scope_found=$(echo "$response_scopes" | jq --arg scope "$expected_scope" -r 'index($scope) != null')
+        if [[ "$scope_found" != "true" ]]; then
+            echo -e "\nPlugin scopes changed failed - missing scope: $expected_scope"
+            return 1
+        fi
+    done
+
+    return 0
+}
+
+check_response_error "$out" "$scopes"
+exit_code=$?
+if [[ $exit_code -eq 0 ]]; then
     echo -e "\nPlugin scopes successfully changed"
 else
-    echo -e "\nPlugin publish failed"
-    exit 1
+    exit $exit_code
 fi
