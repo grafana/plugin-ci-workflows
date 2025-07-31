@@ -26,7 +26,7 @@ on:
           - prod
       plugin_id:
         description: 'Plugin ID to change scope'
-        required: true
+        required: false
         type: string
       plugin_version:
         description: 'Plugin version to change scope'
@@ -38,7 +38,6 @@ on:
           Can be 'universal', 'grafana_cloud', 'grafana_cloud_org' or 'grafana_cloud_instance'.
           Multiple values can be provided separated by commas.
         required: false
-        default: 'universal'
         type: string
 
 jobs:
