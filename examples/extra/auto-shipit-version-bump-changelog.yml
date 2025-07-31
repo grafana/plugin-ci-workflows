@@ -3,8 +3,8 @@ name: auto shipit version bump changelog
 on:
   workflow_dispatch:
     inputs:
-      manual:
-        description: "Manual: Choose version bump type"
+      version:
+        description: "Semver type of new version (major / minor / patch)"
         type: choice
         options:
           - patch
@@ -17,11 +17,11 @@ permissions:
   id-token: write
 
 jobs:
-  bump-version:
+  bump-version-changelog:
     runs-on: ubuntu-latest
 
     steps:
-      - name: auto shipit version bump changelog
+      - name: auto shipit manual version bump changelog
         uses: grafana/plugin-ci-workflows/actions/plugins/auto-shipit-version-bump-changelog@main # zizmor: ignore[unpinned-uses]
         with:
-          manual: ${{ inputs.manual }}
+          version: ${{ inputs.version }}

@@ -2,6 +2,7 @@ name: Standard version bump changelog
 description: |
   Bump version and generate changelog using standard-version.
   Can run in automatic mode (based on commit messages) or manual mode (specified version type).
+  Optionally create a github draft release.
 
 inputs:
   automatic:
@@ -9,9 +10,9 @@ inputs:
     required: false
     type: boolean
     default: false
-  manual:
+  version:
     required: false
-    description: "Manual: Choose version bump type"
+    description: "Semver type of new version (major / minor / patch)"
     type: choice
     options:
       - patch
@@ -29,7 +30,7 @@ runs:
   steps:
     - name: Get secrets from Vault
       id: get-secrets
-      uses: grafana/shared-workflows/actions/get-vault-secrets@main
+      uses: grafana/shared-workflows/actions/get-vault-secrets@9f37f656e063f0ad0b0bfc38d49894b57d363936 # v1.2.1
       env:
         VAULT_INSTANCE: ops
       with:
@@ -47,27 +48,21 @@ runs:
         private-key: ${{ fromJSON(steps.get-secrets.outputs.secrets).GITHUB_APP_PRIVATE_KEY }}
         owner: ${{ github.repository_owner }}
 
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       with:
         token: ${{ steps.generate-github-token.outputs.token }}
         persist-credentials: true
         fetch-depth: 0
-
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: "20"
-        cache: "npm"
-
-    - name: Install standard-version
-      shell: bash
-      run: npm install -g standard-version
 
     - name: Configure Git
       shell: bash
       run: |
         git config user.name 'grafana-plugins-platform-bot[bot]'
         git config user.email '144369747+grafana-plugins-platform-bot[bot]@users.noreply.github.com'
+
+    - name: Install standard-version
+      shell: bash
+      run: npm install -g standard-version
 
     - name: Run automatic standard-version
       if: ${{ inputs.automatic == 'true' }}
@@ -81,7 +76,7 @@ runs:
         echo "new-version=${NEW_VERSION}" >> $GITHUB_OUTPUT
 
     - name: Run manual standard-version - major
-      if: ${{ inputs.manual == 'major' }}
+      if: ${{ inputs.version == 'major' }}
       shell: bash
       run: |
         echo "Running manual version bump for major..."
@@ -105,7 +100,7 @@ runs:
         echo "new-version=${NEW_VERSION}" >> $GITHUB_OUTPUT
 
     - name: Run manual standard-version - minor
-      if: ${{ inputs.manual == 'minor' }}
+      if: ${{ inputs.version == 'minor' }}
       shell: bash
       run: |
         echo "Running manual version bump for minor..."
@@ -130,7 +125,7 @@ runs:
         echo "new-version=${NEW_VERSION}" >> $GITHUB_OUTPUT
 
     - name: Run manual standard-version - patch
-      if: ${{ inputs.manual == 'patch' }}
+      if: ${{ inputs.version == 'patch' }}
       shell: bash
       run: |
         echo "Running manual version bump for patch..."

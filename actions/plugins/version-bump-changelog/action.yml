@@ -1,6 +1,6 @@
-name: Bump npm version and release
+name: Generate changelog version bump changelog
 description: |
-  Bump npm version, create a git tag and optionally generate a changelog on main.
+  Bump npm version, create a git tag and optionally generate a changelog on main using the generate-changelog npm package.
 
 inputs:
   version:

@@ -1,0 +1,60 @@
+name: Changesets version bump changelog
+description: |
+  Bump version and generate changelog using chnagesets.
+  Can run in automatic mode based on commit messages or manual mode with a specified version type.
+  Uses the cd.yml for github draft release.
+
+runs:
+  using: composite
+  steps:
+    - name: Get secrets from Vault
+      id: get-secrets
+      uses: grafana/shared-workflows/actions/get-vault-secrets@9f37f656e063f0ad0b0bfc38d49894b57d363936 # v1.2.1
+      env:
+        VAULT_INSTANCE: ops
+      with:
+        vault_instance: ${{ env.VAULT_INSTANCE }}
+        common_secrets: |
+          GITHUB_APP_ID=plugins-platform-bot-app:app-id
+          GITHUB_APP_PRIVATE_KEY=plugins-platform-bot-app:private-key
+        export_env: false
+
+    - name: Generate GitHub token
+      id: generate-github-token
+      uses: actions/create-github-app-token@df432ceedc7162793a195dd1713ff69aefc7379e # v2.0.6
+      with:
+        app-id: ${{ fromJSON(steps.get-secrets.outputs.secrets).GITHUB_APP_ID }}
+        private-key: ${{ fromJSON(steps.get-secrets.outputs.secrets).GITHUB_APP_PRIVATE_KEY }}
+        owner: ${{ github.repository_owner }}
+
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      with:
+        token: ${{ steps.generate-github-token.outputs.token }}
+        persist-credentials: true
+        fetch-depth: 0
+
+    - name: Configure Git
+      shell: bash
+      run: |
+        git config user.name 'grafana-plugins-platform-bot[bot]'
+        git config user.email '144369747+grafana-plugins-platform-bot[bot]@users.noreply.github.com'
+
+    - name: Install dependencies
+      run: npm install --global @changesets/cli  @changesets/changelog-github
+
+    - name: Create Changeset
+      run: |
+        npx changeset version --release
+      env:
+        GITHUB_TOKEN: ${{ steps.generate-github-token.outputs.token }}
+
+    - name: Commit and tag release
+      run: |
+        git add .
+        VERSION=$(node -p "require('./package.json').version")
+        git commit -m "chore(release): version bump $VERSION"
+        git tag v$VERSION
+        git push origin HEAD
+        git push origin v$VERSION
+      env:
+        GITHUB_TOKEN: ${{ steps.generate-github-token.outputs.token }}

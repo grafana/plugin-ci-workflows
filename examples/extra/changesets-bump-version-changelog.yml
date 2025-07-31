@@ -1,0 +1,17 @@
+name: changesets version bump changelog
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  bump-version-changelog:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: changesets version bump changelog
+        uses: grafana/plugin-ci-workflows/actions/plugins/changesets-version-bump-changelog@main # zizmor: ignore[unpinned-uses]
+

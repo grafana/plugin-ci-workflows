@@ -10,9 +10,9 @@ inputs:
     required: false
     type: boolean
     default: false
-  manual:
+  version:
     required: false
-    description: "Manual: Choose version bump type"
+    description: "Semver type of new version (major / minor / patch)"
     type: choice
     options:
       - patch
@@ -25,11 +25,11 @@ runs:
   steps:
     - name: Get secrets from Vault
       id: get-secrets
-      uses: grafana/shared-workflows/actions/get-vault-secrets@main
+      uses: grafana/shared-workflows/actions/get-vault-secrets@9f37f656e063f0ad0b0bfc38d49894b57d363936 # v1.2.1
       env:
         VAULT_INSTANCE: ops
       with:
-        vault_instance: ops
+        vault_instance: ${{ env.VAULT_INSTANCE }}
         common_secrets: |
           GITHUB_APP_ID=plugins-platform-bot-app:app-id
           GITHUB_APP_PRIVATE_KEY=plugins-platform-bot-app:private-key
@@ -43,15 +43,11 @@ runs:
         private-key: ${{ fromJSON(steps.get-secrets.outputs.secrets).GITHUB_APP_PRIVATE_KEY }}
         owner: ${{ github.repository_owner }}
 
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       with:
         token: ${{ steps.generate-github-token.outputs.token }}
         persist-credentials: true
         fetch-depth: 0
-
-    - name: Install standard-version
-      shell: bash
-      run: npm install -g standard-version
 
     - name: Configure Git
       shell: bash
