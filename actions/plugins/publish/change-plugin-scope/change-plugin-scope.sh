@@ -1,11 +1,11 @@
 #!/bin/bash
 set -e
-if [ "$RUNNER_DEBUG" == "1" ]; then
+if [[ "$RUNNER_DEBUG" == "1" ]]; then
     set -x
 fi
 
 usage() {
-    echo "Usage: $0 --environment <dev|ops|prod> [--dry-run] <plugin-id> <plugin-version>"
+    echo "Usage: $0 --environment <dev|ops|prod> --scopes <universal|grafana_cloud|a,b,c|...> [--dry-run] <plugin-id> <plugin-version>"
 }
 
 json_obj() {
