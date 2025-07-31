@@ -1,6 +1,6 @@
 name: Changesets version bump changelog
 description: |
-  Bump version and generate changelog using chnagesets.
+  Bump version and generate changelog using changesets.
   Can run in automatic mode based on commit messages or manual mode with a specified version type.
   Uses the cd.yml for github draft release.
 
@@ -40,15 +40,18 @@ runs:
         git config user.email '144369747+grafana-plugins-platform-bot[bot]@users.noreply.github.com'
 
     - name: Install dependencies
+      shell: bash
       run: npm install --global @changesets/cli  @changesets/changelog-github
 
     - name: Create Changeset
+      shell: bash
       run: |
         npx changeset version --release
       env:
         GITHUB_TOKEN: ${{ steps.generate-github-token.outputs.token }}
 
     - name: Commit and tag release
+      shell: bash
       run: |
         git add .
         VERSION=$(node -p "require('./package.json').version")
