@@ -1,3 +1,5 @@
+<!-- THIS FILE IS AUTO-GENERATED, DO NOT EDIT MANUALLY! RUN "go run genreadme.go" TO RE-GENERATE -->
+
 # plugin-ci-workflows examples
 
 > [!WARNING]
@@ -31,3 +33,4 @@ An example setup for a provisioned plugin. Use this workflow if you wish to have
 
 - CI for each PR and push to main
 - Manual deployment to the catalog and Grafana Cloud via Argo workflow + deployment_tools
+
