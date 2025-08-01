@@ -19,8 +19,6 @@ A simple setup for a non-provisioned plugin, gets you started quickly and you ca
 - CI for each PR and push to main
 - Manual deployment to the catalog
 
-TEST CHANGE
-
 ## [`provisioned-plugin-auto-cd`](./provisioned-plugin-auto-cd/)
 
 An example setup for a provisioned plugin with continuous delivery from the `main` branch. This is the **recommended** workflow to use for new plugins that want to be automatically installed on Grafana Cloud Instances.

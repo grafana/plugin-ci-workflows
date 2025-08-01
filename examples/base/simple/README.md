@@ -15,5 +15,3 @@ A simple setup for a non-provisioned plugin, gets you started quickly and you ca
 
 - CI for each PR and push to main
 - Manual deployment to the catalog
-
-TEST CHANGE
