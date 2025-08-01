@@ -25,6 +25,16 @@ inputs:
     required: false
     default: ".release-please-config.json"
     type: string
+  github-draft-release:
+    description: "Create GitHub draft release"
+    required: false
+    default: false
+    type: boolean
+  skip-github-pull-request:
+    description: "Skip creating a GitHub pull request"
+    required: false
+    default: false
+    type: boolean
 
 runs:
   using: composite
@@ -67,5 +77,7 @@ runs:
       with:
         release-type: ${{ inputs.release-type }}
         config-file: ${{ inputs.config-file }}
+        skip-github-pull-request: ${{ inputs.skip-github-pull-request }}
+        draft: ${{ inputs.github-draft-release }}
         token: ${{ steps.generate-github-token.outputs.token }}
         default-branch: ${{ inputs.default-branch || github.ref_name }}
