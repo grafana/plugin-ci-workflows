@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.1.2](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v1.1.1...ci-cd-workflows/v1.1.2) (2025-08-01)
+
+
+### 🐛 Bug Fixes
+
+* moving secret fetching up ([#163](https://github.com/grafana/plugin-ci-workflows/issues/163)) ([e478422](https://github.com/grafana/plugin-ci-workflows/commit/e478422847f9e1c0df5535b79f5182c58e68efca))
+
+
+### 📝 Documentation
+
+* add more about scopes input ([#171](https://github.com/grafana/plugin-ci-workflows/issues/171)) ([0b5c370](https://github.com/grafana/plugin-ci-workflows/commit/0b5c37064531d725ec257153a27de03107352201))
+
+
+### 🔧 Chores
+
+* **deps:** Bump google-github-actions/upload-cloud-storage ([#189](https://github.com/grafana/plugin-ci-workflows/issues/189)) ([4a55c8d](https://github.com/grafana/plugin-ci-workflows/commit/4a55c8d55981e2ab965acedfabd2df260c74dea9))
+* **deps:** update google-github-actions/auth action to v2.1.11 ([#176](https://github.com/grafana/plugin-ci-workflows/issues/176)) ([f0c05fe](https://github.com/grafana/plugin-ci-workflows/commit/f0c05fe0b70002c6831a98f1f1ac9770952d74aa))
+* **deps:** update google-github-actions/setup-gcloud action to v2.1.5 ([#177](https://github.com/grafana/plugin-ci-workflows/issues/177)) ([3aa265b](https://github.com/grafana/plugin-ci-workflows/commit/3aa265b3fb17ec192b912b8cd4f50f2510d6ece2))
+* **deps:** update step-security/harden-runner action to v2.13.0 ([#179](https://github.com/grafana/plugin-ci-workflows/issues/179)) ([bb88fd6](https://github.com/grafana/plugin-ci-workflows/commit/bb88fd6043e0170b79f1cbb629d9cf48442384a6))
+
 ## [1.1.1](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v1.1.0...ci-cd-workflows/v1.1.1) (2025-07-11)
 
 
