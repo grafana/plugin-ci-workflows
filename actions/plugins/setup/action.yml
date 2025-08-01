@@ -15,6 +15,14 @@ inputs:
     description: Defines if setup-go action should have caching enabled (https://github.com/actions/setup-go#caching-dependency-files-and-build-outputs)
     required: false
     default: "true"
+  node-cache:
+    description: Used to specify a package manager for caching in the default directory. Supported values npm, yarn, pnpm (https://github.com/actions/setup-node#caching-global-packages-data)
+    required: false
+    default: ""
+  node-cache-dependency-path:
+    description: Used to specify the path to a dependency file - package-lock.json, yarn.lock, etc. Supports wildcards or a list of file names for caching multiple dependencies (https://github.com/actions/setup-node#caching-global-packages-data)
+    required: false
+    default: ""
 
 runs:
   using: composite
@@ -23,6 +31,8 @@ runs:
       uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
       with:
         node-version: "${{ inputs.node-version }}"
+        cache: "${{ inputs.node-cache }}"
+        cache-dependency-path: "${{ inputs.node-cache-dependency-path }}"
 
     - name: Go
       uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
