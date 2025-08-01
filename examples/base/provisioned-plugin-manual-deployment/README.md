@@ -9,6 +9,7 @@ The `yaml` files should be put in your repository's `.github/workflows` folder, 
 **Each workflow file is just a template/example. Remember to address all the TODOs before starting to use the workflows.**
 
 <!-- README start -->
+<!-- order: 20 -->
 
 An example setup for a provisioned plugin. Use this workflow if you wish to have manual control of version rollouts.
 

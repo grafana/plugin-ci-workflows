@@ -6,6 +6,9 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
+	"sort"
+	"strconv"
 	"strings"
 	"text/template"
 )
@@ -13,6 +16,7 @@ import (
 type SubfolderContent struct {
 	FolderName string
 	Content    string
+	Order      int
 }
 
 type ReadmeData struct {
@@ -24,6 +28,8 @@ const (
 	outputFileName    = "README.md"
 	readmeStartMarker = "<!-- README start -->"
 )
+
+var orderRegex = regexp.MustCompile(`<!--\s*order:\s*(\d+)\s*-->`)
 
 func main() {
 	currentDir, err := os.Getwd()
@@ -53,7 +59,7 @@ func main() {
 		}
 
 		// Extract content after "<!-- README start -->"
-		content, err := extractContentAfterMarker(readmePath)
+		content, order, err := extractContentAfterMarker(readmePath)
 		if err != nil {
 			log.Printf("Warning: Error processing %s: %v", readmePath, err)
 			continue
@@ -63,9 +69,15 @@ func main() {
 			subfolders = append(subfolders, SubfolderContent{
 				FolderName: folderName,
 				Content:    content,
+				Order:      order,
 			})
 		}
 	}
+
+	// Sort subfolders by order
+	sort.Slice(subfolders, func(i, j int) bool {
+		return subfolders[i].Order < subfolders[j].Order
+	})
 
 	// Load template from file
 	tmpl, err := template.ParseFiles(tmplFileName)
@@ -95,19 +107,28 @@ func main() {
 	fmt.Printf("Generated %s with %d subfolders\n", outputFileName, len(subfolders))
 }
 
-func extractContentAfterMarker(filePath string) (string, error) {
+func extractContentAfterMarker(filePath string) (string, int, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
-		return "", err
+		return "", 0, err
 	}
 	defer file.Close()
 
 	scanner := bufio.NewScanner(file)
 	var lines []string
 	foundMarker := false
+	order := 999 // Default order for files without order comment
 
 	for scanner.Scan() {
 		line := scanner.Text()
+
+		// Check for order comment
+		if matches := orderRegex.FindStringSubmatch(line); matches != nil {
+			if orderNum, err := strconv.Atoi(matches[1]); err == nil {
+				order = orderNum
+			}
+			continue // Don't include the order comment in the output
+		}
 
 		if strings.Contains(line, readmeStartMarker) {
 			foundMarker = true
@@ -120,16 +141,16 @@ func extractContentAfterMarker(filePath string) (string, error) {
 	}
 
 	if err := scanner.Err(); err != nil {
-		return "", err
+		return "", 0, err
 	}
 
 	if !foundMarker {
-		return "", fmt.Errorf("marker %q not found", readmeStartMarker)
+		return "", 0, fmt.Errorf("marker %q not found", readmeStartMarker)
 	}
 
 	// Join lines and trim trailing whitespace
 	content := strings.Join(lines, "\n")
 	content = strings.TrimSpace(content)
 
-	return content, nil
+	return content, order, nil
 }

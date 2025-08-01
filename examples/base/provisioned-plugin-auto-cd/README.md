@@ -9,6 +9,7 @@ The `yaml` files should be put in your repository's `.github/workflows` folder, 
 **Each workflow file is just a template/example. Remember to address all the TODOs before starting to use the workflows.**
 
 <!-- README start -->
+<!-- order: 10 -->
 
 An example setup for a provisioned plugin with continuous delivery from the `main` branch. This is the **recommended** workflow to use for new plugins that want to be automatically installed on Grafana Cloud Instances.
 
