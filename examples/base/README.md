@@ -1,3 +1,5 @@
+<!-- THIS FILE IS AUTO-GENERATED, DO NOT EDIT MANUALLY! RUN "go run genreadme.go" TO RE-GENERATE -->
+
 # plugin-ci-workflows examples
 
 > [!WARNING]
@@ -9,13 +11,6 @@ This folder contains some examples on how to use the shared workflows (CI and CD
 The `yaml` files should be put in your repository's `.github/workflows` folder, and customized depending on your needs.
 
 **Each workflow file is just a template/example. Remember to address all the TODOs before starting to use the workflows.**
-
-## [`simple`](./simple/)
-
-A simple setup for a non-provisioned plugin, gets you started quickly and you can test your plugin on a grafana cloud instance.
-
-- CI for each PR and push to main
-- Manual deployment to the catalog
 
 ## [`provisioned-plugin-auto-cd`](./provisioned-plugin-auto-cd/)
 
@@ -31,3 +26,11 @@ An example setup for a provisioned plugin. Use this workflow if you wish to have
 
 - CI for each PR and push to main
 - Manual deployment to the catalog and Grafana Cloud via Argo workflow + deployment_tools
+
+## [`simple`](./simple/)
+
+A simple setup for a non-provisioned plugin, gets you started quickly and you can test your plugin on a grafana cloud instance.
+
+- CI for each PR and push to main
+- Manual deployment to the catalog
+

@@ -1,4 +1,3 @@
-// Generate README.md files for each subdirectory based on the root README.md
 package main
 
 import (
@@ -7,124 +6,130 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
+	"text/template"
 )
 
-const generatedHeader = `<!-- THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY. RUN: "go run genreadme.go" TO RE-GENERATE -->`
+type SubfolderContent struct {
+	FolderName string
+	Content    string
+}
 
-const fixedSection = `
-> [!WARNING]
->
-> Please [read the docs](https://enghub.grafana-ops.net/docs/default/component/grafana-plugins-platform/plugins-ci-github-actions/010-plugins-ci-github-actions) before using any of these workflows in your repository.
-` +
-	"The `yaml` files should be put in your repository's `.github/workflows` folder, and customized depending on your needs."
+type ReadmeData struct {
+	Subfolders []SubfolderContent
+}
+
+const (
+	tmplFileName      = "README.tmpl"
+	outputFileName    = "README.md"
+	readmeStartMarker = "<!-- README start -->"
+)
 
 func main() {
-	// Read the root README.md file
-	rootReadme, err := os.ReadFile("README.md")
+	currentDir, err := os.Getwd()
 	if err != nil {
-		log.Fatalf("Error reading README.md: %v", err)
+		log.Fatal("Error getting current directory:", err)
 	}
 
-	// Parse sections from the root README
-	sections := parseSections(string(rootReadme))
+	var subfolders []SubfolderContent
 
-	// Get all subdirectories
-	entries, err := os.ReadDir(".")
+	// Read all subdirectories
+	entries, err := os.ReadDir(currentDir)
 	if err != nil {
-		log.Fatalf("Error reading current directory: %v", err)
+		log.Fatal("Error reading directory:", err)
 	}
 
 	for _, entry := range entries {
-		if entry.IsDir() && !strings.HasPrefix(entry.Name(), ".") {
-			folderName := entry.Name()
+		if !entry.IsDir() {
+			continue
+		}
 
-			// Check if there's a section for this folder
-			if sectionContent, exists := sections[folderName]; exists {
-				generateReadme(folderName, sectionContent)
-				fmt.Printf("Generated README.md for folder: %s\n", folderName)
-			}
+		folderName := entry.Name()
+		readmePath := filepath.Join(currentDir, folderName, "README.md")
+
+		// Check if README.md exists in the subfolder
+		if _, err := os.Stat(readmePath); os.IsNotExist(err) {
+			continue
+		}
+
+		// Extract content after "<!-- README start -->"
+		content, err := extractContentAfterMarker(readmePath)
+		if err != nil {
+			log.Printf("Warning: Error processing %s: %v", readmePath, err)
+			continue
+		}
+
+		if content != "" {
+			subfolders = append(subfolders, SubfolderContent{
+				FolderName: folderName,
+				Content:    content,
+			})
 		}
 	}
+
+	// Load template from file
+	tmpl, err := template.ParseFiles(tmplFileName)
+	if err != nil {
+		log.Fatal("Error parsing template file:", err)
+	}
+
+	// Generate the root README.md
+	data := ReadmeData{Subfolders: subfolders}
+
+	outputPath := filepath.Join(currentDir, outputFileName)
+	file, err := os.Create(outputPath)
+	if err != nil {
+		log.Fatalf("Error creating %s: %v", outputFileName, err)
+	}
+	defer func() {
+		if cerr := file.Close(); cerr != nil {
+			log.Printf("Warning: error closing file %s: %v", outputPath, cerr)
+		}
+	}()
+
+	err = tmpl.Execute(file, data)
+	if err != nil {
+		log.Fatal("Error executing template:", err)
+	}
+
+	fmt.Printf("Generated %s with %d subfolders\n", outputFileName, len(subfolders))
 }
 
-func parseSections(content string) map[string]string {
-	sections := make(map[string]string)
-	scanner := bufio.NewScanner(strings.NewReader(content))
+func extractContentAfterMarker(filePath string) (string, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
 
-	// Regex to match section headers like ## [`simple`](./simple/)
-	headerRegex := regexp.MustCompile(`^## \[` + "`" + `([^` + "`" + `]+)` + "`" + `\]\(\.\/[^\/]+\/\)`)
-
-	var currentSection string
-	var currentContent strings.Builder
+	scanner := bufio.NewScanner(file)
+	var lines []string
+	foundMarker := false
 
 	for scanner.Scan() {
 		line := scanner.Text()
 
-		// Check if this line is a section header
-		if matches := headerRegex.FindStringSubmatch(line); matches != nil {
-			// Save previous section if it exists
-			if currentSection != "" {
-				sections[currentSection] = strings.TrimSpace(currentContent.String())
-			}
-
-			// Start new section
-			currentSection = matches[1]
-			currentContent.Reset()
+		if strings.Contains(line, readmeStartMarker) {
+			foundMarker = true
 			continue
 		}
 
-		// If we're in a section, collect content until we hit another ## header or end
-		if currentSection != "" {
-			// Stop if we hit another ## header that's not our target format
-			if strings.HasPrefix(line, "## ") && !headerRegex.MatchString(line) {
-				sections[currentSection] = strings.TrimSpace(currentContent.String())
-				currentSection = ""
-				currentContent.Reset()
-				continue
-			}
-
-			// Add line to current section content
-			if currentContent.Len() > 0 {
-				currentContent.WriteString("\n")
-			}
-			currentContent.WriteString(line)
+		if foundMarker {
+			lines = append(lines, line)
 		}
 	}
 
-	// Don't forget the last section
-	if currentSection != "" {
-		sections[currentSection] = strings.TrimSpace(currentContent.String())
+	if err := scanner.Err(); err != nil {
+		return "", err
 	}
 
-	return sections
-}
-
-func generateReadme(folderName, sectionContent string) {
-	readmePath := filepath.Join(folderName, "README.md")
-
-	// Create the content
-	var builder strings.Builder
-	builder.WriteString(generatedHeader)
-	builder.WriteString("\n\n# ")
-	builder.WriteString(folderName)
-	builder.WriteString("\n")
-	builder.WriteString(fixedSection)
-	builder.WriteString("\n\n")
-	builder.WriteString(sectionContent)
-
-	// Write to file
-	// Open file for writing
-	file, err := os.Create(readmePath)
-	if err != nil {
-		log.Printf("Error creating README.md for %s: %v", folderName, err)
-		return
+	if !foundMarker {
+		return "", fmt.Errorf("marker %q not found", readmeStartMarker)
 	}
-	defer file.Close()
 
-	_, err = file.WriteString(builder.String())
-	if err != nil {
-		log.Printf("Error writing README.md for %s: %v", folderName, err)
-	}
+	// Join lines and trim trailing whitespace
+	content := strings.Join(lines, "\n")
+	content = strings.TrimSpace(content)
+
+	return content, nil
 }
