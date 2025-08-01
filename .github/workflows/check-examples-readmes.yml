@@ -6,6 +6,10 @@ on:
       - "examples/base/*/*.md"
       - "examples/base/README.md"
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   check-readme:
     name: Check if example/base/README.md is up-to-date
