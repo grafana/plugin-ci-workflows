@@ -31,10 +31,10 @@ const (
 
 var orderRegex = regexp.MustCompile(`<!--\s*order:\s*(\d+)\s*-->`)
 
-func main() {
+func _main() error {
 	currentDir, err := os.Getwd()
 	if err != nil {
-		log.Fatal("Error getting current directory:", err)
+		return fmt.Errorf("error getting current directory: %w", err)
 	}
 
 	var subfolders []SubfolderContent
@@ -42,7 +42,7 @@ func main() {
 	// Read all subdirectories
 	entries, err := os.ReadDir(currentDir)
 	if err != nil {
-		log.Fatal("Error reading directory:", err)
+		return fmt.Errorf("error reading directory: %w", err)
 	}
 
 	for _, entry := range entries {
@@ -82,7 +82,7 @@ func main() {
 	// Load template from file
 	tmpl, err := template.ParseFiles(tmplFileName)
 	if err != nil {
-		log.Fatal("Error parsing template file:", err)
+		return fmt.Errorf("error parsing template file: %w", err)
 	}
 
 	// Generate the root README.md
@@ -91,7 +91,7 @@ func main() {
 	outputPath := filepath.Join(currentDir, outputFileName)
 	file, err := os.Create(outputPath)
 	if err != nil {
-		log.Fatalf("Error creating %s: %v", outputFileName, err)
+		return fmt.Errorf("error creating %s: %w", outputFileName, err)
 	}
 	defer func() {
 		if cerr := file.Close(); cerr != nil {
@@ -101,10 +101,11 @@ func main() {
 
 	err = tmpl.Execute(file, data)
 	if err != nil {
-		log.Fatal("Error executing template:", err)
+		return fmt.Errorf("error executing template: %w", err)
 	}
 
 	fmt.Printf("Generated %s with %d subfolders\n", outputFileName, len(subfolders))
+	return nil
 }
 
 func extractContentAfterMarker(filePath string) (string, int, error) {
@@ -153,4 +154,10 @@ func extractContentAfterMarker(filePath string) (string, int, error) {
 	content = strings.TrimSpace(content)
 
 	return content, order, nil
+}
+
+func main() {
+	if err := _main(); err != nil {
+		log.Fatalf("Error: %v", err)
+	}
 }
