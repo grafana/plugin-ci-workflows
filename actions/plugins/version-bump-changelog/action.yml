@@ -1,6 +1,6 @@
-name: Bump npm version and release
+name: Generate changelog version bump changelog
 description: |
-  Bump npm version, create a git tag and optionally generate a changelog on main.
+  Bump npm version, create a git tag and optionally generate a changelog on main using the generate-changelog npm package.
 
 inputs:
   version:
@@ -78,10 +78,10 @@ runs:
         if [[ "${{ steps.previous-tag.outputs.previous-tag }}" == "v0.0.0" ]]; then
           echo "No previous tag found ${{ steps.previous-tag.outputs.previous-tag }}, generating changelog for initial version only: v${{ steps.bump.outputs.new-version }}"
           # For initial version, get all commits up to HEAD
-          npx generate-changelog -t HEAD
+          npx generate-changelog -t HEAD --exclude skip,no-changelog
         else
           echo "Generating changelog from ${{ steps.previous-tag.outputs.previous-tag }} to HEAD"
-          npx generate-changelog -t ${{ steps.previous-tag.outputs.previous-tag }}...HEAD
+          npx generate-changelog -t ${{ steps.previous-tag.outputs.previous-tag }}...HEAD --exclude skip,no-changelog
         fi
 
         # Remove existing "Changelog" header anywhere in the file

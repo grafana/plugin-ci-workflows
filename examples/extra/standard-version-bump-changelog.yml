@@ -1,0 +1,28 @@
+name: standard version bump changelog
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Semver type of new version (major / minor / patch)"
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+        default: patch
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  bump-version-changelog:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: standard version bump changelog
+        uses: grafana/plugin-ci-workflows/actions/plugins/standard-version-bump-changelog@main # zizmor: ignore[unpinned-uses]
+        with:
+          version: ${{ inputs.version }}
+          github-draft-release: true
