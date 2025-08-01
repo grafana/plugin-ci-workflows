@@ -15,8 +15,8 @@ inputs:
     required: false
     default: "node"
     type: string
-  default-branch:
-    description: "Default branch for releases"
+  target-branch:
+    description: "Target branch for releases"
     required: false
     default: "main"
     type: string
@@ -80,4 +80,4 @@ runs:
         skip-github-pull-request: ${{ inputs.skip-github-pull-request }}
         skip-github-release: ${{ inputs.skip-github-release }}
         token: ${{ steps.generate-github-token.outputs.token }}
-        default-branch: ${{ inputs.default-branch || github.ref_name }}
+        target-branch: ${{ inputs.target-branch || github.ref_name }}
