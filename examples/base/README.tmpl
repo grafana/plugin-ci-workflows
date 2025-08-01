@@ -1,0 +1,18 @@
+<!-- THIS FILE IS AUTO-GENERATED, DO NOT EDIT MANUALLY! RUN "go run genreadme.go" TO RE-GENERATE -->
+
+# plugin-ci-workflows examples
+
+> [!WARNING]
+>
+> Please [read the docs](https://enghub.grafana-ops.net/docs/default/component/grafana-plugins-platform/plugins-ci-github-actions/010-plugins-ci-github-actions) before using any of these workflows in your repository.
+
+This folder contains some examples on how to use the shared workflows (CI and CD) in various scenarios.
+
+The `yaml` files should be put in your repository's `.github/workflows` folder, and customized depending on your needs.
+
+**Each workflow file is just a template/example. Remember to address all the TODOs before starting to use the workflows.**
+{{range .Subfolders}}
+## [`{{.FolderName}}`](./{{.FolderName}}/)
+
+{{.Content}}
+{{end}}

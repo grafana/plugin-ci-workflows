@@ -486,7 +486,7 @@ jobs:
 
       - name: Login to Google Cloud (ID token for IAP)
         id: gcloud
-        uses: google-github-actions/auth@ba79af03959ebeac9769e648f473a284504d9193 # v2.1.10
+        uses: google-github-actions/auth@140bb5113ffb6b65a7e9b937a81fa96cf5064462 # v2.1.11
         if: ${{ matrix.environment != 'prod' }}
         with:
           workload_identity_provider: "projects/304398677251/locations/global/workloadIdentityPools/github/providers/github-provider"
@@ -652,13 +652,13 @@ jobs:
         shell: bash
 
       - name: Login to Google Cloud
-        uses: google-github-actions/auth@ba79af03959ebeac9769e648f473a284504d9193 # v2.1.10
+        uses: google-github-actions/auth@140bb5113ffb6b65a7e9b937a81fa96cf5064462 # v2.1.11
         with:
           workload_identity_provider: "projects/304398677251/locations/global/workloadIdentityPools/github/providers/github-provider"
           service_account: github-plugin-ci-workflows@grafanalabs-workload-identity.iam.gserviceaccount.com
 
       - name: "Set up Cloud SDK"
-        uses: "google-github-actions/setup-gcloud@77e7a554d41e2ee56fc945c52dfd3f33d12def9a" # v2.1.4
+        uses: "google-github-actions/setup-gcloud@6a7c903a70c8625ed6700fa299f5ddb4ca6022e9" # v2.1.5
         with:
           version: ">= 363.0.0"
 
@@ -713,7 +713,7 @@ jobs:
 
       - name: Upload GCS release artifact (tag)
         if: ${{ steps.gcs_artifacts_exist.outputs.gcs_artifacts_exist == 'false' }}
-        uses: google-github-actions/upload-cloud-storage@7c6e11cb7291594c5dfe0bc1dd9cd905e31e600c # v2.2.2
+        uses: google-github-actions/upload-cloud-storage@7c73f5d6eae167341002e9c946f7479a609c588e # v2.2.3
         with:
           path: /tmp/dist-artifacts
           glob: ${{ steps.paths.outputs.gcs_upload_glob }}
@@ -723,7 +723,7 @@ jobs:
 
       - name: Upload GCS release artifact (latest)
         if: ${{ steps.gcs_artifacts_exist.outputs.gcs_artifacts_exist == 'false' }}
-        uses: google-github-actions/upload-cloud-storage@7c6e11cb7291594c5dfe0bc1dd9cd905e31e600c # v2.2.2
+        uses: google-github-actions/upload-cloud-storage@7c73f5d6eae167341002e9c946f7479a609c588e # v2.2.3
         with:
           path: /tmp/dist-artifacts-latest
           glob: ${{ steps.paths.outputs.gcs_upload_glob_latest }}
@@ -733,7 +733,7 @@ jobs:
 
       - name: Upload GCS release artifacts (latest, any)
         if: ${{ matrix.platform == 'any' && steps.gcs_artifacts_exist.outputs.gcs_artifacts_exist == 'false' }}
-        uses: google-github-actions/upload-cloud-storage@7c6e11cb7291594c5dfe0bc1dd9cd905e31e600c # v2.2.2
+        uses: google-github-actions/upload-cloud-storage@7c73f5d6eae167341002e9c946f7479a609c588e # v2.2.3
         with:
           path: /tmp/dist-artifacts-latest/${{ fromJSON(needs.ci.outputs.plugin).id }}-latest.zip
           destination: "${{ steps.paths.outputs.gcs_artifacts_release_path_latest }}"

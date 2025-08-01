@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-if [ "$RUNNER_DEBUG" == "1" ]; then
+if [[ "$RUNNER_DEBUG" == "1" ]]; then
     set -x
 fi
 
