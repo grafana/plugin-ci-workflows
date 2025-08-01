@@ -33,9 +33,6 @@ jobs:
             echo ""
             echo "To fix this, run the following command and commit the changes:"
             echo "  cd examples/base && go run genreadme.go"
-            echo ""
-            echo "Git diff:"
-            git diff examples/base/README.md
             exit 1
           else
             echo "✅ The generated README.md is up-to-date!"
