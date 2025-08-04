@@ -256,7 +256,7 @@ jobs:
             ) && !isBot;
 
             const o = { isTrusted, isForkPR, isBot };
-            console.log('output context:', JSON.stringify(o));
+            console.log(JSON.stringify(o));
             return o
 
       - name: Setup
