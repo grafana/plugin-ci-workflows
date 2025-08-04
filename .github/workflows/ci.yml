@@ -240,8 +240,6 @@ jobs:
         id: workflow-context
         with:
           script: |
-            console.log('input context:', JSON.stringify(context));
-
             const bots = [
               'dependabot[bot]',
               'renovate[bot]',
