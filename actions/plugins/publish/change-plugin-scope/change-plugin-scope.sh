@@ -140,6 +140,7 @@ check_response_error() {
 
     IFS=',' read -ra expected_scopes_array <<< "$expected_scopes"
     for expected_scope in "${expected_scopes_array[@]}"; do
+        # Remove leading and trailing whitespace from expected scope
         expected_scope=$(echo "$expected_scope" | xargs)
 
         local scope_found
