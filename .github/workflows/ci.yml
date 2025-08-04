@@ -240,6 +240,8 @@ jobs:
         id: workflow-context
         with:
           script: |
+            console.log('input context:', JSON.stringify(github));
+
             const bots = [
               'dependabot[bot]',
               'renovate[bot]',
@@ -255,7 +257,9 @@ jobs:
               github.event_name === 'workflow_dispatch' || (isPR && !isForkPR)
             ) && !isBot;
 
-            return { isTrusted, isForkPR, isBot };
+            const o = { isTrusted, isForkPR, isBot };
+            console.log('output context:', JSON.stringify(o));
+            return o
 
       - name: Setup
         uses: grafana/plugin-ci-workflows/actions/plugins/setup@main # zizmor: ignore[unpinned-uses]
