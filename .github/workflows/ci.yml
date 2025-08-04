@@ -241,7 +241,10 @@ jobs:
         with:
           script: |
             const bots = [
-              'dependabot[bot]'
+              'dependabot[bot]',
+              'renovate[bot]',
+              'github-actions[bot]',
+              'renovate-sh-app[bot]'
             ].map((s) => s.toLowerCase());
 
             const isPR = github.event_name === 'pull_request';
