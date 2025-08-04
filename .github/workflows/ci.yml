@@ -248,7 +248,7 @@ jobs:
             ].map((s) => s.toLowerCase());
 
             const isPR = github.event_name === 'pull_request';
-            const isBot = bots.includes(github.actor.toLowerCase());
+            const isBot = bots.includes(github.actor?.toLowerCase());
 
             const isForkPR = isPR && github.event.pull_request.head.repo.full_name !== github.repository;
             const isTrusted = (
