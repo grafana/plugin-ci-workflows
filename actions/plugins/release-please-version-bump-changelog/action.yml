@@ -23,7 +23,12 @@ inputs:
   config-file:
     description: "Path to release-please config file"
     required: false
-    default: ".release-please-config.json"
+    default: "release-please-config.json"
+    type: string
+  manifest-file:
+    description: "Path to release-please manifest file"
+    required: false
+    default: ".release-please-manifest.json"
     type: string
   skip-github-release:
     description: "Create GitHub draft release"
@@ -77,6 +82,7 @@ runs:
       with:
         release-type: ${{ inputs.release-type }}
         config-file: ${{ inputs.config-file }}
+        manifest-file: ${{ inputs.manifest-file }}
         skip-github-pull-request: ${{ inputs.skip-github-pull-request }}
         skip-github-release: ${{ inputs.skip-github-release }}
         token: ${{ steps.generate-github-token.outputs.token }}
