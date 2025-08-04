@@ -249,12 +249,12 @@ jobs:
               'renovate-sh-app[bot]'
             ].map((s) => s.toLowerCase());
 
-            const isPR = github.event_name === 'pull_request';
-            const isBot = bots.includes(github.actor?.toLowerCase());
+            const isPR = context.eventName === 'pull_request';
+            const isBot = bots.includes(context.actor?.toLowerCase());
 
-            const isForkPR = isPR && github.event.pull_request.head.repo.full_name !== github.repository;
+            const isForkPR = isPR && context.payload.pull_request.head.repo.full_name !== context.payload.repository.full_name;
             const isTrusted = (
-              github.event_name === 'workflow_dispatch' || (isPR && !isForkPR)
+              context.eventName === 'workflow_dispatch' || (isPR && !isForkPR)
             ) && !isBot;
 
             const o = { isTrusted, isForkPR, isBot };
