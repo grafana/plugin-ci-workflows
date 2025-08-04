@@ -527,6 +527,12 @@ jobs:
           gcom-publish-token: ${{ env.GCOM_PUBLISH_TOKEN }}
           gcloud-auth-token: ${{ steps.gcloud.outputs.id_token }}
 
+      - name: Check artifact ZIP(s)
+        uses: grafana/plugin-ci-workflows/actions/plugins/publish/check-artifacts@main # zizmor: ignore[unpinned-uses]
+        with:
+          zips: ${{ needs.upload-to-gcs-release.outputs.gcs-zip-urls }}
+          plugin-id: ${{ fromJSON(needs.ci.outputs.plugin).id }}
+
       - name: Publish to catalog
         uses: grafana/plugin-ci-workflows/actions/plugins/publish/publish@main # zizmor: ignore[unpinned-uses]
         with:
