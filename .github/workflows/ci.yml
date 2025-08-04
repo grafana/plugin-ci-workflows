@@ -399,7 +399,7 @@ jobs:
     name: Test docs
     runs-on: ubuntu-latest
     container:
-      image: grafana/docs-base:latest
+      image: grafana/docs-base:latest@sha256:0f38a7e390e803fb199f8aee82fc1796aa6ad62a3c1af85f21d0aa2bed465b3d
       volumes:
         # This mount is required in order to run the "plugins/docs/test" shared action
         # into the container. The action gets downloaded into /home/runner/work/_actions,
