@@ -43,6 +43,10 @@ inputs:
 
 runs:
   using: composite
+  permissions:
+    contents: write
+    pull-requests: write
+    id-token: write
   steps:
     - name: Get secrets from Vault
       id: get-secrets
