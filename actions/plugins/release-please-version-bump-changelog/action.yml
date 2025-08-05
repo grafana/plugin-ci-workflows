@@ -88,9 +88,11 @@ runs:
         git config user.email '144369747+grafana-plugins-platform-bot[bot]@users.noreply.github.com'
 
     - name: Install release-please
+      shell: bash
       run: npm install -g release-please
 
     - name: Run release-please manually
+      shell: bash
       run: |
         release-please release-pr \
           --repo-url="${{ inputs.repo-url }}" \
