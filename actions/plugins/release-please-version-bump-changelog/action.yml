@@ -30,11 +30,7 @@ inputs:
     required: false
     default: ".release-please-manifest.json"
     type: string
-  package-name:
-    description: "Package name for release-please"
-    required: false
-    default: "plugin"
-    type: string
+
   repo-url:
     description: "Repository URL for release-please"
     required: false
@@ -86,7 +82,6 @@ runs:
       run: |
         release-please release-pr \
           --repo-url="${{ inputs.repo-url }}" \
-          --package-name="${{ inputs.package-name }}" \
           --token="${{ steps.generate-github-token.outputs.token }}" \
           --target-branch="${{ inputs.target-branch || github.ref_name }}" \
           --config-file="${{ inputs.config-file }}" \
