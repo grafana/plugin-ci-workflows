@@ -61,8 +61,16 @@ on:
         type: string
         required: false
       go-setup-caching:
-        description: Defines if setup-go action should have caching enabled (https://github.com/actions/setup-go#caching-dependency-files-and-build-outputs) 
-        type: 'boolean'
+        description: Defines if setup-go action should have caching enabled (https://github.com/actions/setup-go#caching-dependency-files-and-build-outputs)
+        type: "boolean"
+        required: false
+      node-cache:
+        description: Used to specify a package manager for caching in the default directory. Supported values npm, yarn, pnpm (https://github.com/actions/setup-node#caching-global-packages-data)
+        type: string
+        required: false
+      node-cache-dependency-path:
+        description: Used to specify the path to a dependency file - package-lock.json, yarn.lock, etc. Supports wildcards or a list of file names for caching multiple dependencies (https://github.com/actions/setup-node#caching-global-packages-data)
+        type: string
         required: false
       trufflehog-version:
         description: Trufflehog version to use
@@ -316,6 +324,8 @@ jobs:
       package-manager: ${{ inputs.package-manager }}
       go-version: ${{ inputs.go-version }}
       go-setup-caching: ${{ inputs.go-setup-caching }}
+      node-cache: ${{ inputs.node-cache }}
+      node-cache-dependency-path: ${{ inputs.node-cache-dependency-path }}
       node-version: ${{ inputs.node-version }}
       golangci-lint-version: ${{ inputs.golangci-lint-version }}
       run-playwright: ${{ inputs.run-playwright }}
