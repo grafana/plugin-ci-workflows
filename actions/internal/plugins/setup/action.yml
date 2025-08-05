@@ -23,11 +23,16 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Detect package manager
+      id: node-pm
+      uses: grafana/plugin-actions/package-manager-detect@jackw/pm-detect
+
     - name: Node
       uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
       with:
         node-version: "${{ inputs.node-version }}"
         node-version-file: "${{ inputs.node-version-file }}"
+        cache: ${{ steps.node-pm.outputs.name }}
 
     # Install additional dependencies that are not built-in to the slim act image
     # but are included in the default GitHub Actions runner image and are needed for plugin-ci-workflows.

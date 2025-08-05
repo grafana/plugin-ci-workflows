@@ -109,11 +109,18 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Detect package manager
+        id: node-pm
+        uses: grafana/plugin-actions/package-manager-detect@jackw/pm-detect
+        with:
+          working-directory: ${{ inputs.plugin-directory }}
+
       - name: Setup Node.js environment
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: ${{ inputs.node-version }}
           node-version-file: ${{ inputs.plugin-directory }}/.nvmrc
+          cache: ${{ steps.node-pm.outputs.name }}
 
       - name: Login to Google Cloud
         if: inputs.npm-registry-auth == true
@@ -130,13 +137,7 @@ jobs:
         run: GOOGLE_APPLICATION_CREDENTIALS=${{ env.GOOGLE_APPLICATION_CREDENTIALS }} npx google-artifactregistry-auth --credential-config ./.npmrc
 
       - name: Install npm dependencies
-        # TODO: find a better way
-        run: |
-          if [ -f yarn.lock ]; then
-            yarn install --frozen-lockfile
-          else
-            npm ci
-          fi
+        run: ${{ steps.node-pm.outputs.frozenInstall }}
         shell: bash
         working-directory: ${{ inputs.plugin-directory }}
 
@@ -172,7 +173,7 @@ jobs:
           key: playwright-${{ steps.version.outputs.version }}
 
       - name: Install Playwright Browsers
-        run: npx playwright install --with-deps chromium
+        run: ${{ steps.node-pm.outputs.exec }} playwright install --with-deps chromium
 
       - name: Download GitHub artifact
         uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
@@ -227,7 +228,7 @@ jobs:
 
       - name: Run Playwright tests
         id: run-tests
-        run: npx playwright test --config "${PLAYWRIGHT_CONFIG}"
+        run: ${{ steps.node-pm.outputs.exec }} playwright test --config "${PLAYWRIGHT_CONFIG}"
         env:
           PLAYWRIGHT_CONFIG: ${{ inputs.playwright-config }}
           GRAFANA_VERSION: ${{ matrix.GRAFANA_IMAGE.VERSION }}

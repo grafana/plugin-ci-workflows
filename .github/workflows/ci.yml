@@ -42,15 +42,10 @@ on:
 
       # Build options.
       plugin-directory:
-        description: Directory of the plugin, if not in the root of the repository. If provided, package-manager must also be provided.
+        description: Directory of the plugin, if not in the root of the repository.
         type: string
         required: false
         default: .
-      package-manager:
-        description: The package manager to use.
-        type: string
-        required: false
-        default: ""
       frontend-secrets:
         description: The secrets to use within frontend steps
         type: string
@@ -478,7 +473,6 @@ jobs:
       - name: Test and build frontend
         uses: grafana/plugin-ci-workflows/actions/internal/plugins/frontend@main
         with:
-          package-manager: ${{ inputs.package-manager }}
           plugin-directory: ${{ inputs.plugin-directory }}
           secrets: ${{ (fromJson(steps.workflow-context.outputs.result).isTrusted && inputs.frontend-secrets != '') && inputs.frontend-secrets || '' }}
           npm-registry-auth: ${{ inputs.npm-registry-auth }}

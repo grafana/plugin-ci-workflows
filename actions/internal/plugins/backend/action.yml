@@ -6,7 +6,7 @@ inputs:
     description: GitHub token for downloading dependencies from private repos, if necessary
     required: true
   plugin-directory:
-    description: Directory of the plugin, if not in the root of the repository. If provided, package-manager must also be provided.
+    description: Directory of the plugin, if not in the root of the repository.
     required: false
     default: .
   secrets:
