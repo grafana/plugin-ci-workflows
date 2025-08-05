@@ -14,3 +14,10 @@ jobs:
     steps:
       - name: release please version bump changelog
         uses: grafana/plugin-ci-workflows/actions/plugins/release-please-version-bump-changelog@main # zizmor: ignore[unpinned-uses]
+        with:
+          config-file: release-please-config.json
+          package-name: "my-plugin"
+          repo-url: "grafana/grafana-plugin-example"
+          manifest-file: ".release-please-manifest.json"
+          skip-github-release: false
+          skip-github-pull-request: false

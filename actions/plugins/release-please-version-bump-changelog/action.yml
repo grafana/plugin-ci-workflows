@@ -40,6 +40,16 @@ inputs:
     required: false
     default: false
     type: boolean
+  package-name:
+    description: "Package name for release-please"
+    required: false
+    default: "plugin"
+    type: string
+  repo-url:
+    description: "Repository URL for release-please"
+    required: false
+    default: ${{ github.repository }}
+    type: string
 
 runs:
   using: composite
@@ -77,14 +87,17 @@ runs:
         git config user.name 'grafana-plugins-platform-bot[bot]'
         git config user.email '144369747+grafana-plugins-platform-bot[bot]@users.noreply.github.com'
 
-    - name: Run automatic release-please
-      working-directory: ${{ github.workspace }}
-      uses: googleapis/release-please-action@a02a34c4d625f9be7cb89156071d8567266a2445 # v4.2.0
-      with:
-        release-type: ${{ inputs.release-type }}
-        config-file: ${{ inputs.config-file }}
-        manifest-file: ${{ inputs.manifest-file }}
-        skip-github-pull-request: ${{ inputs.skip-github-pull-request }}
-        skip-github-release: ${{ inputs.skip-github-release }}
-        token: ${{ steps.generate-github-token.outputs.token }}
-        target-branch: ${{ inputs.target-branch || github.ref_name }}
+    - name: Install release-please
+      run: npm install -g release-please
+
+    - name: Run release-please manually
+      run: |
+        release-please release-pr \
+          --repo-url="${{ inputs.repo-url }}" \
+          --package-name="${{ inputs.package-name }}" \
+          --token="${{ steps.generate-github-token.outputs.token }}" \
+          --target-branch="${{ inputs.target-branch || github.ref_name }}" \
+          --config-file="${{ inputs.config-file }}" \
+          --manifest-file="${{ inputs.manifest-file }}" \
+          ${{ inputs.skip-github-release && '--skip-github-release' || '' }} \
+          ${{ inputs.skip-github-pull-request && '--skip-github-pull-request' || '' }}
