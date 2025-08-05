@@ -30,16 +30,6 @@ inputs:
     required: false
     default: ".release-please-manifest.json"
     type: string
-  skip-github-release:
-    description: "Create GitHub draft release"
-    required: false
-    default: false
-    type: boolean
-  skip-github-pull-request:
-    description: "Skip creating a GitHub pull request"
-    required: false
-    default: false
-    type: boolean
   package-name:
     description: "Package name for release-please"
     required: false
@@ -100,6 +90,4 @@ runs:
           --token="${{ steps.generate-github-token.outputs.token }}" \
           --target-branch="${{ inputs.target-branch || github.ref_name }}" \
           --config-file="${{ inputs.config-file }}" \
-          --manifest-file="${{ inputs.manifest-file }}" \
-          ${{ inputs.skip-github-release && '--skip-github-release' || '' }} \
-          ${{ inputs.skip-github-pull-request && '--skip-github-pull-request' || '' }}
+          --manifest-file="${{ inputs.manifest-file }}"

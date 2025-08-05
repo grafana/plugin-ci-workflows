@@ -19,5 +19,3 @@ jobs:
           package-name: "my-plugin"
           repo-url: "grafana/grafana-plugin-example"
           manifest-file: ".release-please-manifest.json"
-          skip-github-release: false
-          skip-github-pull-request: false
