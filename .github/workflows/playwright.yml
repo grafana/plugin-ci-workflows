@@ -59,10 +59,17 @@ on:
         type: string
         required: false
         default: http://localhost:3000/
+      node-version:
+        description: Node.js version to use
+        type: string
+        required: false
 
 permissions:
   contents: read
   id-token: write
+
+env:
+  DEFAULT_NODE_VERSION: "20"
 
 jobs:
   resolve-versions:
@@ -103,6 +110,7 @@ jobs:
       - name: Setup Node.js environment
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
+          node-version: ${{ inputs.node-version || env.DEFAULT_NODE_VERSION }}
           node-version-file: ${{ inputs.plugin-directory }}/.nvmrc
 
       - name: Install npm dependencies
@@ -154,7 +162,7 @@ jobs:
       - name: Set secrets
         if: inputs.secrets != ''
         run: |
-          echo '${{ steps.get-secrets.outputs.secrets }}' | jq -r 'to_entries[] | "\(.key)=\(.value)"' >> .env          
+          echo '${{ steps.get-secrets.outputs.secrets }}' | jq -r 'to_entries[] | "\(.key)=\(.value)"' >> .env
         working-directory: ${{ inputs.plugin-directory }}
 
       - name: Start Grafana
@@ -169,7 +177,7 @@ jobs:
         uses: grafana/plugin-actions/wait-for-grafana@main # zizmor: ignore[unpinned-uses]
         with:
           url: "${{ inputs.grafana-url }}"
-      
+
       - name: Run Playwright tests
         id: run-tests
         run: npx playwright test --config "${PLAYWRIGHT_CONFIG}"

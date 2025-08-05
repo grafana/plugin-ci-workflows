@@ -15,6 +15,10 @@ inputs:
     description: Defines if setup-go action should have caching enabled (https://github.com/actions/setup-go#caching-dependency-files-and-build-outputs)
     required: false
     default: "true"
+  node-version-file:
+    description: Node.js version file to use.
+    required: true
+    default: ".nvmrc"
 
 runs:
   using: composite
@@ -23,6 +27,7 @@ runs:
       uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
       with:
         node-version: "${{ inputs.node-version }}"
+        node-version-file: "${{ inputs.node-version-file }}"
 
     - name: Go
       uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
