@@ -12,10 +12,9 @@ inputs:
     description: golangci-lint version to use.
     required: true
   go-setup-caching:
-    description: Defines if setup-go action should have caching enabled (https://github.com/actions/setup-go#caching-dependency-files-and-build-outputs) 
-    required: true
-    type: boolean
-    default: true
+    description: Defines if setup-go action should have caching enabled (https://github.com/actions/setup-go#caching-dependency-files-and-build-outputs)
+    required: false
+    default: "true"
 
 runs:
   using: composite

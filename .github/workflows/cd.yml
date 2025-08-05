@@ -25,7 +25,7 @@ on:
           Comma-separated list of scopes for the plugin version in the catalog.
           Default is 'universal'.
           Can also be set to 'grafana_cloud' or a list of grafana_cloud_org's or grafana_cloud_instance's like "grafana_cloud_org_{slug},grafana_cloud_org_{slug}" or "grafan_cloud_instance_{slug},grafan_cloud_instance_{slug}"
-          More information about available scopes can be found here https://enghub.grafana-ops.net/docs/default/component/grafana-plugins-platform/grafana-com/gcom-cli-cheat-sheet/#scoping 
+          More information about available scopes can be found here https://enghub.grafana-ops.net/docs/default/component/grafana-plugins-platform/grafana-com/gcom-cli-cheat-sheet/#scoping
         required: false
         default: universal
         type: string
@@ -61,8 +61,8 @@ on:
         type: string
         required: false
       go-setup-caching:
-        description: Defines if setup-go action should have caching enabled (https://github.com/actions/setup-go#caching-dependency-files-and-build-outputs) 
-        type: 'boolean'
+        description: Defines if setup-go action should have caching enabled (https://github.com/actions/setup-go#caching-dependency-files-and-build-outputs)
+        type: "boolean"
         required: false
       trufflehog-version:
         description: Trufflehog version to use
@@ -206,6 +206,11 @@ on:
         description: |
           Only publish docs to the website, do not publish the plugin.
         default: false
+        type: boolean
+      github-draft-release:
+        description: |
+          Publish a draft release on GitHub.
+        default: true
         type: boolean
       argo-workflow-slack-channel:
         description: |
@@ -476,7 +481,7 @@ jobs:
 
       - name: Login to Google Cloud (ID token for IAP)
         id: gcloud
-        uses: google-github-actions/auth@ba79af03959ebeac9769e648f473a284504d9193 # v2.1.10
+        uses: google-github-actions/auth@b7593ed2efd1c1617e1b0254da33b86225adb2a5 # v2.1.12
         if: ${{ matrix.environment != 'prod' }}
         with:
           workload_identity_provider: "projects/304398677251/locations/global/workloadIdentityPools/github/providers/github-provider"
@@ -642,13 +647,13 @@ jobs:
         shell: bash
 
       - name: Login to Google Cloud
-        uses: google-github-actions/auth@ba79af03959ebeac9769e648f473a284504d9193 # v2.1.10
+        uses: google-github-actions/auth@b7593ed2efd1c1617e1b0254da33b86225adb2a5 # v2.1.12
         with:
           workload_identity_provider: "projects/304398677251/locations/global/workloadIdentityPools/github/providers/github-provider"
           service_account: github-plugin-ci-workflows@grafanalabs-workload-identity.iam.gserviceaccount.com
 
       - name: "Set up Cloud SDK"
-        uses: "google-github-actions/setup-gcloud@77e7a554d41e2ee56fc945c52dfd3f33d12def9a" # v2.1.4
+        uses: "google-github-actions/setup-gcloud@6a7c903a70c8625ed6700fa299f5ddb4ca6022e9" # v2.1.5
         with:
           version: ">= 363.0.0"
 
@@ -703,7 +708,7 @@ jobs:
 
       - name: Upload GCS release artifact (tag)
         if: ${{ steps.gcs_artifacts_exist.outputs.gcs_artifacts_exist == 'false' }}
-        uses: google-github-actions/upload-cloud-storage@7c6e11cb7291594c5dfe0bc1dd9cd905e31e600c # v2.2.2
+        uses: google-github-actions/upload-cloud-storage@7c73f5d6eae167341002e9c946f7479a609c588e # v2.2.3
         with:
           path: /tmp/dist-artifacts
           glob: ${{ steps.paths.outputs.gcs_upload_glob }}
@@ -713,7 +718,7 @@ jobs:
 
       - name: Upload GCS release artifact (latest)
         if: ${{ steps.gcs_artifacts_exist.outputs.gcs_artifacts_exist == 'false' }}
-        uses: google-github-actions/upload-cloud-storage@7c6e11cb7291594c5dfe0bc1dd9cd905e31e600c # v2.2.2
+        uses: google-github-actions/upload-cloud-storage@7c73f5d6eae167341002e9c946f7479a609c588e # v2.2.3
         with:
           path: /tmp/dist-artifacts-latest
           glob: ${{ steps.paths.outputs.gcs_upload_glob_latest }}
@@ -723,7 +728,7 @@ jobs:
 
       - name: Upload GCS release artifacts (latest, any)
         if: ${{ matrix.platform == 'any' && steps.gcs_artifacts_exist.outputs.gcs_artifacts_exist == 'false' }}
-        uses: google-github-actions/upload-cloud-storage@7c6e11cb7291594c5dfe0bc1dd9cd905e31e600c # v2.2.2
+        uses: google-github-actions/upload-cloud-storage@7c73f5d6eae167341002e9c946f7479a609c588e # v2.2.3
         with:
           path: /tmp/dist-artifacts-latest/${{ fromJSON(needs.ci.outputs.plugin).id }}-latest.zip
           destination: "${{ steps.paths.outputs.gcs_artifacts_release_path_latest }}"
@@ -900,7 +905,7 @@ jobs:
       - name: Create Github release
         uses: softprops/action-gh-release@72f2c25fcb47643c292f7107632f7a47c1df5cd8 # v2.3.2
         with:
-          draft: true
+          draft: ${{ inputs.github-draft-release }}
           name: ${{ fromJSON(needs.ci.outputs.plugin).id }} v${{ fromJSON(needs.ci.outputs.plugin).version }}
           tag_name: v${{ fromJSON(needs.ci.outputs.plugin).version }}
           files: |
