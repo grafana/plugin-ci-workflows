@@ -78,6 +78,7 @@ runs:
         git config user.email '144369747+grafana-plugins-platform-bot[bot]@users.noreply.github.com'
 
     - name: Run automatic release-please
+      working-directory: ${{ github.workspace }}
       uses: googleapis/release-please-action@a02a34c4d625f9be7cb89156071d8567266a2445 # v4.2.0
       with:
         release-type: ${{ inputs.release-type }}
