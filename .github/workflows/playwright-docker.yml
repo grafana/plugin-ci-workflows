@@ -124,7 +124,7 @@ jobs:
       - name: Set secrets
         if: inputs.secrets != ''
         run: |
-          echo '${{ steps.get-secrets.outputs.secrets }}' | jq -r 'to_entries[] | "\(.key)=\(.value)"' >> .env          
+          echo '${{ steps.get-secrets.outputs.secrets }}' | jq -r 'to_entries[] | "\(.key)=\(.value)"' >> .env
         # No support for subdirectories when running with Docker
         # working-directory: ${{ inputs.plugin-directory }}
 
@@ -147,6 +147,8 @@ jobs:
           docker compose --profile playwright ${DOCKER_COMPOSE_FILE:+-f "$DOCKER_COMPOSE_FILE"} up playwright --exit-code-from playwright
         env:
           DOCKER_COMPOSE_FILE: ${{ inputs.grafana-compose-file }}
+          GRAFANA_VERSION: ${{ matrix.GRAFANA_IMAGE.VERSION }}
+          GRAFANA_IMAGE: ${{ matrix.GRAFANA_IMAGE.NAME }}
 
       - name: Upload artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
