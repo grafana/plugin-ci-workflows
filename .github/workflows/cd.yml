@@ -602,14 +602,16 @@ jobs:
           echo "# 🐙 Grafana Cloud deployment via Argo Workflows
 
           A deployment to Grafana Cloud via the plugins CD Argo Workflow has successfully been triggered.
-          - Plugin Version: \`${{ fromJSON(needs.ci.outputs.plugin).version }}\`
+          - Plugin Version: \`${PLUGIN_VERSION}\`
           - Environment(s): \`${ENVIRONMENT}\`
 
-          **👉 You can follow the deployment [here](${{ steps.trigger-argo-workflow.outputs.uri }})**
+          **👉 You can follow the deployment [here](${ARGO_WORKFLOW_URI})**
           " >> "$GITHUB_STEP_SUMMARY"
         shell: bash
         env:
           ENVIRONMENT: ${{ inputs.environment }}
+          PLUGIN_VERSION: ${{ fromJSON(needs.ci.outputs.plugin).version }}
+          ARGO_WORKFLOW_URI: ${{ steps.trigger-argo-workflow.outputs.uri }}
 
   # Note: This job can be removed once provisioned plugins releases are moved to the
   # tailored plugins catalog instead of using GCS.
@@ -805,7 +807,7 @@ jobs:
       }}
     runs-on: ubuntu-latest
     container:
-      image: grafana/docs-base:latest
+      image: grafana/docs-base:latest # zizmor: ignore[unpinned-images]
       volumes:
         # This mount is required in order to run the "plugins/docs/test" shared action
         # into the container. The action gets downloaded into /home/runner/work/_actions,
