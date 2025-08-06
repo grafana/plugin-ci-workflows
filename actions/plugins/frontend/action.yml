@@ -58,7 +58,9 @@ runs:
     - name: Lint
       shell: bash
       working-directory: ${{ inputs.plugin-directory }}
-      run: ${{ github.action_path }}/pm.sh lint
+      run: ${NODE_PM_RUN} lint
+      env:
+        NODE_PM_RUN: ${{ steps.node-pm.outputs.run }}
 
     - name: Typecheck
       shell: bash
