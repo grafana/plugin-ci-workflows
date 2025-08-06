@@ -50,6 +50,13 @@ on:
         type: string
         required: false
         default: ""
+      node-cache-enabled:
+        description: |
+          If true, the node setup will have the cache enabled,
+          using the package manager provided in package-manager input.
+        type: boolean
+        required: false
+        default: false
 
       # Playwright
       run-playwright:
@@ -264,6 +271,7 @@ jobs:
         with:
           go-version: ${{ inputs.go-version || env.DEFAULT_GO_VERSION }}
           node-version: ${{ inputs.node-version || env.DEFAULT_NODE_VERSION }}
+          node-setup-cache: ${{ inputs.node-cache-enabled && inputs.package-manager || '' }}
           golangci-lint-version: ${{ inputs.golangci-lint-version || env.DEFAULT_GOLANGCI_LINT_VERSION }}
           go-setup-caching: ${{ inputs.go-setup-caching }}
 
