@@ -43,14 +43,17 @@ runs:
 
     - name: Detect package manager
       id: node-pm
-      uses: grafana/plugin-actions/package-manager-detect@jackw/pm-detect
+      # TODO: Fix this once we have a version of the package-manager-detect action
+      uses: grafana/plugin-actions/package-manager-detect@jackw/pm-detect # zizmor: ignore[unpinned-uses]
       with:
         working-directory: ${{ inputs.plugin-directory }}
 
     - name: Install dependencies
       shell: bash
       working-directory: ${{ inputs.plugin-directory }}
-      run: ${{ steps.node-pm.outputs.frozenInstall }}
+      run: ${NODE_PM_FROZENINSTALL}
+      env:
+        NODE_PM_FROZENINSTALL: ${{ steps.node-pm.outputs.frozenInstall }}
 
     - name: Lint
       shell: bash
@@ -60,17 +63,23 @@ runs:
     - name: Typecheck
       shell: bash
       working-directory: ${{ inputs.plugin-directory }}
-      run: ${{ steps.node-pm.outputs.run }} typecheck
+      run: ${NODE_PM_RUN} typecheck
+      env:
+        NODE_PM_RUN: ${{ steps.node-pm.outputs.run }}
 
     - name: Test
       shell: bash
       working-directory: ${{ inputs.plugin-directory }}
-      run: ${{ steps.node-pm.outputs.run }} test:ci
+      run: ${NODE_PM_RUN} test:ci
+      env:
+        NODE_PM_RUN: ${{ steps.node-pm.outputs.run }}
 
     - name: Build
       shell: bash
       working-directory: ${{ inputs.plugin-directory }}
-      run: ${{ steps.node-pm.outputs.run }} build
+      run: ${NODE_PM_RUN} build
+      env:
+        NODE_PM_RUN: ${{ steps.node-pm.outputs.run }}
 
     # The action should end up with a dist/ folder, but if the working directory is not the root of the repo,
     # we need to copy the dist/ folder to the root of the repo.
