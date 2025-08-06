@@ -3,51 +3,54 @@ description: Tests, lints, typechecks and builds the frontend.
 
 inputs:
   plugin-directory:
-    description: Directory of the plugin, if not in the root of the repository. If provided, package-manager must also be provided.
+    description: Directory of the plugin, if not in the root of the repository.
     required: false
     default: .
-  package-manager:
-    description: The package manager to use.
-    required: false
-    default: ""
 
 runs:
   using: composite
   steps:
+    - name: Detect package manager
+      id: node-pm
+      # TODO: Fix this once we have a version of the package-manager-detect action
+      uses: grafana/plugin-actions/package-manager-detect@jackw/pm-detect # zizmor: ignore[unpinned-uses]
+      with:
+        working-directory: ${{ inputs.plugin-directory }}
+
     - name: Install dependencies
       shell: bash
       working-directory: ${{ inputs.plugin-directory }}
-      run: ${{ github.action_path }}/pm.sh install
+      run: ${NODE_PM_FROZENINSTALL}
       env:
-        PACKAGE_MANAGER: ${{ inputs.package-manager }}
+        NODE_PM_FROZENINSTALL: ${{ steps.node-pm.outputs.frozenInstall }}
 
     - name: Lint
       shell: bash
       working-directory: ${{ inputs.plugin-directory }}
-      run: ${{ github.action_path }}/pm.sh lint
+      run: ${NODE_PM_RUN} lint
       env:
-        PACKAGE_MANAGER: ${{ inputs.package-manager }}
+        NODE_PM_RUN: ${{ steps.node-pm.outputs.run }}
 
     - name: Typecheck
       shell: bash
       working-directory: ${{ inputs.plugin-directory }}
-      run: ${{ github.action_path }}/pm.sh typecheck
+      run: ${NODE_PM_RUN} typecheck
       env:
-        PACKAGE_MANAGER: ${{ inputs.package-manager }}
+        NODE_PM_RUN: ${{ steps.node-pm.outputs.run }}
 
     - name: Test
       shell: bash
       working-directory: ${{ inputs.plugin-directory }}
-      run: ${{ github.action_path }}/pm.sh test:ci
+      run: ${NODE_PM_RUN} test:ci
       env:
-        PACKAGE_MANAGER: ${{ inputs.package-manager }}
+        NODE_PM_RUN: ${{ steps.node-pm.outputs.run }}
 
     - name: Build
       shell: bash
       working-directory: ${{ inputs.plugin-directory }}
-      run: ${{ github.action_path }}/pm.sh build
+      run: ${NODE_PM_RUN} build
       env:
-        PACKAGE_MANAGER: ${{ inputs.package-manager }}
+        NODE_PM_RUN: ${{ steps.node-pm.outputs.run }}
 
     # The action should end up with a dist/ folder, but if the working directory is not the root of the repo,
     # we need to copy the dist/ folder to the root of the repo.
