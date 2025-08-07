@@ -235,10 +235,6 @@ jobs:
           ref: ${{ inputs.branch }}
           persist-credentials: false
 
-      - name: Checkout versioned plugin-ci-workflows
-        # TODO: change to "@main" before merging!!!
-        uses: grafana/plugin-ci-workflows/actions/plugins/checkout-versioned-workflows@versioned-workflows # zizmor: ignore[unpinned-uses]
-
       - name: Determine workflow context
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         id: workflow-context
@@ -264,7 +260,7 @@ jobs:
             return o
 
       - name: Setup
-        uses: ./_plugin-ci-workflows/actions/plugins/setup
+        uses: grafana/plugin-ci-workflows/actions/plugins/setup@ci-cd-workflows/v1.1.2 # zizmor: ignore[unpinned-uses] release-please-version
         with:
           go-version: ${{ inputs.go-version || env.DEFAULT_GO_VERSION }}
           node-version: ${{ inputs.node-version || env.DEFAULT_NODE_VERSION }}
@@ -297,7 +293,6 @@ jobs:
           if [ -f "./cspell.config.json" ]; then
             npx --yes cspell@6.13.3 \
               -c cspell.config.json \
-              --exclude "./_plugin-ci-workflows/**" \
               "**/*.{ts,tsx,js,go,md,mdx,yml,yaml,json,scss,css}"
           else
             echo "❌ Spellcheck is not configured."
@@ -328,21 +323,21 @@ jobs:
         working-directory: ${{ inputs.plugin-directory }}
 
       - name: Test and build frontend
-        uses: ./_plugin-ci-workflows/actions/plugins/frontend
+        uses: grafana/plugin-ci-workflows/actions/plugins/frontend@ci-cd-workflows/v1.1.2 # zizmor: ignore[unpinned-uses] release-please-version
         with:
           package-manager: ${{ inputs.package-manager }}
           plugin-directory: ${{ inputs.plugin-directory }}
 
       - name: Test and build backend
         if: ${{ steps.check-for-backend.outputs.has-backend == 'true' }}
-        uses: ./_plugin-ci-workflows/actions/plugins/backend
+        uses: grafana/plugin-ci-workflows/actions/plugins/backend@ci-cd-workflows/v1.1.2 # zizmor: ignore[unpinned-uses] release-please-version
         with:
           github-token: ${{ steps.generate-github-token.outputs.token }}
           plugin-directory: ${{ inputs.plugin-directory }}
 
       - name: Package universal ZIP
         id: universal-zip
-        uses: ./_plugin-ci-workflows/actions/plugins/package
+        uses: grafana/plugin-ci-workflows/actions/plugins/package@ci-cd-workflows/v1.1.2 # zizmor: ignore[unpinned-uses] release-please-version
         with:
           universal: "true"
           dist-folder: dist
@@ -352,7 +347,7 @@ jobs:
 
       - name: Package os/arch ZIPs
         id: os-arch-zips
-        uses: ./_plugin-ci-workflows/actions/plugins/package
+        uses: grafana/plugin-ci-workflows/actions/plugins/package@ci-cd-workflows/v1.1.2 # zizmor: ignore[unpinned-uses] release-please-version
         with:
           universal: "false"
           dist-folder: dist
@@ -362,7 +357,7 @@ jobs:
 
       - name: Trufflehog secrets scanning
         if: ${{ inputs.run-trufflehog == true }}
-        uses: ./_plugin-ci-workflows/actions/plugins/trufflehog
+        uses: grafana/plugin-ci-workflows/actions/plugins/trufflehog@ci-cd-workflows/v1.1.2 # zizmor: ignore[unpinned-uses] release-please-version
         with:
           trufflehog-version: ${{ inputs.trufflehog-version || env.DEFAULT_TRUFFLEHOG_VERSION }}
           folder: dist-artifacts
@@ -423,10 +418,6 @@ jobs:
           ref: ${{ inputs.branch }}
           persist-credentials: false
 
-      - name: Checkout versioned plugin-ci-workflows
-        # TODO: change to "@main" before merging!!!
-        uses: grafana/plugin-ci-workflows/actions/plugins/checkout-versioned-workflows@versioned-workflows # zizmor: ignore[unpinned-uses]
-
       - name: Check docs exist
         id: exist
         run: |
@@ -436,7 +427,7 @@ jobs:
         shell: bash
 
       - name: Test docs
-        uses: ./_plugin-ci-workflows/actions/plugins/docs/test
+        uses: grafana/plugin-ci-workflows/actions/plugins/docs/test@ci-cd-workflows/v1.1.2 # zizmor: ignore[unpinned-uses] release-please-version
 
   playwright:
     name: Playwright E2E tests
