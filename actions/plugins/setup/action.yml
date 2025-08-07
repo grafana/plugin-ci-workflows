@@ -17,8 +17,8 @@ inputs:
     default: "true"
   node-version-file:
     description: Node.js version file to use.
-    required: true
-    default: ".nvmrc"
+    required: false
+    default: ""
 
 runs:
   using: composite
