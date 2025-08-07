@@ -270,7 +270,7 @@ jobs:
       - name: Get secrets from Vault
         id: get-secrets
         if: ${{ fromJson(steps.workflow-context.outputs.result).isTrusted }}
-        uses: grafana/shared-workflows/actions/get-vault-secrets@9f37f656e063f0ad0b0bfc38d49894b57d363936 # v1.2.1
+        uses: grafana/shared-workflows/actions/get-vault-secrets@get-vault-secrets/v1.2.1
         with:
           vault_instance: ${{ env.VAULT_INSTANCE }}
           common_secrets: |
