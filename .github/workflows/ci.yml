@@ -295,7 +295,10 @@ jobs:
       - name: Spellcheck
         run: |
           if [ -f "./cspell.config.json" ]; then
-            npx --yes cspell@6.13.3 -c cspell.config.json "**/*.{ts,tsx,js,go,md,mdx,yml,yaml,json,scss,css}"
+            npx --yes cspell@6.13.3 \
+              -c cspell.config.json \
+              --exclude "./_plugin-ci-workflows/**" \
+              "**/*.{ts,tsx,js,go,md,mdx,yml,yaml,json,scss,css}"
           else
             echo "❌ Spellcheck is not configured."
           fi
