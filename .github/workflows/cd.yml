@@ -539,8 +539,7 @@ jobs:
           plugin-id: ${{ fromJSON(needs.ci.outputs.plugin).id }}
 
       - name: Publish to catalog
-        # TODO: which ref??
-        uses: grafana/plugin-ci-workflows/actions/plugins/publish/publish@main
+        uses: grafana/plugin-ci-workflows/actions/plugins/publish/publish@plugins-publish-publish/v1.0.2
         with:
           zips: ${{ needs.upload-to-gcs-release.outputs.gcs-zip-urls }}
           environment: ${{ matrix.environment }}
