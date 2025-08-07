@@ -421,7 +421,8 @@ jobs:
           persist-credentials: false
 
       - name: Checkout versioned plugin-ci-workflows
-        uses: grafana/plugin-ci-workflows/actions/plugins/checkout-versioned-workflows@main # zizmor: ignore[unpinned-uses]
+        # TODO: change to "@main" before merging!!!
+        uses: grafana/plugin-ci-workflows/actions/plugins/checkout-versioned-workflows@versioned-workflows # zizmor: ignore[unpinned-uses]
 
       - name: Check docs exist
         id: exist
