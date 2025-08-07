@@ -264,6 +264,7 @@ jobs:
         with:
           go-version: ${{ inputs.go-version || env.DEFAULT_GO_VERSION }}
           node-version: ${{ inputs.node-version || env.DEFAULT_NODE_VERSION }}
+          node-version-file: ${{ inputs.plugin-directory }}/.nvmrc
           golangci-lint-version: ${{ inputs.golangci-lint-version || env.DEFAULT_GOLANGCI_LINT_VERSION }}
           go-setup-caching: ${{ inputs.go-setup-caching }}
 
