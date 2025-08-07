@@ -63,6 +63,7 @@ jobs:
     timeout-minutes: 3
     outputs:
       matrix: ${{ steps.resolve-versions.outputs.matrix }}
+      playwright-version: ${{ steps.playwright-version.outputs.version }}
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -76,6 +77,12 @@ jobs:
           skip-grafana-dev-image: ${{ inputs.skip-grafana-dev-image }}
           version-resolver-type: ${{ inputs.version-resolver-type }}
           grafana-dependency: ${{ inputs.grafana-dependency }}
+      - name: Get playwright version
+        id: playwright-version
+        run: |
+          export PLAYWRIGHT_VERSION=$(cat package.json | jq -r '.devDependencies["@playwright/test"]')
+          echo "version=${PLAYWRIGHT_VERSION}" >> $GITHUB_OUTPUT
+
 
   playwright-tests:
     needs: resolve-versions
@@ -86,6 +93,9 @@ jobs:
         GRAFANA_IMAGE: ${{fromJson(needs.resolve-versions.outputs.matrix)}}
     name: e2e ${{ matrix.GRAFANA_IMAGE.name }}@${{ matrix.GRAFANA_IMAGE.VERSION }}
     runs-on: ubuntu-latest-8-cores
+    container:
+      image: mcr.microsoft.com/playwright:v${{ needs.resolve-versions.outputs.playwright-version }}-jammy
+      options: --user 1001
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
