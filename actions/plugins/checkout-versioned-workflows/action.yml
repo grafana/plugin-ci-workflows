@@ -19,16 +19,3 @@ runs:
         ref: ${{ env.action_ref }}
         path: ${{ inputs.path }}
         persist-credentials: false
-
-  post:
-    - name: Cleanup versioned plugin-ci-workflows
-      run: |
-        # Check that the directory looks OK before removing it
-        if ! [ -d "${PLUGIN_CI_WORKFLOWS_PATH}/.git" ]; then
-          echo "::warning Not removing plugin-ci-workflows directory: doesn't look like a git repository"
-          exit 0
-        fi
-        rm -rf "${PLUGIN_CI_WORKFLOWS_PATH}"
-      env:
-        PLUGIN_CI_WORKFLOWS_PATH: ${{ inputs.path }}
-      shell: bash
