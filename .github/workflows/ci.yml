@@ -440,8 +440,7 @@ jobs:
 
   playwright:
     name: Playwright E2E tests
-    # TODO: pin
-    uses: grafana/plugin-ci-workflows/.github/workflows/playwright.yml@main # zizmor: ignore[unpinned-uses]
+    uses: grafana/plugin-ci-workflows/.github/workflows/playwright.yml@ci-cd-workflows/v1.1.2 # zizmor: ignore[unpinned-uses] release-please-version
     if: ${{ inputs.run-playwright == true }}
     needs:
       - test-and-build
@@ -461,8 +460,7 @@ jobs:
 
   playwright-docker:
     name: Plugins - Dockerized Playwright E2E tests
-    # TODO: pin
-    uses: grafana/plugin-ci-workflows/.github/workflows/playwright-docker.yml@main # zizmor: ignore[unpinned-uses]
+    uses: grafana/plugin-ci-workflows/.github/workflows/playwright-docker.yml@ci-cd-workflows/v1.1.2 # zizmor: ignore[unpinned-uses] release-please-version
     if: ${{ inputs.run-playwright-docker == true }}
     needs:
       - test-and-build
