@@ -11,5 +11,5 @@ runs:
       with:
         repository: ${{ env.action_repo }}
         ref: ${{ env.action_ref }}
-        path: _plugin-ci-workflows
+        path: /_plugin-ci-workflows
         persist-credentials: false
