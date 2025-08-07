@@ -44,12 +44,12 @@ validate_plugin_zip() {
 }
 
 process_plugin_zips() {
-    local json_array="$1"
+    local urls_array="$1"
     local plugin_id="$2"
     local failed_count=0
 
     # Parse JSON array and process each URL
-    echo "$json_array" | jq -r '.[]' | while read -r zip_url; do
+    echo "$urls_array" | jq -r '.[]' | while read -r zip_url; do
         if ! validate_plugin_zip "$zip_url" "$plugin_id"; then
             ((failed_count++))
         fi
@@ -70,15 +70,15 @@ if [[ $# -ne 2 ]]; then
     echo "Usage: $0 <json_array_of_urls_or_single_url> <plugin_id>"
     exit 1
 fi
-json_array="$1"
+urls_array="$1"
 plugin_id="$2"
 
-# If a string was provided in json_array, convert it to a JSON array with jq
-if [[ "$json_array" != \[* ]]; then
-    json_array=$(echo "$json_array" | jq -Rc '[.]')
+# If a string was provided in urls_array, convert it to a JSON array with jq
+if [[ "$urls_array" != \[* ]]; then
+    urls_array=$(echo "$urls_array" | jq -Rc '[.]')
 fi
 
-if ! process_plugin_zips "$json_array" "$plugin_id"; then
+if ! process_plugin_zips "$urls_array" "$plugin_id"; then
     exit 1
 fi
 exit 0
