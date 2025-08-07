@@ -68,9 +68,6 @@ permissions:
   contents: read
   id-token: write
 
-env:
-  DEFAULT_NODE_VERSION: "20"
-
 jobs:
   resolve-versions:
     name: Resolve Grafana images
@@ -110,7 +107,7 @@ jobs:
       - name: Setup Node.js environment
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: ${{ inputs.node-version || env.DEFAULT_NODE_VERSION }}
+          node-version: ${{ inputs.node-version }}
           node-version-file: ${{ inputs.plugin-directory }}/.nvmrc
 
       - name: Install npm dependencies

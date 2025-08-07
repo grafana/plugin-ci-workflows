@@ -447,6 +447,7 @@ jobs:
       report-path: ${{ inputs.playwright-report-path }}
       grafana-url: ${{ inputs.playwright-grafana-url }}
       secrets: ${{ (fromJson(needs.test-and-build.outputs.workflow-context).isTrusted && inputs.playwright-secrets != '') && inputs.playwright-secrets || '' }}
+      node-version: ${{ inputs.node-version }}
 
   playwright-docker:
     name: Plugins - Dockerized Playwright E2E tests
