@@ -27,7 +27,7 @@ runs:
 
     - name: NPM registry auth
       if: inputs.npm-registry-auth == 'true'
-      run: GOOGLE_APPLICATION_CREDENTIALS=${{ env.GOOGLE_APPLICATION_CREDENTIALS }} npx google-artifactregistry-auth --credential-config ./.npmrc
+      run: GOOGLE_APPLICATION_CREDENTIALS=${{ env.GOOGLE_APPLICATION_CREDENTIALS }} npx google-artifactregistry-auth
 
     - name: Install dependencies
       shell: bash
