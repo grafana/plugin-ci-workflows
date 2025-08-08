@@ -217,7 +217,7 @@ env:
 jobs:
   test-and-build:
     name: Test and build plugin
-    runs-on: ubuntu-latest-8-cores
+    runs-on: ubuntu-x64-large
 
     outputs:
       plugin: ${{ steps.outputs.outputs.plugin }}
@@ -398,7 +398,7 @@ jobs:
 
   docs:
     name: Test docs
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-x64-small
     container:
       image: grafana/docs-base:latest # zizmor: ignore[unpinned-images]
       volumes:
@@ -469,7 +469,7 @@ jobs:
 
   upload-to-gcs:
     name: Upload to GCS
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-x64-small
 
     # Skip the GCS upload (no access to the bucket) for PRs when run in non-trusted context (forks)
     if: ${{ fromJson(needs.test-and-build.outputs.workflow-context).isTrusted }}

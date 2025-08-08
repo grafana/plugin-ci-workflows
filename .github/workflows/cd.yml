@@ -250,7 +250,7 @@ env:
 jobs:
   setup:
     name: Check and setup environment
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-x64-small
 
     outputs:
       commit-sha: ${{ steps.checkout-specified-branch.outputs.commit }}
@@ -345,7 +345,7 @@ jobs:
     if: ${{ inputs.attestation }}
     needs:
       - ci
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-x64-small
 
     outputs:
       attestation-id: ${{ steps.attestation.outputs.attestation-id }}
@@ -368,7 +368,7 @@ jobs:
 
   define-variables:
     name: Define variables
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-x64-small
 
     needs:
       - ci
@@ -455,7 +455,7 @@ jobs:
       fail-fast: false
       matrix:
         environment: ${{ fromJson(needs.define-variables.outputs.environments) }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-x64-small
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -550,7 +550,7 @@ jobs:
 
   trigger-argo-workflow:
     name: Trigger Argo Workflow for Grafana Cloud deployment
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-x64-small
 
     needs:
       - ci
@@ -623,7 +623,7 @@ jobs:
   # tailored plugins catalog instead of using GCS.
   upload-to-gcs-release:
     name: Upload to GCS (release)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-x64-small
 
     needs:
       - ci
@@ -811,7 +811,7 @@ jobs:
         && (needs.define-variables.outputs.publish-docs == 'true')
         && !(failure() || cancelled())
       }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-x64-small
     container:
       image: grafana/docs-base:latest # zizmor: ignore[unpinned-images]
       volumes:
@@ -852,7 +852,7 @@ jobs:
 
   create-github-release:
     name: Create GitHub Release
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-x64-small
     needs:
       - define-variables
       - ci
