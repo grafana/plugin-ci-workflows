@@ -94,7 +94,7 @@ jobs:
       - name: Get playwright version
         id: playwright-version
         run: |
-          export PLAYWRIGHT_VERSION=$(cat ${{ inputs.plugin-directory }}/package.json | jq -r '.devDependencies["@playwright/test"]')
+          export PLAYWRIGHT_VERSION=$(cat ${{ inputs.plugin-directory }}/package.json | jq -r '.devDependencies["@playwright/test"]' | sed 's/^[^0-9]*//')
           echo "version=${PLAYWRIGHT_VERSION}" >> $GITHUB_OUTPUT
 
 
