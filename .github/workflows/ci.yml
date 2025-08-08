@@ -50,6 +50,11 @@ on:
         type: string
         required: false
         default: ""
+      frontend-secrets:
+        description: The secrets to use within frontend steps
+        type: string
+        required: false
+        default: ""
 
       # Playwright
       run-playwright:
@@ -326,6 +331,7 @@ jobs:
         with:
           package-manager: ${{ inputs.package-manager }}
           plugin-directory: ${{ inputs.plugin-directory }}
+          secrets: ${{ (fromJson(steps.workflow-context.outputs.result).isTrusted && inputs.frontend-secrets != '') && inputs.frontend-secrets || '' }}
 
       - name: Test and build backend
         if: ${{ steps.check-for-backend.outputs.has-backend == 'true' }}

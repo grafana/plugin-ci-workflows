@@ -227,6 +227,11 @@ on:
           Default is 'dev'.
         default: dev
         type: string
+      frontend-secrets:
+        description: The secrets to use within frontend steps
+        type: string
+        required: false
+        default: ""
 
       # Options for deploying PRs. Those values should come from the PR event and should not be set manually.
       branch:
@@ -339,6 +344,7 @@ jobs:
       trufflehog-include-detectors: ${{ inputs.trufflehog-include-detectors }}
       trufflehog-exclude-detectors: ${{ inputs.trufflehog-exclude-detectors }}
       plugin-version-suffix: ${{ needs.setup.outputs.plugin-version-suffix }}
+      frontend-secrets: ${{ inputs.frontend-secrets }}
 
   build-attestation:
     name: Build attestation
@@ -770,7 +776,7 @@ jobs:
             // Create GCS URLs for all zip files, each in its correct platform directory
             for (const zipFile of zipFiles) {
               let targetPlatform;
-              
+
               // Determine platform directory based on filename pattern
               switch (true) {
                 case zipFile.includes('.darwin_'):
@@ -786,7 +792,7 @@ jobs:
                   targetPlatform = 'any';
                   break;
               }
-              
+
               const gcsUrl = `${gcsPrefix}/${gcsPath}/${targetPlatform}/${zipFile}`;
               allUrls.push(gcsUrl);
               console.log(`Generated GCS URL: ${gcsUrl}`);

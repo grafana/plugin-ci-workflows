@@ -10,10 +10,21 @@ inputs:
     description: The package manager to use.
     required: false
     default: ""
+  secrets:
+    required: false
+    type: string
+    description: The secrets to use within frontend steps
 
 runs:
   using: composite
   steps:
+    - name: Get secrets from Vault
+      if: inputs.secrets != ''
+      id: get-secrets
+      uses: grafana/shared-workflows/actions/get-vault-secrets@get-vault-secrets/v1.2.1 # zizmor: ignore[unpinned-uses]
+      with:
+        repo_secrets: ${{ inputs.secrets }}
+
     - name: Install dependencies
       shell: bash
       working-directory: ${{ inputs.plugin-directory }}
