@@ -317,7 +317,8 @@ jobs:
 
   ci:
     name: CI
-    uses: grafana/plugin-ci-workflows/.github/workflows/ci.yml@main # zizmor: ignore[unpinned-uses]
+    # TODO: switch branch once done with testing
+    uses: grafana/plugin-ci-workflows/.github/workflows/ci.yml@giuseppe/private-npm-registry # zizmor: ignore[unpinned-uses]
     needs:
       - setup
     with:
