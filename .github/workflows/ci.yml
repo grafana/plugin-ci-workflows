@@ -50,6 +50,11 @@ on:
         type: string
         required: false
         default: ""
+      npm-registry-auth:
+        description: Whether to authenticate to the npm registry in Google Artifact Registry.
+        type: boolean
+        required: false
+        default: false
 
       # Playwright
       run-playwright:
@@ -327,6 +332,7 @@ jobs:
         with:
           package-manager: ${{ inputs.package-manager }}
           plugin-directory: ${{ inputs.plugin-directory }}
+          npm-registry-auth: ${{ inputs.npm-registry-auth }}
 
       - name: Test and build backend
         if: ${{ steps.check-for-backend.outputs.has-backend == 'true' }}
