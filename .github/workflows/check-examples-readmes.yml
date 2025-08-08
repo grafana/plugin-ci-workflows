@@ -16,7 +16,7 @@ permissions:
 jobs:
   check-readme:
     name: Check if example/base/README.md is up-to-date
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-x64-small
 
     steps:
       - name: Checkout code

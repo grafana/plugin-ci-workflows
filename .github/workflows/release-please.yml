@@ -11,10 +11,9 @@ permissions:
 env:
   IS_FORK: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
 
-
 jobs:
   release-please:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-x64-small
 
     permissions:
       contents: write # Needed to create releases and tags
