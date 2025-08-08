@@ -811,7 +811,7 @@ jobs:
         && (needs.define-variables.outputs.publish-docs == 'true')
         && !(failure() || cancelled())
       }}
-    runs-on: ubuntu-x64-small
+    runs-on: ubuntu-latest
     container:
       image: grafana/docs-base:latest # zizmor: ignore[unpinned-images]
       volumes:
