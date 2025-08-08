@@ -322,7 +322,8 @@ jobs:
         working-directory: ${{ inputs.plugin-directory }}
 
       - name: Test and build frontend
-        uses: grafana/plugin-ci-workflows/actions/plugins/frontend@main # zizmor: ignore[unpinned-uses]
+        # TODO: switch branch once done testing
+        uses: grafana/plugin-ci-workflows/actions/plugins/frontend@giuseppe/private-npm-registry # zizmor: ignore[unpinned-uses]
         with:
           package-manager: ${{ inputs.package-manager }}
           plugin-directory: ${{ inputs.plugin-directory }}
