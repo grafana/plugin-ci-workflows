@@ -50,6 +50,11 @@ on:
         type: string
         required: false
         default: ""
+      npm-registry-auth:
+        description: Whether to authenticate to the npm registry in Google Artifact Registry.
+        type: boolean
+        required: false
+        default: false
 
       # Playwright
       run-playwright:
@@ -322,10 +327,12 @@ jobs:
         working-directory: ${{ inputs.plugin-directory }}
 
       - name: Test and build frontend
-        uses: grafana/plugin-ci-workflows/actions/plugins/frontend@main # zizmor: ignore[unpinned-uses]
+        # TODO: switch branch once done testing
+        uses: grafana/plugin-ci-workflows/actions/plugins/frontend@giuseppe/private-npm-registry # zizmor: ignore[unpinned-uses]
         with:
           package-manager: ${{ inputs.package-manager }}
           plugin-directory: ${{ inputs.plugin-directory }}
+          npm-registry-auth: ${{ inputs.npm-registry-auth }}
 
       - name: Test and build backend
         if: ${{ steps.check-for-backend.outputs.has-backend == 'true' }}
