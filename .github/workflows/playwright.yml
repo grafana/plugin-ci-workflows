@@ -148,6 +148,9 @@ jobs:
           src=$(pwd)
 
           cd /tmp/dist-artifacts
+          ls -la
+          echo "PLUGIN_ID: $PLUGIN_ID"
+          echo "PLUGIN_VERSION: $PLUGIN_VERSION"
           # unzip the universal zip
           unzip "${PLUGIN_ID}-${PLUGIN_VERSION}.zip" -d out
           # Folder structure: /tmp/dist-artifacts/out/$PLUGIN_ID/plugin.json
