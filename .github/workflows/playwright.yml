@@ -192,10 +192,21 @@ jobs:
         env:
           DOCKER_COMPOSE_FILE: ${{ inputs.docker-compose-file }}
 
-      - name: Wait for Grafana to start
-        uses: grafana/plugin-actions/wait-for-grafana@main # zizmor: ignore[unpinned-uses]
+      # - name: Wait for Grafana to start
+      #   uses: grafana/plugin-actions/wait-for-grafana@main # zizmor: ignore[unpinned-uses]
+      #   with:
+      #     url: "${{ inputs.grafana-url }}"
+
+      - name: Wait for login available
+        uses: mydea/action-wait-for-api@e78339fa3ba363abb904fefb0b9aba4a3f54da5e # v1.1.0
         with:
-          url: "${{ inputs.grafana-url }}"
+          url: 'http://grafana:3000/login'
+          method: POST
+          expected-status: 400
+          expected-response-field: messageId
+          expected-response-field-value: 'form-auth.invalid'
+          timeout: 180
+          interval: 10
 
       - name: Run Playwright tests
         id: run-tests
