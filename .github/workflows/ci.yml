@@ -50,6 +50,11 @@ on:
         type: string
         required: false
         default: ""
+      frontend-secrets:
+        description: The secrets to use within frontend steps
+        type: string
+        required: false
+        default: ""
       npm-registry-auth:
         description: Whether to authenticate to the npm registry in Google Artifact Registry.
         type: boolean
@@ -287,7 +292,7 @@ jobs:
 
       - name: Generate GitHub token
         id: generate-github-token
-        uses: actions/create-github-app-token@df432ceedc7162793a195dd1713ff69aefc7379e # v2.0.6
+        uses: actions/create-github-app-token@0f859bf9e69e887678d5bbfbee594437cb440ffe # v2.1.0
         if: ${{ fromJson(steps.workflow-context.outputs.result).isTrusted }}
         with:
           app-id: ${{ fromJSON(steps.get-secrets.outputs.secrets).GITHUB_APP_ID }}
@@ -332,6 +337,7 @@ jobs:
         with:
           package-manager: ${{ inputs.package-manager }}
           plugin-directory: ${{ inputs.plugin-directory }}
+          secrets: ${{ (fromJson(steps.workflow-context.outputs.result).isTrusted && inputs.frontend-secrets != '') && inputs.frontend-secrets || '' }}
           npm-registry-auth: ${{ inputs.npm-registry-auth }}
 
       - name: Test and build backend
@@ -405,7 +411,7 @@ jobs:
 
   docs:
     name: Test docs
-    runs-on: ubuntu-x64-small
+    runs-on: ubuntu-latest
     container:
       image: grafana/docs-base:latest # zizmor: ignore[unpinned-images]
       volumes:

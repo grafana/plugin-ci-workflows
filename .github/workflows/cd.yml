@@ -232,6 +232,11 @@ on:
           Default is 'dev'.
         default: dev
         type: string
+      frontend-secrets:
+        description: The secrets to use within frontend steps
+        type: string
+        required: false
+        default: ""
 
       # Options for deploying PRs. Those values should come from the PR event and should not be set manually.
       branch:
@@ -346,6 +351,7 @@ jobs:
       trufflehog-include-detectors: ${{ inputs.trufflehog-include-detectors }}
       trufflehog-exclude-detectors: ${{ inputs.trufflehog-exclude-detectors }}
       plugin-version-suffix: ${{ needs.setup.outputs.plugin-version-suffix }}
+      frontend-secrets: ${{ inputs.frontend-secrets }}
 
   build-attestation:
     name: Build attestation
@@ -668,7 +674,7 @@ jobs:
           service_account: github-plugin-ci-workflows@grafanalabs-workload-identity.iam.gserviceaccount.com
 
       - name: "Set up Cloud SDK"
-        uses: "google-github-actions/setup-gcloud@6a7c903a70c8625ed6700fa299f5ddb4ca6022e9" # v2.1.5
+        uses: "google-github-actions/setup-gcloud@cb1e50a9932213ecece00a606661ae9ca44f3397" # v2.2.0
         with:
           version: ">= 363.0.0"
 
@@ -777,7 +783,7 @@ jobs:
             // Create GCS URLs for all zip files, each in its correct platform directory
             for (const zipFile of zipFiles) {
               let targetPlatform;
-              
+
               // Determine platform directory based on filename pattern
               switch (true) {
                 case zipFile.includes('.darwin_'):
@@ -793,7 +799,7 @@ jobs:
                   targetPlatform = 'any';
                   break;
               }
-              
+
               const gcsUrl = `${gcsPrefix}/${gcsPath}/${targetPlatform}/${zipFile}`;
               allUrls.push(gcsUrl);
               console.log(`Generated GCS URL: ${gcsUrl}`);
@@ -818,7 +824,7 @@ jobs:
         && (needs.define-variables.outputs.publish-docs == 'true')
         && !(failure() || cancelled())
       }}
-    runs-on: ubuntu-x64-small
+    runs-on: ubuntu-latest
     container:
       image: grafana/docs-base:latest # zizmor: ignore[unpinned-images]
       volumes:
@@ -844,7 +850,7 @@ jobs:
 
       - name: Generate GitHub token
         id: generate-github-token
-        uses: actions/create-github-app-token@df432ceedc7162793a195dd1713ff69aefc7379e # v2.0.6
+        uses: actions/create-github-app-token@0f859bf9e69e887678d5bbfbee594437cb440ffe # v2.1.0
         with:
           app-id: ${{ env.GITHUB_APP_ID }}
           private-key: ${{ env.GITHUB_APP_PRIVATE_KEY }}
