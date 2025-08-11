@@ -15,7 +15,9 @@ inputs:
     type: string
     description: The secrets to use within frontend steps
   npm-registry-auth:
-    description: Whether to authenticate to the npm registry in Google Artifact Registry.
+    description: |
+      Whether to authenticate to the npm registry in Google Artifact Registry.
+      If true, the root of the plugin repository must contain a `.npmrc` file.
     required: false
     default: "false"
 
