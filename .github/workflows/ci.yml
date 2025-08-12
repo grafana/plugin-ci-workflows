@@ -462,6 +462,7 @@ jobs:
       grafana-url: ${{ inputs.playwright-grafana-url }}
       secrets: ${{ (fromJson(needs.test-and-build.outputs.workflow-context).isTrusted && inputs.playwright-secrets != '') && inputs.playwright-secrets || '' }}
       node-version: ${{ inputs.node-version }}
+      npm-registry-auth: ${{ inputs.npm-registry-auth }}
 
   playwright-docker:
     name: Plugins - Dockerized Playwright E2E tests
@@ -480,6 +481,8 @@ jobs:
       report-path: ${{ inputs.playwright-report-path }}
       grafana-url: ${{ inputs.playwright-grafana-url }}
       secrets: ${{ (fromJson(needs.test-and-build.outputs.workflow-context).isTrusted && inputs.playwright-secrets != '') && inputs.playwright-secrets || '' }}
+      # TODO: add support for NPM auth in Dockerized Playwright as well
+      # npm-registry-auth: ${{ inputs.npm-registry-auth }}
 
   upload-to-gcs:
     name: Upload to GCS
