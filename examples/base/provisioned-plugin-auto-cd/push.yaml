@@ -14,22 +14,6 @@ on:
 
 permissions: {}
 
-env:
-  # Scope for the plugin when publishing it to the catalog.
-  # Choose between:
-  # - 'universal': on-prem + cloud (default)
-  # - 'grafana_cloud': cloud only, hidden for on-prem users
-  SCOPES: grafana_cloud # TODO: Choose the appropriate scope for your plugin.
-  ARGO_WORKFLOW_SLACK_CHANNEL: "#grafana-plugins-platform-ci" # TODO: Change with your own Slack channel
-
-  # Grafana Cloud environment to deploy the provisioned plugin to.
-  # - 'dev': dev
-  # - 'ops': ops
-  # - 'prod': dev + ops + prod
-  # Can also be a comma-separated list of environments, e.g. 'dev,ops'.
-  # Change to 'dev,ops' to deploy each push to main to both dev and ops environments.
-  CD_ENVIRONMENT: dev
-
 jobs:
   cd:
     name: CI / CD
@@ -45,13 +29,19 @@ jobs:
       # When pushing to "main", publish and deploy to Grafana Cloud (CD).
       # For PRs, skip publishing and deploying (run CI only).
       environment: ${{ (github.event_name == 'push' && github.ref_name == 'main') && env.CD_ENVIRONMENT || 'none' }}
-      scopes: ${{ env.SCOPES }}
+      scopes: grafana_cloud # TODO: Choose the appropriate scope for your plugin.
 
       # This will trigger the Argo Workflow to update your plugin version in Grafana Cloud via deployment_tools
       grafana-cloud-deployment-type: provisioned
-      argo-workflow-slack-channel: ${{ env.ARGO_WORKFLOW_SLACK_CHANNEL }}
+      argo-workflow-slack-channel: "#grafana-plugins-platform-ci" # TODO: Change with your own Slack channel
+      # Grafana Cloud environment to deploy the provisioned plugin to.
+      # - 'dev': dev
+      # - 'ops': ops
+      # - 'prod': dev + ops + prod
+      # Can also be a comma-separated list of environments, e.g. 'dev,ops'.
+      # Change to 'dev,ops' to deploy each push to main to both dev and ops environments.
       # Auto-merge all PRs in deployment_tools
-      auto-merge-environments: ${{ env.CD_ENVIRONMENT }}
+      auto-merge-environments: dev
 
       # Add the git head ref sha to the plugin version as suffix (`+abcdef`). This is required for CD builds.
       plugin-version-suffix: ${{ github.event_name == 'push' && github.sha || github.event.pull_request.head.sha }}
