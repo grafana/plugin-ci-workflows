@@ -40,6 +40,10 @@ jobs:
       branch: ${{ github.event.inputs.branch }}
       environment: ${{ github.event.inputs.environment }}
       docs-only: ${{ fromJSON(github.event.inputs.docs-only) }}
+      # Scope for the plugin when publishing it to the catalog.
+      # Choose between:
+      # - 'universal': on-prem + cloud (default)
+      # - 'grafana_cloud': cloud only, hidden for on-prem users
       scopes: grafana_cloud # TODO: Choose the appropriate scope for your plugin.
       # This will trigger the Argo Workflow to update your plugin version in Grafana Cloud via deployment_tools
       grafana-cloud-deployment-type: provisioned

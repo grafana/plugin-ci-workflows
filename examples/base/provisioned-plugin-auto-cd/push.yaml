@@ -28,7 +28,11 @@ jobs:
 
       # When pushing to "main", publish and deploy to Grafana Cloud (CD).
       # For PRs, skip publishing and deploying (run CI only).
-      environment: ${{ (github.event_name == 'push' && github.ref_name == 'main') && env.CD_ENVIRONMENT || 'none' }}
+      environment: ${{ (github.event_name == 'push' && github.ref_name == 'main') && 'dev' || 'none' }} # TODO: Change to environment(s) you want to deploy to when pushed to main
+      # Scope for the plugin when publishing it to the catalog.
+      # Choose between:
+      # - 'universal': on-prem + cloud (default)
+      # - 'grafana_cloud': cloud only, hidden for on-prem users
       scopes: grafana_cloud # TODO: Choose the appropriate scope for your plugin.
 
       # This will trigger the Argo Workflow to update your plugin version in Grafana Cloud via deployment_tools
@@ -40,8 +44,7 @@ jobs:
       # - 'prod': dev + ops + prod
       # Can also be a comma-separated list of environments, e.g. 'dev,ops'.
       # Change to 'dev,ops' to deploy each push to main to both dev and ops environments.
-      # Auto-merge all PRs in deployment_tools
-      auto-merge-environments: dev
+      auto-merge-environments: dev # TODO: Change to environment(s) you want to deploy to
 
       # Add the git head ref sha to the plugin version as suffix (`+abcdef`). This is required for CD builds.
       plugin-version-suffix: ${{ github.event_name == 'push' && github.sha || github.event.pull_request.head.sha }}
