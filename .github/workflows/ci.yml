@@ -276,7 +276,7 @@ jobs:
             return o
 
       - name: Setup
-        uses: grafana/plugin-ci-workflows/actions/plugins/setup@main # zizmor: ignore[unpinned-uses]
+        uses: grafana/plugin-ci-workflows/actions/plugins/setup@add-optional-node-caching # zizmor: ignore[unpinned-uses]
         with:
           go-version: ${{ inputs.go-version || env.DEFAULT_GO_VERSION }}
           node-version: ${{ inputs.node-version || env.DEFAULT_NODE_VERSION }}
