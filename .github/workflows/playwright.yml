@@ -117,7 +117,7 @@ jobs:
           node-version-file: ${{ inputs.plugin-directory }}/.nvmrc
 
       - name: Login to Google Cloud
-        if: inputs.npm-registry-auth == 'true'
+        if: inputs.npm-registry-auth == true
         uses: google-github-actions/auth@b7593ed2efd1c1617e1b0254da33b86225adb2a5 # v2.1.12
         with:
           token_format: access_token
@@ -125,7 +125,7 @@ jobs:
           service_account: github-plugin-ci-workflows@grafanalabs-workload-identity.iam.gserviceaccount.com
 
       - name: NPM registry auth
-        if: inputs.npm-registry-auth == 'true'
+        if: inputs.npm-registry-auth == true
         shell: bash
         working-directory: ${{ inputs.plugin-directory }}
         run: GOOGLE_APPLICATION_CREDENTIALS=${{ env.GOOGLE_APPLICATION_CREDENTIALS }} npx google-artifactregistry-auth --credential-config ./.npmrc
