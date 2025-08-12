@@ -444,7 +444,8 @@ jobs:
 
   playwright:
     name: Playwright E2E tests
-    uses: grafana/plugin-ci-workflows/.github/workflows/playwright.yml@main # zizmor: ignore[unpinned-uses]
+    # TODO: switch after done testing
+    uses: grafana/plugin-ci-workflows/.github/workflows/playwright.yml@giuseppe/private-npm-registry-playwright # zizmor: ignore[unpinned-uses]
     if: ${{ inputs.run-playwright == true }}
     needs:
       - test-and-build
