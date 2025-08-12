@@ -80,6 +80,13 @@ on:
         type: string
         required: false
         default: ""
+      npm-registry-auth:
+        description: |
+          Whether to authenticate to the npm registry in Google Artifact Registry.
+          If true, the root of the plugin repository must contain a `.npmrc` file.
+        type: boolean
+        required: false
+        default: false
 
       # Playwright
       run-playwright:
@@ -324,6 +331,7 @@ jobs:
       branch: ${{ inputs.branch }}
       plugin-directory: ${{ inputs.plugin-directory }}
       package-manager: ${{ inputs.package-manager }}
+      npm-registry-auth: ${{ inputs.npm-registry-auth }}
       go-version: ${{ inputs.go-version }}
       go-setup-caching: ${{ inputs.go-setup-caching }}
       node-version: ${{ inputs.node-version }}

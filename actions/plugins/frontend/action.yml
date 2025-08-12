@@ -14,6 +14,12 @@ inputs:
     required: false
     type: string
     description: The secrets to use within frontend steps
+  npm-registry-auth:
+    description: |
+      Whether to authenticate to the npm registry in Google Artifact Registry.
+      If true, the root of the plugin repository must contain a `.npmrc` file.
+    required: false
+    default: "false"
 
 runs:
   using: composite
@@ -24,6 +30,20 @@ runs:
       uses: grafana/shared-workflows/actions/get-vault-secrets@get-vault-secrets/v1.2.1 # zizmor: ignore[unpinned-uses]
       with:
         repo_secrets: ${{ inputs.secrets }}
+
+    - name: Login to Google Cloud
+      if: inputs.npm-registry-auth == 'true'
+      uses: google-github-actions/auth@b7593ed2efd1c1617e1b0254da33b86225adb2a5 # v2.1.12
+      with:
+        token_format: access_token
+        workload_identity_provider: "projects/304398677251/locations/global/workloadIdentityPools/github/providers/github-provider"
+        service_account: github-plugin-ci-workflows@grafanalabs-workload-identity.iam.gserviceaccount.com
+
+    - name: NPM registry auth
+      if: inputs.npm-registry-auth == 'true'
+      shell: bash
+      working-directory: ${{ inputs.plugin-directory }}
+      run: GOOGLE_APPLICATION_CREDENTIALS=${{ env.GOOGLE_APPLICATION_CREDENTIALS }} npx google-artifactregistry-auth --credential-config ./.npmrc
 
     - name: Install dependencies
       shell: bash
