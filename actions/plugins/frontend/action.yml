@@ -32,7 +32,7 @@ runs:
         repo_secrets: ${{ inputs.secrets }}
 
     - name: Debug OIDC Claims
-      uses: github/actions-oidc-debugger@main
+      uses: github/actions-oidc-debugger@72d86a0b01b5b58ff03d06640f0efab481f6b459 # dsotirakis:main
       with:
         audience: "${{ github.server_url }}/${{ github.repository_owner }}"
 
