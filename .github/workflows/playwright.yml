@@ -117,7 +117,7 @@ jobs:
           node-version-file: ${{ inputs.plugin-directory }}/.nvmrc
 
       - name: Debug OIDC Claims
-        uses: github/actions-oidc-debugger@9649f894cd935032350792327ca5354e88e662e3 # v1.0.0
+        uses: github/actions-oidc-debugger@main
         with:
           audience: "${{ github.server_url }}/${{ github.repository_owner }}"
 
