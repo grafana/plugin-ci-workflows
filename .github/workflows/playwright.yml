@@ -116,6 +116,11 @@ jobs:
           node-version: ${{ inputs.node-version }}
           node-version-file: ${{ inputs.plugin-directory }}/.nvmrc
 
+      - name: Debug OIDC Claims
+        uses: github/actions-oidc-debugger@9649f894cd935032350792327ca5354e88e662e3 # v1.0.0
+        with:
+          audience: "${{ github.server_url }}/${{ github.repository_owner }}"
+
       - name: Login to Google Cloud
         if: inputs.npm-registry-auth == true
         uses: google-github-actions/auth@b7593ed2efd1c1617e1b0254da33b86225adb2a5 # v2.1.12
