@@ -216,8 +216,13 @@ on:
         type: boolean
       github-draft-release:
         description: |
-          Publish a draft release on GitHub.
+          Publish a draft release on GitHub. If disable-github-release is true, this will be ignored.
         default: true
+        type: boolean
+      disable-github-release:
+        description: |
+          Disable GitHub release creation.
+        default: false
         type: boolean
       argo-workflow-slack-channel:
         description: |
@@ -876,7 +881,8 @@ jobs:
       - publish-to-catalog
     if: >-
       ${{
-        contains(fromJSON(needs.define-variables.outputs.environments), 'prod')
+        !inputs.disable-github-release
+        && contains(fromJSON(needs.define-variables.outputs.environments), 'prod')
         && !(failure() || cancelled())
       }}
     steps:
