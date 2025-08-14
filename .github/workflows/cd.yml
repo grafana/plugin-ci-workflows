@@ -211,7 +211,7 @@ on:
         type: string
       docs-only:
         description: |
-          Only publish docs to the website, do not publish the plugin.
+          Only publish docs to the website, do not publish the plugin. This option is ignored if disable-docs-publishing is true.
         default: false
         type: boolean
       github-draft-release:
@@ -222,6 +222,11 @@ on:
       disable-github-release:
         description: |
           Disable GitHub release creation.
+        default: false
+        type: boolean
+      disable-docs-publishing:
+        description: |
+          Disable docs publishing to the website.
         default: false
         type: boolean
       argo-workflow-slack-channel:
@@ -411,6 +416,7 @@ jobs:
             const ENVIRONMENT = getInput('ENVIRONMENT', 'none');
             const DOCS_ONLY = getInput('DOCS_ONLY');
             const HAS_BACKEND = getInput('HAS_BACKEND');
+            const DISABLE_DOCS_PUBLISHING = getInput('DISABLE_DOCS_PUBLISHING');
 
             // Platforms matrix
             let platforms = ['any'];
@@ -420,7 +426,7 @@ jobs:
             core.setOutput('platforms', JSON.stringify(platforms));
 
             // Docs only: skip plugin deployment
-            if (DOCS_ONLY === 'true') {
+            if (DISABLE_DOCS_PUBLISHING === 'false' && DOCS_ONLY === 'true') {
               core.setOutput('environments', JSON.stringify([]));
               core.setOutput('publish-docs', 'true');
               return;
@@ -453,14 +459,15 @@ jobs:
               return;
             }
 
-            // publish-docs is true if 'prod' is in the environments list
-            const publishDocs = environments.includes('prod');
+            // publish-docs is true if 'prod' is in the environments list AND docs publishing is not disabled
+            const publishDocs = environments.includes('prod') && DISABLE_DOCS_PUBLISHING === 'false';
             core.setOutput('environments', JSON.stringify(environments));
             core.setOutput('publish-docs', String(publishDocs));
         env:
           ENVIRONMENT: ${{ inputs.environment }}
           DOCS_ONLY: ${{ inputs.docs-only }}
           HAS_BACKEND: ${{ fromJSON(needs.ci.outputs.plugin).has-backend }}
+          DISABLE_DOCS_PUBLISHING: ${{ inputs.disable-docs-publishing }}
 
   publish-to-catalog:
     name: Publish to catalog (${{ matrix.environment }})
@@ -828,6 +835,7 @@ jobs:
       ${{
         (needs.ci.outputs.has-docs == 'true')
         && (needs.define-variables.outputs.publish-docs == 'true')
+        && !inputs.disable-docs-publishing
         && !(failure() || cancelled())
       }}
     runs-on: ubuntu-latest
