@@ -52,6 +52,7 @@ inputs:
   publish-as-pending:
     description: |
       If "true", the plugin will be published as pending in the catalog.
+      A pending plugin is effectively hidden from the catalog but available for provisioning.
       Default is "false".
     required: false
     default: "false"
