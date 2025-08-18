@@ -11,10 +11,9 @@ permissions:
 env:
   IS_FORK: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
 
-
 jobs:
   release-please:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-x64-small
 
     permissions:
       contents: write # Needed to create releases and tags
@@ -34,7 +33,7 @@ jobs:
 
       - name: Generate GitHub token
         id: generate-github-token
-        uses: actions/create-github-app-token@df432ceedc7162793a195dd1713ff69aefc7379e # v2.0.6
+        uses: actions/create-github-app-token@a8d616148505b5069dccd32f177bb87d7f39123b # v2.1.1
         if: ${{ env.IS_FORK == 'false' }}
         with:
           app-id: ${{ fromJSON(steps.get-secrets.outputs.secrets).GITHUB_APP_ID }}

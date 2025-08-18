@@ -1,0 +1,23 @@
+name: Plugins - Check artifact ZIP(s)
+description: Checks that the plugin ZIP file(s) are valid, signed and can be published.
+
+inputs:
+  zips:
+    description: |
+      A string or JSON array of plugin ZIP file URL(s) to validate.
+    required: true
+  plugin-id:
+    description: |
+      The expected plugin ID for the ZIP file(s).
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Check artifact ZIP(s)
+      run: |
+        ${{ github.action_path }}/check-artifacts.sh "${ZIPS}" "${PLUGIN_ID}"
+      env:
+        ZIPS: ${{ inputs.zips }}
+        PLUGIN_ID: ${{ inputs.plugin-id }}
+      shell: bash
