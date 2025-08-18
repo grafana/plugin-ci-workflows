@@ -249,6 +249,12 @@ on:
         type: string
         required: false
         default: ""
+      publish-to-catalog-as-pending:
+        description: |
+          If true, the plugin will be published as pending in the plugins catalog.
+          Default is false.
+        default: false
+        type: boolean
 
       # Options for deploying PRs. Those values should come from the PR event and should not be set manually.
       branch:
@@ -573,6 +579,7 @@ jobs:
           gcom-publish-token: ${{ env.GCOM_PUBLISH_TOKEN }}
           gcloud-auth-token: ${{ steps.gcloud.outputs.id_token }}
           ignore-conflicts: ${{ steps.determine-continue.outputs.ignore_conflicts }}
+          publish-as-pending: ${{ inputs.publish-to-catalog-as-pending }}
 
   trigger-argo-workflow:
     name: Trigger Argo Workflow for Grafana Cloud deployment

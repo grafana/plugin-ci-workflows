@@ -49,6 +49,12 @@ inputs:
       Note: this is not a force publish.
     required: false
     default: "false"
+  publish-as-pending:
+    description: |
+      If "true", the plugin will be published as pending in the catalog.
+      Default is "false".
+    required: false
+    default: "false"
 
 runs:
   using: composite
@@ -62,9 +68,18 @@ runs:
         args=()
         args+=($(echo "${ZIPS}" | jq -r 'join(" ")'))
 
+        # new array for flags
+        publish_args=(
+          --environment "${ENVIRONMENT}"
+          --scopes "${SCOPES}"
+        )
+        
+        if [ "${PUBLISH_AS_PENDING}" = "true" ]; then
+          publish_args+=(--publish-as-pending)
+        fi
+        
         ${{ github.action_path }}/publish.sh \
-          --environment "${ENVIRONMENT}" \
-          --scopes "${SCOPES}" \
+          "${publish_args[@]}" \
           "${args[@]}"
       env:
         GCLOUD_AUTH_TOKEN: ${{ inputs.gcloud-auth-token }}
@@ -76,4 +91,5 @@ runs:
         SCOPES: ${{ inputs.scopes }}
 
         IGNORE_CONFLICTS: ${{ inputs.ignore-conflicts }}
+        PUBLISH_AS_PENDING: ${{ inputs.publish-as-pending }}
       shell: bash
