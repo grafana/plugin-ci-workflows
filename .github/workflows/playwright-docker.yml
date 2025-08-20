@@ -116,7 +116,7 @@ jobs:
       - name: Get secrets from Vault
         if: inputs.secrets != ''
         id: get-secrets
-        uses: grafana/shared-workflows/actions/get-vault-secrets@get-vault-secrets/v1.2.1 # zizmor: ignore[unpinned-uses]
+        uses: grafana/shared-workflows/actions/get-vault-secrets@a37de51f3d713a30a9e4b21bcdfbd38170020593 # get-vault-secrets/v1.3.0 # zizmor: ignore[unpinned-uses]
         with:
           repo_secrets: ${{ inputs.secrets }}
           export_env: false
