@@ -220,7 +220,7 @@ jobs:
       - name: Wait for login available
         uses: mydea/action-wait-for-api@e78339fa3ba363abb904fefb0b9aba4a3f54da5e # v1.1.0
         with:
-          url: 'http://grafana:3000/login'
+          url: 'http://localhost:3000/login'
           method: POST
           expected-status: 400
           expected-response-field: messageId
