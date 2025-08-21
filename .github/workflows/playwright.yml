@@ -217,16 +217,28 @@ jobs:
       #   with:
       #     url: "${{ inputs.grafana-url }}"
 
-      - name: Wait for login available
-        uses: mydea/action-wait-for-api@e78339fa3ba363abb904fefb0b9aba4a3f54da5e # v1.1.0
-        with:
-          url: 'http://localhost:3000/login'
-          method: POST
-          expected-status: 400
-          expected-response-field: messageId
-          expected-response-field-value: 'form-auth.invalid'
-          timeout: 180
-          interval: 10
+      - name: Curl grafana
+        run: |
+          # repeat for 1 minute with 10 seconds interval
+          for i in {1..12}; do
+            curl -X POST http://localhost:3000/login -H "Content-Type: application/json" -d ''
+            echo "Grafana login response: $RESPONSE"
+            sleep 10
+          done
+        env:
+          RESPONSE: ${{ steps.curl-grafana.response }}
+        shell: bash
+
+      # - name: Wait for login available
+      #   uses: mydea/action-wait-for-api@e78339fa3ba363abb904fefb0b9aba4a3f54da5e # v1.1.0
+      #   with:
+      #     url: 'http://localhost:3000/login'
+      #     method: POST
+      #     expected-status: 400
+      #     expected-response-field: messageId
+      #     expected-response-field-value: 'form-auth.invalid'
+      #     timeout: 180
+      #     interval: 10
 
       - name: Run Playwright tests
         id: run-tests
