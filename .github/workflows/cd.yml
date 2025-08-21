@@ -342,7 +342,7 @@ jobs:
   ci:
     name: CI
     # x-release-please-start-version
-    uses: grafana/plugin-ci-workflows/.github/workflows/ci.yml@ci-cd-workflows/v1.1.2 # release-please-version
+    uses: grafana/plugin-ci-workflows/.github/workflows/ci.yml@ci-cd-workflows/v1.2.0 # release-please-version
     # x-release-please-end-version
     needs:
       - setup
@@ -560,7 +560,7 @@ jobs:
 
       - name: Check and create stub
         # x-release-please-start-version
-        uses: grafana/plugin-ci-workflows/actions/plugins/internal/publish/check-and-create-stub@ci-cd-workflows/v1.1.2 # release-please-version
+        uses: grafana/plugin-ci-workflows/actions/plugins/internal/publish/check-and-create-stub@ci-cd-workflows/v1.2.0 # release-please-version
         # x-release-please-end-version
         if: ${{ matrix.environment != 'prod' }}
         with:
@@ -571,7 +571,7 @@ jobs:
 
       - name: Check artifact ZIP(s)
         # x-release-please-start-version
-        uses: grafana/plugin-ci-workflows/actions/plugins/internal/publish/check-artifacts@ci-cd-workflows/v1.1.2 # release-please-version
+        uses: grafana/plugin-ci-workflows/actions/plugins/internal/publish/check-artifacts@ci-cd-workflows/v1.2.0 # release-please-version
         # x-release-please-end-version
         with:
           zips: ${{ needs.upload-to-gcs-release.outputs.gcs-zip-urls }}
@@ -579,7 +579,7 @@ jobs:
 
       - name: Publish to catalog
         # x-release-please-start-version
-        uses: grafana/plugin-ci-workflows/actions/plugins/publish/publish@plugins-publish-publish/v1.0.2
+        uses: grafana/plugin-ci-workflows/actions/plugins/publish/publish@plugins-publish-publish/v1.1.0
         # x-release-please-end-version
         with:
           zips: ${{ needs.upload-to-gcs-release.outputs.gcs-zip-urls }}
@@ -888,7 +888,7 @@ jobs:
 
       - name: Publish docs
         # x-release-please-start-version
-        uses: grafana/plugin-ci-workflows/actions/plugins/internal/docs/publish@ci-cd-workflows/v1.1.2 # release-please-version
+        uses: grafana/plugin-ci-workflows/actions/plugins/internal/docs/publish@ci-cd-workflows/v1.2.0 # release-please-version
         # x-release-please-end-version
         with:
           id: ${{ fromJSON(needs.ci.outputs.plugin).id }}
@@ -927,7 +927,7 @@ jobs:
       - name: Parse changelog
         id: changelog
         # x-release-please-start-version
-        uses: grafana/plugin-ci-workflows/actions/plugins/internal/changelog@ci-cd-workflows/v1.1.2 # release-please-version
+        uses: grafana/plugin-ci-workflows/actions/plugins/internal/changelog@ci-cd-workflows/v1.2.0 # release-please-version
         # x-release-please-end-version
         with:
           changelog-path: ${{ inputs.plugin-directory }}/CHANGELOG.md

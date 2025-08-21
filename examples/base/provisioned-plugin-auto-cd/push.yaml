@@ -18,7 +18,7 @@ jobs:
   cd:
     name: CI / CD
     # x-release-please-start-version
-    uses: grafana/plugin-ci-workflows/.github/workflows/cd.yml@ci-cd-workflows/v1.1.2 # release-please-version
+    uses: grafana/plugin-ci-workflows/.github/workflows/cd.yml@ci-cd-workflows/v1.2.0 # release-please-version
     # x-release-please-end-version
     permissions:
       contents: write

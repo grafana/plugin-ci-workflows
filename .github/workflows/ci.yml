@@ -273,7 +273,7 @@ jobs:
 
       - name: Setup
         # x-release-please-start-version
-        uses: grafana/plugin-ci-workflows/actions/plugins/internal/setup@ci-cd-workflows/v1.1.2 # release-please-version
+        uses: grafana/plugin-ci-workflows/actions/plugins/internal/setup@ci-cd-workflows/v1.2.0 # release-please-version
         # x-release-please-end-version
         with:
           go-version: ${{ inputs.go-version || env.DEFAULT_GO_VERSION }}
@@ -339,7 +339,7 @@ jobs:
 
       - name: Test and build frontend
         # x-release-please-start-version
-        uses: grafana/plugin-ci-workflows/actions/plugins/internal/frontend@ci-cd-workflows/v1.1.2 # release-please-version
+        uses: grafana/plugin-ci-workflows/actions/plugins/internal/frontend@ci-cd-workflows/v1.2.0 # release-please-version
         # x-release-please-end-version
         with:
           package-manager: ${{ inputs.package-manager }}
@@ -350,7 +350,7 @@ jobs:
       - name: Test and build backend
         if: ${{ steps.check-for-backend.outputs.has-backend == 'true' }}
         # x-release-please-start-version
-        uses: grafana/plugin-ci-workflows/actions/plugins/internal/backend@ci-cd-workflows/v1.1.2 # release-please-version
+        uses: grafana/plugin-ci-workflows/actions/plugins/internal/backend@ci-cd-workflows/v1.2.0 # release-please-version
         # x-release-please-end-version
         with:
           github-token: ${{ steps.generate-github-token.outputs.token }}
@@ -359,7 +359,7 @@ jobs:
       - name: Package universal ZIP
         id: universal-zip
         # x-release-please-start-version
-        uses: grafana/plugin-ci-workflows/actions/plugins/internal/package@ci-cd-workflows/v1.1.2 # release-please-version
+        uses: grafana/plugin-ci-workflows/actions/plugins/internal/package@ci-cd-workflows/v1.2.0 # release-please-version
         # x-release-please-end-version
         with:
           universal: "true"
@@ -371,7 +371,7 @@ jobs:
       - name: Package os/arch ZIPs
         id: os-arch-zips
         # x-release-please-start-version
-        uses: grafana/plugin-ci-workflows/actions/plugins/internal/package@ci-cd-workflows/v1.1.2 # release-please-version
+        uses: grafana/plugin-ci-workflows/actions/plugins/internal/package@ci-cd-workflows/v1.2.0 # release-please-version
         # x-release-please-end-version
         with:
           universal: "false"
@@ -383,7 +383,7 @@ jobs:
       - name: Trufflehog secrets scanning
         if: ${{ inputs.run-trufflehog == true }}
         # x-release-please-start-version
-        uses: grafana/plugin-ci-workflows/actions/plugins/internal/trufflehog@ci-cd-workflows/v1.1.2 # release-please-version
+        uses: grafana/plugin-ci-workflows/actions/plugins/internal/trufflehog@ci-cd-workflows/v1.2.0 # release-please-version
         # x-release-please-end-version
         with:
           trufflehog-version: ${{ inputs.trufflehog-version || env.DEFAULT_TRUFFLEHOG_VERSION }}
@@ -455,13 +455,13 @@ jobs:
 
       - name: Test docs
         # x-release-please-start-version
-        uses: grafana/plugin-ci-workflows/actions/plugins/internal/docs/test@ci-cd-workflows/v1.1.2 # release-please-version
+        uses: grafana/plugin-ci-workflows/actions/plugins/internal/docs/test@ci-cd-workflows/v1.2.0 # release-please-version
         # x-release-please-end-version
 
   playwright:
     name: Playwright E2E tests
     # x-release-please-start-version
-    uses: grafana/plugin-ci-workflows/.github/workflows/playwright.yml@ci-cd-workflows/v1.1.2 # release-please-version
+    uses: grafana/plugin-ci-workflows/.github/workflows/playwright.yml@ci-cd-workflows/v1.2.0 # release-please-version
     # x-release-please-end-version
     if: ${{ inputs.run-playwright == true }}
     needs:
@@ -485,7 +485,7 @@ jobs:
   playwright-docker:
     name: Plugins - Dockerized Playwright E2E tests
     # x-release-please-start-version
-    uses: grafana/plugin-ci-workflows/.github/workflows/playwright-docker.yml@ci-cd-workflows/v1.1.2 # release-please-version
+    uses: grafana/plugin-ci-workflows/.github/workflows/playwright-docker.yml@ci-cd-workflows/v1.2.0 # release-please-version
     # x-release-please-end-version
     if: ${{ inputs.run-playwright-docker == true }}
     needs:
