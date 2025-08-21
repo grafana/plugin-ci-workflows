@@ -63,7 +63,13 @@ on:
         description: Node.js version to use
         type: string
         required: false
-
+      npm-registry-auth:
+        description: |
+          Whether to authenticate to the npm registry in Google Artifact Registry.
+          If true, the root of the plugin repository must contain a `.npmrc` file.
+        type: boolean
+        required: false
+        default: false
 permissions:
   contents: read
   id-token: write
@@ -71,14 +77,14 @@ permissions:
 jobs:
   resolve-versions:
     name: Resolve Grafana images
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-x64-small
     timeout-minutes: 3
     outputs:
       matrix: ${{ steps.resolve-versions.outputs.matrix }}
       playwright-version: ${{ steps.playwright-version.outputs.version }}
     steps:
       - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
         with:
           persist-credentials: false
 
@@ -111,7 +117,7 @@ jobs:
       image: mcr.microsoft.com/playwright:v${{ needs.resolve-versions.outputs.playwright-version }}-jammy
       # options: --user 1001
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
         with:
           persist-credentials: false
 
@@ -120,6 +126,20 @@ jobs:
         with:
           node-version: ${{ inputs.node-version }}
           node-version-file: ${{ inputs.plugin-directory }}/.nvmrc
+
+      - name: Login to Google Cloud
+        if: inputs.npm-registry-auth == true
+        uses: google-github-actions/auth@b7593ed2efd1c1617e1b0254da33b86225adb2a5 # v2.1.12
+        with:
+          token_format: access_token
+          workload_identity_provider: "projects/304398677251/locations/global/workloadIdentityPools/github/providers/github-provider"
+          service_account: github-plugin-ci-workflows@grafanalabs-workload-identity.iam.gserviceaccount.com
+
+      - name: NPM registry auth
+        if: inputs.npm-registry-auth == true
+        shell: bash
+        working-directory: ${{ inputs.plugin-directory }}
+        run: GOOGLE_APPLICATION_CREDENTIALS=${{ env.GOOGLE_APPLICATION_CREDENTIALS }} npx google-artifactregistry-auth --credential-config ./.npmrc
 
       - name: Install npm dependencies
         # TODO: find a better way
@@ -228,7 +248,7 @@ jobs:
   check-playwright-status:
     needs: playwright-tests
     name: Check Playwright E2E matrix status
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-x64-small
     if: always()
     steps:
       - name: Check matrix job status

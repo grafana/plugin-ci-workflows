@@ -50,6 +50,18 @@ on:
         type: string
         required: false
         default: ""
+      frontend-secrets:
+        description: The secrets to use within frontend steps
+        type: string
+        required: false
+        default: ""
+      npm-registry-auth:
+        description: |
+          Whether to authenticate to the npm registry in Google Artifact Registry.
+          If true, the root of the plugin repository must contain a `.npmrc` file.
+        type: boolean
+        required: false
+        default: false
 
       # Playwright
       run-playwright:
@@ -217,7 +229,7 @@ env:
 jobs:
   test-and-build:
     name: Test and build plugin
-    runs-on: ubuntu-latest-8-cores
+    runs-on: ubuntu-x64-large
 
     outputs:
       plugin: ${{ steps.outputs.outputs.plugin }}
@@ -230,7 +242,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
         with:
           ref: ${{ inputs.branch }}
           persist-credentials: false
@@ -282,7 +294,7 @@ jobs:
 
       - name: Generate GitHub token
         id: generate-github-token
-        uses: actions/create-github-app-token@df432ceedc7162793a195dd1713ff69aefc7379e # v2.0.6
+        uses: actions/create-github-app-token@a8d616148505b5069dccd32f177bb87d7f39123b # v2.1.1
         if: ${{ fromJson(steps.workflow-context.outputs.result).isTrusted }}
         with:
           app-id: ${{ fromJSON(steps.get-secrets.outputs.secrets).GITHUB_APP_ID }}
@@ -326,6 +338,8 @@ jobs:
         with:
           package-manager: ${{ inputs.package-manager }}
           plugin-directory: ${{ inputs.plugin-directory }}
+          secrets: ${{ (fromJson(steps.workflow-context.outputs.result).isTrusted && inputs.frontend-secrets != '') && inputs.frontend-secrets || '' }}
+          npm-registry-auth: ${{ inputs.npm-registry-auth }}
 
       - name: Test and build backend
         if: ${{ steps.check-for-backend.outputs.has-backend == 'true' }}
@@ -412,7 +426,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
         with:
           ref: ${{ inputs.branch }}
           persist-credentials: false
@@ -448,6 +462,7 @@ jobs:
       grafana-url: ${{ inputs.playwright-grafana-url }}
       secrets: ${{ (fromJson(needs.test-and-build.outputs.workflow-context).isTrusted && inputs.playwright-secrets != '') && inputs.playwright-secrets || '' }}
       node-version: ${{ inputs.node-version }}
+      npm-registry-auth: ${{ inputs.npm-registry-auth }}
 
   playwright-docker:
     name: Plugins - Dockerized Playwright E2E tests
@@ -466,10 +481,12 @@ jobs:
       report-path: ${{ inputs.playwright-report-path }}
       grafana-url: ${{ inputs.playwright-grafana-url }}
       secrets: ${{ (fromJson(needs.test-and-build.outputs.workflow-context).isTrusted && inputs.playwright-secrets != '') && inputs.playwright-secrets || '' }}
+      # TODO: add support for NPM auth in Dockerized Playwright as well
+      # npm-registry-auth: ${{ inputs.npm-registry-auth }}
 
   upload-to-gcs:
     name: Upload to GCS
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-x64-small
 
     # Skip the GCS upload (no access to the bucket) for PRs when run in non-trusted context (forks)
     if: ${{ fromJson(needs.test-and-build.outputs.workflow-context).isTrusted }}
