@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/grafana/plugin-ci-workflows/compare/plugins-publish-publish/v1.0.2...plugins-publish-publish/v1.1.0) (2025-08-21)
+
+
+### 🎉 Features
+
+* add publish to catalog as pending option in ci and publish action ([#240](https://github.com/grafana/plugin-ci-workflows/issues/240)) ([0086720](https://github.com/grafana/plugin-ci-workflows/commit/00867201b23dd72abcc90b4746af139c90e0cebd))
+
 ## [1.0.2](https://github.com/grafana/plugin-ci-workflows/compare/plugins-publish-publish/v1.0.1...plugins-publish-publish/v1.0.2) (2025-08-04)
 
 
