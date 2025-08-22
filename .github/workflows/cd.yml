@@ -341,9 +341,7 @@ jobs:
 
   ci:
     name: CI
-    # x-release-please-start-version
-    uses: grafana/plugin-ci-workflows/.github/workflows/ci.yml@ci-cd-workflows/v1.2.0 # release-please-version
-    # x-release-please-end-version
+    uses: grafana/plugin-ci-workflows/.github/workflows/ci.yml@main # zizmor: ignore[unpinned-uses]
     needs:
       - setup
     with:
@@ -559,9 +557,7 @@ jobs:
           ENVIRONMENT: ${{ matrix.environment }}
 
       - name: Check and create stub
-        # x-release-please-start-version
-        uses: grafana/plugin-ci-workflows/actions/plugins/internal/publish/check-and-create-stub@ci-cd-workflows/v1.2.0 # release-please-version
-        # x-release-please-end-version
+        uses: grafana/plugin-ci-workflows/actions/plugins/publish/check-and-create-stub@main # zizmor: ignore[unpinned-uses]
         if: ${{ matrix.environment != 'prod' }}
         with:
           plugin-id: ${{ fromJSON(needs.ci.outputs.plugin).id }}
@@ -570,17 +566,13 @@ jobs:
           gcloud-auth-token: ${{ steps.gcloud.outputs.id_token }}
 
       - name: Check artifact ZIP(s)
-        # x-release-please-start-version
-        uses: grafana/plugin-ci-workflows/actions/plugins/internal/publish/check-artifacts@ci-cd-workflows/v1.2.0 # release-please-version
-        # x-release-please-end-version
+        uses: grafana/plugin-ci-workflows/actions/plugins/publish/check-artifacts@main # zizmor: ignore[unpinned-uses]
         with:
           zips: ${{ needs.upload-to-gcs-release.outputs.gcs-zip-urls }}
           plugin-id: ${{ fromJSON(needs.ci.outputs.plugin).id }}
 
       - name: Publish to catalog
-        # x-release-please-start-version
-        uses: grafana/plugin-ci-workflows/actions/plugins/publish/publish@plugins-publish-publish/v1.1.0
-        # x-release-please-end-version
+        uses: grafana/plugin-ci-workflows/actions/plugins/publish/publish@main # zizmor: ignore[unpinned-uses]
         with:
           zips: ${{ needs.upload-to-gcs-release.outputs.gcs-zip-urls }}
           environment: ${{ matrix.environment }}
@@ -632,7 +624,7 @@ jobs:
 
       - name: Trigger Argo Workflow
         id: trigger-argo-workflow
-        uses: grafana/shared-workflows/actions/trigger-argo-workflow@trigger-argo-workflow/v1.1.2
+        uses: grafana/shared-workflows/actions/trigger-argo-workflow@main # zizmor: ignore[unpinned-uses]
         with:
           namespace: grafana-plugins-cd
           workflow_template: grafana-plugins-deploy
@@ -887,9 +879,7 @@ jobs:
           owner: ${{ github.repository_owner }}
 
       - name: Publish docs
-        # x-release-please-start-version
-        uses: grafana/plugin-ci-workflows/actions/plugins/internal/docs/publish@ci-cd-workflows/v1.2.0 # release-please-version
-        # x-release-please-end-version
+        uses: grafana/plugin-ci-workflows/actions/plugins/docs/publish@main # zizmor: ignore[unpinned-uses]
         with:
           id: ${{ fromJSON(needs.ci.outputs.plugin).id }}
           version: ${{ fromJSON(needs.ci.outputs.plugin).version }}
@@ -926,9 +916,7 @@ jobs:
 
       - name: Parse changelog
         id: changelog
-        # x-release-please-start-version
-        uses: grafana/plugin-ci-workflows/actions/plugins/internal/changelog@ci-cd-workflows/v1.2.0 # release-please-version
-        # x-release-please-end-version
+        uses: grafana/plugin-ci-workflows/actions/plugins/changelog@main # zizmor: ignore[unpinned-uses]
         with:
           changelog-path: ${{ inputs.plugin-directory }}/CHANGELOG.md
 

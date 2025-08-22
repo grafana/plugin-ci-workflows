@@ -50,34 +50,10 @@
   "include-v-in-tag": true,
   "packages": {
     "actions/plugins/publish/publish": {
-      "package-name": "plugins-publish-publish",
-      "extra-files": [
-        ".github/workflows/cd.yml",
-        ".github/workflows/ci.yml",
-        ".github/workflows/playwright.yml",
-        ".github/workflows/playwright-docker.yml",
-        "examples/base/provisioned-plugins-auto-cd/publish.yaml",
-        "examples/base/provisioned-plugins-auto-cd/push.yaml",
-        "examples/base/provisioned-plugins-manual-deployment/publish.yaml",
-        "examples/base/provisioned-plugins-manual-deployment/push.yaml",
-        "examples/base/simple/publish.yaml",
-        "examples/base/simple/push.yaml"
-      ]
+      "package-name": "plugins-publish-publish"
     },
     ".github/workflows": {
-      "package-name": "ci-cd-workflows",
-      "extra-files": [
-        ".github/workflows/cd.yml",
-        ".github/workflows/ci.yml",
-        ".github/workflows/playwright.yml",
-        ".github/workflows/playwright-docker.yml",
-        "examples/base/provisioned-plugins-auto-cd/publish.yaml",
-        "examples/base/provisioned-plugins-auto-cd/push.yaml",
-        "examples/base/provisioned-plugins-manual-deployment/publish.yaml",
-        "examples/base/provisioned-plugins-manual-deployment/push.yaml",
-        "examples/base/simple/publish.yaml",
-        "examples/base/simple/push.yaml"
-      ]
+      "package-name": "ci-cd-workflows"
     }
   },
   "release-type": "simple",
