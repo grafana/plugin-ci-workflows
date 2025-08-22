@@ -217,13 +217,8 @@ jobs:
       #   with:
       #     url: "${{ inputs.grafana-url }}"
 
-      - name: Curl grafana
-        run: |
-          for i in {1..12}; do
-            curl -X POST http://localhost:3000/login -H "Content-Type: application/json" -d ''
-            sleep 10
-          done
-        shell: bash
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
 
       # - name: Wait for login available
       #   uses: mydea/action-wait-for-api@e78339fa3ba363abb904fefb0b9aba4a3f54da5e # v1.1.0
