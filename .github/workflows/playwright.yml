@@ -115,7 +115,6 @@ jobs:
     runs-on: ubuntu-latest-8-cores
     container:
       image: mcr.microsoft.com/playwright:v${{ needs.resolve-versions.outputs.playwright-version }}-jammy
-      options: --network host
       # options: --user 1001
     steps:
       - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
@@ -205,31 +204,61 @@ jobs:
           apt-get update
           apt-get install -y docker.io docker-compose-v2
 
+      - name: Get GitHub Actions network
+        id: get-network
+        run: |
+          # Find the GitHub Actions network that this container is connected to
+          GITHUB_NETWORK=$(docker network ls --format "{{.Name}}" | grep github_network | head -n 1)
+          echo "network=${GITHUB_NETWORK}" >> $GITHUB_OUTPUT
+          echo "Found GitHub network: ${GITHUB_NETWORK}"
+
       - name: Start Grafana
         # add the -f argument only if "inputs.docker-compose-file" is defined
         run: |
-          GRAFANA_VERSION=${{ matrix.GRAFANA_IMAGE.VERSION }} GRAFANA_IMAGE=${{ matrix.GRAFANA_IMAGE.NAME }} docker compose ${DOCKER_COMPOSE_FILE:+-f "$DOCKER_COMPOSE_FILE"} up -d
+          # Create a docker-compose override to use the GitHub Actions network
+          cat > docker-compose.github.yml << EOF
+          version: '3.8'
+          services:
+            grafana:
+              networks:
+                - default
+                - github_actions
+          networks:
+            github_actions:
+              external: true
+              name: ${{ steps.get-network.outputs.network }}
+          EOF
+
+          echo "Using docker-compose override:"
+          cat docker-compose.github.yml
+
+          GRAFANA_VERSION=${{ matrix.GRAFANA_IMAGE.VERSION }} GRAFANA_IMAGE=${{ matrix.GRAFANA_IMAGE.NAME }} docker compose ${DOCKER_COMPOSE_FILE:+-f "$DOCKER_COMPOSE_FILE"} -f docker-compose.github.yml up -d
         working-directory: ${{ inputs.plugin-directory }}
         env:
           DOCKER_COMPOSE_FILE: ${{ inputs.docker-compose-file }}
 
-      - name: Wait for Grafana to start
-        uses: grafana/plugin-actions/wait-for-grafana@main # zizmor: ignore[unpinned-uses]
-        with:
-          url: "${{ inputs.grafana-url }}"
-
       - name: Verify Grafana accessibility
         run: |
-          echo "Testing Grafana connectivity..."
-          curl -f http://localhost:3000/api/health || echo "Health check failed"
-          curl -f http://localhost:3000/ || echo "Main page failed"
-          echo "Docker containers running:"
-          docker ps
-          echo "Network information:"
-          ip addr show
+          echo "=== Network Debugging ==="
+          echo "Docker networks:"
+          docker network ls
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
+          echo "Docker containers:"
+          docker ps
+
+          echo "Container network details:"
+          docker inspect $(docker ps -q) --format '{{.Name}}: {{range .NetworkSettings.Networks}}{{.NetworkMode}} {{.IPAddress}} {{end}}'
+
+          echo "=== Testing Grafana connectivity ==="
+          # Try localhost first
+          curl -f http://localhost:3000/api/health && echo "✓ localhost:3000 works" || echo "✗ localhost:3000 failed"
+
+          # Try to find Grafana container IP and test direct connection
+          GRAFANA_IP=$(docker inspect $(docker ps --filter "name=grafana" -q) --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' | head -n1)
+          if [ ! -z "$GRAFANA_IP" ]; then
+            echo "Found Grafana IP: $GRAFANA_IP"
+            curl -f http://$GRAFANA_IP:3000/api/health && echo "✓ Direct IP works" || echo "✗ Direct IP failed"
+          fi
 
       # - name: Wait for login available
       #   uses: mydea/action-wait-for-api@e78339fa3ba363abb904fefb0b9aba4a3f54da5e # v1.1.0
