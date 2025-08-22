@@ -217,7 +217,6 @@ jobs:
         run: |
           # Create a docker-compose override to use the GitHub Actions network
           cat > docker-compose.github.yml << EOF
-          version: '3.8'
           services:
             grafana:
               networks:
@@ -232,7 +231,14 @@ jobs:
           echo "Using docker-compose override:"
           cat docker-compose.github.yml
 
+          # Start the containers
           GRAFANA_VERSION=${{ matrix.GRAFANA_IMAGE.VERSION }} GRAFANA_IMAGE=${{ matrix.GRAFANA_IMAGE.NAME }} docker compose ${DOCKER_COMPOSE_FILE:+-f "$DOCKER_COMPOSE_FILE"} -f docker-compose.github.yml up -d
+
+          # Wait a bit for containers to start
+          sleep 10
+
+          echo "Containers after startup:"
+          docker ps
         working-directory: ${{ inputs.plugin-directory }}
         env:
           DOCKER_COMPOSE_FILE: ${{ inputs.docker-compose-file }}
@@ -254,11 +260,37 @@ jobs:
           curl -f http://localhost:3000/api/health && echo "✓ localhost:3000 works" || echo "✗ localhost:3000 failed"
 
           # Try to find Grafana container IP and test direct connection
-          GRAFANA_IP=$(docker inspect $(docker ps --filter "name=grafana" -q) --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' | head -n1)
-          if [ ! -z "$GRAFANA_IP" ]; then
-            echo "Found Grafana IP: $GRAFANA_IP"
-            curl -f http://$GRAFANA_IP:3000/api/health && echo "✓ Direct IP works" || echo "✗ Direct IP failed"
+          GRAFANA_CONTAINER=$(docker ps --filter "name=grafana" -q)
+          if [ ! -z "$GRAFANA_CONTAINER" ]; then
+            echo "Found Grafana container: $GRAFANA_CONTAINER"
+
+            # Get all network IPs for the Grafana container
+            docker inspect $GRAFANA_CONTAINER --format '{{range $net, $conf := .NetworkSettings.Networks}}{{$net}}: {{$conf.IPAddress}} {{end}}'
+
+            # Try each network IP
+            docker inspect $GRAFANA_CONTAINER --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{"\n"}}{{end}}' | while read ip; do
+              if [ ! -z "$ip" ] && [ "$ip" != "<no value>" ]; then
+                echo "Testing IP: $ip"
+                curl -f http://$ip:3000/api/health && echo "✓ IP $ip works" || echo "✗ IP $ip failed"
+              fi
+            done
+
+            # If network override didn't work, try connecting manually
+            GITHUB_NETWORK="${{ steps.get-network.outputs.network }}"
+            if [ ! -z "$GITHUB_NETWORK" ]; then
+              echo "Attempting to connect Grafana container to GitHub network manually..."
+              docker network connect $GITHUB_NETWORK $GRAFANA_CONTAINER || echo "Manual network connection failed"
+
+              # Test again after manual connection
+              sleep 5
+              curl -f http://localhost:3000/api/health && echo "✓ localhost works after manual connection" || echo "✗ localhost still failed"
+            fi
+          else
+            echo "No Grafana container found"
           fi
+
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
 
       # - name: Wait for login available
       #   uses: mydea/action-wait-for-api@e78339fa3ba363abb904fefb0b9aba4a3f54da5e # v1.1.0
