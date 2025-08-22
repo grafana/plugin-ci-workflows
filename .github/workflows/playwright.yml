@@ -115,6 +115,7 @@ jobs:
     runs-on: ubuntu-latest-8-cores
     container:
       image: mcr.microsoft.com/playwright:v${{ needs.resolve-versions.outputs.playwright-version }}-jammy
+      options: --network host
       # options: --user 1001
     steps:
       - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
@@ -212,10 +213,20 @@ jobs:
         env:
           DOCKER_COMPOSE_FILE: ${{ inputs.docker-compose-file }}
 
-      # - name: Wait for Grafana to start
-      #   uses: grafana/plugin-actions/wait-for-grafana@main # zizmor: ignore[unpinned-uses]
-      #   with:
-      #     url: "${{ inputs.grafana-url }}"
+      - name: Wait for Grafana to start
+        uses: grafana/plugin-actions/wait-for-grafana@main # zizmor: ignore[unpinned-uses]
+        with:
+          url: "${{ inputs.grafana-url }}"
+
+      - name: Verify Grafana accessibility
+        run: |
+          echo "Testing Grafana connectivity..."
+          curl -f http://localhost:3000/api/health || echo "Health check failed"
+          curl -f http://localhost:3000/ || echo "Main page failed"
+          echo "Docker containers running:"
+          docker ps
+          echo "Network information:"
+          ip addr show
 
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
