@@ -24,7 +24,7 @@ jobs:
       - name: Get secrets from Vault
         id: get-secrets
         if: ${{ env.IS_FORK == 'false' }}
-        uses: grafana/shared-workflows/actions/get-vault-secrets@a37de51f3d713a30a9e4b21bcdfbd38170020593 # get-vault-secrets/v1.3.0 # zizmor: ignore[unpinned-uses]
+        uses: grafana/shared-workflows/actions/get-vault-secrets@a37de51f3d713a30a9e4b21bcdfbd38170020593 # get-vault-secrets/v1.3.0
         with:
           common_secrets: |
             GITHUB_APP_ID=plugins-platform-bot-app:app-id
