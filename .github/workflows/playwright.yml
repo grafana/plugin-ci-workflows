@@ -219,14 +219,10 @@ jobs:
 
       - name: Curl grafana
         run: |
-          # repeat for 1 minute with 10 seconds interval
           for i in {1..12}; do
             curl -X POST http://localhost:3000/login -H "Content-Type: application/json" -d ''
-            echo "Grafana login response: $RESPONSE"
             sleep 10
           done
-        env:
-          RESPONSE: ${{ steps.curl-grafana.response }}
         shell: bash
 
       # - name: Wait for login available
