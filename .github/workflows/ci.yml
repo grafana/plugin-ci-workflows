@@ -31,7 +31,7 @@ on:
         type: string
         required: false
       go-setup-caching:
-        description: Defines if setup-go action should have caching enabled (https://github.com/actions/setup-go#caching-dependency-files-and-build-outputs)olangci-lint version to use
+        description: Defines if setup-go action should have caching enabled (https://github.com/actions/setup-go#caching-dependency-files-and-build-outputs)
         type: boolean
         required: false
       trufflehog-version:
@@ -272,7 +272,9 @@ jobs:
             return o
 
       - name: Setup
-        uses: grafana/plugin-ci-workflows/actions/plugins/setup@main # zizmor: ignore[unpinned-uses]
+        # x-release-please-start-version
+        uses: grafana/plugin-ci-workflows/actions/plugins/internal/setup@ci-cd-workflows/v1.2.0 # release-please-version
+        # x-release-please-end-version
         with:
           go-version: ${{ inputs.go-version || env.DEFAULT_GO_VERSION }}
           node-version: ${{ inputs.node-version || env.DEFAULT_NODE_VERSION }}
@@ -283,7 +285,7 @@ jobs:
       - name: Get secrets from Vault
         id: get-secrets
         if: ${{ fromJson(steps.workflow-context.outputs.result).isTrusted }}
-        uses: grafana/shared-workflows/actions/get-vault-secrets@9f37f656e063f0ad0b0bfc38d49894b57d363936 # v1.2.1
+        uses: grafana/shared-workflows/actions/get-vault-secrets@a37de51f3d713a30a9e4b21bcdfbd38170020593 # get-vault-secrets/v1.3.0 # zizmor: ignore[unpinned-uses]
         with:
           vault_instance: ${{ env.VAULT_INSTANCE }}
           common_secrets: |
@@ -304,7 +306,9 @@ jobs:
       - name: Spellcheck
         run: |
           if [ -f "./cspell.config.json" ]; then
-            npx --yes cspell@6.13.3 -c cspell.config.json "**/*.{ts,tsx,js,go,md,mdx,yml,yaml,json,scss,css}"
+            npx --yes cspell@6.13.3 \
+              -c cspell.config.json \
+              "**/*.{ts,tsx,js,go,md,mdx,yml,yaml,json,scss,css}"
           else
             echo "❌ Spellcheck is not configured."
           fi
@@ -334,7 +338,9 @@ jobs:
         working-directory: ${{ inputs.plugin-directory }}
 
       - name: Test and build frontend
-        uses: grafana/plugin-ci-workflows/actions/plugins/frontend@main # zizmor: ignore[unpinned-uses]
+        # x-release-please-start-version
+        uses: grafana/plugin-ci-workflows/actions/plugins/internal/frontend@ci-cd-workflows/v1.2.0 # release-please-version
+        # x-release-please-end-version
         with:
           package-manager: ${{ inputs.package-manager }}
           plugin-directory: ${{ inputs.plugin-directory }}
@@ -343,14 +349,18 @@ jobs:
 
       - name: Test and build backend
         if: ${{ steps.check-for-backend.outputs.has-backend == 'true' }}
-        uses: grafana/plugin-ci-workflows/actions/plugins/backend@main # zizmor: ignore[unpinned-uses]
+        # x-release-please-start-version
+        uses: grafana/plugin-ci-workflows/actions/plugins/internal/backend@ci-cd-workflows/v1.2.0 # release-please-version
+        # x-release-please-end-version
         with:
           github-token: ${{ steps.generate-github-token.outputs.token }}
           plugin-directory: ${{ inputs.plugin-directory }}
 
       - name: Package universal ZIP
         id: universal-zip
-        uses: grafana/plugin-ci-workflows/actions/plugins/package@main # zizmor: ignore[unpinned-uses]
+        # x-release-please-start-version
+        uses: grafana/plugin-ci-workflows/actions/plugins/internal/package@ci-cd-workflows/v1.2.0 # release-please-version
+        # x-release-please-end-version
         with:
           universal: "true"
           dist-folder: dist
@@ -360,7 +370,9 @@ jobs:
 
       - name: Package os/arch ZIPs
         id: os-arch-zips
-        uses: grafana/plugin-ci-workflows/actions/plugins/package@main # zizmor: ignore[unpinned-uses]
+        # x-release-please-start-version
+        uses: grafana/plugin-ci-workflows/actions/plugins/internal/package@ci-cd-workflows/v1.2.0 # release-please-version
+        # x-release-please-end-version
         with:
           universal: "false"
           dist-folder: dist
@@ -370,7 +382,9 @@ jobs:
 
       - name: Trufflehog secrets scanning
         if: ${{ inputs.run-trufflehog == true }}
-        uses: grafana/plugin-ci-workflows/actions/plugins/trufflehog@main # zizmor: ignore[unpinned-uses]
+        # x-release-please-start-version
+        uses: grafana/plugin-ci-workflows/actions/plugins/internal/trufflehog@ci-cd-workflows/v1.2.0 # release-please-version
+        # x-release-please-end-version
         with:
           trufflehog-version: ${{ inputs.trufflehog-version || env.DEFAULT_TRUFFLEHOG_VERSION }}
           folder: dist-artifacts
@@ -440,11 +454,15 @@ jobs:
         shell: bash
 
       - name: Test docs
-        uses: grafana/plugin-ci-workflows/actions/plugins/docs/test@main # zizmor: ignore[unpinned-uses]
+        # x-release-please-start-version
+        uses: grafana/plugin-ci-workflows/actions/plugins/internal/docs/test@ci-cd-workflows/v1.2.0 # release-please-version
+        # x-release-please-end-version
 
   playwright:
     name: Playwright E2E tests
-    uses: grafana/plugin-ci-workflows/.github/workflows/playwright.yml@main # zizmor: ignore[unpinned-uses]
+    # x-release-please-start-version
+    uses: grafana/plugin-ci-workflows/.github/workflows/playwright.yml@ci-cd-workflows/v1.2.0 # release-please-version
+    # x-release-please-end-version
     if: ${{ inputs.run-playwright == true }}
     needs:
       - test-and-build
@@ -466,7 +484,9 @@ jobs:
 
   playwright-docker:
     name: Plugins - Dockerized Playwright E2E tests
-    uses: grafana/plugin-ci-workflows/.github/workflows/playwright-docker.yml@main # zizmor: ignore[unpinned-uses]
+    # x-release-please-start-version
+    uses: grafana/plugin-ci-workflows/.github/workflows/playwright-docker.yml@ci-cd-workflows/v1.2.0 # release-please-version
+    # x-release-please-end-version
     if: ${{ inputs.run-playwright-docker == true }}
     needs:
       - test-and-build
