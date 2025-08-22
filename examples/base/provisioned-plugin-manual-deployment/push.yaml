@@ -17,9 +17,7 @@ permissions: {}
 jobs:
   ci:
     name: CI
-    # x-release-please-start-version
-    uses: grafana/plugin-ci-workflows/.github/workflows/ci.yml@ci-cd-workflows/v1.2.0 # release-please-version
-    # x-release-please-end-version
+    uses: grafana/plugin-ci-workflows/.github/workflows/ci.yml@main # zizmor: ignore[unpinned-uses]
     permissions:
       contents: read
       id-token: write
