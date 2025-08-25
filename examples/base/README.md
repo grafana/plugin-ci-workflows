@@ -10,8 +10,6 @@ This folder contains some examples on how to use the shared workflows (CI and CD
 
 The `yaml` files should be put in your repository's `.github/workflows` folder, and customized depending on your needs.
 
-If you're interested in examples to create your own workflows and use the actions provided in this repository [actions](../../actions) directory check the [`.github/workflows`](../../.github/workflows) directory.
-
 **Each workflow file is just a template/example. Remember to address all the TODOs before starting to use the workflows.**
 
 ## [`simple`](./simple/)
