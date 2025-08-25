@@ -70,6 +70,13 @@ on:
         type: boolean
         required: false
         default: false
+      runner:
+        description: |
+          The GitHub Actions runner to use for Playwright E2E tests.
+          Must be one of: ubuntu-x64-small, ubuntu-x64-large, ubuntu-x64-xlarge, ubuntu-latest
+        type: string
+        required: false
+        default: ubuntu-x64-large
 permissions:
   contents: read
   id-token: write
@@ -104,8 +111,24 @@ jobs:
       matrix:
         GRAFANA_IMAGE: ${{fromJson(needs.resolve-versions.outputs.matrix)}}
     name: e2e ${{ matrix.GRAFANA_IMAGE.name }}@${{ matrix.GRAFANA_IMAGE.VERSION }}
-    runs-on: ubuntu-x64-large
+    runs-on: ${{ contains('ubuntu-x64-small,ubuntu-x64-large,ubuntu-x64-xlarge,ubuntu-latest', inputs.runner) && inputs.runner || 'ubuntu-x64-large' }}
     steps:
+      - name: Check runner input
+        run: |
+          valid_runners=("ubuntu-x64-small" "ubuntu-x64-large" "ubuntu-x64-xlarge" "ubuntu-latest")
+          provided_runner="${RUNNER_INPUT}"
+          
+          if [[ ! " ${valid_runners[@]} " =~ " ${provided_runner} " ]]; then
+            echo "⚠️  Warning: Invalid runner '$provided_runner' was provided"
+            echo "Valid runners are: ${valid_runners[*]}"
+            echo "Using default runner: ubuntu-x64-large"
+          else
+            echo "✅ Using provided runner: $provided_runner"
+          fi
+        env:
+          RUNNER_INPUT: ${{ inputs.runner }}
+        shell: bash
+
       - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
         with:
           persist-credentials: false
