@@ -634,7 +634,7 @@ jobs:
             environment=${{ steps.argo-parameters.outputs.environment }}
             slack_channel=${{ inputs.argo-workflow-slack-channel }}
             commit=${{ github.sha }}
-            commit_link=https://${{ github.repository_owner }}/${{ github.event.repository.name }}/commit/${{ github.sha }}
+            commit_link=${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}
             auto_merge_environments=${{ steps.argo-parameters.outputs.auto_merge_environments }}
 
       - name: Print job summary
@@ -804,7 +804,6 @@ jobs:
             // Create GCS URLs for all zip files, each in its correct platform directory
             for (const zipFile of zipFiles) {
               let targetPlatform;
-
               // Determine platform directory based on filename pattern
               switch (true) {
                 case zipFile.includes('.darwin_'):
@@ -820,7 +819,6 @@ jobs:
                   targetPlatform = 'any';
                   break;
               }
-
               const gcsUrl = `${gcsPrefix}/${gcsPath}/${targetPlatform}/${zipFile}`;
               allUrls.push(gcsUrl);
               console.log(`Generated GCS URL: ${gcsUrl}`);
