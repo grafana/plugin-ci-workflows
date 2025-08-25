@@ -93,8 +93,7 @@ jobs:
           ENVIRONMENT: ${{ env.ENVIRONMENT }}
 
       - name: Change plugin scope
-        # this branch will be change once accepted
-        uses: grafana/plugin-ci-workflows/actions/plugins/publish/change-plugin-scope@add-promote-plugin-action # zizmor: ignore[unpinned-uses]
+        uses: grafana/plugin-ci-workflows/actions/plugins/publish/change-plugin-scope@main # zizmor: ignore[unpinned-uses]
         with:
           plugin-id: ${{ env.PLUGIN_ID }}
           plugin-version: ${{ inputs.plugin_version }}
