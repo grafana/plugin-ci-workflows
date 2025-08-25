@@ -1,5 +1,28 @@
 # Changelog
 
+## [2.0.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v1.2.0...ci-cd-workflows/v2.0.0) (2025-08-25)
+
+
+### ⚠ BREAKING CHANGES
+
+* Add support for pinning plugin-ci-workflows to semver tags ([#216](https://github.com/grafana/plugin-ci-workflows/issues/216))
+
+### 🎉 Features
+
+* Add support for pinning plugin-ci-workflows to semver tags ([#216](https://github.com/grafana/plugin-ci-workflows/issues/216)) ([8458e50](https://github.com/grafana/plugin-ci-workflows/commit/8458e5069ef67cdd50c2afa94ddac1b99545c5d0))
+
+
+### 📝 Documentation
+
+* add example workflow for change scope plugins action ([#169](https://github.com/grafana/plugin-ci-workflows/issues/169)) ([eba74c1](https://github.com/grafana/plugin-ci-workflows/commit/eba74c1ae47e818595ed5fefbc5550ce758241d7))
+
+
+### 🔧 Chores
+
+* **deps:** update google-github-actions/setup-gcloud action to v2.2.1 ([#250](https://github.com/grafana/plugin-ci-workflows/issues/250)) ([ebe7e7b](https://github.com/grafana/plugin-ci-workflows/commit/ebe7e7beb9c816edea862e524a182310d114c721))
+* **deps:** update grafana/shared-workflows/get-vault-secrets action to v1.3.0 ([#243](https://github.com/grafana/plugin-ci-workflows/issues/243)) ([929a251](https://github.com/grafana/plugin-ci-workflows/commit/929a2518a32ea0d20c6c1e07fd65fa540c2e7882))
+* **deps:** update grafana/shared-workflows/trigger-argo-workflow action to v1.2.0 ([#247](https://github.com/grafana/plugin-ci-workflows/issues/247)) ([d613f64](https://github.com/grafana/plugin-ci-workflows/commit/d613f64e77f3b7da62a0a16156235ff2b373cebd))
+
 ## [1.2.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v1.1.2...ci-cd-workflows/v1.2.0) (2025-08-21)
 
 
