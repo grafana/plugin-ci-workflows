@@ -146,7 +146,7 @@ jobs:
         id: version
         with:
           script: |
-            const workingDirectory = "${{ inputs.plugin-directory }}";
+            const workingDirectory = process.env.PLUGIN_DIRECTORY;
             console.debug("Specified working directory:", workingDirectory);
             if (workingDirectory) process.chdir(workingDirectory);
             console.debug("Actual working directory:", process.cwd());
@@ -161,6 +161,8 @@ jobs:
               core.exportVariable("PLAYWRIGHT_VERSION", version);
               core.setOutput("version", version);
             } else core.setFailed("Couldn't get Playwright version");
+        env:
+          PLUGIN_DIRECTORY: ${{ inputs.plugin-directory }}
 
       - name: Cache Playwright
         id: cache
