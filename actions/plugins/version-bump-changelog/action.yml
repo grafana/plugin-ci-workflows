@@ -1,6 +1,6 @@
-name: Bump npm version and release
+name: Generate changelog version bump changelog
 description: |
-  Bump npm version, create a git tag and optionally generate a changelog on main.
+  Bump npm version, create a git tag and optionally generate a changelog on main using the generate-changelog npm package.
 
 inputs:
   version:
@@ -22,7 +22,7 @@ runs:
   steps:
     - name: Get secrets from Vault
       id: get-secrets
-      uses: grafana/shared-workflows/actions/get-vault-secrets@9f37f656e063f0ad0b0bfc38d49894b57d363936 # v1.2.1
+      uses: grafana/shared-workflows/actions/get-vault-secrets@a37de51f3d713a30a9e4b21bcdfbd38170020593 # get-vault-secrets/v1.3.0
       env:
         VAULT_INSTANCE: ops
       with:
@@ -34,13 +34,13 @@ runs:
 
     - name: Generate GitHub token
       id: generate-github-token
-      uses: actions/create-github-app-token@df432ceedc7162793a195dd1713ff69aefc7379e # v2.0.6
+      uses: actions/create-github-app-token@a8d616148505b5069dccd32f177bb87d7f39123b # v2.1.1
       with:
         app-id: ${{ fromJSON(steps.get-secrets.outputs.secrets).GITHUB_APP_ID }}
         private-key: ${{ fromJSON(steps.get-secrets.outputs.secrets).GITHUB_APP_PRIVATE_KEY }}
         owner: ${{ github.repository_owner }}
 
-    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+    - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
       with:
         token: ${{ steps.generate-github-token.outputs.token }}
         persist-credentials: true
@@ -75,13 +75,13 @@ runs:
       shell: bash
       run: |
         # Generate changelog
-        if [[ "${{ steps.previous-tag.outputs.previous-tag }}" == "v0.0.0" ]]; then
-          echo "No previous tag found ${{ steps.previous-tag.outputs.previous-tag }}, generating changelog for initial version only: v${{ steps.bump.outputs.new-version }}"
+        if [[ "${PREVIOUS_TAG}" == "v0.0.0" ]]; then
+          echo "No previous tag found ${PREVIOUS_TAG}, generating changelog for initial version only: v${NEW_VERSION}"
           # For initial version, get all commits up to HEAD
-          npx generate-changelog -t HEAD
+          npx generate-changelog -t HEAD --exclude skip,no-changelog
         else
-          echo "Generating changelog from ${{ steps.previous-tag.outputs.previous-tag }} to HEAD"
-          npx generate-changelog -t ${{ steps.previous-tag.outputs.previous-tag }}...HEAD
+          echo "Generating changelog from ${PREVIOUS_TAG} to HEAD"
+          npx generate-changelog -t ${PREVIOUS_TAG}...HEAD --exclude skip,no-changelog
         fi
 
         # Remove existing "Changelog" header anywhere in the file
@@ -95,6 +95,8 @@ runs:
 
       env:
         GITHUB_TOKEN: ${{ steps.generate-github-token.outputs.token }}
+        PREVIOUS_TAG: ${{ steps.previous-tag.outputs.previous-tag }}
+        NEW_VERSION: ${{ steps.bump.outputs.new-version }}
 
     - name: Commit changes
       shell: bash
@@ -102,15 +104,18 @@ runs:
         git add package.json
         git add package-lock.json || true
         git add CHANGELOG.md || true  # No-op if changelog not generated
-        git commit -m "chore(version): bump version to ${{ steps.bump.outputs.new-version }}"
+        git commit -m "chore(version): bump version to ${NEW_VERSION}"
         git push origin main
       env:
         GITHUB_TOKEN: ${{ steps.generate-github-token.outputs.token }}
+        NEW_VERSION: ${{ steps.bump.outputs.new-version }}
 
     - name: Create git tag
       shell: bash
       run: |
-        git tag -a ${{ steps.bump.outputs.new-version }} -m "Release version ${{ steps.bump.outputs.new-version }}"
+        git tag -a ${NEW_VERSION} -m "Release version ${NEW_VERSION}"
+      env:
+        NEW_VERSION: ${{ steps.bump.outputs.new-version }}
 
     - name: Push tags
       shell: bash

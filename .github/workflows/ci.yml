@@ -50,6 +50,18 @@ on:
         type: string
         required: false
         default: ""
+      frontend-secrets:
+        description: The secrets to use within frontend steps
+        type: string
+        required: false
+        default: ""
+      npm-registry-auth:
+        description: |
+          Whether to authenticate to the npm registry in Google Artifact Registry.
+          If true, the root of the plugin repository must contain a `.npmrc` file.
+        type: boolean
+        required: false
+        default: false
 
       # Playwright
       run-playwright:
@@ -214,12 +226,10 @@ env:
   GCS_ARTIFACTS_BUCKET: integration-artifacts
   VAULT_INSTANCE: ops
 
-  IS_FORK: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
-
 jobs:
   test-and-build:
     name: Test and build plugin
-    runs-on: ubuntu-latest-8-cores
+    runs-on: ubuntu-x64-large
 
     outputs:
       plugin: ${{ steps.outputs.outputs.plugin }}
@@ -228,25 +238,52 @@ jobs:
       os-arch-zips: ${{ steps.outputs.outputs.os-arch-zips }}
       zips: ${{ steps.outputs.outputs.zips }}
 
+      workflow-context: ${{ steps.workflow-context.outputs.result }}
+
     steps:
       - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
         with:
           ref: ${{ inputs.branch }}
           persist-credentials: false
+
+      - name: Determine workflow context
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        id: workflow-context
+        with:
+          script: |
+            const bots = [
+              'dependabot[bot]',
+              'renovate[bot]',
+              'github-actions[bot]',
+              'renovate-sh-app[bot]'
+            ].map((s) => s.toLowerCase());
+
+            const isPR = context.eventName === 'pull_request';
+            const isBot = bots.includes(context.actor?.toLowerCase());
+            const isForkPR = isPR && context.payload.pull_request.head.repo.full_name !== context.payload.repository.full_name;
+
+            // Events that are considered trusted because can be run by a trusted user (unless it's a bot)
+            const isTrustedEvent = ['push', 'workflow_dispatch'].includes(context.eventName);
+            const isTrusted = (isTrustedEvent || (isPR && !isForkPR)) && !isBot;
+
+            const o = { isTrusted, isForkPR, isBot };
+            console.log(JSON.stringify(o));
+            return o
 
       - name: Setup
         uses: grafana/plugin-ci-workflows/actions/plugins/setup@main # zizmor: ignore[unpinned-uses]
         with:
           go-version: ${{ inputs.go-version || env.DEFAULT_GO_VERSION }}
           node-version: ${{ inputs.node-version || env.DEFAULT_NODE_VERSION }}
+          node-version-file: ${{ inputs.plugin-directory }}/.nvmrc
           golangci-lint-version: ${{ inputs.golangci-lint-version || env.DEFAULT_GOLANGCI_LINT_VERSION }}
           go-setup-caching: ${{ inputs.go-setup-caching }}
 
       - name: Get secrets from Vault
         id: get-secrets
-        if: ${{ env.IS_FORK == 'false' }}
-        uses: grafana/shared-workflows/actions/get-vault-secrets@9f37f656e063f0ad0b0bfc38d49894b57d363936 # v1.2.1
+        if: ${{ fromJson(steps.workflow-context.outputs.result).isTrusted }}
+        uses: grafana/shared-workflows/actions/get-vault-secrets@a37de51f3d713a30a9e4b21bcdfbd38170020593 # get-vault-secrets/v1.3.0
         with:
           vault_instance: ${{ env.VAULT_INSTANCE }}
           common_secrets: |
@@ -257,8 +294,8 @@ jobs:
 
       - name: Generate GitHub token
         id: generate-github-token
-        uses: actions/create-github-app-token@df432ceedc7162793a195dd1713ff69aefc7379e # v2.0.6
-        if: ${{ env.IS_FORK == 'false' }}
+        uses: actions/create-github-app-token@a8d616148505b5069dccd32f177bb87d7f39123b # v2.1.1
+        if: ${{ fromJson(steps.workflow-context.outputs.result).isTrusted }}
         with:
           app-id: ${{ fromJSON(steps.get-secrets.outputs.secrets).GITHUB_APP_ID }}
           private-key: ${{ fromJSON(steps.get-secrets.outputs.secrets).GITHUB_APP_PRIVATE_KEY }}
@@ -301,6 +338,8 @@ jobs:
         with:
           package-manager: ${{ inputs.package-manager }}
           plugin-directory: ${{ inputs.plugin-directory }}
+          secrets: ${{ (fromJson(steps.workflow-context.outputs.result).isTrusted && inputs.frontend-secrets != '') && inputs.frontend-secrets || '' }}
+          npm-registry-auth: ${{ inputs.npm-registry-auth }}
 
       - name: Test and build backend
         if: ${{ steps.check-for-backend.outputs.has-backend == 'true' }}
@@ -316,8 +355,8 @@ jobs:
           universal: "true"
           dist-folder: dist
           output-folder: dist-artifacts
-          access-policy-token: ${{ env.IS_FORK == 'false' && fromJSON(steps.get-secrets.outputs.secrets).SIGN_PLUGIN_ACCESS_POLICY_TOKEN || '' }}
-          allow-unsigned: ${{ env.IS_FORK == 'true' }}
+          access-policy-token: ${{ fromJson(steps.workflow-context.outputs.result).isTrusted && fromJSON(steps.get-secrets.outputs.secrets).SIGN_PLUGIN_ACCESS_POLICY_TOKEN || '' }}
+          allow-unsigned: ${{ !(fromJson(steps.workflow-context.outputs.result).isTrusted) }}
 
       - name: Package os/arch ZIPs
         id: os-arch-zips
@@ -326,8 +365,8 @@ jobs:
           universal: "false"
           dist-folder: dist
           output-folder: dist-artifacts
-          access-policy-token: ${{ env.IS_FORK == 'false' && fromJSON(steps.get-secrets.outputs.secrets).SIGN_PLUGIN_ACCESS_POLICY_TOKEN || '' }}
-          allow-unsigned: ${{ env.IS_FORK == 'true' }}
+          access-policy-token: ${{ fromJson(steps.workflow-context.outputs.result).isTrusted && fromJSON(steps.get-secrets.outputs.secrets).SIGN_PLUGIN_ACCESS_POLICY_TOKEN || '' }}
+          allow-unsigned: ${{ !(fromJson(steps.workflow-context.outputs.result).isTrusted) }}
 
       - name: Trufflehog secrets scanning
         if: ${{ inputs.run-trufflehog == true }}
@@ -375,7 +414,7 @@ jobs:
     name: Test docs
     runs-on: ubuntu-latest
     container:
-      image: grafana/docs-base:latest
+      image: grafana/docs-base:latest # zizmor: ignore[unpinned-images]
       volumes:
         # This mount is required in order to run the "plugins/docs/test" shared action
         # into the container. The action gets downloaded into /home/runner/work/_actions,
@@ -387,7 +426,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
         with:
           ref: ${{ inputs.branch }}
           persist-credentials: false
@@ -421,7 +460,9 @@ jobs:
       playwright-config: ${{ inputs.playwright-config }}
       report-path: ${{ inputs.playwright-report-path }}
       grafana-url: ${{ inputs.playwright-grafana-url }}
-      secrets: ${{ (github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]' && inputs.playwright-secrets != '') && inputs.playwright-secrets || '' }}
+      secrets: ${{ (fromJson(needs.test-and-build.outputs.workflow-context).isTrusted && inputs.playwright-secrets != '') && inputs.playwright-secrets || '' }}
+      node-version: ${{ inputs.node-version }}
+      npm-registry-auth: ${{ inputs.npm-registry-auth }}
 
   playwright-docker:
     name: Plugins - Dockerized Playwright E2E tests
@@ -439,15 +480,16 @@ jobs:
       grafana-compose-file: ${{ inputs.playwright-docker-compose-file }}
       report-path: ${{ inputs.playwright-report-path }}
       grafana-url: ${{ inputs.playwright-grafana-url }}
-      secrets: ${{ (github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]' && inputs.playwright-secrets != '') && inputs.playwright-secrets || '' }}
+      secrets: ${{ (fromJson(needs.test-and-build.outputs.workflow-context).isTrusted && inputs.playwright-secrets != '') && inputs.playwright-secrets || '' }}
+      # TODO: add support for NPM auth in Dockerized Playwright as well
+      # npm-registry-auth: ${{ inputs.npm-registry-auth }}
 
   upload-to-gcs:
     name: Upload to GCS
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-x64-small
 
-    # Skip the GCS upload for PRs from forks (no access to the GCS bucket)
-    # This is equivalent to !env.IS_FORK (we don't have access to the env context at this level)
-    if: ${{ !(github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository) }}
+    # Skip the GCS upload (no access to the bucket) for PRs when run in non-trusted context (forks)
+    if: ${{ fromJson(needs.test-and-build.outputs.workflow-context).isTrusted }}
 
     needs:
       - test-and-build
@@ -461,13 +503,13 @@ jobs:
 
     steps:
       - name: Download GitHub artifact
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
           name: dist-artifacts
           path: /tmp/dist-artifacts
 
       - name: Login to Google Cloud
-        uses: google-github-actions/auth@ba79af03959ebeac9769e648f473a284504d9193 # v2.1.10
+        uses: google-github-actions/auth@b7593ed2efd1c1617e1b0254da33b86225adb2a5 # v2.1.12
         with:
           workload_identity_provider: "projects/304398677251/locations/global/workloadIdentityPools/github/providers/github-provider"
           service_account: github-plugin-ci-workflows@grafanalabs-workload-identity.iam.gserviceaccount.com
@@ -489,7 +531,7 @@ jobs:
       - name: Upload GCS artifacts (latest)
         id: gcs-upload-latest
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main'}}
-        uses: google-github-actions/upload-cloud-storage@7c6e11cb7291594c5dfe0bc1dd9cd905e31e600c # v2.2.2
+        uses: google-github-actions/upload-cloud-storage@7c73f5d6eae167341002e9c946f7479a609c588e # v2.2.3
         with:
           path: /tmp/dist-artifacts
           destination: ${{ env.gcs_artifacts_path_latest }}
@@ -498,7 +540,7 @@ jobs:
 
       - name: Upload GCS artifacts (commit)
         id: gcs-upload-commit
-        uses: google-github-actions/upload-cloud-storage@7c6e11cb7291594c5dfe0bc1dd9cd905e31e600c # v2.2.2
+        uses: google-github-actions/upload-cloud-storage@7c73f5d6eae167341002e9c946f7479a609c588e # v2.2.3
         with:
           path: /tmp/dist-artifacts
           destination: ${{ env.gcs_artifacts_path_commit }}

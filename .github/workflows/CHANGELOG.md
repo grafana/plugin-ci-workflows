@@ -1,5 +1,71 @@
 # Changelog
 
+## [1.2.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v1.1.2...ci-cd-workflows/v1.2.0) (2025-08-21)
+
+
+### 🎉 Features
+
+* add option to disable docs publishing alltogether ([#237](https://github.com/grafana/plugin-ci-workflows/issues/237)) ([817b34f](https://github.com/grafana/plugin-ci-workflows/commit/817b34fe61d0f1be7bf6e76804d6e9b98108b0e3))
+* add publish to catalog as pending option in ci and publish action ([#240](https://github.com/grafana/plugin-ci-workflows/issues/240)) ([0086720](https://github.com/grafana/plugin-ci-workflows/commit/00867201b23dd72abcc90b4746af139c90e0cebd))
+* allow all workflows to set both node-version-file and node-version ([#208](https://github.com/grafana/plugin-ci-workflows/issues/208)) ([29a45db](https://github.com/grafana/plugin-ci-workflows/commit/29a45dbcdf7fded1f92f5c07495684595db2ac4d))
+* allow passing of secrets to frontend build steps ([#222](https://github.com/grafana/plugin-ci-workflows/issues/222)) ([aebe053](https://github.com/grafana/plugin-ci-workflows/commit/aebe053353b0e1382be7538ab6e02236861358ac))
+* **ci:** Add support for authenticating to NPM Google Artifact Registry ([#224](https://github.com/grafana/plugin-ci-workflows/issues/224)) ([87549ef](https://github.com/grafana/plugin-ci-workflows/commit/87549ef5afcb00132116658770a47b9229acdba1))
+* **playwright:** env for GRAFANA_VERSION to allow the playwright config access ([#206](https://github.com/grafana/plugin-ci-workflows/issues/206)) ([ab20c6a](https://github.com/grafana/plugin-ci-workflows/commit/ab20c6a21e6da6722952759a57d1aa4057a2e118))
+* **publish:** Sanity check ZIP files before publishing to catalog ([#199](https://github.com/grafana/plugin-ci-workflows/issues/199)) ([f799b45](https://github.com/grafana/plugin-ci-workflows/commit/f799b45c37748ac4c1426a79256d0c40c9c07648))
+* Switch runners for exported workflows to self-hosted ones ([#217](https://github.com/grafana/plugin-ci-workflows/issues/217)) ([2851e10](https://github.com/grafana/plugin-ci-workflows/commit/2851e1098cbdac81eeaf8664d774be08bb84459a))
+
+
+### 🐛 Bug Fixes
+
+* **cd:** github draft optional, omit commits ([#202](https://github.com/grafana/plugin-ci-workflows/issues/202)) ([200078a](https://github.com/grafana/plugin-ci-workflows/commit/200078afee7387a1bb615a0961fb530297ac6451))
+* **ci:** Fix NPM auth when running Playwright E2E tests ([#231](https://github.com/grafana/plugin-ci-workflows/issues/231)) ([8da89c2](https://github.com/grafana/plugin-ci-workflows/commit/8da89c22b1e96fe930b9b23be909d4e75bc341a9))
+* Fix test-docs and publish-docs steps failing ([#225](https://github.com/grafana/plugin-ci-workflows/issues/225)) ([a17fdd6](https://github.com/grafana/plugin-ci-workflows/commit/a17fdd6e0e71870b665f94ca4132e06a64417aff))
+* pass node-version down from ci to playwright ([#219](https://github.com/grafana/plugin-ci-workflows/issues/219)) ([840c01b](https://github.com/grafana/plugin-ci-workflows/commit/840c01bf99d7d9135c327e528abe1673072d90f5))
+
+
+### 🤖 Continuous Integrations
+
+* Switch runners for internal workflows to self-hosted ones ([#218](https://github.com/grafana/plugin-ci-workflows/issues/218)) ([d049b9d](https://github.com/grafana/plugin-ci-workflows/commit/d049b9d62f92cea820ff6b5a9c9a7b8db0bc908e))
+
+
+### 🔧 Chores
+
+* **deps:** update actions/checkout action to v4.3.0 ([#229](https://github.com/grafana/plugin-ci-workflows/issues/229)) ([7e02ef2](https://github.com/grafana/plugin-ci-workflows/commit/7e02ef237cad8a878b019502c854c0087f917c71))
+* **deps:** update actions/create-github-app-token action to v2.1.0 ([#226](https://github.com/grafana/plugin-ci-workflows/issues/226)) ([486d5d6](https://github.com/grafana/plugin-ci-workflows/commit/486d5d665b8ca641b397fa2db72d4069f53d7b74))
+* **deps:** update actions/create-github-app-token action to v2.1.1 ([#228](https://github.com/grafana/plugin-ci-workflows/issues/228)) ([d74d260](https://github.com/grafana/plugin-ci-workflows/commit/d74d260b1cac3551354981a6991e402fce04717f))
+* **deps:** update actions/download-artifact action to v5 ([#210](https://github.com/grafana/plugin-ci-workflows/issues/210)) ([3581472](https://github.com/grafana/plugin-ci-workflows/commit/358147235f8c7770ce7ad64fdf878f0b12a8a181))
+* **deps:** update google-github-actions/setup-gcloud action to v2.2.0 ([#227](https://github.com/grafana/plugin-ci-workflows/issues/227)) ([6fe0d0b](https://github.com/grafana/plugin-ci-workflows/commit/6fe0d0b17e6ec4cf9ea7d64b95f2e44fd057d561))
+* **deps:** update googleapis/release-please-action action to v4.3.0 ([#244](https://github.com/grafana/plugin-ci-workflows/issues/244)) ([b148a5a](https://github.com/grafana/plugin-ci-workflows/commit/b148a5a472e0d821598970265c8f19dbc9706939))
+* Fix some Zizmor issues ([#211](https://github.com/grafana/plugin-ci-workflows/issues/211)) ([5007dce](https://github.com/grafana/plugin-ci-workflows/commit/5007dce7256b91109fad412e29cd9bdca1078e9b))
+
+## [1.1.2](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v1.1.1...ci-cd-workflows/v1.1.2) (2025-08-05)
+
+
+### 🐛 Bug Fixes
+
+* moving secret fetching up ([#163](https://github.com/grafana/plugin-ci-workflows/issues/163)) ([e478422](https://github.com/grafana/plugin-ci-workflows/commit/e478422847f9e1c0df5535b79f5182c58e68efca))
+* **publish:** Fix cd-style push events not being considered trusted ([#198](https://github.com/grafana/plugin-ci-workflows/issues/198)) ([34e0b28](https://github.com/grafana/plugin-ci-workflows/commit/34e0b281238a74d4dd7eb8886ea1c331db616ee4))
+* **publish:** Fix secrets not being passed to Playwright when publishing ([#196](https://github.com/grafana/plugin-ci-workflows/issues/196)) ([71132a3](https://github.com/grafana/plugin-ci-workflows/commit/71132a38602f14d6f3cf50c26bc34071679bdf3b))
+
+
+### 📝 Documentation
+
+* add more about scopes input ([#171](https://github.com/grafana/plugin-ci-workflows/issues/171)) ([0b5c370](https://github.com/grafana/plugin-ci-workflows/commit/0b5c37064531d725ec257153a27de03107352201))
+
+
+### 🤖 Continuous Integrations
+
+* Add workflow for ensuring examples/base/README.md is up-to-date ([#191](https://github.com/grafana/plugin-ci-workflows/issues/191)) ([1ce6526](https://github.com/grafana/plugin-ci-workflows/commit/1ce652685b2b04de2b516f4e438d6fcaaf8b1bc8))
+
+
+### 🔧 Chores
+
+* **deps:** Bump google-github-actions/upload-cloud-storage ([#189](https://github.com/grafana/plugin-ci-workflows/issues/189)) ([4a55c8d](https://github.com/grafana/plugin-ci-workflows/commit/4a55c8d55981e2ab965acedfabd2df260c74dea9))
+* **deps:** update google-github-actions/auth action to v2.1.11 ([#176](https://github.com/grafana/plugin-ci-workflows/issues/176)) ([f0c05fe](https://github.com/grafana/plugin-ci-workflows/commit/f0c05fe0b70002c6831a98f1f1ac9770952d74aa))
+* **deps:** update google-github-actions/auth action to v2.1.12 ([#201](https://github.com/grafana/plugin-ci-workflows/issues/201)) ([de83d72](https://github.com/grafana/plugin-ci-workflows/commit/de83d728fef7e0b569b36f179d54147f2b29c30c))
+* **deps:** update google-github-actions/setup-gcloud action to v2.1.5 ([#177](https://github.com/grafana/plugin-ci-workflows/issues/177)) ([3aa265b](https://github.com/grafana/plugin-ci-workflows/commit/3aa265b3fb17ec192b912b8cd4f50f2510d6ece2))
+* **deps:** update step-security/harden-runner action to v2.13.0 ([#179](https://github.com/grafana/plugin-ci-workflows/issues/179)) ([bb88fd6](https://github.com/grafana/plugin-ci-workflows/commit/bb88fd6043e0170b79f1cbb629d9cf48442384a6))
+
 ## [1.1.1](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v1.1.0...ci-cd-workflows/v1.1.1) (2025-07-11)
 
 

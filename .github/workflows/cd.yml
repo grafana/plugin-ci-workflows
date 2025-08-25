@@ -25,7 +25,7 @@ on:
           Comma-separated list of scopes for the plugin version in the catalog.
           Default is 'universal'.
           Can also be set to 'grafana_cloud' or a list of grafana_cloud_org's or grafana_cloud_instance's like "grafana_cloud_org_{slug},grafana_cloud_org_{slug}" or "grafan_cloud_instance_{slug},grafan_cloud_instance_{slug}"
-          More information about available scopes can be found here https://enghub.grafana-ops.net/docs/default/component/grafana-plugins-platform/grafana-com/gcom-cli-cheat-sheet/#scoping 
+          More information about available scopes can be found here https://enghub.grafana-ops.net/docs/default/component/grafana-plugins-platform/grafana-com/gcom-cli-cheat-sheet/#scoping
         required: false
         default: universal
         type: string
@@ -61,8 +61,8 @@ on:
         type: string
         required: false
       go-setup-caching:
-        description: Defines if setup-go action should have caching enabled (https://github.com/actions/setup-go#caching-dependency-files-and-build-outputs) 
-        type: 'boolean'
+        description: Defines if setup-go action should have caching enabled (https://github.com/actions/setup-go#caching-dependency-files-and-build-outputs)
+        type: "boolean"
         required: false
       trufflehog-version:
         description: Trufflehog version to use
@@ -80,6 +80,13 @@ on:
         type: string
         required: false
         default: ""
+      npm-registry-auth:
+        description: |
+          Whether to authenticate to the npm registry in Google Artifact Registry.
+          If true, the root of the plugin repository must contain a `.npmrc` file.
+        type: boolean
+        required: false
+        default: false
 
       # Playwright
       run-playwright:
@@ -204,7 +211,22 @@ on:
         type: string
       docs-only:
         description: |
-          Only publish docs to the website, do not publish the plugin.
+          Only publish docs to the website, do not publish the plugin. This option is ignored if disable-docs-publishing is true.
+        default: false
+        type: boolean
+      github-draft-release:
+        description: |
+          Publish a draft release on GitHub. If disable-github-release is true, this will be ignored.
+        default: true
+        type: boolean
+      disable-github-release:
+        description: |
+          Disable GitHub release creation.
+        default: false
+        type: boolean
+      disable-docs-publishing:
+        description: |
+          Disable docs publishing to the website.
         default: false
         type: boolean
       argo-workflow-slack-channel:
@@ -222,6 +244,18 @@ on:
           Default is 'dev'.
         default: dev
         type: string
+      frontend-secrets:
+        description: The secrets to use within frontend steps
+        type: string
+        required: false
+        default: ""
+      publish-to-catalog-as-pending:
+        description: |
+          If true, the plugin will be published as pending in the plugins catalog.
+          A pending plugin is effectively hidden from the catalog but available for provisioning.
+          Default is false.
+        default: false
+        type: boolean
 
       # Options for deploying PRs. Those values should come from the PR event and should not be set manually.
       branch:
@@ -245,7 +279,7 @@ env:
 jobs:
   setup:
     name: Check and setup environment
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-x64-small
 
     outputs:
       commit-sha: ${{ steps.checkout-specified-branch.outputs.commit }}
@@ -278,7 +312,7 @@ jobs:
 
       - name: Checkout specified branch
         id: checkout-specified-branch
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
         with:
           ref: ${{ inputs.branch }}
           persist-credentials: false
@@ -314,6 +348,7 @@ jobs:
       branch: ${{ inputs.branch }}
       plugin-directory: ${{ inputs.plugin-directory }}
       package-manager: ${{ inputs.package-manager }}
+      npm-registry-auth: ${{ inputs.npm-registry-auth }}
       go-version: ${{ inputs.go-version }}
       go-setup-caching: ${{ inputs.go-setup-caching }}
       node-version: ${{ inputs.node-version }}
@@ -334,13 +369,14 @@ jobs:
       trufflehog-include-detectors: ${{ inputs.trufflehog-include-detectors }}
       trufflehog-exclude-detectors: ${{ inputs.trufflehog-exclude-detectors }}
       plugin-version-suffix: ${{ needs.setup.outputs.plugin-version-suffix }}
+      frontend-secrets: ${{ inputs.frontend-secrets }}
 
   build-attestation:
     name: Build attestation
     if: ${{ inputs.attestation }}
     needs:
       - ci
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-x64-small
 
     outputs:
       attestation-id: ${{ steps.attestation.outputs.attestation-id }}
@@ -349,7 +385,7 @@ jobs:
 
     steps:
       - name: Download GitHub artifact
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
           name: dist-artifacts
           path: /tmp/dist-artifacts
@@ -363,7 +399,7 @@ jobs:
 
   define-variables:
     name: Define variables
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-x64-small
 
     needs:
       - ci
@@ -387,6 +423,7 @@ jobs:
             const ENVIRONMENT = getInput('ENVIRONMENT', 'none');
             const DOCS_ONLY = getInput('DOCS_ONLY');
             const HAS_BACKEND = getInput('HAS_BACKEND');
+            const DISABLE_DOCS_PUBLISHING = getInput('DISABLE_DOCS_PUBLISHING');
 
             // Platforms matrix
             let platforms = ['any'];
@@ -396,7 +433,7 @@ jobs:
             core.setOutput('platforms', JSON.stringify(platforms));
 
             // Docs only: skip plugin deployment
-            if (DOCS_ONLY === 'true') {
+            if (DISABLE_DOCS_PUBLISHING === 'false' && DOCS_ONLY === 'true') {
               core.setOutput('environments', JSON.stringify([]));
               core.setOutput('publish-docs', 'true');
               return;
@@ -429,14 +466,15 @@ jobs:
               return;
             }
 
-            // publish-docs is true if 'prod' is in the environments list
-            const publishDocs = environments.includes('prod');
+            // publish-docs is true if 'prod' is in the environments list AND docs publishing is not disabled
+            const publishDocs = environments.includes('prod') && DISABLE_DOCS_PUBLISHING === 'false';
             core.setOutput('environments', JSON.stringify(environments));
             core.setOutput('publish-docs', String(publishDocs));
         env:
           ENVIRONMENT: ${{ inputs.environment }}
           DOCS_ONLY: ${{ inputs.docs-only }}
           HAS_BACKEND: ${{ fromJSON(needs.ci.outputs.plugin).has-backend }}
+          DISABLE_DOCS_PUBLISHING: ${{ inputs.disable-docs-publishing }}
 
   publish-to-catalog:
     name: Publish to catalog (${{ matrix.environment }})
@@ -450,10 +488,10 @@ jobs:
       fail-fast: false
       matrix:
         environment: ${{ fromJson(needs.define-variables.outputs.environments) }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-x64-small
     steps:
       - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
         with:
           ref: ${{ inputs.branch }}
           persist-credentials: false
@@ -476,7 +514,7 @@ jobs:
 
       - name: Login to Google Cloud (ID token for IAP)
         id: gcloud
-        uses: google-github-actions/auth@ba79af03959ebeac9769e648f473a284504d9193 # v2.1.10
+        uses: google-github-actions/auth@b7593ed2efd1c1617e1b0254da33b86225adb2a5 # v2.1.12
         if: ${{ matrix.environment != 'prod' }}
         with:
           workload_identity_provider: "projects/304398677251/locations/global/workloadIdentityPools/github/providers/github-provider"
@@ -489,7 +527,7 @@ jobs:
 
       - name: Get secrets from Vault
         id: get-secrets
-        uses: grafana/shared-workflows/actions/get-vault-secrets@9f37f656e063f0ad0b0bfc38d49894b57d363936 # v1.2.1
+        uses: grafana/shared-workflows/actions/get-vault-secrets@a37de51f3d713a30a9e4b21bcdfbd38170020593 # get-vault-secrets/v1.3.0
         with:
           vault_instance: ${{ env.VAULT_INSTANCE }}
           common_secrets: |
@@ -527,6 +565,12 @@ jobs:
           gcom-publish-token: ${{ env.GCOM_PUBLISH_TOKEN }}
           gcloud-auth-token: ${{ steps.gcloud.outputs.id_token }}
 
+      - name: Check artifact ZIP(s)
+        uses: grafana/plugin-ci-workflows/actions/plugins/publish/check-artifacts@main # zizmor: ignore[unpinned-uses]
+        with:
+          zips: ${{ needs.upload-to-gcs-release.outputs.gcs-zip-urls }}
+          plugin-id: ${{ fromJSON(needs.ci.outputs.plugin).id }}
+
       - name: Publish to catalog
         uses: grafana/plugin-ci-workflows/actions/plugins/publish/publish@main # zizmor: ignore[unpinned-uses]
         with:
@@ -536,10 +580,11 @@ jobs:
           gcom-publish-token: ${{ env.GCOM_PUBLISH_TOKEN }}
           gcloud-auth-token: ${{ steps.gcloud.outputs.id_token }}
           ignore-conflicts: ${{ steps.determine-continue.outputs.ignore_conflicts }}
+          publish-as-pending: ${{ inputs.publish-to-catalog-as-pending }}
 
   trigger-argo-workflow:
     name: Trigger Argo Workflow for Grafana Cloud deployment
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-x64-small
 
     needs:
       - ci
@@ -579,7 +624,7 @@ jobs:
 
       - name: Trigger Argo Workflow
         id: trigger-argo-workflow
-        uses: grafana/shared-workflows/actions/trigger-argo-workflow@main # zizmor: ignore[unpinned-uses]
+        uses: grafana/shared-workflows/actions/trigger-argo-workflow@2b6ace8fb54a9a0e4c4a28760b10c4f9ab073537 # trigger-argo-workflow/v1.2.0
         with:
           namespace: grafana-plugins-cd
           workflow_template: grafana-plugins-deploy
@@ -589,7 +634,7 @@ jobs:
             environment=${{ steps.argo-parameters.outputs.environment }}
             slack_channel=${{ inputs.argo-workflow-slack-channel }}
             commit=${{ github.sha }}
-            commit_link=https://${{ github.repository_owner }}/${{ github.event.repository.name }}/commit/${{ github.sha }}
+            commit_link=${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}
             auto_merge_environments=${{ steps.argo-parameters.outputs.auto_merge_environments }}
 
       - name: Print job summary
@@ -597,20 +642,22 @@ jobs:
           echo "# 🐙 Grafana Cloud deployment via Argo Workflows
 
           A deployment to Grafana Cloud via the plugins CD Argo Workflow has successfully been triggered.
-          - Plugin Version: \`${{ fromJSON(needs.ci.outputs.plugin).version }}\`
+          - Plugin Version: \`${PLUGIN_VERSION}\`
           - Environment(s): \`${ENVIRONMENT}\`
 
-          **👉 You can follow the deployment [here](${{ steps.trigger-argo-workflow.outputs.uri }})**
+          **👉 You can follow the deployment [here](${ARGO_WORKFLOW_URI})**
           " >> "$GITHUB_STEP_SUMMARY"
         shell: bash
         env:
           ENVIRONMENT: ${{ inputs.environment }}
+          PLUGIN_VERSION: ${{ fromJSON(needs.ci.outputs.plugin).version }}
+          ARGO_WORKFLOW_URI: ${{ steps.trigger-argo-workflow.outputs.uri }}
 
   # Note: This job can be removed once provisioned plugins releases are moved to the
   # tailored plugins catalog instead of using GCS.
   upload-to-gcs-release:
     name: Upload to GCS (release)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-x64-small
 
     needs:
       - ci
@@ -627,7 +674,7 @@ jobs:
 
     steps:
       - name: Download GitHub artifact
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
           name: dist-artifacts
           path: /tmp/dist-artifacts
@@ -642,13 +689,13 @@ jobs:
         shell: bash
 
       - name: Login to Google Cloud
-        uses: google-github-actions/auth@ba79af03959ebeac9769e648f473a284504d9193 # v2.1.10
+        uses: google-github-actions/auth@b7593ed2efd1c1617e1b0254da33b86225adb2a5 # v2.1.12
         with:
           workload_identity_provider: "projects/304398677251/locations/global/workloadIdentityPools/github/providers/github-provider"
           service_account: github-plugin-ci-workflows@grafanalabs-workload-identity.iam.gserviceaccount.com
 
       - name: "Set up Cloud SDK"
-        uses: "google-github-actions/setup-gcloud@77e7a554d41e2ee56fc945c52dfd3f33d12def9a" # v2.1.4
+        uses: "google-github-actions/setup-gcloud@e427ad8a34f8676edf47cf7d7925499adf3eb74f" # v2.2.1
         with:
           version: ">= 363.0.0"
 
@@ -703,7 +750,7 @@ jobs:
 
       - name: Upload GCS release artifact (tag)
         if: ${{ steps.gcs_artifacts_exist.outputs.gcs_artifacts_exist == 'false' }}
-        uses: google-github-actions/upload-cloud-storage@7c6e11cb7291594c5dfe0bc1dd9cd905e31e600c # v2.2.2
+        uses: google-github-actions/upload-cloud-storage@7c73f5d6eae167341002e9c946f7479a609c588e # v2.2.3
         with:
           path: /tmp/dist-artifacts
           glob: ${{ steps.paths.outputs.gcs_upload_glob }}
@@ -713,7 +760,7 @@ jobs:
 
       - name: Upload GCS release artifact (latest)
         if: ${{ steps.gcs_artifacts_exist.outputs.gcs_artifacts_exist == 'false' }}
-        uses: google-github-actions/upload-cloud-storage@7c6e11cb7291594c5dfe0bc1dd9cd905e31e600c # v2.2.2
+        uses: google-github-actions/upload-cloud-storage@7c73f5d6eae167341002e9c946f7479a609c588e # v2.2.3
         with:
           path: /tmp/dist-artifacts-latest
           glob: ${{ steps.paths.outputs.gcs_upload_glob_latest }}
@@ -723,7 +770,7 @@ jobs:
 
       - name: Upload GCS release artifacts (latest, any)
         if: ${{ matrix.platform == 'any' && steps.gcs_artifacts_exist.outputs.gcs_artifacts_exist == 'false' }}
-        uses: google-github-actions/upload-cloud-storage@7c6e11cb7291594c5dfe0bc1dd9cd905e31e600c # v2.2.2
+        uses: google-github-actions/upload-cloud-storage@7c73f5d6eae167341002e9c946f7479a609c588e # v2.2.3
         with:
           path: /tmp/dist-artifacts-latest/${{ fromJSON(needs.ci.outputs.plugin).id }}-latest.zip
           destination: "${{ steps.paths.outputs.gcs_artifacts_release_path_latest }}"
@@ -794,11 +841,12 @@ jobs:
       ${{
         (needs.ci.outputs.has-docs == 'true')
         && (needs.define-variables.outputs.publish-docs == 'true')
+        && !inputs.disable-docs-publishing
         && !(failure() || cancelled())
       }}
     runs-on: ubuntu-latest
     container:
-      image: grafana/docs-base:latest
+      image: grafana/docs-base:latest # zizmor: ignore[unpinned-images]
       volumes:
         # This mount is required in order to run the "plugins/docs/test" shared action
         # into the container. The action gets downloaded into /home/runner/work/_actions,
@@ -806,14 +854,14 @@ jobs:
         - /home/runner/work/_actions:/home/runner/work/_actions
     steps:
       - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
         with:
           ref: ${{ inputs.branch }}
           persist-credentials: false
 
       - name: Get secrets from Vault
         id: get-secrets
-        uses: grafana/shared-workflows/actions/get-vault-secrets@main # zizmor: ignore[unpinned-uses]
+        uses: grafana/shared-workflows/actions/get-vault-secrets@a37de51f3d713a30a9e4b21bcdfbd38170020593 # get-vault-secrets/v1.3.0
         with:
           vault_instance: ${{ env.VAULT_INSTANCE }}
           common_secrets: |
@@ -822,7 +870,7 @@ jobs:
 
       - name: Generate GitHub token
         id: generate-github-token
-        uses: actions/create-github-app-token@df432ceedc7162793a195dd1713ff69aefc7379e # v2.0.6
+        uses: actions/create-github-app-token@a8d616148505b5069dccd32f177bb87d7f39123b # v2.1.1
         with:
           app-id: ${{ env.GITHUB_APP_ID }}
           private-key: ${{ env.GITHUB_APP_PRIVATE_KEY }}
@@ -837,7 +885,7 @@ jobs:
 
   create-github-release:
     name: Create GitHub Release
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-x64-small
     needs:
       - define-variables
       - ci
@@ -847,18 +895,19 @@ jobs:
       - publish-to-catalog
     if: >-
       ${{
-        contains(fromJSON(needs.define-variables.outputs.environments), 'prod')
+        !inputs.disable-github-release
+        && contains(fromJSON(needs.define-variables.outputs.environments), 'prod')
         && !(failure() || cancelled())
       }}
     steps:
       - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
         with:
           ref: ${{ inputs.branch }}
           persist-credentials: false
 
       - name: Download GitHub artifact
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
           name: dist-artifacts
           path: /tmp/dist-artifacts
@@ -898,7 +947,7 @@ jobs:
       - name: Create Github release
         uses: softprops/action-gh-release@72f2c25fcb47643c292f7107632f7a47c1df5cd8 # v2.3.2
         with:
-          draft: true
+          draft: ${{ inputs.github-draft-release }}
           name: ${{ fromJSON(needs.ci.outputs.plugin).id }} v${{ fromJSON(needs.ci.outputs.plugin).version }}
           tag_name: v${{ fromJSON(needs.ci.outputs.plugin).version }}
           files: |

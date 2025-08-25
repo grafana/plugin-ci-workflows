@@ -1,11 +1,11 @@
 #!/bin/bash
 set -e
-if [ "$RUNNER_DEBUG" == "1" ]; then
+if [[ "$RUNNER_DEBUG" == "1" ]]; then
     set -x
 fi
 
 usage() {
-    echo "Usage: $0 --environment <dev|ops|prod> [--scopes <comma_separated_scopes>] [--dry-run] <plugin_zip_urls...>"
+    echo "Usage: $0 --environment <dev|ops|prod> [--scopes <comma_separated_scopes>] [--publish-as-pending] [--dry-run]  <plugin_zip_urls...>"
 }
 
 json_obj() {
@@ -15,11 +15,13 @@ json_obj() {
 gcs_zip_urls=()
 scopes=''
 dry_run=false
+publish_as_pending=false
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         --environment) gcom_env=$2; shift 2;;
         --scopes) scopes=$(echo $2 | jq -Rc 'split(",")'); shift 2;;
         --dry-run) dry_run=true; shift;;
+        --publish-as-pending) publish_as_pending=true; shift;;
         --help)
             usage
             exit 0
@@ -114,6 +116,11 @@ pushd "$GITHUB_WORKSPACE" > /dev/null
 sha=$(git rev-parse HEAD)
 popd > /dev/null
 
+pending_param="false"
+if [ "$publish_as_pending" = true ]; then
+    pending_param="true"
+fi
+
 # Publish the plugin
 echo "Publishing to $gcom_api_url"
 json_download=$(json_obj "${jq_download_args[@]}")
@@ -122,6 +129,7 @@ json_payload=$(jq -c -n \
     --arg url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" \
     --arg commit "$sha" \
     --argjson scopes "$scopes" \
+    --argjson pending "$pending_param" \
     '$ARGS.named'
 )
 echo $json_payload | jq

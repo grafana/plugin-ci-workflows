@@ -28,13 +28,6 @@ on:
 
 permissions: {}
 
-env:
-  # Scope for the plugin when publishing it to the catalog.
-  # Choose between:
-  # - 'universal': on-prem + cloud (default)
-  # - 'grafana_cloud': cloud only, hidden for on-prem users
-  SCOPES: grafana_cloud # TODO: Choose the appropriate scope for your plugin.
-
 jobs:
   cd:
     name: CD
@@ -47,7 +40,12 @@ jobs:
       branch: ${{ github.event.inputs.branch }}
       environment: ${{ github.event.inputs.environment }}
       docs-only: ${{ fromJSON(github.event.inputs.docs-only) }}
-      scopes: ${{ env.SCOPES }}
+      # Scope for the plugin when publishing it to the catalog.
+      # Choose between:
+      # - 'universal': on-prem + cloud (default)
+      # - 'grafana_cloud': cloud only, hidden for on-prem users
+      scopes: grafana_cloud # TODO: Choose the appropriate scope for your plugin.
+
 
       # TODO: add here any other CI custom inputs you may need. You most likely also have to add the same options to push.yaml:
       #   https://enghub.grafana-ops.net/docs/default/component/grafana-plugins-platform/plugins-ci-github-actions/010-plugins-ci-github-actions/#customizing-the-workflows-with-inputs

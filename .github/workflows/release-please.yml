@@ -11,10 +11,9 @@ permissions:
 env:
   IS_FORK: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
 
-
 jobs:
   release-please:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-x64-small
 
     permissions:
       contents: write # Needed to create releases and tags
@@ -25,7 +24,7 @@ jobs:
       - name: Get secrets from Vault
         id: get-secrets
         if: ${{ env.IS_FORK == 'false' }}
-        uses: grafana/shared-workflows/actions/get-vault-secrets@9f37f656e063f0ad0b0bfc38d49894b57d363936 # v1.2.1
+        uses: grafana/shared-workflows/actions/get-vault-secrets@a37de51f3d713a30a9e4b21bcdfbd38170020593 # get-vault-secrets/v1.3.0
         with:
           common_secrets: |
             GITHUB_APP_ID=plugins-platform-bot-app:app-id
@@ -34,7 +33,7 @@ jobs:
 
       - name: Generate GitHub token
         id: generate-github-token
-        uses: actions/create-github-app-token@df432ceedc7162793a195dd1713ff69aefc7379e # v2.0.6
+        uses: actions/create-github-app-token@a8d616148505b5069dccd32f177bb87d7f39123b # v2.1.1
         if: ${{ env.IS_FORK == 'false' }}
         with:
           app-id: ${{ fromJSON(steps.get-secrets.outputs.secrets).GITHUB_APP_ID }}
@@ -42,11 +41,11 @@ jobs:
           owner: ${{ github.repository_owner }}
 
       - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@6c439dc8bdf85cadbbce9ed30d1c7b959517bc49 # v2.12.2
+        uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911 # v2.13.0
         with:
           egress-policy: audit
 
-      - uses: googleapis/release-please-action@a02a34c4d625f9be7cb89156071d8567266a2445 # v4.2.0
+      - uses: googleapis/release-please-action@c2a5a2bd6a758a0937f1ddb1e8950609867ed15c # v4.3.0
         id: release
         with:
           config-file: release-please-config.json
