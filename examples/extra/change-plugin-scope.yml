@@ -1,0 +1,103 @@
+# Description:
+# Change plugin scope.
+# It uses action grafana/plugin-ci-workflows/actions/plugins/publish/promote-plugin
+# to change plugin scope to universal.
+# The following inputs should be provided:
+# - environment: Target environment (dev, ops, prod)
+# - scopes: Scopes to change to. Can be 'universal', 'grafana_cloud', 'grafana_cloud_org' or 'grafana_cloud_instance'.
+#           Multiple values can be provided separated by commas.
+# - plugin_version: Plugin version to change scope
+#
+
+name: Plugins - Change Plugin Scope
+
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - ops
+          - prod
+      plugin_version:
+        description: 'Plugin version to change scope'
+        required: true
+        type: string
+      scopes:
+        description: |
+          Scope to change the plugin to.
+          Can be 'universal', 'grafana_cloud', 'grafana_cloud_org' or 'grafana_cloud_instance'.
+          Multiple values can be provided separated by commas.
+        required: true
+        type: string
+
+env:
+  PLUGIN_ID: hugooshiro-dummy-datasource  # TODO: change with your plugin's slug
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Login to Google Cloud (ID token for IAP)
+        id: gcloud
+        uses: google-github-actions/auth@ba79af03959ebeac9769e648f473a284504d9193 # v2.1.10
+        if: ${{ inputs.environment != 'prod' }}
+        with:
+          workload_identity_provider: "projects/304398677251/locations/global/workloadIdentityPools/github/providers/github-provider"
+          service_account: github-plugin-ci-workflows@grafanalabs-workload-identity.iam.gserviceaccount.com
+          token_format: id_token
+          id_token_audience: 194555723165-aftshfqa32nig79trcrh96ha94ta46jd.apps.googleusercontent.com
+          id_token_include_email: true
+          create_credentials_file: false
+          export_environment_variables: false
+
+      - name: Get secrets from Vault
+        id: get-secrets
+        uses: grafana/shared-workflows/actions/get-vault-secrets@9f37f656e063f0ad0b0bfc38d49894b57d363936 # v1.2.1
+        with:
+          vault_instance: ${{ env.VAULT_INSTANCE }}
+          common_secrets: |
+            GCOM_TOKEN_DEV=plugins/gcom-publish-token:dev
+            GCOM_TOKEN_OPS=plugins/gcom-publish-token:ops
+            GCOM_TOKEN_PROD=plugins/gcom-publish-token:prod
+          export_env: false
+
+      - name: Determine which token to use
+        run: |
+          if [ "${ENVIRONMENT}" == 'dev' ]; then
+            echo "Picked dev token"
+            token="${{ fromJSON(steps.get-secrets.outputs.secrets).GCOM_TOKEN_DEV }}"
+          elif [ "${ENVIRONMENT}" == 'ops' ]; then
+            echo "Picked ops token"
+            token="${{ fromJSON(steps.get-secrets.outputs.secrets).GCOM_TOKEN_OPS }}"
+          elif [ "${ENVIRONMENT}" == 'prod' ]; then
+            echo "Picked prod token"
+            token="${{ fromJSON(steps.get-secrets.outputs.secrets).GCOM_TOKEN_PROD }}"
+          else
+            echo "Invalid environment: ${ENVIRONMENT}"
+            exit 1
+          fi
+          echo "GCOM_TOKEN=$token" >> "$GITHUB_ENV"
+        shell: bash
+        env:
+          ENVIRONMENT: ${{ env.ENVIRONMENT }}
+
+      - name: Change plugin scope
+        uses: grafana/plugin-ci-workflows/actions/plugins/publish/change-plugin-scope@main # zizmor: ignore[unpinned-uses]
+        with:
+          plugin-id: ${{ env.PLUGIN_ID }}
+          plugin-version: ${{ inputs.plugin_version }}
+          environment: ${{ inputs.environment }}
+          gcom-token: ${{ env.GCOM_TOKEN }}
+          gcloud-auth-token: ${{ steps.gcloud.outputs.id_token }}
+          scopes: ${{ inputs.scopes }}

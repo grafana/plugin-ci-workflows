@@ -1,6 +1,6 @@
 # Plugin CI/CD Workflows
 
-This repository contains reusable GitHub Actions workflows and individual actions for building, testing, and deploying Grafana plugins. It provides a standardized CI/CD pipeline that can be easily integrated into any Grafana plugin repository. This repository mostly contains workflows that are relevant to Grafana Labs **internal** teams working on plugins. 
+This repository contains reusable GitHub Actions workflows and individual actions for building, testing, and deploying Grafana plugins. It provides a standardized CI/CD pipeline that can be easily integrated into any Grafana plugin repository. This repository mostly contains workflows that are relevant to Grafana Labs **internal** teams working on plugins.
 
 For github actions that are suited for external developers see [plugin-actions](https://github.com/grafana/plugin-actions) repository.
 
@@ -28,7 +28,7 @@ Can be [found here](https://github.com/grafana/plugin-ci-workflows/tree/main/exa
 ## 📖 Documentation
 
 - **EngHub Documentation**: [Plugins CI GitHub Actions](https://enghub.grafana-ops.net/docs/default/component/grafana-plugins-platform/plugins-ci-github-actions/010-plugins-ci-github-actions)
-- **Examples**: See `examples/` directory for complete workflow examples
+- **Examples**: See `examples/` and `./.github/workflows` directories for complete workflow examples
 - **Action Documentation**: Each action includes detailed input/output documentation
 
 ## 🤝 Contributing
