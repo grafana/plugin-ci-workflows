@@ -13,6 +13,11 @@ inputs:
     required: false
     type: string
     description: The secrets to use within frontend steps
+  race-detector:
+    required: false
+    type: boolean
+    description: Whether to run the tests with the race detector
+    default: false
 
 runs:
   using: composite
@@ -41,7 +46,12 @@ runs:
       shell: bash
 
     - name: Test
-      run: mage -v test
+      run: |
+        if [ "${{ inputs.race-detector }}" = "true" ]; then
+          mage -v testRace
+        else
+          mage -v test
+        fi
       working-directory: ${{ inputs.plugin-directory }}
       shell: bash
 
