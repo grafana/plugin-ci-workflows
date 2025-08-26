@@ -44,7 +44,7 @@ runs:
           "${PLUGIN_VERSION}"
       env:
         GCLOUD_AUTH_TOKEN: ${{ inputs.gcloud-auth-token }}
-        GCOM_TOKEN: ${{ inputs.gcom-publish-token }}
+        GCOM_TOKEN: ${{ inputs.gcom-token }}
 
         ENVIRONMENT: ${{ inputs.environment }}
         SCOPES: ${{ inputs.scopes }}
