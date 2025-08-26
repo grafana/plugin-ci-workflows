@@ -55,6 +55,11 @@ on:
         type: string
         required: false
         default: ""
+      backend-secrets:
+        description: The secrets to use within frontend steps
+        type: string
+        required: false
+        default: ""
       npm-registry-auth:
         description: |
           Whether to authenticate to the npm registry in Google Artifact Registry.
@@ -347,6 +352,7 @@ jobs:
         with:
           github-token: ${{ steps.generate-github-token.outputs.token }}
           plugin-directory: ${{ inputs.plugin-directory }}
+          secrets: ${{ (fromJson(steps.workflow-context.outputs.result).isTrusted && inputs.backend-secrets != '') && inputs.backend-secrets || '' }}
 
       - name: Package universal ZIP
         id: universal-zip
