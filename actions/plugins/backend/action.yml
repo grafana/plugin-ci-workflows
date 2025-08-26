@@ -47,13 +47,15 @@ runs:
 
     - name: Test
       run: |
-        if [ "${{ inputs.race-detector }}" = "true" ]; then
+        if [ "$RACE_DETECTOR" = "true" ]; then
           mage -v testRace
         else
           mage -v test
         fi
       working-directory: ${{ inputs.plugin-directory }}
       shell: bash
+      env:
+        RACE_DETECTOR: ${{ inputs.race-detector }}
 
     - name: Build
       run: mage -v buildAll
