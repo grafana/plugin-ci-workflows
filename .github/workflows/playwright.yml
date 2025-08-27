@@ -158,9 +158,10 @@ jobs:
             }
             console.debug("Version:", version);
             if (version) {
-              core.exportVariable("PLAYWRIGHT_VERSION", version);
               core.setOutput("version", version);
-            } else core.setFailed("Couldn't get Playwright version");
+            } else {
+              core.setFailed("Couldn't get Playwright version");
+            }
         env:
           PLUGIN_DIRECTORY: ${{ inputs.plugin-directory }}
 
@@ -169,7 +170,7 @@ jobs:
         uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-${{ env.PLAYWRIGHT_VERSION }}
+          key: playwright-${{ steps.version.outputs.version }}
 
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps chromium
