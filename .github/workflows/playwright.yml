@@ -116,6 +116,7 @@ jobs:
         with:
           node-version-file: ${{ inputs.plugin-directory }}/.nvmrc
           cache: ${{ steps.node-pm.outputs.name }}
+          cache-dependency-path: ${{ steps.node-pm.outputs.lockFilePath }}
 
       - name: Install npm dependencies
         run: ${{ steps.node-pm.outputs.frozenInstall }}
