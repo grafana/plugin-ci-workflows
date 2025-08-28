@@ -126,6 +126,7 @@ jobs:
           node-version: ${{ inputs.node-version }}
           node-version-file: ${{ inputs.plugin-directory }}/.nvmrc
           cache: ${{ steps.node-pm.outputs.name }}
+          cache-dependency-path: ${{ steps.node-pm.outputs.lockFilePath }}
 
       - name: Login to Google Cloud
         if: inputs.npm-registry-auth == true

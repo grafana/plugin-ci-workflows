@@ -33,6 +33,7 @@ runs:
         node-version: "${{ inputs.node-version }}"
         node-version-file: "${{ inputs.node-version-file }}"
         cache: ${{ steps.node-pm.outputs.name }}
+        cache-dependency-path: ${{ steps.node-pm.outputs.lockFilePath }}
 
     # Install additional dependencies that are not built-in to the slim act image
     # but are included in the default GitHub Actions runner image and are needed for plugin-ci-workflows.
