@@ -142,11 +142,9 @@ jobs:
         run: GOOGLE_APPLICATION_CREDENTIALS=${{ env.GOOGLE_APPLICATION_CREDENTIALS }} npx google-artifactregistry-auth --credential-config ./.npmrc
 
       - name: Install npm dependencies
-        run: ${NODE_PM_FROZENINSTALL}
+        run: ${{ steps.node-pm.outputs.frozenInstall }}
         shell: bash
         working-directory: ${{ inputs.plugin-directory }}
-        env:
-          NODE_PM_FROZENINSTALL: ${{ steps.node-pm.outputs.frozenInstall }}
 
       - name: Get Playwright version
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
@@ -180,10 +178,8 @@ jobs:
           key: playwright-${{ steps.version.outputs.version }}
 
       - name: Install Playwright Browsers
-        run: ${NODE_PM_EXEC} playwright install --with-deps chromium
+        run: ${{ steps.node-pm.outputs.exec }} playwright install --with-deps chromium
         shell: bash
-        env:
-          NODE_PM_EXEC: ${{ steps.node-pm.outputs.exec }}
 
       - name: Download GitHub artifact
         uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
@@ -238,12 +234,11 @@ jobs:
 
       - name: Run Playwright tests
         id: run-tests
-        run: ${NODE_PM_EXEC} playwright test --config "${PLAYWRIGHT_CONFIG}"
+        run: ${{ steps.node-pm.outputs.exec }} playwright test --config "${PLAYWRIGHT_CONFIG}"
         env:
           PLAYWRIGHT_CONFIG: ${{ inputs.playwright-config }}
           GRAFANA_VERSION: ${{ matrix.GRAFANA_IMAGE.VERSION }}
           GRAFANA_IMAGE: ${{ matrix.GRAFANA_IMAGE.NAME }}
-          NODE_PM_EXEC: ${{ steps.node-pm.outputs.exec }}
         working-directory: ${{ inputs.plugin-directory }}
 
       - name: Upload artifacts
