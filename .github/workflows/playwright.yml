@@ -118,17 +118,13 @@ jobs:
           cache: ${{ steps.node-pm.outputs.name }}
 
       - name: Install npm dependencies
-        run: ${NODE_PM_FROZENINSTALL}
+        run: ${{ steps.node-pm.outputs.frozenInstall }}
         shell: bash
         working-directory: ${{ inputs.plugin-directory }}
-        env:
-          NODE_PM_FROZENINSTALL: ${{ steps.node-pm.outputs.frozenInstall }}
 
       - name: Install Playwright Browsers
-        run: ${NODE_PM_EXEC} playwright install --with-deps chromium
+        run: ${{ steps.node-pm.outputs.exec }} playwright install --with-deps chromium
         shell: bash
-        env:
-          NODE_PM_EXEC: ${{ steps.node-pm.outputs.exec }}
 
       - name: Download GitHub artifact
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
@@ -183,10 +179,9 @@ jobs:
 
       - name: Run Playwright tests
         id: run-tests
-        run: ${NODE_PM_EXEC} playwright test --config "${PLAYWRIGHT_CONFIG}"
+        run: ${{ steps.node-pm.outputs.exec }} playwright test --config "${PLAYWRIGHT_CONFIG}"
         env:
           PLAYWRIGHT_CONFIG: ${{ inputs.playwright-config }}
-          NODE_PM_EXEC: ${{ steps.node-pm.outputs.exec }}
         working-directory: ${{ inputs.plugin-directory }}
 
       - name: Upload artifacts
