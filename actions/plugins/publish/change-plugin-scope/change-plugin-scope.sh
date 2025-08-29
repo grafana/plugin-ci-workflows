@@ -128,6 +128,8 @@ check_response_error() {
     local response="$1"
     local expected_scopes="$2"
 
+    expected_scopes=$(echo "$expected_scopes" | jq -r 'join(",")')
+
     local response_scopes_count
     response_scopes_count=$(echo "$response" | jq -r '(.scopes // []) | length')
     if [[ "$response_scopes_count" == "0" ]]; then
