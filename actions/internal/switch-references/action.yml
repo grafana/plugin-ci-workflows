@@ -1,0 +1,21 @@
+name: Switch GHA references
+
+inputs:
+  ref:
+    description: The new reference (tag or branch) used in the workflows
+    required: true
+
+permissions:
+  pull-requests: write
+
+runs:
+  using: composite
+  steps:
+    - name: Switch references
+      run: ${{ github.action_path }}/switch-references.sh "${REF}"
+      env:
+        REF: ${{ inputs.ref }}
+
+    - name: Determine if anything changed
+      run: |
+        git diff --exit-code || echo "Changes detected"
