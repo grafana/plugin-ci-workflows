@@ -40,7 +40,8 @@ env:
   PLUGIN_ID: hugooshiro-dummy-datasource  # TODO: change with your plugin's slug
 
 jobs:
-  promote:
+  change-plugin-scope:
+    name: Change plugin scope
     runs-on: ubuntu-latest
 
     permissions:
