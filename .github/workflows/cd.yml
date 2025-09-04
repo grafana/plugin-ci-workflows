@@ -418,7 +418,7 @@ jobs:
     steps:
       - name: Define variables
         id: vars
-        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
         with:
           script: |
             // Helper to get input/env values
@@ -789,7 +789,7 @@ jobs:
       # and we will keep the last one. They all generate the same urls.
       - name: Generate GCS release URLs
         id: generate-urls
-        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
         env:
           GCS_ARTIFACTS_RELEASE_PATH_TAG: ${{ steps.paths.outputs.gcs_artifacts_release_path_tag }}
         with:
@@ -934,7 +934,7 @@ jobs:
         shell: bash
 
       - name: Create tag
-        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
         # Allow the tag creation to fail, in case it already exists
         # (e.g.: created manually, or re-triggering a release).
         continue-on-error: true
