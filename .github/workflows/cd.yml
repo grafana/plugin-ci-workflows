@@ -453,7 +453,7 @@ jobs:
             }
 
             // Parse and filter environments
-            const allowedEnvironments = ['dev', 'ops', 'prod'];
+            const allowedEnvironments = ['dev', 'ops', 'prod-canary', 'prod'];
             let environments = [];
             environments = ENVIRONMENT.split(',')
               .map(e => e.trim())
