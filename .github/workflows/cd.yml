@@ -429,7 +429,7 @@ jobs:
             }
 
             // Parse and filter environments
-            const allowedEnvironments = ['dev', 'ops', 'prod'];
+            const allowedEnvironments = ['dev', 'ops', 'prod-canary', 'prod'];
             let environments = [];
             environments = ENVIRONMENT.split(',')
               .map(e => e.trim())
@@ -480,7 +480,7 @@ jobs:
       - name: Determine if it should continue the pipeline if a publishing conflict was detected
         id: determine-continue
         run: |
-          # when we deploy to prod, we also deploy to ops and dev by default
+          # when we deploy to prod, we also deploy to canary, ops and dev by default
           # when deploying to prod we ignore conflict errors in ops and dev
           # because it is likely the plugin was deployed previously to those environments for testing
           # we don't allow prod to fail on republishing
