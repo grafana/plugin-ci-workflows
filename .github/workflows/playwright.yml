@@ -89,7 +89,7 @@ jobs:
 
       - name: Resolve Grafana E2E versions
         id: resolve-versions
-        uses: grafana/plugin-actions/e2e-version@main # zizmor: ignore[unpinned-uses]
+        uses: grafana/plugin-actions/e2e-version@jackw/pm-detect # zizmor: ignore[unpinned-uses]
         with:
           skip-grafana-dev-image: ${{ inputs.skip-grafana-dev-image }}
           version-resolver-type: ${{ inputs.version-resolver-type }}
@@ -110,11 +110,24 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Detect package manager
+        id: node-pm
+        # TODO: Fix this once we have a version of the package-manager-detect action
+        uses: grafana/plugin-actions/package-manager-detect@jackw/pm-detect # zizmor: ignore[unpinned-uses]
+        with:
+          working-directory: ${{ inputs.plugin-directory }}
+
+      - name: Install pnpm
+        if: steps.node-pm.outputs.name == 'pnpm'
+        uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
+
       - name: Setup Node.js environment
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: ${{ inputs.node-version }}
           node-version-file: ${{ inputs.plugin-directory }}/.nvmrc
+          cache: ${{ steps.node-pm.outputs.name }}
+          cache-dependency-path: ${{ steps.node-pm.outputs.lockFilePath }}
 
       - name: Login to Google Cloud
         if: inputs.npm-registry-auth == true
@@ -131,13 +144,7 @@ jobs:
         run: GOOGLE_APPLICATION_CREDENTIALS=${{ env.GOOGLE_APPLICATION_CREDENTIALS }} npx google-artifactregistry-auth --credential-config ./.npmrc
 
       - name: Install npm dependencies
-        # TODO: find a better way
-        run: |
-          if [ -f yarn.lock ]; then
-            yarn install --frozen-lockfile
-          else
-            npm ci
-          fi
+        run: ${{ steps.node-pm.outputs.frozenInstall }}
         shell: bash
         working-directory: ${{ inputs.plugin-directory }}
 
@@ -173,7 +180,8 @@ jobs:
           key: playwright-${{ steps.version.outputs.version }}
 
       - name: Install Playwright Browsers
-        run: npx playwright install --with-deps chromium
+        run: ${{ steps.node-pm.outputs.exec }} playwright install --with-deps chromium
+        shell: bash
 
       - name: Download GitHub artifact
         uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
@@ -222,13 +230,13 @@ jobs:
           DOCKER_COMPOSE_FILE: ${{ inputs.docker-compose-file }}
 
       - name: Wait for Grafana to start
-        uses: grafana/plugin-actions/wait-for-grafana@main # zizmor: ignore[unpinned-uses]
+        uses: grafana/plugin-actions/wait-for-grafana@jackw/pm-detect # zizmor: ignore[unpinned-uses]
         with:
           url: "${{ inputs.grafana-url }}"
 
       - name: Run Playwright tests
         id: run-tests
-        run: npx playwright test --config "${PLAYWRIGHT_CONFIG}"
+        run: ${{ steps.node-pm.outputs.exec }} playwright test --config "${PLAYWRIGHT_CONFIG}"
         env:
           PLAYWRIGHT_CONFIG: ${{ inputs.playwright-config }}
           GRAFANA_VERSION: ${{ matrix.GRAFANA_IMAGE.VERSION }}
