@@ -20,6 +20,7 @@ on:
         options:
           - "dev"
           - "ops"
+          - "prod-canary"
           - "prod"
       docs-only:
         description: Only publish docs, do not publish the plugin
