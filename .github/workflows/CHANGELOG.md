@@ -1,5 +1,48 @@
 # Changelog
 
+## [2.0.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v1.2.0...ci-cd-workflows/v2.0.0) (2025-09-09)
+
+
+### ⚠ BREAKING CHANGES
+
+* Add support for tagged releases ([#282](https://github.com/grafana/plugin-ci-workflows/issues/282))
+* **deps:** update actions/setup-go action to v6 ([#274](https://github.com/grafana/plugin-ci-workflows/issues/274))
+* Add support for pinning plugin-ci-workflows to semver tags ([#216](https://github.com/grafana/plugin-ci-workflows/issues/216))
+
+### 🎉 Features
+
+* add step to cache playwright ([#253](https://github.com/grafana/plugin-ci-workflows/issues/253)) ([061c113](https://github.com/grafana/plugin-ci-workflows/commit/061c113e379efa0e0196eb9cad3e727ed0f2986d))
+* add support for backend secrets ([#255](https://github.com/grafana/plugin-ci-workflows/issues/255)) ([1cb7ddc](https://github.com/grafana/plugin-ci-workflows/commit/1cb7ddcba0978c03806d5ae0a3c4eda7b1006f21))
+* Add support for pinning plugin-ci-workflows to semver tags ([#216](https://github.com/grafana/plugin-ci-workflows/issues/216)) ([8458e50](https://github.com/grafana/plugin-ci-workflows/commit/8458e5069ef67cdd50c2afa94ddac1b99545c5d0))
+
+
+### 📝 Documentation
+
+* add example workflow for change scope plugins action ([#169](https://github.com/grafana/plugin-ci-workflows/issues/169)) ([eba74c1](https://github.com/grafana/plugin-ci-workflows/commit/eba74c1ae47e818595ed5fefbc5550ce758241d7))
+
+
+### 🤖 Continuous Integrations
+
+* Add support for tagged releases ([#282](https://github.com/grafana/plugin-ci-workflows/issues/282)) ([ccd1f75](https://github.com/grafana/plugin-ci-workflows/commit/ccd1f75486be7f7290a6467d1c2c4f0fc343f898))
+
+
+### 🔧 Chores
+
+* **deps:** update actions/attest-build-provenance action to v3 ([#268](https://github.com/grafana/plugin-ci-workflows/issues/268)) ([1a170e5](https://github.com/grafana/plugin-ci-workflows/commit/1a170e5d94d91adaf3a0c2f79267df02c4657851))
+* **deps:** update actions/checkout action to v5 ([#230](https://github.com/grafana/plugin-ci-workflows/issues/230)) ([d4ad142](https://github.com/grafana/plugin-ci-workflows/commit/d4ad142587ec6383f1d03f6998b675d4f713e3d4))
+* **deps:** update actions/github-script action to v8 ([#277](https://github.com/grafana/plugin-ci-workflows/issues/277)) ([9a182f0](https://github.com/grafana/plugin-ci-workflows/commit/9a182f0875c7245f28b68477be1b6ffa29c654f0))
+* **deps:** update actions/setup-go action to v6 ([#274](https://github.com/grafana/plugin-ci-workflows/issues/274)) ([66cf8ba](https://github.com/grafana/plugin-ci-workflows/commit/66cf8bad1ea05b14659adc0d592e4732a16470d9))
+* **deps:** update amannn/action-semantic-pull-request action to v6 ([#234](https://github.com/grafana/plugin-ci-workflows/issues/234)) ([4179d5a](https://github.com/grafana/plugin-ci-workflows/commit/4179d5a711f2a43297a318b0c64d68e2b88aa009))
+* **deps:** update google-github-actions/auth action to v2.1.13 ([#260](https://github.com/grafana/plugin-ci-workflows/issues/260)) ([7d4bfda](https://github.com/grafana/plugin-ci-workflows/commit/7d4bfdafad4b0900c1b91cb4628b6ef8618fb30f))
+* **deps:** update google-github-actions/auth action to v3 ([#269](https://github.com/grafana/plugin-ci-workflows/issues/269)) ([4415c03](https://github.com/grafana/plugin-ci-workflows/commit/4415c03ca3eec53db5b1e5470ddea31ba1e02b2e))
+* **deps:** update google-github-actions/setup-gcloud action to v2.2.1 ([#250](https://github.com/grafana/plugin-ci-workflows/issues/250)) ([ebe7e7b](https://github.com/grafana/plugin-ci-workflows/commit/ebe7e7beb9c816edea862e524a182310d114c721))
+* **deps:** update google-github-actions/setup-gcloud action to v3 ([#251](https://github.com/grafana/plugin-ci-workflows/issues/251)) ([429f118](https://github.com/grafana/plugin-ci-workflows/commit/429f118cccf4b92c9038c41c3d9420a492edc74b))
+* **deps:** update google-github-actions/upload-cloud-storage action to v2.2.4 ([#271](https://github.com/grafana/plugin-ci-workflows/issues/271)) ([2103538](https://github.com/grafana/plugin-ci-workflows/commit/21035385f0b98e644cc5f3262c5206ccfbdedad3))
+* **deps:** update google-github-actions/upload-cloud-storage action to v3 ([#272](https://github.com/grafana/plugin-ci-workflows/issues/272)) ([7634080](https://github.com/grafana/plugin-ci-workflows/commit/76340806b625213d3219c0ad4385ffb74c16e3b3))
+* **deps:** update grafana/shared-workflows/get-vault-secrets action to v1.3.0 ([#243](https://github.com/grafana/plugin-ci-workflows/issues/243)) ([929a251](https://github.com/grafana/plugin-ci-workflows/commit/929a2518a32ea0d20c6c1e07fd65fa540c2e7882))
+* **deps:** update grafana/shared-workflows/trigger-argo-workflow action to v1.2.0 ([#247](https://github.com/grafana/plugin-ci-workflows/issues/247)) ([d613f64](https://github.com/grafana/plugin-ci-workflows/commit/d613f64e77f3b7da62a0a16156235ff2b373cebd))
+* **deps:** update softprops/action-gh-release action to v2.3.3 ([#281](https://github.com/grafana/plugin-ci-workflows/issues/281)) ([e010fd3](https://github.com/grafana/plugin-ci-workflows/commit/e010fd3d9696478e61601f7d744b21b4ede91f1a))
+
 ## [1.2.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v1.1.2...ci-cd-workflows/v1.2.0) (2025-08-21)
 
 
