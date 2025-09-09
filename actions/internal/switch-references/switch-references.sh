@@ -100,6 +100,13 @@ if [ -z "${REPO_NAME:-}" ] || [ -z "${REPLACEMENT:-}" ] || [ ${#paths[@]} -eq 0 
 fi
 
 # Main script
+if [[ ! "$REPO_NAME" =~ ^[a-zA-Z0-9._/-]+$ ]]; then
+    echo "Error: Invalid repository name" >&2
+    exit 1
+fi
+# Escape special characters in REPO_NAME for use in sed
+REPO_NAME=$(printf '%s\n' "$REPO_NAME" | sed 's/[[\.*^$()+?{|]/\\&/g')
+
 echo "Starting YAML file processing..."
 echo "Searching for repository: $REPO_NAME"
 echo "Replacing its references with: @$REPLACEMENT"
