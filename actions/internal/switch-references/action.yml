@@ -1,0 +1,53 @@
+name: Switch GHA references
+description: |
+  Switches all GitHub Actions "uses" references for the specified repository to the specified ref
+  for all workflows and actions in the specified paths.
+
+inputs:
+  ref:
+    description: The new reference (tag or branch) used in the workflows
+    required: true
+  repository:
+    description: |
+      The repository containing the actions that have to be switched, e.g. `grafana/plugin-ci-workflows`
+    required: true
+  paths:
+    description: |
+      The paths to the files or folders to modify, one per line.
+      Folders have to be suffixed with `/**`.
+
+      Example for a file: `.github/workflows/ci.yml`
+      Example for a folder: `actions/plugins/**`
+    required: true
+
+outputs:
+  changed:
+    description: Whether any files were changed
+    value: ${{ steps.determine-changes.outputs.changed }}
+
+permissions:
+  contents: write
+  pull-requests: write
+
+runs:
+  using: composite
+  steps:
+    - name: Switch references
+      run: ${{ github.action_path }}/switch-references.sh "${REPO}" "${REF}" ${PATHS}
+      env:
+        REF: ${{ inputs.ref }}
+        REPO: ${{ inputs.repository }}
+        PATHS: ${{ inputs.paths }}
+      shell: bash
+
+    - name: Determine if anything changed
+      id: determine-changes
+      run: |
+        if git diff --quiet; then
+          echo "No changes detected"
+          echo "changed=false" >> "$GITHUB_OUTPUT"
+        else
+          echo "Changes detected"
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+        fi
+      shell: bash

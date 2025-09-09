@@ -1,0 +1,51 @@
+name: Get Bot user
+description: Get information about the GitHub App bot user (such as ID, email, name) for use in commits and PRs.
+
+inputs:
+  app-slug:
+    description: |
+      The GitHub App slug.
+      This is usually set from the output of the `create-github-app-token` action.
+    required: true
+    type: string
+  token:
+    description: |
+      A GitHub token with permissions to call the GitHub API.
+      This is usually set from the output of the `create-github-app-token` action.
+    required: true
+    type: string
+
+outputs:
+  id:
+    description: The user ID of the GitHub App bot user.
+    value: ${{ steps.get-bot-user.outputs.id }}
+  email:
+    description: The email of the GitHub App bot user.
+    value: ${{ steps.get-bot-user.outputs.email }}
+  name:
+    description: The name of the GitHub App bot user.
+    value: ${{ steps.get-bot-user.outputs.name }}
+  committer:
+    description: The committer string to use in git commits in format "name <email>".
+    value: ${{ steps.get-bot-user.outputs.committer }}
+
+runs:
+  using: composite
+  steps:
+    - name: Get bot user info
+      id: get-bot-user
+      run: |
+        user_id=$(gh api "/users/${APP_SLUG}[bot]" --jq .id)
+        name=${APP_SLUG}[bot]
+        email="${user_id}+${APP_SLUG}[bot]@users.noreply.github.com"
+        {
+          echo "id=${user_id}"
+          echo "email=${email}"
+          echo "name=${name}"
+          echo "committer=${name} <${email}>"
+        } >> "$GITHUB_OUTPUT"
+      shell: bash
+      env:
+        APP_SLUG: ${{ inputs.app-slug }}
+        # Needed for gh cli to work
+        GH_TOKEN: ${{ inputs.token }}
