@@ -121,7 +121,7 @@ jobs:
 
       - name: Switch references
         id: switch-references
-        uses: grafana/plugin-ci-workflows/actions/internal/switch-references@main # zizmor: ignore[unpinned-uses]
+        uses: grafana/plugin-ci-workflows/actions/internal/switch-references@main
         with:
           repository: grafana/plugin-ci-workflows
           ref: ${{ steps.component-name.outputs.component }}/v${{ steps.get-version.outputs.version }}
@@ -136,7 +136,7 @@ jobs:
       - name: Get bot user info
         id: get-bot-user
         if: steps.switch-references.outputs.changed == 'true'
-        uses: grafana/plugin-ci-workflows/actions/internal/get-bot-user@main # zizmor: ignore[unpinned-uses]
+        uses: grafana/plugin-ci-workflows/actions/internal/get-bot-user@main
         with:
           app-slug: ${{ steps.generate-github-token.outputs.app-slug }}
           token: ${{ steps.generate-github-token.outputs.token }}
