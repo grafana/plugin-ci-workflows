@@ -20,6 +20,11 @@ on:
 permissions:
   contents: read
 
+# Only one instance of this workflow should run at a time.
+concurrency:
+  group: ${{ github.workflow_ref }}
+  cancel-in-progress: true
+
 jobs:
   update-tagged-references:
     name: Update tagged references

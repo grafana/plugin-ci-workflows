@@ -15,6 +15,11 @@ on:
 permissions:
   contents: read
 
+# Only one instance of this workflow should run at a time for each PR.
+concurrency:
+  group: ${{ github.workflow_ref }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
   # Checks if the PR's latest commit was made by this workflow to prevent recursion.
   automated-commit-check:
