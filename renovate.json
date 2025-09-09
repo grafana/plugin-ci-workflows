@@ -1,0 +1,14 @@
+{
+    "ignorePresets": [
+        "github>grafana/grafana-renovate-config//presets/base",
+        "github>grafana/grafana-renovate-config//presets/automerge",
+        "github>grafana/grafana-renovate-config//presets/labels",
+        "github>grafana/grafana-renovate-config//presets/docker"
+    ],    
+    "extends": [
+        "config:best-practices",
+        ":doNotPinPackage(grafana/docs-base)"
+    ],
+    "minimumReleaseAge": "14 days",
+    "prConcurrentLimit": 10    
+}
