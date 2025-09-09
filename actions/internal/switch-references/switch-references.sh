@@ -79,7 +79,7 @@ paths=()
 for arg in "$@"; do
     case $arg in
         -h|--help) show_help; exit 0 ;;
-        -v|--verbose) VERBOSE=true; shift ;;
+        -v|--verbose) VERBOSE=true;;
         *)
             if [ -z "${REPO_NAME:-}" ]; then
                 REPO_NAME="$arg"
@@ -88,7 +88,6 @@ for arg in "$@"; do
             else
                 paths+=("$arg")
             fi
-            shift ;;
     esac
 done
 
