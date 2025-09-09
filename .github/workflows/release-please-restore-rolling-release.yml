@@ -49,6 +49,7 @@ jobs:
         with:
           app-id: ${{ fromJSON(steps.get-secrets.outputs.secrets).GITHUB_APP_ID }}
           private-key: ${{ fromJSON(steps.get-secrets.outputs.secrets).GITHUB_APP_PRIVATE_KEY }}
+          permission-contents: write
           permission-pull-requests: write
 
       - name: Checkout main branch
