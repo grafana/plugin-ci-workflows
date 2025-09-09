@@ -1,0 +1,103 @@
+# Creates an automated PR to restore the rolling release channel by switching
+# all tagged references in workflows and configuration files to point to the
+# `main` branch instead of a specific version tag. This is complementary to the
+# `release-please PR: Update tagged references` workflow, which updates the
+# references to point to specific version tags when a new release is created.
+name: "release-please: Restore rolling release"
+
+on:
+  push:
+    tags:
+      # Trigger tags matching the most specific tags created by release-please.
+      # When publishing a new release, release-please creates multiple tags like these:
+      # - `component/v1.2.3`
+      # - `component/v1.2`
+      # - `component/v1`
+      # We trigger only for the most specific one, otherwise we trigger this workflow multiple times.
+      # (we only need one PR for each release, even if multiple tags are updated for the same release)
+      - "*/v[0-9]+.[0-9]+.[0-9]+"
+
+permissions:
+  contents: read
+
+# Only one instance of this workflow should run at a time.
+concurrency:
+  group: ${{ github.workflow_ref }}
+  cancel-in-progress: true
+
+jobs:
+  update-tagged-references:
+    name: Update tagged references
+    permissions:
+      contents: write
+      pull-requests: write
+      id-token: write
+    runs-on: ubuntu-arm64-small
+    steps:
+      - name: Get secrets from Vault
+        id: get-secrets
+        uses: grafana/shared-workflows/actions/get-vault-secrets@a37de51f3d713a30a9e4b21bcdfbd38170020593 # get-vault-secrets/v1.3.0
+        with:
+          common_secrets: |
+            GITHUB_APP_ID=plugins-platform-bot-app:app-id
+            GITHUB_APP_PRIVATE_KEY=plugins-platform-bot-app:private-key
+          export_env: false
+
+      - name: Generate GitHub token
+        id: generate-github-token
+        uses: actions/create-github-app-token@a8d616148505b5069dccd32f177bb87d7f39123b # v2.1.1
+        with:
+          app-id: ${{ fromJSON(steps.get-secrets.outputs.secrets).GITHUB_APP_ID }}
+          private-key: ${{ fromJSON(steps.get-secrets.outputs.secrets).GITHUB_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+          # Required or the following error is returned when trying to push:
+          # "refusing to allow a GitHub App to create or update workflow XYZ without `workflows` permission"
+          permission-workflows: write
+
+      - name: Checkout main branch
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          ref: main
+          token: ${{ steps.generate-github-token.outputs.token }}
+          # fetch-depth: 0
+          persist-credentials: false
+
+      # Update everything except for the "examples" folder
+      # (we want to encourage using tagged releases in docs)
+      - name: Switch references
+        id: switch-references
+        uses: grafana/plugin-ci-workflows/actions/internal/switch-references@main # zizmor: ignore[unpinned-uses]
+        with:
+          repository: grafana/plugin-ci-workflows
+          ref: main
+          paths: |
+            .github/workflows/ci.yml
+            .github/workflows/cd.yml
+            .github/workflows/playwright.yml
+            .github/workflows/playwright-docker.yml
+            actions/plugins/**
+
+      - name: Get bot user info
+        id: get-bot-user
+        if: steps.switch-references.outputs.changed == 'true'
+        uses: grafana/plugin-ci-workflows/actions/internal/get-bot-user@main # zizmor: ignore[unpinned-uses]
+        with:
+          app-slug: ${{ steps.generate-github-token.outputs.app-slug }}
+          token: ${{ steps.generate-github-token.outputs.token }}
+
+      - name: Create PR
+        if: steps.switch-references.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e # v7.0.8
+        with:
+          commit-message: "update references to use 'main' branch"
+          title: "update references to use 'main' branch"
+          branch: restore-rolling-release/${{ github.ref_name }}
+          base: main
+          body: |
+            This PR updates tagged references in workflow and configuration files to point to the `main` branch
+            in order to restore the rolling release channel.
+
+            _This is an automated PR created by the `${{ github.workflow }}` workflow._
+          committer: ${{ steps.get-bot-user.outputs.committer }}
+          token: ${{ steps.generate-github-token.outputs.token }}

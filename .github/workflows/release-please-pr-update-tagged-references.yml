@@ -1,0 +1,151 @@
+# Creates an automated commit whenever a release-please PR is created or updated.
+# The commit updates the references for all actions used in all workflows, actions
+# and examples in the repository to point to the new version tag, which will be
+# created when the PR is merged.
+name: "release-please PR: Update tagged references"
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+    paths: .release-please-manifest.json
+
+permissions:
+  contents: read
+
+# Only one instance of this workflow should run at a time for each PR.
+concurrency:
+  group: ${{ github.workflow_ref }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  # Checks if the PR's latest commit was made by this workflow to prevent recursion.
+  automated-commit-check:
+    name: Automated commit check
+    runs-on: ubuntu-arm64-small
+    outputs:
+      automated-commit: ${{ steps.check.outputs.automated-commit }}
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          ref: ${{ github.head_ref }}
+          persist-credentials: false
+      - name: Automated commit check
+        id: check
+        run: |
+          if git log -1 --pretty=%B | grep -q "update tagged references"; then
+            echo "Automated commit"
+            echo "automated-commit=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Not an automated commit"
+            echo "automated-commit=false" >> "$GITHUB_OUTPUT"
+          fi
+        shell: bash
+
+  update-tagged-references:
+    name: Update tagged references
+    needs: automated-commit-check
+    permissions:
+      contents: write
+      pull-requests: write
+      id-token: write
+    # Only run if the PR is from the same repo (not a fork), is a release-please PR,
+    # and the last commit was not made by this workflow (to prevent recursion).
+    if: >-
+      ${{
+        github.event.pull_request.head.repo.full_name == github.repository
+        && startsWith(github.head_ref, 'release-please--')
+        && needs.automated-commit-check.outputs.automated-commit == 'false'
+      }}
+    runs-on: ubuntu-arm64-small
+    steps:
+      - name: Get secrets from Vault
+        id: get-secrets
+        uses: grafana/shared-workflows/actions/get-vault-secrets@a37de51f3d713a30a9e4b21bcdfbd38170020593 # get-vault-secrets/v1.3.0
+        with:
+          common_secrets: |
+            GITHUB_APP_ID=plugins-platform-bot-app:app-id
+            GITHUB_APP_PRIVATE_KEY=plugins-platform-bot-app:private-key
+          export_env: false
+
+      - name: Generate GitHub token
+        id: generate-github-token
+        uses: actions/create-github-app-token@a8d616148505b5069dccd32f177bb87d7f39123b # v2.1.1
+        with:
+          app-id: ${{ fromJSON(steps.get-secrets.outputs.secrets).GITHUB_APP_ID }}
+          private-key: ${{ fromJSON(steps.get-secrets.outputs.secrets).GITHUB_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+          # Required or the following error is returned when trying to push:
+          # "refusing to allow a GitHub App to create or update workflow XYZ without `workflows` permission"
+          permission-workflows: write
+
+      - name: Checkout PR branch
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          ref: ${{ github.head_ref }}
+          token: ${{ steps.generate-github-token.outputs.token }}
+          # This is needed or GitHub will return a
+          # "remote rejected - cannot lock ref" error when trying to push
+          fetch-depth: 0
+          # Needed for the git-auto-commit-action to push changes
+          persist-credentials: true
+
+      - name: Determine component name
+        id: component-name
+        run: |
+          # Extract component name from branch name pattern: release-please--branches--main--components--<component-name>
+          component_name="${BRANCH_NAME##*--components--}"
+          echo "component=$component_name" >> "$GITHUB_OUTPUT"
+        shell: bash
+        env:
+          BRANCH_NAME: ${{ github.head_ref }}
+
+      - name: Get new version
+        id: get-version
+        run: |
+          # Extract path from component name (`package-name` key)
+          key=$(jq -r --arg component "$COMPONENT_NAME" '.packages | to_entries[] | select(.value["package-name"] == $component) | .key' release-please-config.json)
+          if [ -z "$key" ]; then
+            echo "Error: No package found with package-name '$COMPONENT_NAME'" >&2
+            exit 1
+          fi
+          version=$(jq -r --arg key "$key" '.[$key]' .release-please-manifest.json)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+        shell: bash
+        env:
+          COMPONENT_NAME: ${{ steps.component-name.outputs.component }}
+
+      - name: Switch references
+        id: switch-references
+        uses: grafana/plugin-ci-workflows/actions/internal/switch-references@main # zizmor: ignore[unpinned-uses]
+        with:
+          repository: grafana/plugin-ci-workflows
+          ref: ${{ steps.component-name.outputs.component }}/v${{ steps.get-version.outputs.version }}
+          paths: |
+            .github/workflows/ci.yml
+            .github/workflows/cd.yml
+            .github/workflows/playwright.yml
+            .github/workflows/playwright-docker.yml
+            actions/plugins/**
+            examples/**
+
+      - name: Get bot user info
+        id: get-bot-user
+        if: steps.switch-references.outputs.changed == 'true'
+        uses: grafana/plugin-ci-workflows/actions/internal/get-bot-user@main # zizmor: ignore[unpinned-uses]
+        with:
+          app-slug: ${{ steps.generate-github-token.outputs.app-slug }}
+          token: ${{ steps.generate-github-token.outputs.token }}
+
+      # Commit and push all changes to the PR
+      - name: Update PR
+        if: steps.switch-references.outputs.changed == 'true'
+        uses: stefanzweifel/git-auto-commit-action@778341af668090896ca464160c2def5d1d1a3eb0 # v6.0.1
+        with:
+          commit_message: "chore(main): update tagged references"
+          commit_user_name: ${{ steps.get-bot-user.outputs.name }}
+          commit_user_email: ${{ steps.get-bot-user.outputs.email }}

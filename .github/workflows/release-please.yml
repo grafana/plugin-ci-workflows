@@ -1,3 +1,4 @@
+# Creates releases and tags for the plugin-ci-workflows repository using release-please.
 name: Release plugin-ci-workflows
 
 on:
