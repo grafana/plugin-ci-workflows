@@ -79,6 +79,9 @@ jobs:
           private-key: ${{ fromJSON(steps.get-secrets.outputs.secrets).GITHUB_APP_PRIVATE_KEY }}
           permission-contents: write
           permission-pull-requests: write
+          # Required or the following error is returned when trying to push:
+          # "refusing to allow a GitHub App to create or update workflow XYZ without `workflows` permission"
+          permission-workflows: write
 
       - name: Checkout PR branch
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
