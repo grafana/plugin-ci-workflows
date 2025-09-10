@@ -24,12 +24,12 @@ runs:
   using: composite
   steps:
     - name: Detect package manager
-      id: node-pm
+      id: package-manager
       # TODO: Fix this once we have a version of the package-manager-detect action
       uses: grafana/plugin-actions/package-manager-detect@jackw/pm-detect
 
     - name: Install pnpm
-      if: steps.node-pm.outputs.name == 'pnpm'
+      if: steps.package-manager.outputs.name == 'pnpm'
       uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
 
     - name: Node
@@ -37,8 +37,8 @@ runs:
       with:
         node-version: "${{ inputs.node-version }}"
         node-version-file: "${{ inputs.node-version-file }}"
-        cache: ${{ steps.node-pm.outputs.name }}
-        cache-dependency-path: ${{ steps.node-pm.outputs.lockFilePath }}
+        cache: ${{ steps.package-manager.outputs.name }}
+        cache-dependency-path: ${{ steps.package-manager.outputs.lockFilePath }}
 
     - name: Go
       uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
