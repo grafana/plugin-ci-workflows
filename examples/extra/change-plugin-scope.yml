@@ -94,7 +94,7 @@ jobs:
           ENVIRONMENT: ${{ env.ENVIRONMENT }}
 
       - name: Change plugin scope
-        uses: grafana/plugin-ci-workflows/actions/plugins/publish/change-plugin-scope@main # zizmor: ignore[unpinned-uses]
+        uses: grafana/plugin-ci-workflows/actions/plugins/publish/change-plugin-scope@ci-cd-workflows/v2.0.0 # zizmor: ignore[unpinned-uses]
         with:
           plugin-id: ${{ env.PLUGIN_ID }}
           plugin-version: ${{ inputs.plugin_version }}
