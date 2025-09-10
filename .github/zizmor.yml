@@ -1,5 +1,0 @@
-rules:
-  unpinned-uses:
-    config:
-      policies:
-        grafana/plugin-ci-workflows/*: ref-pin
