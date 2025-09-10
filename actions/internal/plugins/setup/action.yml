@@ -24,12 +24,12 @@ runs:
   using: composite
   steps:
     - name: Detect package manager
-      id: node-pm
+      id: package-manager
       # TODO: Fix this once we have a version of the package-manager-detect action
       uses: grafana/plugin-actions/package-manager-detect@jackw/pm-detect
 
     - name: Install pnpm
-      if: steps.node-pm.outputs.name == 'pnpm'
+      if: steps.package-manager.outputs.name == 'pnpm'
       uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
 
     - name: Node
@@ -37,8 +37,8 @@ runs:
       with:
         node-version: "${{ inputs.node-version }}"
         node-version-file: "${{ inputs.node-version-file }}"
-        cache: ${{ steps.node-pm.outputs.name }}
-        cache-dependency-path: ${{ steps.node-pm.outputs.lockFilePath }}
+        cache: ${{ steps.package-manager.outputs.name }}
+        cache-dependency-path: ${{ steps.package-manager.outputs.lockFilePath }}
 
     # Install additional dependencies that are not built-in to the slim act image
     # but are included in the default GitHub Actions runner image and are needed for plugin-ci-workflows.
