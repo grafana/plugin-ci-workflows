@@ -89,7 +89,7 @@ jobs:
 
       - name: Resolve Grafana E2E versions
         id: resolve-versions
-        uses: grafana/plugin-actions/e2e-version@main
+        uses: grafana/plugin-actions/e2e-version@main # zizmor: ignore[unpinned-uses]
         with:
           skip-grafana-dev-image: ${{ inputs.skip-grafana-dev-image }}
           version-resolver-type: ${{ inputs.version-resolver-type }}
@@ -222,7 +222,7 @@ jobs:
           DOCKER_COMPOSE_FILE: ${{ inputs.docker-compose-file }}
 
       - name: Wait for Grafana to start
-        uses: grafana/plugin-actions/wait-for-grafana@main
+        uses: grafana/plugin-actions/wait-for-grafana@main # zizmor: ignore[unpinned-uses]
         with:
           url: "${{ inputs.grafana-url }}"
 
