@@ -333,7 +333,20 @@ jobs:
             # Default behavior:
             # - Add commit hash for prod-canary only deployments OR non-main branches
             # - Otherwise, do not set the suffix
-            if [[ ("${ENVIRONMENT}" == *"prod-canary"* && "${ENVIRONMENT}" != *"prod"*) || "${INPUT_BRANCH}" != 'main' ]]; then
+            IFS=',' read -ra envs <<< "$ENVIRONMENT"
+            has_prod_canary=false
+            has_prod=false
+            for e in "${envs[@]}"; do
+              if [[ "$e" == "prod-canary" ]]; then
+                has_prod_canary=true
+              fi
+              if [[ "$e" == "prod" ]]; then
+                has_prod=true
+              fi
+            done
+
+            if { $has_prod_canary && ! $has_prod; } || [[ "${INPUT_BRANCH}" != 'main' ]]; then
+              echo "setting plugin version suffix => ${COMMIT_SHA}"
               echo "plugin_version_suffix=${COMMIT_SHA}" >> "$GITHUB_OUTPUT"
             else
               echo "plugin_version_suffix=" >> "$GITHUB_OUTPUT"
