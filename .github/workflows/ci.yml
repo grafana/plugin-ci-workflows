@@ -285,12 +285,6 @@ jobs:
           golangci-lint-version: ${{ inputs.golangci-lint-version || env.DEFAULT_GOLANGCI_LINT_VERSION }}
           go-setup-caching: ${{ inputs.go-setup-caching }}
 
-      - name: Check Node version
-        run: |
-          node --version
-        shell: bash
-        working-directory: ${{ inputs.plugin-directory }}
-
       - name: Get secrets from Vault
         id: get-secrets
         if: ${{ fromJson(steps.workflow-context.outputs.result).isTrusted }}
