@@ -204,7 +204,7 @@ on:
           - `dev`: Deploy to dev catalog
           - `ops`: Deploy to ops catalog
           - `prod-canary`: Deploy to subset of prod instances - free and on instant wave
-          - `prod`: Deploy to dev AND ops AND prod
+          - `prod`: Deploy to dev AND ops AND prod-canary AND prod
           - A comma separated combination of the values above. E.g.: `dev,ops`
 
           Docs will only be published to the website when targeting `prod`.
