@@ -476,7 +476,7 @@ jobs:
 
             // Special case: 'prod' means we deploy to all environments
             if (environments.includes('prod')) {
-              // no need to deploy to prod-canary because it is a subset of prod
+              // no need to publish the version to prod-canary because it uses the same catalog as prod
               environments = allowedEnvironments.filter(e => e !== 'prod-canary');
             }
 
