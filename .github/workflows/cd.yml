@@ -203,7 +203,8 @@ on:
           - `none` (or empty string): Skip deployment (run only CI)
           - `dev`: Deploy to dev catalog
           - `ops`: Deploy to ops catalog
-          - `prod`: Deploy to dev AND ops AND prod
+          - `prod-canary`: Deploy to subset of prod instances - free and on instant wave
+          - `prod`: Deploy to dev AND ops AND prod-canary AND prod
           - A comma separated combination of the values above. E.g.: `dev,ops`
 
           Docs will only be published to the website when targeting `prod`.
@@ -330,9 +331,22 @@ jobs:
             echo "plugin_version_suffix=${INPUT_PLUGIN_VERSION_SUFFIX}" >> "$GITHUB_OUTPUT"
           else
             # Default behavior:
-            # - Use the commit SHA as the version suffix when not on main
+            # - Add commit hash for prod-canary only deployments OR non-main branches
             # - Otherwise, do not set the suffix
-            if [ "${INPUT_BRANCH}" != 'main' ]; then
+            IFS=',' read -ra envs <<< "$ENVIRONMENT"
+            has_prod_canary=false
+            has_prod=false
+            for e in "${envs[@]}"; do
+              if [[ "$e" == "prod-canary" ]]; then
+                has_prod_canary=true
+              fi
+              if [[ "$e" == "prod" ]]; then
+                has_prod=true
+              fi
+            done
+
+            if { $has_prod_canary && ! $has_prod; } || [[ "${INPUT_BRANCH}" != 'main' ]]; then
+              echo "setting plugin version suffix => ${COMMIT_SHA}"
               echo "plugin_version_suffix=${COMMIT_SHA}" >> "$GITHUB_OUTPUT"
             else
               echo "plugin_version_suffix=" >> "$GITHUB_OUTPUT"
@@ -341,6 +355,7 @@ jobs:
         env:
           INPUT_PLUGIN_VERSION_SUFFIX: ${{ inputs.plugin-version-suffix }}
           INPUT_BRANCH: ${{ inputs.branch }}
+          ENVIRONMENT: ${{ inputs.environment }}
           COMMIT_SHA: ${{ steps.checkout-specified-branch.outputs.commit }}
         shell: bash
 
@@ -411,6 +426,12 @@ jobs:
       - ci
 
     outputs:
+      # JSON list of target environments, based on the `environment` input.
+      # It returns a JSON array even if only one environment is targeted (e.g.: `dev` -> `["dev"]`)
+      # This output can be used to determine target catalogs.
+      # When targeting `prod`, all environments are returned, excluding `prod-canary` (`["dev", "ops", "prod"]`)
+      # When targeting `prod-canary` explicitly, it will be included in the list.
+      # If the environment value is exactly `none`, an empty array is returned (`[]`)
       environments: ${{ steps.vars.outputs.environments }}
       publish-docs: ${{ steps.vars.outputs.publish-docs }}
       platforms: ${{ steps.vars.outputs.platforms }}
@@ -453,7 +474,7 @@ jobs:
             }
 
             // Parse and filter environments
-            const allowedEnvironments = ['dev', 'ops', 'prod'];
+            const allowedEnvironments = ['dev', 'ops', 'prod-canary', 'prod'];
             let environments = [];
             environments = ENVIRONMENT.split(',')
               .map(e => e.trim())
@@ -461,7 +482,8 @@ jobs:
 
             // Special case: 'prod' means we deploy to all environments
             if (environments.includes('prod')) {
-              environments = allowedEnvironments;
+              // no need to publish the version to prod-canary because it uses the same catalog as prod
+              environments = allowedEnvironments.filter(e => e !== 'prod-canary');
             }
 
             // Remove duplicates and sort
@@ -521,7 +543,7 @@ jobs:
       - name: Login to Google Cloud (ID token for IAP)
         id: gcloud
         uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
-        if: ${{ matrix.environment != 'prod' }}
+        if: ${{ matrix.environment != 'prod' && matrix.environment != 'prod-canary' }}
         with:
           workload_identity_provider: "projects/304398677251/locations/global/workloadIdentityPools/github/providers/github-provider"
           service_account: github-plugin-ci-workflows@grafanalabs-workload-identity.iam.gserviceaccount.com
@@ -550,7 +572,7 @@ jobs:
           elif [ "${ENVIRONMENT}" == 'ops' ]; then
             echo "Picked ops token"
             token="${{ fromJSON(steps.get-secrets.outputs.secrets).GCOM_PUBLISH_TOKEN_OPS }}"
-          elif [ "${ENVIRONMENT}" == 'prod' ]; then
+          elif [[ "${ENVIRONMENT}" == 'prod-canary' || "${ENVIRONMENT}" == 'prod' ]]; then
             echo "Picked prod token"
             token="${{ fromJSON(steps.get-secrets.outputs.secrets).GCOM_PUBLISH_TOKEN_PROD }}"
           else
@@ -564,7 +586,7 @@ jobs:
 
       - name: Check and create stub
         uses: grafana/plugin-ci-workflows/actions/plugins/publish/check-and-create-stub@main
-        if: ${{ matrix.environment != 'prod' }}
+        if: ${{ matrix.environment != 'prod' && matrix.environment != 'prod-canary' }}
         with:
           plugin-id: ${{ fromJSON(needs.ci.outputs.plugin).id }}
           environment: ${{ matrix.environment }}
@@ -581,12 +603,12 @@ jobs:
         uses: grafana/plugin-ci-workflows/actions/plugins/publish/publish@main
         with:
           zips: ${{ needs.upload-to-gcs-release.outputs.gcs-zip-urls }}
-          environment: ${{ matrix.environment }}
+          environment: ${{ matrix.environment == 'prod-canary' && 'prod' || matrix.environment }}
           scopes: ${{ inputs.scopes }}
           gcom-publish-token: ${{ env.GCOM_PUBLISH_TOKEN }}
           gcloud-auth-token: ${{ steps.gcloud.outputs.id_token }}
           ignore-conflicts: ${{ steps.determine-continue.outputs.ignore_conflicts }}
-          publish-as-pending: ${{ inputs.publish-to-catalog-as-pending }}
+          publish-as-pending: ${{ matrix.environment == 'prod-canary' || inputs.publish-to-catalog-as-pending }}
 
   trigger-argo-workflow:
     name: Trigger Argo Workflow for Grafana Cloud deployment
