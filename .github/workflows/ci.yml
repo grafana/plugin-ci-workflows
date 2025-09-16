@@ -279,9 +279,13 @@ jobs:
       - name: Setup
         uses: grafana/plugin-ci-workflows/actions/plugins/setup@main
         with:
-          go-version: ${{ inputs.go-version || env.DEFAULT_GO_VERSION }}
+          # The priority to setup the node version is:
+          # 1. inputs.node-version
+          # 2. inputs.plugin-directory/.nvmrc
+          # 3. workflow-level DEFAULT_NODE_VERSION
           node-version: ${{ inputs.node-version || (hashFiles(format('{0}/.nvmrc', inputs.plugin-directory)) == '' && env.DEFAULT_NODE_VERSION || '') }}
           node-version-file: ${{ inputs.plugin-directory }}/.nvmrc
+          go-version: ${{ inputs.go-version || env.DEFAULT_GO_VERSION }}
           golangci-lint-version: ${{ inputs.golangci-lint-version || env.DEFAULT_GOLANGCI_LINT_VERSION }}
           go-setup-caching: ${{ inputs.go-setup-caching }}
 
