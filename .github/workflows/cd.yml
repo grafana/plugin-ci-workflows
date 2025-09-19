@@ -367,7 +367,7 @@ jobs:
 
   ci:
     name: CI
-    uses: grafana/plugin-ci-workflows/.github/workflows/ci.yml@main
+    uses: grafana/plugin-ci-workflows/.github/workflows/ci.yml@fail-ci-for-failed-signs-on-ops-and-prod
     needs:
       - setup
     with:
