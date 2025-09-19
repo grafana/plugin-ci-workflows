@@ -1,5 +1,33 @@
 # Changelog
 
+## [3.0.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v2.0.0...ci-cd-workflows/v3.0.0) (2025-09-19)
+
+
+### ⚠ BREAKING CHANGES
+
+* **deps:** Bump Go version used to build plugin from Go 1.23 to Go 1.24, bump golangci-lint to v1.64.8 ([#292](https://github.com/grafana/plugin-ci-workflows/issues/292))
+* **deps:** Bump default Node.js version used to build plugin from 20 to 22 (Active LTS) ([#291](https://github.com/grafana/plugin-ci-workflows/issues/291))
+
+### 🐛 Bug Fixes
+
+* add prod-canary ([#280](https://github.com/grafana/plugin-ci-workflows/issues/280)) ([df43691](https://github.com/grafana/plugin-ci-workflows/commit/df43691c48b0f5a0b3b9bcf6c94c63aa8939c9bf))
+* **worflows/ci:** make .nvmrc be used over the default node version ([#299](https://github.com/grafana/plugin-ci-workflows/issues/299)) ([2908cea](https://github.com/grafana/plugin-ci-workflows/commit/2908cea8876d7c26e63bdbd3458d28f9681712d1))
+
+
+### 🤖 Continuous Integrations
+
+* use conventional commits title for PR that restores rolling release ([#289](https://github.com/grafana/plugin-ci-workflows/issues/289)) ([1f78e66](https://github.com/grafana/plugin-ci-workflows/commit/1f78e66915b8f734504e24299b5eb94126a1949e))
+
+
+### 🔧 Chores
+
+* add zizmor config and ignore "unpinned-uses" for plugin-ci-workflows references ([#285](https://github.com/grafana/plugin-ci-workflows/issues/285)) ([1ad04f9](https://github.com/grafana/plugin-ci-workflows/commit/1ad04f98e1588586591a9f9b38289e1a6073666a))
+* **deps:** Bump default Node.js version used to build plugin from 20 to 22 (Active LTS) ([#291](https://github.com/grafana/plugin-ci-workflows/issues/291)) ([080c28b](https://github.com/grafana/plugin-ci-workflows/commit/080c28b04265b4c7333b533e797e951dfb0c3b66))
+* **deps:** Bump Go version used to build plugin from Go 1.23 to Go 1.24, bump golangci-lint to v1.64.8 ([#292](https://github.com/grafana/plugin-ci-workflows/issues/292)) ([124ff1c](https://github.com/grafana/plugin-ci-workflows/commit/124ff1cc9e488f2b2b630453a372f8fb0e2e6d79))
+* **deps:** Bump Trufflehog to v3.90.6 ([9c039a5](https://github.com/grafana/plugin-ci-workflows/commit/9c039a5e04bb2bbd6f665bf199de0185728f1a6a))
+* **deps:** update actions/checkout action to v5 ([#286](https://github.com/grafana/plugin-ci-workflows/issues/286)) ([74a9e53](https://github.com/grafana/plugin-ci-workflows/commit/74a9e531e203fe5abf6dcef4d509857a4c976247))
+* pinning e2e-versions and wait-for-grafana ([#301](https://github.com/grafana/plugin-ci-workflows/issues/301)) ([017fa07](https://github.com/grafana/plugin-ci-workflows/commit/017fa07ea57b0bcdd0c0dc33bc3c5da6ae300d82))
+
 ## [2.0.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v1.2.0...ci-cd-workflows/v2.0.0) (2025-09-09)
 
 
