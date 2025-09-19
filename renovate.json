@@ -7,8 +7,19 @@
         "github>grafana/grafana-renovate-config//presets/docker"
     ],    
     "extends": [
-        "config:best-practices",
-        ":doNotPinPackage(grafana/docs-base)"
+        "config:best-practices"        
+    ],
+    "packageRules": [
+        {
+            "matchManagers": ["github-actions"],
+            "matchPackageNames": ["grafana/plugin-actions"],
+            "pinDigests": false
+        },
+        {
+            "matchManagers": ["github-actions"],
+            "matchPackageNames": ["grafana/docs-base"],
+            "pinDigests": false
+        }
     ],
     "minimumReleaseAge": "14 days",
     "prConcurrentLimit": 10    
