@@ -7,8 +7,7 @@ set -e
 package() {
     # Sign the plugin
     if [ ! -z $GRAFANA_ACCESS_POLICY_TOKEN ]; then
-        # npx -y @grafana/sign-plugin@latest --distDir $2
-        mockSignError
+        npx -y @grafana/sign-plugin@latest --distDir $2
     else
         echo "WARNING: Plugin won't be signed, GRAFANA_ACCESS_POLICY_TOKEN not set"
     fi
@@ -16,11 +15,6 @@ package() {
     zip -r $1 $2
     sha1sum $1 | cut -f1 -d' ' | tr -d '\n' > $1.sha1
     md5sum $1 | cut -f1 -d' ' | tr -d '\n' > $1.md5
-}
-
-mockSignError() {
-    echo "Mock sign error"
-    exit 1
 }
 
 universal=false
