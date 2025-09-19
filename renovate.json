@@ -8,8 +8,14 @@
     ],    
     "extends": [
         "config:best-practices",
-        ":doNotPinPackage(grafana/docs-base)",
-        ":doNotPinPackage(grafana/plugin-actions)"        
+        ":doNotPinPackage(grafana/docs-base)"
+    ],
+    "packageRules": [
+        {
+            "matchManagers": ["github-actions"],
+            "matchPackageNames": ["grafana/plugin-actions"],
+            "pinDigests": false
+        }
     ],
     "minimumReleaseAge": "14 days",
     "prConcurrentLimit": 10    
