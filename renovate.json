@@ -8,7 +8,8 @@
     ],    
     "extends": [
         "config:best-practices",
-        ":doNotPinPackage(grafana/docs-base)"
+        ":doNotPinPackage(grafana/docs-base)",
+        ":doNotPinPackage(grafana/plugin-actions)"        
     ],
     "minimumReleaseAge": "14 days",
     "prConcurrentLimit": 10    
