@@ -71,7 +71,7 @@ jobs:
 
       - name: Resolve Grafana E2E versions
         id: resolve-versions
-        uses: grafana/plugin-actions/e2e-version@e2e-version/v1.0.2
+        uses: grafana/plugin-actions/e2e-version@26d4f3e4887175da31935defd9fcf12f663d7cd2 # e2e-version/v1.0.2
         with:
           skip-grafana-dev-image: ${{ inputs.skip-grafana-dev-image }}
           version-resolver-type: ${{ inputs.version-resolver-type }}
@@ -136,7 +136,7 @@ jobs:
           DOCKER_COMPOSE_FILE: ${{ inputs.grafana-compose-file }}
 
       - name: Wait for Grafana to start
-        uses: grafana/plugin-actions/wait-for-grafana@wait-for-grafana/v1.0.2
+        uses: grafana/plugin-actions/wait-for-grafana@c8ad89b7d81f8cb9967bb65e444d85f5b3d7c674 # wait-for-grafana/v1.0.2
         with:
           url: "${{ inputs.grafana-url }}"
 

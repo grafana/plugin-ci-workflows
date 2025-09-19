@@ -874,7 +874,7 @@ jobs:
       }}
     runs-on: ubuntu-latest
     container:
-      image: grafana/docs-base:latest # zizmor: ignore[unpinned-images]
+      image: grafana/docs-base:latest@sha256:6fb6a6b1089885129fabef0728c5e96ed4de81ad60522a2045b426daaaa47068 # zizmor: ignore[unpinned-images]
       volumes:
         # This mount is required in order to run the "plugins/docs/test" shared action
         # into the container. The action gets downloaded into /home/runner/work/_actions,
