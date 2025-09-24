@@ -89,7 +89,7 @@ jobs:
 
       - name: Resolve Grafana E2E versions
         id: resolve-versions
-        uses: grafana/plugin-actions/e2e-version@e2e-version/v1.0.2
+        uses: grafana/plugin-actions/e2e-version@e2e-version/v1.1.1
         with:
           skip-grafana-dev-image: ${{ inputs.skip-grafana-dev-image }}
           version-resolver-type: ${{ inputs.version-resolver-type }}
@@ -121,7 +121,7 @@ jobs:
         uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
         with:
           token_format: access_token
-          workload_identity_provider: "projects/304398677251/locations/global/workloadIdentityPools/github/providers/github-provider"
+          workload_identity_provider: 'projects/304398677251/locations/global/workloadIdentityPools/github/providers/github-provider'
           service_account: github-plugin-ci-workflows@grafanalabs-workload-identity.iam.gserviceaccount.com
 
       - name: NPM registry auth
@@ -224,7 +224,7 @@ jobs:
       - name: Wait for Grafana to start
         uses: grafana/plugin-actions/wait-for-grafana@wait-for-grafana/v1.0.2
         with:
-          url: "${{ inputs.grafana-url }}"
+          url: '${{ inputs.grafana-url }}'
 
       - name: Run Playwright tests
         id: run-tests
