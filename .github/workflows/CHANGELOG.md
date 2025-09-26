@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.0.1](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v3.0.0...ci-cd-workflows/v3.0.1) (2025-09-26)
+
+
+### 🔧 Chores
+
+* **deps:** update step-security/harden-runner action to v2.13.1 ([#295](https://github.com/grafana/plugin-ci-workflows/issues/295)) ([670e07f](https://github.com/grafana/plugin-ci-workflows/commit/670e07f83392185c36009648b10e94037fc200c0))
+
 ## [3.0.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v2.0.0...ci-cd-workflows/v3.0.0) (2025-09-26)
 
 
