@@ -64,7 +64,7 @@ fi
 if [ "$universal" = true ]; then
     universal_zip_fn=$plugin_id-$plugin_version.zip
     echo "Creating universal package: $universal_zip_fn"
-    
+
     tmp=$(mktemp -d)
     mkdir -p "$tmp/$plugin_id"
 
@@ -86,7 +86,7 @@ if [ "$ptype" == "app" ] && [ -d "datasource" ]; then
         backend_folder="datasource"
         exe="$backend_folder/$nested_exe"
     fi
-    cd .. 
+    cd ..
 fi
 
 if [ "$exe" == "null" ]; then
@@ -107,7 +107,7 @@ for file in $(find "$backend_folder" -type f -name "${exe_basename}_*"); do
     # Copy all files but the executables
     mkdir -p "$plugin_id"
     rsync -a --exclude "${exe_basename}*" "$dist/" "$plugin_id"
-    
+
     # Copy only the current executable
     cp "$dist/$file" "$plugin_id/$backend_folder"
     os_arch_zip_fn="$plugin_id-$plugin_version.$os_arch.zip"
