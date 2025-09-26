@@ -87,9 +87,9 @@ on:
         type: boolean
         required: false
         default: false
-      force-allow-unsigned:
+      allow-unsigned:
         description: |
-          Force allow unsigned plugins to be packaged.
+          Allow to publish unsigned plugins.
         type: boolean
         required: false
         default: false
@@ -398,7 +398,7 @@ jobs:
       frontend-secrets: ${{ inputs.frontend-secrets }}
       backend-secrets: ${{ inputs.backend-secrets }}
       environment: ${{ inputs.environment }}
-      force-allow-unsigned: ${{ inputs.force-allow-unsigned }}
+      allow-unsigned: ${{ inputs.allow-unsigned }}
 
   build-attestation:
     name: Build attestation

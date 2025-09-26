@@ -182,9 +182,9 @@ on:
           If present this will be used to control some aspects of the CI workflow.
         type: string
         required: false
-      force-allow-unsigned:
+      allow-unsigned:
         description: |
-          Force allow unsigned plugins to be built.
+          Allow unsigned plugins to be built.
         type: boolean
         required: false
         default: false
@@ -378,7 +378,7 @@ jobs:
           dist-folder: dist
           output-folder: dist-artifacts
           access-policy-token: ${{ fromJson(steps.workflow-context.outputs.result).isTrusted && fromJSON(steps.get-secrets.outputs.secrets).SIGN_PLUGIN_ACCESS_POLICY_TOKEN || '' }}
-          allow-unsigned: ${{ ((inputs.environment == 'dev' || inputs.environment == '') && !(fromJson(steps.workflow-context.outputs.result).isTrusted)) || inputs.force-allow-unsigned }}
+          allow-unsigned: ${{ ((inputs.environment == 'dev' || inputs.environment == '') && !(fromJson(steps.workflow-context.outputs.result).isTrusted)) || inputs.allow-unsigned }}
 
       - name: Package os/arch ZIPs
         id: os-arch-zips
@@ -388,7 +388,7 @@ jobs:
           dist-folder: dist
           output-folder: dist-artifacts
           access-policy-token: ${{ fromJson(steps.workflow-context.outputs.result).isTrusted && fromJSON(steps.get-secrets.outputs.secrets).SIGN_PLUGIN_ACCESS_POLICY_TOKEN || '' }}
-          allow-unsigned: ${{ ((inputs.environment == 'dev' || inputs.environment == '') && !(fromJson(steps.workflow-context.outputs.result).isTrusted)) || inputs.force-allow-unsigned }}
+          allow-unsigned: ${{ ((inputs.environment == 'dev' || inputs.environment == '') && !(fromJson(steps.workflow-context.outputs.result).isTrusted)) || inputs.allow-unsigned }}
 
       - name: Trufflehog secrets scanning
         if: ${{ inputs.run-trufflehog == true }}
