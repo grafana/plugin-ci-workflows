@@ -22,5 +22,6 @@
         }
     ],
     "minimumReleaseAge": "14 days",
-    "prConcurrentLimit": 10    
+    "prConcurrentLimit": 10,
+    "rebaseWhen": "behind-base-branch"
 }
