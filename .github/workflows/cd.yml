@@ -87,6 +87,12 @@ on:
         type: boolean
         required: false
         default: false
+      allow-unsigned:
+        description: |
+          Allow to publish unsigned plugins.
+        type: boolean
+        required: false
+        default: false
 
       # Playwright
       run-playwright:
@@ -391,6 +397,8 @@ jobs:
       plugin-version-suffix: ${{ needs.setup.outputs.plugin-version-suffix }}
       frontend-secrets: ${{ inputs.frontend-secrets }}
       backend-secrets: ${{ inputs.backend-secrets }}
+      environment: ${{ inputs.environment }}
+      allow-unsigned: ${{ inputs.allow-unsigned }}
 
   build-attestation:
     name: Build attestation
