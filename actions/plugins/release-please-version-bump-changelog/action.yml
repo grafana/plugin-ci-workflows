@@ -25,13 +25,13 @@ inputs:
   config-url:
     description: "URL to release-please-config.json"
     required: false
-    default: "https://raw.githubusercontent.com/grafana/plugin-ci-workflows/main/release-please-config.json"
+    default: "https://raw.githubusercontent.com/grafana/test-release-gh-actions/main/release-please-config.json"
     type: string
 
   manifest-url:
     description: "URL to .release-please-manifest.json"
     required: false
-    default: "https://raw.githubusercontent.com/grafana/plugin-ci-workflows/main/.release-please-manifest.json"
+    default: "https://raw.githubusercontent.com/grafana/test-release-gh-actions/main/.release-please-manifest.json"
     type: string
 
 runs:
