@@ -482,11 +482,12 @@ jobs:
             }
 
             // Parse and filter environments
-            const allowedEnvironments = ['dev', 'ops', 'staging', 'prod-canary', 'prod'];
+            const allowedEnvironments = ['dev', 'ops', 'prod-canary', 'prod'];
+            const aliases = {staging: 'ops'};
             let environments = [];
             environments = ENVIRONMENT.split(',')
               .map(e => e.trim())
-              .map(e => e === 'staging' ? 'ops' : e) // normalize 'staging' to 'ops'
+              .map(e => aliases[e] || e) // resolve aliases
               .filter(e => allowedEnvironments.includes(e));
 
             // Special case: 'prod' means we deploy to all environments
