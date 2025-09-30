@@ -7,7 +7,6 @@ on:
       - reopened
       - edited
       - synchronize
-
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
