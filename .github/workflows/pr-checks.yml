@@ -50,9 +50,9 @@ jobs:
           echo "If this is a leftover from testing, please remove it before merging the PR."
 
           # Annotate changes in GitHub's format so they show up in the "Files changed" tab.
-          title="Workflow reference not pointing to \`@main\`"
-          message="Workflow reference pointing to a non-main branch. Please switch it back to \`@main\`."
-          git diff --unified=0 | awk '
+          TITLE="Workflow reference not pointing to \`@main\`"
+          MESSAGE="Workflow reference pointing to a non-main branch. Please switch it back to \`@main\`."
+          git diff --unified=0 | awk -v title="$TITLE" -v message="$MESSAGE" '
           /^diff --git/ { 
               # Extract filename from "diff --git a/file b/file"
               gsub(/^diff --git a\//, "")
