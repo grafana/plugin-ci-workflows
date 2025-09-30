@@ -1,4 +1,5 @@
 name: Check @main workflow references
+description: Checks that all references to the 'plugin-ci-workflows' actions are pointing to the 'main' branch in PRs.
 
 on:
   pull_request:
