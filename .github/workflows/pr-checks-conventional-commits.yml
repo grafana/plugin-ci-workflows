@@ -1,4 +1,4 @@
-name: PR checks - Conventional commits
+name: PR Conventional Commit Validation
 
 on:
   pull_request:
