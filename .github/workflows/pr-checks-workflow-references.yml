@@ -1,4 +1,4 @@
-name: "@main workflow references"
+name: Check @main workflow references
 
 on:
   pull_request:
