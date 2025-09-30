@@ -1,40 +1,37 @@
 name: Release Please version bump changelog
 description: |
   Bump version and generate changelog using release-please.
-  Trigger with workflow_dispatch
-  release-please-action will automatically use the following commit message prefixes to determine the version bump:
+  Trigger with workflow_dispatch.
+  Downloads config + manifest via curl into predictable filenames.
+  Commit message prefixes used:
   - feat: Minor
   - fix: Patch
   - BREAKING CHANGE: Major
   - anything else: No bump
-  Set .release-please-config.json to customize github draft release, changelog omissions, headers
 
 inputs:
-  release-type:
-    description: "Release type for release-please (node, simple, etc.)"
-    required: false
-    default: "node"
-    type: string
   target-branch:
-    description: "Target branch for releases"
+    description: "Branch to release from"
     required: false
     default: "main"
     type: string
-  config-file:
-    description: "Path to release-please config file"
-    required: false
-    default: "release-please-config.json"
-    type: string
-  manifest-file:
-    description: "Path to release-please manifest file"
-    required: false
-    default: ".release-please-manifest.json"
-    type: string
 
   repo-url:
-    description: "Repository URL for release-please"
+    description: "Repository to run release-please on"
     required: false
     default: ${{ github.repository }}
+    type: string
+
+  config-url:
+    description: "URL to release-please-config.json"
+    required: false
+    default: "https://raw.githubusercontent.com/grafana/plugin-ci-workflows/main/release-please-config.json"
+    type: string
+
+  manifest-url:
+    description: "URL to .release-please-manifest.json"
+    required: false
+    default: "https://raw.githubusercontent.com/grafana/plugin-ci-workflows/main/.release-please-manifest.json"
     type: string
 
 runs:
@@ -60,7 +57,7 @@ runs:
         private-key: ${{ fromJSON(steps.get-secrets.outputs.secrets).GITHUB_APP_PRIVATE_KEY }}
         owner: ${{ github.repository_owner }}
 
-    - name: Checkout
+    - name: Checkout repo
       uses: actions/checkout@v4
       with:
         token: ${{ steps.generate-github-token.outputs.token }}
@@ -77,12 +74,24 @@ runs:
       shell: bash
       run: npm install -g release-please
 
-    - name: Run release-please manually
+    - name: Download config + manifest
+      shell: bash
+      run: |
+        echo "Fetching config from: ${{ inputs.config-url }}"
+        curl -fsSL "${{ inputs.config-url }}" -o release-please-config.json
+
+        echo "Fetching manifest from: ${{ inputs.manifest-url }}"
+        curl -fsSL "${{ inputs.manifest-url }}" -o .release-please-manifest.json
+
+        echo "Downloaded files:"
+        ls -l release-please-config.json .release-please-manifest.json
+
+    - name: Run release-please
       shell: bash
       run: |
         release-please release-pr \
           --repo-url="${{ inputs.repo-url }}" \
           --token="${{ steps.generate-github-token.outputs.token }}" \
           --target-branch="${{ inputs.target-branch || github.ref_name }}" \
-          --config-file="${{ inputs.config-file }}" \
-          --manifest-file="${{ inputs.manifest-file }}"
+          --config-file="release-please-config.json" \
+          --manifest-file=".release-please-manifest.json"
