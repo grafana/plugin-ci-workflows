@@ -61,7 +61,7 @@ jobs:
               match($0, /\+([0-9]+)/, arr)
               if (arr[1]) {
                   line = arr[1]
-                  print "::error file=" file ",line=" line ",title=TEST::Reference to non-main branch. Please switch it back to `@main`."
+                  print "::error file=" file ",line=" line ",title=Workflow reference not pointint to main::Reference to non-main branch. Please switch it back to `@main`."
               }
           }'
 
