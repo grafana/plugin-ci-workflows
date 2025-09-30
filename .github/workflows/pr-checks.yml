@@ -34,7 +34,12 @@ jobs:
         with:
           repository: grafana/plugin-ci-workflows
           ref: main
-          paths: ./**
+          paths: |
+            .github/workflows/ci.yml
+            .github/workflows/cd.yml
+            .github/workflows/playwright.yml
+            .github/workflows/playwright-docker.yml
+            actions/plugins/**
 
       - name: Check drift
         if: steps.switch-references.outputs.changed == 'true'
