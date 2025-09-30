@@ -49,6 +49,9 @@ jobs:
           echo "See the diff above for details."
           echo "If this is a leftover from testing, please remove it before merging the PR."
 
+          # Annotate changes in GitHub's format so they show up in the "Files changed" tab.
+          title="Workflow reference not pointing to `@main`"
+          message="Workflow reference pointing to a non-main branch. Please switch it back to `@main`."
           git diff --unified=0 | awk '
           /^diff --git/ { 
               # Extract filename from "diff --git a/file b/file"
@@ -61,9 +64,8 @@ jobs:
               match($0, /\+([0-9]+)/, arr)
               if (arr[1]) {
                   line = arr[1]
-                  print "::error file=" file ",line=" line ",title=Workflow reference not pointint to main::Reference to non-main branch. Please switch it back to `@main`."
+                  print "::error file=" file ",line=" line ",title=" title "::" message
               }
           }'
-
           exit 1
         shell: bash
