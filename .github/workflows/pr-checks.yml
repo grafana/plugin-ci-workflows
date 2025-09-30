@@ -48,5 +48,22 @@ jobs:
           echo "❌ Some references of the 'plugin-ci-workflows' actions are not pointing to the 'main' branch."
           echo "See the diff above for details."
           echo "If this is a leftover from testing, please remove it before merging the PR."
+
+          git diff --unified=0 | awk '
+          /^diff --git/ { 
+              # Extract filename from "diff --git a/file b/file"
+              gsub(/^diff --git a\//, "")
+              gsub(/ b\/.*$/, "")
+              file = $0
+          }
+          /^@@/ {
+              # Extract line number from "@@ -old +new @@" format
+              match($0, /\+([0-9]+)/, arr)
+              if (arr[1]) {
+                  line = arr[1]
+                  print "::error file=" file ",line=" line ",title=TEST::Reference to non-main branch. Please switch it back to `@main`."
+              }
+          }'
+
           exit 1
         shell: bash
