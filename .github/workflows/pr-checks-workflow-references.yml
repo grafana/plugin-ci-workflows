@@ -39,6 +39,7 @@ jobs:
       - name: Check drift
         if: steps.switch-references.outputs.changed == 'true'
         run: |
+          echo ${{ github.event.pull_request.head.ref }}
           git diff
           echo "❌ Some references of the 'plugin-ci-workflows' actions are not pointing to the 'main' branch."
           echo "See the diff above for details."
