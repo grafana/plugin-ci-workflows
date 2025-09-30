@@ -628,10 +628,6 @@ jobs:
 
     if: ${{ inputs.grafana-cloud-deployment-type != '' }}
 
-    # Allow the job to fail because this is opt-in and experimental.
-    # TODO: remove once the workflow is stable.
-    continue-on-error: true
-
     steps:
       - name: Check deployment type
         # Right now we only support provisioned plugins.
