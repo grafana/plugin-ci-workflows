@@ -20,3 +20,24 @@ jobs:
       - uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50 # v6.1.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  check-references:
+    runs-on: ubuntu-arm64-small
+    steps:
+      - name: Switch references
+        id: switch-references
+        uses: grafana/plugin-ci-workflows/actions/internal/switch-references@main
+        with:
+          repository: grafana/plugin-ci-workflows
+          ref: main
+          paths: ./**
+
+      - name: Check drift
+        if: steps.switch-references.outputs.changed == 'true'
+        run: |
+          git diff
+          echo "❌ Some references of the 'plugin-ci-workflows' actions are not pointing to the 'main' branch."
+          echo "See the diff above for details."
+          echo "If this is a leftover from testing, please remove it before merging the PR."
+          exit 1
+        shell: bash
