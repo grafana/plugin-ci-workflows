@@ -1,12 +1,27 @@
 name: Release Please version bump changelog
 description: |
   Bump version and generate changelog using release-please.
+
+  **Requirements:**
+  - Must be run on the main branch
+  - The following files must be present in the repository root:
+    - `.release-please-manifest.json` (manifest file)
+    - `release-please-config.json` (config file)
+
+  **Usage:**
   Trigger with workflow_dispatch.
-  Commit message prefixes used:
-  - feat: Minor
-  - fix: Patch
-  - BREAKING CHANGE: Major
-  - anything else: No bump
+
+  **Version Bumping:**
+  Release-please automatically updates the npm version based on commit message prefixes.
+  - feat: Minor version bump
+  - fix: Patch version bump
+  - BREAKING CHANGE: Major version bump
+  - anything else: No version bump
+
+  **⚠️ Warning:**
+  Adding release-please to an existing repository, may pull in old commits the first time it runs.
+  This happens because release-please analyzes all commits since the last release tag to determine what changes to include.
+  Edit the PR to remove old commits.
 
 runs:
   using: composite
