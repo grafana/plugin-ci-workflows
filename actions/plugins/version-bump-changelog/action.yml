@@ -16,6 +16,11 @@ inputs:
     required: false
     type: boolean
     default: true
+  exclude-from-changelog:
+    description: "List of commit types to exclude from CHANGELOG"
+    required: false
+    type: string
+    default: "skip,no-changelog"
 
 runs:
   using: composite
@@ -78,10 +83,10 @@ runs:
         if [[ "${PREVIOUS_TAG}" == "v0.0.0" ]]; then
           echo "No previous tag found ${PREVIOUS_TAG}, generating changelog for initial version only: v${NEW_VERSION}"
           # For initial version, get all commits up to HEAD
-          npx generate-changelog -t HEAD --exclude skip,no-changelog
+          npx generate-changelog -t HEAD --exclude ${EXCLUDE_STRING}
         else
           echo "Generating changelog from ${PREVIOUS_TAG} to HEAD"
-          npx generate-changelog -t ${PREVIOUS_TAG}...HEAD --exclude skip,no-changelog
+          npx generate-changelog -t ${PREVIOUS_TAG}...HEAD --exclude ${EXCLUDE_STRING}
         fi
 
         # Remove existing "Changelog" header anywhere in the file
@@ -97,6 +102,7 @@ runs:
         GITHUB_TOKEN: ${{ steps.generate-github-token.outputs.token }}
         PREVIOUS_TAG: ${{ steps.previous-tag.outputs.previous-tag }}
         NEW_VERSION: ${{ steps.bump.outputs.new-version }}
+        EXCLUDE_STRING: ${{ inputs.exclude-from-changelog }}
 
     - name: Commit changes
       shell: bash
