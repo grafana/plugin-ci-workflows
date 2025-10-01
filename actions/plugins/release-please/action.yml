@@ -1,0 +1,45 @@
+name: Release Please version bump changelog
+description: |
+  Bump version and generate changelog using release-please.
+  Trigger with workflow_dispatch.
+  Commit message prefixes used:
+  - feat: Minor
+  - fix: Patch
+  - BREAKING CHANGE: Major
+  - anything else: No bump
+
+runs:
+  using: composite
+  steps:
+    - name: Get secrets from Vault
+      id: get-secrets
+      uses: grafana/shared-workflows/actions/get-vault-secrets@a37de51f3d713a30a9e4b21bcdfbd38170020593 # get-vault-secrets/v1.3.0
+      env:
+        VAULT_INSTANCE: ops
+      with:
+        vault_instance: ${{ env.VAULT_INSTANCE }}
+        common_secrets: |
+          GITHUB_APP_ID=DrilldownBot:app_id
+          GITHUB_APP_PRIVATE_KEY=DrilldownBot:key
+
+    - name: Generate GitHub token
+      id: generate-github-token
+      uses: actions/create-github-app-token@67018539274d69449ef7c02e8e71183d1719ab42 # v2.1.4
+      with:
+        app-id: ${{ fromJSON(steps.get-secrets.outputs.secrets).GITHUB_APP_ID }}
+        private-key: ${{ fromJSON(steps.get-secrets.outputs.secrets).GITHUB_APP_PRIVATE_KEY }}
+        owner: ${{ github.repository_owner }}
+
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        fetch-tags: true
+
+    - name: Run release-please
+      uses: googleapis/release-please-action@c2a5a2bd6a758a0937f1ddb1e8950609867ed15c # v4.3.0
+      with:
+        manifest-file: .release-please-manifest.json
+        config-file: release-please-config.json
+        target-branch: main
+        token: ${{ steps.generate-github-token.outputs.token }}
