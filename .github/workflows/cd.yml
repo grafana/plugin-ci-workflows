@@ -269,7 +269,7 @@ on:
         default: false
         type: boolean
       # Useful if you want to publish to catalog (e.g. dev) but _not_ trigger Argo
-      argo:
+      trigger-argo:
         description: |
           Trigger Argo after publish to catalog
         default: true
@@ -632,7 +632,7 @@ jobs:
     needs:
       - ci
       - publish-to-catalog
-    if: ${{ inputs.grafana-cloud-deployment-type != '' && inputs.argo }}
+    if: ${{ inputs.grafana-cloud-deployment-type != '' && inputs.trigger-argo }}
 
     steps:
       - name: Check deployment type
