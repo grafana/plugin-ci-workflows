@@ -13,4 +13,4 @@ jobs:
 
     steps:
       - name: release please version bump changelog
-        uses: grafana/plugin-ci-workflows/actions/plugins/release-please-version-bump-changelog@main # zizmor: ignore[unpinned-uses]
+        uses: grafana/plugin-ci-workflows/actions/plugins/release-please@main # zizmor: ignore[unpinned-uses]
