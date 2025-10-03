@@ -83,7 +83,7 @@ runs:
         if [[ "${PREVIOUS_TAG}" == "v0.0.0" ]]; then
           echo "No previous tag found ${PREVIOUS_TAG}, generating changelog for initial version only: v${NEW_VERSION}"
           # For initial version, get all commits up to HEAD
-          npx generate-changelog -t HEAD --exclude ${EXCLUDE_STRING}
+          npx generate-changelog -t HEAD --exclude "${EXCLUDE_STRING}"
         else
           echo "Generating changelog from ${PREVIOUS_TAG} to HEAD"
           npx generate-changelog -t ${PREVIOUS_TAG}...HEAD --exclude "${EXCLUDE_STRING}"
