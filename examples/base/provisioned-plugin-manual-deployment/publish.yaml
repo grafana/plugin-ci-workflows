@@ -48,6 +48,8 @@ jobs:
       scopes: grafana_cloud # TODO: Choose the appropriate scope for your plugin.
       # This will trigger the Argo Workflow to update your plugin version in Grafana Cloud via deployment_tools
       grafana-cloud-deployment-type: provisioned
+      # Trigger Argo Workflow only when deploying from main branch (do not deploy PRs to the whole cluster)
+      trigger-argo: ${{ github.event.inputs.branch == 'main' }}
       argo-workflow-slack-channel: "#grafana-plugins-platform-ci" # TODO: Change with your own Slack channel
 
 
