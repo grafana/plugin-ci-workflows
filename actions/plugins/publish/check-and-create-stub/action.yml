@@ -5,7 +5,6 @@ description: |
   The signature type is taken from the production catalog.
   If the plugin stub doesn't exist in prod, the action returns an error.
 
-
 inputs:
   plugin-id:
     description: |
@@ -14,7 +13,7 @@ inputs:
   environment:
     description: |
       Environment where the stub should be created.
-      Can be 'dev' or 'ops'.
+      Can be 'dev' or 'ops' (or 'staging').
       Cannot be 'prod'.
     required: true
 

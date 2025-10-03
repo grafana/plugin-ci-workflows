@@ -208,7 +208,7 @@ on:
           Allowed values:
           - `none` (or empty string): Skip deployment (run only CI)
           - `dev`: Deploy to dev catalog
-          - `ops`: Deploy to ops catalog
+          - `ops` or `staging`: Deploy to ops catalog
           - `prod-canary`: Deploy to subset of prod instances - free and on instant wave
           - `prod`: Deploy to dev AND ops AND prod-canary AND prod
           - A comma separated combination of the values above. E.g.: `dev,ops`
@@ -246,7 +246,7 @@ on:
       auto-merge-environments:
         description: |
           Comma separated list of environments to auto-merge when deploying to Grafana Cloud via Argo.
-          Supported values are 'dev' and 'ops'.
+          Supported values are 'dev' and 'ops' (or 'staging').
           'prod-canary' and 'prod' will never be auto-merged.
           Default is 'dev'.
         default: dev
@@ -490,9 +490,11 @@ jobs:
 
             // Parse and filter environments
             const allowedEnvironments = ['dev', 'ops', 'prod-canary', 'prod'];
+            const aliases = {staging: 'ops'};
             let environments = [];
             environments = ENVIRONMENT.split(',')
               .map(e => e.trim())
+              .map(e => aliases[e] || e) // resolve aliases
               .filter(e => allowedEnvironments.includes(e));
 
             // Special case: 'prod' means we deploy to all environments
