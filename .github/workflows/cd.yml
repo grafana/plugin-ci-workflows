@@ -268,6 +268,13 @@ on:
           Default is false.
         default: false
         type: boolean
+      # Useful if you want to publish to catalog (e.g. dev) but _not_ trigger Argo
+      trigger-argo:
+        description: |
+          Trigger Argo after publish to catalog
+        default: true
+        required: false
+        type: boolean
 
       # Options for deploying PRs. Those values should come from the PR event and should not be set manually.
       branch:
@@ -625,12 +632,7 @@ jobs:
     needs:
       - ci
       - publish-to-catalog
-
-    if: ${{ inputs.grafana-cloud-deployment-type != '' }}
-
-    # Allow the job to fail because this is opt-in and experimental.
-    # TODO: remove once the workflow is stable.
-    continue-on-error: true
+    if: ${{ inputs.grafana-cloud-deployment-type != '' && inputs.trigger-argo }}
 
     steps:
       - name: Check deployment type
