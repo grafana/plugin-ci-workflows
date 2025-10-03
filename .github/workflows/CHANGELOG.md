@@ -1,5 +1,25 @@
 # Changelog
 
+## [3.1.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v3.0.0...ci-cd-workflows/v3.1.0) (2025-10-03)
+
+
+### 🎉 Features
+
+* **ci:** add job to check for workflows references in pr-checks.yml ([#315](https://github.com/grafana/plugin-ci-workflows/issues/315)) ([2ae9272](https://github.com/grafana/plugin-ci-workflows/commit/2ae92720c26f0b4645970cf006ab065a1dda9d8a))
+* **workflows:** fail ci for failed signs on ops and prod ([#300](https://github.com/grafana/plugin-ci-workflows/issues/300)) ([25aadee](https://github.com/grafana/plugin-ci-workflows/commit/25aadeeb2091eb2ea443a25d478ef296a5ac87c5))
+
+
+### 🐛 Bug Fixes
+
+* add argo input to decouple catalog+argo ([#311](https://github.com/grafana/plugin-ci-workflows/issues/311)) ([22dfd81](https://github.com/grafana/plugin-ci-workflows/commit/22dfd818077cdfe89d2155b4c70e5310da318638))
+
+
+### 🔧 Chores
+
+* **cd:** make CD workflow fail if Argo step fails ([#313](https://github.com/grafana/plugin-ci-workflows/issues/313)) ([df4b164](https://github.com/grafana/plugin-ci-workflows/commit/df4b164c37c7b2cdf8ca2b4811019126674466b6))
+* **deps:** update actions/create-github-app-token action to v2.1.4 ([#312](https://github.com/grafana/plugin-ci-workflows/issues/312)) ([9e752b9](https://github.com/grafana/plugin-ci-workflows/commit/9e752b9bd01ba0b6fcf2755ba4833aad43ece962))
+* **deps:** update step-security/harden-runner action to v2.13.1 ([#295](https://github.com/grafana/plugin-ci-workflows/issues/295)) ([670e07f](https://github.com/grafana/plugin-ci-workflows/commit/670e07f83392185c36009648b10e94037fc200c0))
+
 ## [3.0.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v2.0.0...ci-cd-workflows/v3.0.0) (2025-09-26)
 
 

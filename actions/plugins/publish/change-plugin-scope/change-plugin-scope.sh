@@ -5,7 +5,7 @@ if [[ "$RUNNER_DEBUG" == "1" ]]; then
 fi
 
 usage() {
-    echo "Usage: $0 --environment <dev|ops|prod> --scopes <universal|grafana_cloud|a,b,c|...> [--dry-run] <plugin-id> <plugin-version>"
+    echo "Usage: $0 --environment <dev|ops|staging|prod> --scopes <universal|grafana_cloud|a,b,c|...> [--dry-run] <plugin-id> <plugin-version>"
 }
 
 json_obj() {
@@ -69,7 +69,7 @@ case $gcom_env in
         gcom_api_url=https://grafana-dev.com/api
         has_iap=true
         ;;
-    ops)
+    ops|staging)
         gcom_api_url=https://grafana-ops.com/api
         has_iap=true
         ;;
@@ -77,7 +77,7 @@ case $gcom_env in
         gcom_api_url=https://grafana.com/api
         ;;
     *)
-        echo "Invalid environment: $gcom_env (supported values: 'dev', 'ops', 'prod')"
+        echo "Invalid environment: $gcom_env (supported values: 'dev', 'ops', 'staging', 'prod')"
         usage
         exit 1
         ;;
