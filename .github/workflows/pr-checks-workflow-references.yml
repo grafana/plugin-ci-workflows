@@ -1,0 +1,67 @@
+# Checks that all references to the 'plugin-ci-workflows' actions are pointing to the 'main' branch in PRs.
+name: Check @main workflow references
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - edited
+      - synchronize
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check-references:
+    # Ignore PRs created by release-please. Those PRs will have their references switched to the new version
+    # in order to create hermetic releases, so this action would always fail on those PRs.
+    if: startsWith(github.event.pull_request.head.ref, 'release-please--branches--main--') == false
+    runs-on: ubuntu-arm64-small
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
+
+      - name: Switch references
+        id: switch-references
+        uses: grafana/plugin-ci-workflows/actions/internal/switch-references@main
+        with:
+          repository: grafana/plugin-ci-workflows
+          ref: main
+          paths: |
+            .github/workflows/ci.yml
+            .github/workflows/cd.yml
+            .github/workflows/playwright.yml
+            .github/workflows/playwright-docker.yml
+            actions/plugins/**
+
+      - name: Check drift
+        if: steps.switch-references.outputs.changed == 'true'
+        run: |
+          git diff
+          echo "❌ Some references of the 'plugin-ci-workflows' actions are not pointing to the 'main' branch."
+          echo "See the diff above for details."
+          echo "If this is a leftover from testing, please remove it before merging the PR."
+
+          # Annotate changes in GitHub's format so they show up in the "Files changed" tab.
+          TITLE="Workflow reference not pointing to \`@main\`"
+          MESSAGE="Workflow reference pointing to a non-main branch. Please switch it back to \`@main\`."
+          git diff --unified=0 | awk -v title="$TITLE" -v message="$MESSAGE" '
+          /^diff --git/ { 
+              # Extract filename from "diff --git a/file b/file"
+              gsub(/^diff --git a\//, "")
+              gsub(/ b\/.*$/, "")
+              file = $0
+          }
+          /^@@/ {
+              # Extract line number from "@@ -old +new @@" format
+              match($0, /\+([0-9]+)/, arr)
+              if (arr[1]) {
+                  line = arr[1]
+                  print "::error file=" file ",line=" line ",title=" title "::" message
+              }
+          }'
+          exit 1
+        shell: bash
