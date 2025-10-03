@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.2.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v3.1.0...ci-cd-workflows/v3.2.0) (2025-10-03)
+
+
+### 🎉 Features
+
+* **cd:** add "staging" as an alias for "ops" for plugins publishing and Argo workflow trigger ([#314](https://github.com/grafana/plugin-ci-workflows/issues/314)) ([bdb0e12](https://github.com/grafana/plugin-ci-workflows/commit/bdb0e125d3a794aad6dd5fd1bdca16aff6a0ff18))
+
 ## [3.1.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v3.0.0...ci-cd-workflows/v3.1.0) (2025-10-03)
 
 
