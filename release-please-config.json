@@ -52,6 +52,9 @@
     "actions/plugins/publish/publish": {
       "package-name": "plugins-publish-publish"
     },
+    "actions/plugins/version-bump-changelog": {
+      "package-name": "plugins-version-bump-changelog"
+    },
     ".github/workflows": {
       "package-name": "ci-cd-workflows"
     }
