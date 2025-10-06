@@ -17,7 +17,7 @@ permissions: {}
 jobs:
   cd:
     name: CI / CD
-    uses: grafana/plugin-ci-workflows/.github/workflows/cd.yml@plugins-version-bump-changelog/v1.0.0
+    uses: grafana/plugin-ci-workflows/.github/workflows/cd.yml@plugins-publish-publish/v1.2.0
     permissions:
       contents: write
       id-token: write
