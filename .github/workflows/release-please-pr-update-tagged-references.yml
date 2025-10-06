@@ -134,8 +134,8 @@ jobs:
             .github/workflows/playwright-docker.yml
             actions/plugins/**
 
-      # For examples we update filtering with an additional prefix,
-      # this way we only update only the relevant examples
+      # For "examples", update references by filtering for an additional prefix.
+      # This way we update only the examples relevant to the new component being released.
       - name: Switch references (examples)
         id: switch-references-examples
         uses: grafana/plugin-ci-workflows/actions/internal/switch-references@main
