@@ -12,6 +12,7 @@ jobs:
       id-token: write
     with:
       testing: true
+      plugin-directory: tests/simple
 
       plugin-version-suffix: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || '' }}
 
