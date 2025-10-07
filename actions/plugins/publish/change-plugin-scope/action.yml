@@ -14,7 +14,7 @@ inputs:
     description: |
       Environment where the plugin is published and where the scope will be changed.
       Trying to change the scope in an environment where the plugin is not published will result in an error.
-      Can be 'dev', 'ops', or 'prod'.
+      Can be 'dev', 'ops' (or `staging`), or 'prod'.
     required: true
   scopes:
     description: |

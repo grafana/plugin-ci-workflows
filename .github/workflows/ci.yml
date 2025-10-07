@@ -180,6 +180,7 @@ on:
         description: |
           Environment(s) to publish to, in case the CI workflow is part of a CD workflow.
           If present this will be used to control some aspects of the CI workflow.
+          Can be 'dev', 'ops' (or 'staging'), 'prod-canary' or 'prod'.
         type: string
         required: false
       allow-unsigned:

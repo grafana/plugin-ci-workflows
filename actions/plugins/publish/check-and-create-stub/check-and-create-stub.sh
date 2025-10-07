@@ -2,7 +2,7 @@
 set -e
 
 usage() {
-    echo "Usage: $0 --environment <dev|ops> --plugin-id <plugin_id>"
+    echo "Usage: $0 --environment <dev|ops|staging> --plugin-id <plugin_id>"
 }
 
 while [[ "$#" -gt 0 ]]; do
@@ -38,7 +38,7 @@ case $gcom_env in
     dev)
         gcom_api_url=https://grafana-dev.com/api
         ;;
-    ops)
+    ops|staging)
         gcom_api_url=https://grafana-ops.com/api
         ;;
     *)

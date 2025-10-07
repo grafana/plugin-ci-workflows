@@ -23,7 +23,7 @@ inputs:
   environment:
     description: |
       Environment to publish to.
-      Can be 'dev', 'ops', or 'prod'.
+      Can be 'dev', 'ops' (or 'staging'), or 'prod'.
     required: true
 
   scopes:
@@ -74,11 +74,11 @@ runs:
           --environment "${ENVIRONMENT}"
           --scopes "${SCOPES}"
         )
-        
+
         if [ "${PUBLISH_AS_PENDING}" = "true" ]; then
           publish_args+=(--publish-as-pending)
         fi
-        
+
         ${{ github.action_path }}/publish.sh \
           "${publish_args[@]}" \
           "${args[@]}"
