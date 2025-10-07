@@ -336,6 +336,8 @@ jobs:
 
       - name: Spellcheck
         run: |
+          echo "KABOOM"
+          exit 1
           if [ -f "./cspell.config.json" ]; then
             npx --yes cspell@6.13.3 -c cspell.config.json "**/*.{ts,tsx,js,go,md,mdx,yml,yaml,json,scss,css}"
           else
