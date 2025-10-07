@@ -193,6 +193,10 @@ on:
         type: boolean
         required: false
         default: false
+      dist-artifacts-prefix:
+        type: string
+        required: false
+        default: ""
 
     outputs:
       plugin:
@@ -436,7 +440,7 @@ jobs:
       - name: Upload GitHub artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: dist-artifacts
+          name: ${{ inputs.dist-artifacts-prefix }}-dist-artifacts
           path: dist-artifacts/
           retention-days: 7
 
@@ -535,7 +539,7 @@ jobs:
       - name: Download GitHub artifact
         uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
-          name: dist-artifacts
+          name: ${{ inputs.dist-artifacts-prefix }}-dist-artifacts
           path: /tmp/dist-artifacts
 
       - name: Login to Google Cloud
