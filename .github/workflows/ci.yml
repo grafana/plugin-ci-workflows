@@ -189,6 +189,10 @@ on:
         type: boolean
         required: false
         default: false
+      testing:
+        type: boolean
+        required: false
+        default: false
 
     outputs:
       plugin:
@@ -280,14 +284,17 @@ jobs:
             const isPR = context.eventName === 'pull_request';
             const isBot = bots.includes(context.actor?.toLowerCase());
             const isForkPR = isPR && context.payload.pull_request.head.repo.full_name !== context.payload.repository.full_name;
+            const isTesting = process.env['INPUT_TESTING'] === 'true';
 
             // Events that are considered trusted because can be run by a trusted user (unless it's a bot)
             const isTrustedEvent = ['push', 'workflow_dispatch'].includes(context.eventName);
-            const isTrusted = (isTrustedEvent || (isPR && !isForkPR)) && !isBot;
+            const isTrusted = (isTrustedEvent || (isPR && !isForkPR)) && !isBot && !isTesting;
 
             const o = { isTrusted, isForkPR, isBot };
             console.log(JSON.stringify(o));
             return o
+        env:
+          INPUT_TESTING: ${{ inputs.testing }}
 
       - name: Setup
         uses: grafana/plugin-ci-workflows/actions/plugins/setup@main
