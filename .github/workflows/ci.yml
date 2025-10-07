@@ -231,7 +231,7 @@ on:
         value: ${{ jobs.upload-to-gcs.outputs.universal-zip-url-commit }}
 
 concurrency:
-  group: ci-${{ github.head_ref || github.run_id }}
+  group: ci-${{ inputs.plugin-directory }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 
 permissions:
