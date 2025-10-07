@@ -55,6 +55,9 @@
     "actions/plugins/version-bump-changelog": {
       "package-name": "plugins-version-bump-changelog"
     },
+    "actions/plugins/publish/change-pulugin-scope": {
+      "package-name": "plugins-change-plugin-scope"
+    },
     ".github/workflows": {
       "package-name": "ci-cd-workflows"
     }
