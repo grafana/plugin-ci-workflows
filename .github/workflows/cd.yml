@@ -627,6 +627,18 @@ jobs:
           ignore-conflicts: ${{ steps.determine-continue.outputs.ignore_conflicts }}
           publish-as-pending: ${{ matrix.environment == 'prod-canary' || inputs.publish-to-catalog-as-pending }}
 
+      - name: Print publish summary
+        run: |
+          echo "## 📦 Published to Catalog (${{ matrix.environment }})
+
+          - **Plugin ID**: \`${PLUGIN_ID}\`
+          - **Version**: \`${PLUGIN_VERSION}\`
+          " >> "$GITHUB_STEP_SUMMARY"
+        env:
+          PLUGIN_ID: ${{ fromJSON(needs.ci.outputs.plugin).id }}
+          PLUGIN_VERSION: ${{ fromJSON(needs.ci.outputs.plugin).version }}
+        shell: bash
+
   trigger-argo-workflow:
     name: Trigger Argo Workflow for Grafana Cloud deployment
     runs-on: ubuntu-x64-small
