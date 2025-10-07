@@ -628,6 +628,7 @@ jobs:
           publish-as-pending: ${{ matrix.environment == 'prod-canary' || inputs.publish-to-catalog-as-pending }}
 
       - name: Print publish summary
+        if: ${{ !inputs.trigger-argo }}
         run: |
           echo "## 📦 Published to Catalog (${{ matrix.environment }})
 
