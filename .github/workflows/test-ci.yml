@@ -37,6 +37,7 @@ jobs:
       plugin-directory: tests/${{ matrix.plugin-directory }}
 
       plugin-version-suffix: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || '' }}
+      run-playwright: false
 
       # TODO: add here any other CI custom inputs you may need. You most likely also have to add the same options to publish.yaml:
       #   https://enghub.grafana-ops.net/docs/default/component/grafana-plugins-platform/plugins-ci-github-actions/010-plugins-ci-github-actions/#customizing-the-workflows-with-inputs
