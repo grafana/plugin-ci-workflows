@@ -1,5 +1,6 @@
 {
   "actions/plugins/publish/publish": "1.2.0",
   ".github/workflows": "3.1.0",
-  "actions/plugins/version-bump-changelog": "1.1.0"
+  "actions/plugins/version-bump-changelog": "1.1.0",
+  "actions/plugins/publish/change-plugin-scope": "1.0.0"
 }
