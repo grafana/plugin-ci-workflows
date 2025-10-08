@@ -189,11 +189,20 @@ on:
         type: boolean
         required: false
         default: false
+
+      # Options for testing the workflow itself.
       testing:
+        description: |
+          Whether the workflow is being run in order to test changes to the workflow itself.
+          This will treat the context as untrusted and thus skip steps that require secrets.
         type: boolean
         required: false
         default: false
       dist-artifacts-prefix:
+        description: |
+          Prefix to use when uploading the dist artifacts as GitHub artifacts.
+          Can be used if multiple CI jobs can be run in parallel in the same repository, in order to avoid name clashes.
+          For example: `my-plugin-`.
         type: string
         required: false
         default: ""
