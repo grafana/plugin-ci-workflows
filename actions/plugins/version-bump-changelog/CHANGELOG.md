@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/grafana/plugin-ci-workflows/compare/plugins-version-bump-changelog/v1.0.0...plugins-version-bump-changelog/v1.1.0) (2025-10-08)
+
+
+### 🎉 Features
+
+* add exclude-from-changelog input ([#321](https://github.com/grafana/plugin-ci-workflows/issues/321)) ([dcd0ad6](https://github.com/grafana/plugin-ci-workflows/commit/dcd0ad6c16ce65d0bcd0121b3c939cbd84b2b2ce))
+
 ## 1.0.0 (2025-10-06)
 
 
