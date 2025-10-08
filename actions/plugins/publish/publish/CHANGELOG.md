@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.0.0](https://github.com/grafana/plugin-ci-workflows/compare/plugins-publish-publish/v1.2.0...plugins-publish-publish/v2.0.0) (2025-10-08)
+
+
+### ⚠ BREAKING CHANGES
+
+* **publish:** Remove deprecated `local-md5` input ([#337](https://github.com/grafana/plugin-ci-workflows/issues/337))
+
+### 🔧 Chores
+
+* **publish:** Remove deprecated `local-md5` input ([#337](https://github.com/grafana/plugin-ci-workflows/issues/337)) ([cc671fd](https://github.com/grafana/plugin-ci-workflows/commit/cc671fd05f8e8c8fb7f53d28377b4241b737569b))
+
 ## [1.2.0](https://github.com/grafana/plugin-ci-workflows/compare/plugins-publish-publish/v1.1.0...plugins-publish-publish/v1.2.0) (2025-10-06)
 
 
