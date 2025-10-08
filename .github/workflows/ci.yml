@@ -523,7 +523,7 @@ jobs:
     runs-on: ubuntu-x64-small
 
     # Skip the GCS upload (no access to the bucket) for PRs when run in non-trusted context (forks)
-    if: ${{ fromJson(needs.test-and-build.outputs.workflow-context).isTrusted || inputs.testing }}
+    if: ${{ fromJson(needs.test-and-build.outputs.workflow-context).isTrusted }}
 
     needs:
       - test-and-build
