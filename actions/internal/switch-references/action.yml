@@ -11,6 +11,11 @@ inputs:
     description: |
       The repository containing the actions that have to be switched, e.g. `grafana/plugin-ci-workflows`
     required: true
+  tag-prefix:
+    description: |
+      An optional prefix to match for, after the "@" symbol (e.g. `ci-cd-workflows` to match `@ci-cd-workflows`)
+    required: false
+    default: ""
   paths:
     description: |
       The paths to the files or folders to modify, one per line.
@@ -33,11 +38,18 @@ runs:
   using: composite
   steps:
     - name: Switch references
-      run: ${{ github.action_path }}/switch-references.sh "${REPO}" "${REF}" ${PATHS}
+      run: |
+        args=()
+        if [ -n "${PREFIX}" ]; then
+          args+=("--tag-prefix" "${PREFIX}")
+        fi
+        args+=("${REPO}" "${REF}" ${PATHS})
+        ${{ github.action_path }}/switch-references.sh "${args[@]}"
       env:
         REF: ${{ inputs.ref }}
         REPO: ${{ inputs.repository }}
         PATHS: ${{ inputs.paths }}
+        PREFIX: ${{ inputs.tag-prefix }}
       shell: bash
 
     - name: Determine if anything changed
