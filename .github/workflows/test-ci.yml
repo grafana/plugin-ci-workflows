@@ -41,6 +41,7 @@ jobs:
         plugin-directory: ${{ fromJson(needs.find-tests.outputs.plugin-directories) }}
     permissions:
       contents: read
+      id-token: write
     uses: ./.github/workflows/ci.yml
     with:
       testing: true
