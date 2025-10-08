@@ -44,9 +44,18 @@ jobs:
       id-token: write
     uses: ./.github/workflows/ci.yml
     with:
+      # Treat as untrusted and disable GCS and Vault access
+      # (WIF access is not available from plugin-ci-workflows itself)
       testing: true
+
+      # Build the specific plugin from the matrix
       plugin-directory: tests/${{ matrix.plugin-directory }}
+
+      # Differentiate each plugin's "dist-artifacts" name so they don't clash with each other
       dist-artifacts-prefix: ${{ matrix.plugin-directory }}-
 
+      # Like in the other examples, append the plugin version the PR SHA for PRs and nothing for pushes
       plugin-version-suffix: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || '' }}
+
+      # TODO: enable in a follow-up PR
       run-playwright: false
