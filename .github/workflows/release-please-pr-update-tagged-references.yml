@@ -119,7 +119,9 @@ jobs:
         env:
           COMPONENT_NAME: ${{ steps.component-name.outputs.component }}
 
-      - name: Switch references
+      # **All** references in the actions or workflows are updated, even those that aren't strictly needed by the component.
+      # This is to ensure that the tag is completely hermetic.
+      - name: Switch references (actions and workflows)
         id: switch-references
         uses: grafana/plugin-ci-workflows/actions/internal/switch-references@main
         with:
@@ -131,11 +133,23 @@ jobs:
             .github/workflows/playwright.yml
             .github/workflows/playwright-docker.yml
             actions/plugins/**
+
+      # For "examples", update references by filtering for an additional prefix.
+      # This way we update only the examples relevant to the new component being released.
+      - name: Switch references (examples)
+        id: switch-references-examples
+        uses: grafana/plugin-ci-workflows/actions/internal/switch-references@main
+        with:
+          repository: grafana/plugin-ci-workflows
+          # Prefix to update only the relevant examples
+          tag-prefix: ${{ steps.component-name.outputs.component }}
+          ref: ${{ steps.component-name.outputs.component }}/v${{ steps.get-version.outputs.version }}
+          paths: |
             examples/**
 
       - name: Get bot user info
         id: get-bot-user
-        if: steps.switch-references.outputs.changed == 'true'
+        if: steps.switch-references.outputs.changed == 'true' || steps.switch-references-examples.outputs.changed == 'true'
         uses: grafana/plugin-ci-workflows/actions/internal/get-bot-user@main
         with:
           app-slug: ${{ steps.generate-github-token.outputs.app-slug }}
@@ -143,7 +157,7 @@ jobs:
 
       # Commit and push all changes to the PR
       - name: Update PR
-        if: steps.switch-references.outputs.changed == 'true'
+        if: steps.switch-references.outputs.changed == 'true' || steps.switch-references-examples.outputs.changed == 'true'
         uses: stefanzweifel/git-auto-commit-action@778341af668090896ca464160c2def5d1d1a3eb0 # v6.0.1
         with:
           commit_message: "chore(main): update tagged references"
