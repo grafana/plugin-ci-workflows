@@ -46,7 +46,7 @@ jobs:
     with:
       testing: true
       plugin-directory: tests/${{ matrix.plugin-directory }}
-      dist-artifacts-prefix: ${{ matrix.plugin-directory }}
+      dist-artifacts-prefix: ${{ matrix.plugin-directory }}-
 
       plugin-version-suffix: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || '' }}
       run-playwright: false
