@@ -9,7 +9,7 @@ echov() {
 }
 
 show_help() {
-    echo "Usage: $0 [-v|--verbose] <repository_name> <replacement_string> <paths...>"
+    echo "Usage: $0 [--tag-prefix ...] [-v|--verbose] <repository_name> <replacement_string> <paths...>"
     echo ""
     echo "Replaces all 'uses' references for the specified repository"
     echo "from @<current_version> to @<replacement_string> into each of the"
@@ -19,12 +19,14 @@ show_help() {
     echo "recursively. If a path is a file, only that file will be processed."
     echo ""
     echo "Arguments"
+    echo "  --tag-prefix <prefix>: optional tag prefix to match (e.g., 'ci-cd-workflows/v1.2.3')"
     echo "  -v: verbose"
     echo ""
     echo "Examples:"
-    echo "  $0 grafana/plugin-ci-workflows main .github/workflows          # Process directory recursively"
-    echo "  $0 grafana/plugin-ci-workflows v2.0.0 .github/workflows/ci.yml # Process single file"
-    echo "  $0 grafana/plugin-ci-workflows main examples actions/plugins   # Process multiple directories"
+    echo "  $0 grafana/plugin-ci-workflows main .github/workflows                                     # Process directory recursively"
+    echo "  $0 --tag-prefix ci-cd-workflows/v1.2.3 grafana/plugin-ci-workflows main .github/workflows # Process directory recursively, with tag prefix"
+    echo "  $0 grafana/plugin-ci-workflows v2.0.0 .github/workflows/ci.yml                            # Process single file"
+    echo "  $0 grafana/plugin-ci-workflows main examples actions/plugins                              # Process multiple directories"
 }
 
 
@@ -35,7 +37,13 @@ process_file() {
     echov "Processing: $file"
 
     # Check if file contains the pattern before modifying
-    if grep -q "uses: $REPO_NAME.*@" "$file"; then
+    search_pattern="uses: $REPO_NAME.*@"
+    if [ ! -z "${TAG_PREFIX:-}" ]; then
+        # Additional tag prefix to match for, after the "@" symbol
+        search_pattern+="$TAG_PREFIX"
+    fi
+    echov Searching for pattern: $search_pattern
+    if grep -q "$search_pattern" "$file"; then
         # Use sed to replace the pattern in-place while preserving comments
         # Pattern explanation:
         # - \(uses: $REPO_NAME[^@]*\) - Capture everything up to @
@@ -76,10 +84,12 @@ process() {
 # Arguments parsing
 VERBOSE=false
 paths=()
-for arg in "$@"; do
+while (( "$#" )); do
+    arg="$1"
     case $arg in
         -h|--help) show_help; exit 0 ;;
         -v|--verbose) VERBOSE=true;;
+        -p|--tag-prefix) TAG_PREFIX="$2" ; shift ;;
         *)
             if [ -z "${REPO_NAME:-}" ]; then
                 REPO_NAME="$arg"
@@ -89,6 +99,7 @@ for arg in "$@"; do
                 paths+=("$arg")
             fi
     esac
+    shift
 done
 
 if [ -z "${REPO_NAME:-}" ] || [ -z "${REPLACEMENT:-}" ] || [ ${#paths[@]} -eq 0 ]; then
@@ -105,9 +116,15 @@ if [[ ! "$REPO_NAME" =~ ^[a-zA-Z0-9._/-]+$ ]]; then
 fi
 # Escape special characters in REPO_NAME for use in sed
 REPO_NAME=$(printf '%s\n' "$REPO_NAME" | sed 's/[[\.*^$()+?{|]/\\&/g')
+if [[ ! -z "${TAG_PREFIX:-}" ]]; then
+    TAG_PREFIX=$(printf '%s\n' "$TAG_PREFIX" | sed 's/[[\.*^$()+?{|]/\\&/g')
+fi
 
 echo "Starting YAML file processing..."
 echo "Searching for repository: $REPO_NAME"
+if [ ! -z "${TAG_PREFIX:-}" ]; then
+    echo "With prefix: $TAG_PREFIX"
+fi
 echo "Replacing its references with: @$REPLACEMENT"
 echo "================================"
 
