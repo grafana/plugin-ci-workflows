@@ -1,5 +1,30 @@
 # Changelog
 
+## [3.2.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v3.1.0...ci-cd-workflows/v3.2.0) (2025-10-14)
+
+
+### 🎉 Features
+
+* add cd summary step ([#341](https://github.com/grafana/plugin-ci-workflows/issues/341)) ([cd77b4a](https://github.com/grafana/plugin-ci-workflows/commit/cd77b4afd8da3c583bea1cd2fd7532b75539ce6a))
+* add smoke tests for the shared ci workflow ([#339](https://github.com/grafana/plugin-ci-workflows/issues/339)) ([f9eb48d](https://github.com/grafana/plugin-ci-workflows/commit/f9eb48d55720c5fb85db6fc6550633df266914c5))
+* **cd:** add "staging" as an alias for "ops" for plugins publishing and Argo workflow trigger ([#314](https://github.com/grafana/plugin-ci-workflows/issues/314)) ([bdb0e12](https://github.com/grafana/plugin-ci-workflows/commit/bdb0e125d3a794aad6dd5fd1bdca16aff6a0ff18))
+
+
+### 🐛 Bug Fixes
+
+* **ci:** allow-unsigned package creation on 'none' environment ([#350](https://github.com/grafana/plugin-ci-workflows/issues/350)) ([c6d400a](https://github.com/grafana/plugin-ci-workflows/commit/c6d400a3580f951415a2fdf5f3f416749901b038))
+* **release-please:** update only relevant examples when releasing new versions ([#333](https://github.com/grafana/plugin-ci-workflows/issues/333)) ([38cad01](https://github.com/grafana/plugin-ci-workflows/commit/38cad01cf7feacb644800727cde71b4e6344d82b))
+
+
+### 🔧 Chores
+
+* **deps:** update actions/cache action to v4.3.0 ([#349](https://github.com/grafana/plugin-ci-workflows/issues/349)) ([56fb09d](https://github.com/grafana/plugin-ci-workflows/commit/56fb09d71994c7b81bcec7f3af32dafc49ddd5e6))
+* **main:** release plugins-change-plugin-scope 1.0.0 ([#345](https://github.com/grafana/plugin-ci-workflows/issues/345)) ([538ce0a](https://github.com/grafana/plugin-ci-workflows/commit/538ce0ab29faff8d933d1d24d91bc434fa1f5747))
+* **main:** release plugins-publish-publish 1.2.0 ([#324](https://github.com/grafana/plugin-ci-workflows/issues/324)) ([b8016e8](https://github.com/grafana/plugin-ci-workflows/commit/b8016e870b0bcc0bd894757b05d391be92d06fcc))
+* **main:** release plugins-publish-publish 2.0.0 ([#347](https://github.com/grafana/plugin-ci-workflows/issues/347)) ([3e071f5](https://github.com/grafana/plugin-ci-workflows/commit/3e071f5c9c3076f7a4ea70623a7175778f278b0a))
+* **main:** release plugins-version-bump-changelog 1.0.0 ([#329](https://github.com/grafana/plugin-ci-workflows/issues/329)) ([31b57ff](https://github.com/grafana/plugin-ci-workflows/commit/31b57ff0db96742dadbf22cbffe3c7a1e185560f))
+* **main:** release plugins-version-bump-changelog 1.1.0 ([#340](https://github.com/grafana/plugin-ci-workflows/issues/340)) ([d0d69c5](https://github.com/grafana/plugin-ci-workflows/commit/d0d69c5a1890ada83d93217b7e9eed9fce3dbdf9))
+
 ## [3.1.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v3.0.0...ci-cd-workflows/v3.1.0) (2025-10-03)
 
 
