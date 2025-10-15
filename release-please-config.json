@@ -58,6 +58,9 @@
     "actions/plugins/publish/change-plugin-scope": {
       "package-name": "plugins-change-plugin-scope"
     },
+    "actions/plugins/release-please": {
+      "package-name": "plugins-release-please"
+    },
     ".github/workflows": {
       "package-name": "ci-cd-workflows"
     }
