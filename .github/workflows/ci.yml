@@ -189,6 +189,11 @@ on:
         type: boolean
         required: false
         default: false
+      signature-type:
+        description: Specify signature type to use when signing the plugin
+        type: string
+        required: false
+        default: "grafana"
 
       # Options for testing the workflow itself.
       testing:
@@ -400,6 +405,7 @@ jobs:
           output-folder: dist-artifacts
           access-policy-token: ${{ fromJson(steps.workflow-context.outputs.result).isTrusted && fromJSON(steps.get-secrets.outputs.secrets).SIGN_PLUGIN_ACCESS_POLICY_TOKEN || '' }}
           allow-unsigned: ${{ ((inputs.environment == 'dev' || inputs.environment == '' || inputs.environment == 'none') && !(fromJson(steps.workflow-context.outputs.result).isTrusted)) || inputs.allow-unsigned }}
+          signature-type: ${{ inputs.signature-type }}
 
       - name: Package os/arch ZIPs
         id: os-arch-zips
@@ -410,6 +416,7 @@ jobs:
           output-folder: dist-artifacts
           access-policy-token: ${{ fromJson(steps.workflow-context.outputs.result).isTrusted && fromJSON(steps.get-secrets.outputs.secrets).SIGN_PLUGIN_ACCESS_POLICY_TOKEN || '' }}
           allow-unsigned: ${{ ((inputs.environment == 'dev' || inputs.environment == '' || inputs.environment == 'none') && !(fromJson(steps.workflow-context.outputs.result).isTrusted)) || inputs.allow-unsigned }}
+          signature-type: ${{ inputs.signature-type }}
 
       - name: Trufflehog secrets scanning
         if: ${{ inputs.run-trufflehog == true }}

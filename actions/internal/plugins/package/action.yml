@@ -27,6 +27,10 @@ inputs:
       If false, only allow packaging signed plugins (fail the action if the plugin could not be signed).
     required: false
     default: "false"
+  signature-type:
+    description: Specify signature type to use when signing the plugin
+    required: false
+    default: "grafana"
 
 outputs:
   zip:
@@ -64,6 +68,7 @@ runs:
         ${DIST_FOLDER} ${OUTPUT_FOLDER}
       env:
         GRAFANA_ACCESS_POLICY_TOKEN: ${{ inputs.access-policy-token }}
+        SIGNATURE_TYPE: ${{ inputs.signature-type }}
         DIST_FOLDER: ${{ inputs.dist-folder }}
         OUTPUT_FOLDER: ${{ inputs.output-folder }}
 
@@ -75,6 +80,7 @@ runs:
         ${DIST_FOLDER} ${OUTPUT_FOLDER}
       env:
         GRAFANA_ACCESS_POLICY_TOKEN: ${{ inputs.access-policy-token }}
+        SIGNATURE_TYPE: ${{ inputs.signature-type }}
         DIST_FOLDER: ${{ inputs.dist-folder }}
         OUTPUT_FOLDER: ${{ inputs.output-folder }}
 

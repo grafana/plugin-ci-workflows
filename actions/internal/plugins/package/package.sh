@@ -4,10 +4,13 @@ set -e
 # package creates a zip file and its corresponding sha256 file
 # $1 is the destination zip file name
 # $2 is the source directory
+# $3 is the signature type (optional, defaults to "grafana")
 package() {
+    local signature_type=${3:-grafana}
+    
     # Sign the plugin
     if [ ! -z $GRAFANA_ACCESS_POLICY_TOKEN ]; then
-        npx -y @grafana/sign-plugin@latest --distDir $2
+        npx -y @grafana/sign-plugin@latest --signatureType=$signature_type --distDir $2
     else
         echo "WARNING: Plugin won't be signed, GRAFANA_ACCESS_POLICY_TOKEN not set"
     fi
@@ -70,7 +73,7 @@ if [ "$universal" = true ]; then
 
     cp -r . "$tmp/$plugin_id"
     cd "$tmp"
-    package "$out/$universal_zip_fn" "$plugin_id"
+    package "$out/$universal_zip_fn" "$plugin_id" "$SIGNATURE_TYPE"
     exit 0
 fi
 
@@ -114,7 +117,7 @@ for file in $(find "$backend_folder" -type f -name "${exe_basename}_*"); do
     echo "Creating package: $os_arch_zip_fn"
 
     # Create the zip+sha256 files
-    package "$out/$os_arch_zip_fn" "$plugin_id"
+    package "$out/$os_arch_zip_fn" "$plugin_id" "$SIGNATURE_TYPE"
 
     # Cleanup temporary folder
     popd > /dev/null
