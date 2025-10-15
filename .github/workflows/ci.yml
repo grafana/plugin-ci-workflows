@@ -398,7 +398,7 @@ jobs:
 
       - name: Package universal ZIP
         id: universal-zip
-        uses: grafana/plugin-ci-workflows/actions/internal/plugins/package@main
+        uses: grafana/plugin-ci-workflows/actions/internal/plugins/package@feat/add-signature-type-input-test
         with:
           universal: "true"
           dist-folder: dist
@@ -409,7 +409,7 @@ jobs:
 
       - name: Package os/arch ZIPs
         id: os-arch-zips
-        uses: grafana/plugin-ci-workflows/actions/internal/plugins/package@main
+        uses: grafana/plugin-ci-workflows/actions/internal/plugins/package@feat/add-signature-type-input-test
         with:
           universal: "false"
           dist-folder: dist
