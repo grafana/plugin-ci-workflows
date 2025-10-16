@@ -1,5 +1,26 @@
 # Changelog
 
+## [4.0.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v3.2.0...ci-cd-workflows/v4.0.0) (2025-10-16)
+
+
+### ⚠ BREAKING CHANGES
+
+* move unexported actions to `internal` folder ([#338](https://github.com/grafana/plugin-ci-workflows/issues/338))
+
+### 🎉 Features
+
+* adding a non-required input called signature-type ([#356](https://github.com/grafana/plugin-ci-workflows/issues/356)) ([4c800de](https://github.com/grafana/plugin-ci-workflows/commit/4c800dee4b72ceff1816693f74c22fd557be27c4))
+
+
+### ♻️ Code Refactoring
+
+* move unexported actions to `internal` folder ([#338](https://github.com/grafana/plugin-ci-workflows/issues/338)) ([46a32e8](https://github.com/grafana/plugin-ci-workflows/commit/46a32e8d3c688e39345a945ca835d636e0e5c9a4))
+
+
+### 🔧 Chores
+
+* **main:** release plugins-release-please 1.0.0 ([#357](https://github.com/grafana/plugin-ci-workflows/issues/357)) ([cdbd54b](https://github.com/grafana/plugin-ci-workflows/commit/cdbd54b803f39ed605a3b2d33c2590a045aee2e0))
+
 ## [3.2.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v3.1.0...ci-cd-workflows/v3.2.0) (2025-10-14)
 
 
