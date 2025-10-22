@@ -69,12 +69,12 @@ function getProvisionedDSType(datasourceName, slug) {
 /**
  * Creates a predictable UID for Grafana Cloud datasources.
  * If the datasource matches the pattern (e.g., grafanacloud-<slug>-<type>), the UID is simplified to "grafanacloud-<type>"; otherwise, it uses the full name.
- * @param dataSource The dataSource provisioned object
+ * @param datasource The datasource provisioned object
  * @param stackSlug The expected slug (e.g., "staging").
  * @returns A UID string, guaranteed to be 40 characters or less.
  */
-function getUid(dataSource, stackSlug) {
-  const datasourceName = dataSource.name;
+function getUid(datasource, stackSlug) {
+  const datasourceName = datasource.name;
   let uid = datasourceName;
 
   const provisionedDSType = getProvisionedDSType(datasourceName, stackSlug);
@@ -88,28 +88,28 @@ function getUid(dataSource, stackSlug) {
   return uid;
 }
 
-function formatDataSource(dataSource, stackSlug) {
-  if (dataSource) {
-    const uid = !dataSource.uid
-      ? getUid(dataSource, stackSlug)
-      : dataSource.uid;
+function formatDatasource(datasource, stackSlug) {
+  if (datasource) {
+    const uid = !datasource.uid
+      ? getUid(datasource, stackSlug)
+      : datasource.uid;
     return {
-      name: dataSource.name,
-      type: dataSource.type,
+      name: datasource.name,
+      type: datasource.type,
       ...(uid && { uid }),
-      url: dataSource.url,
-      basicAuth: dataSource.basicAuth === 1 || dataSource.basicAuth === true,
-      basicAuthUser: dataSource.basicAuthUser
-        ? Number(dataSource.basicAuthUser)
+      url: datasource.url,
+      basicAuth: datasource.basicAuth === 1 || datasource.basicAuth === true,
+      basicAuthUser: datasource.basicAuthUser
+        ? Number(datasource.basicAuthUser)
         : undefined,
-      isDefault: dataSource.isDefault === 1 || dataSource.isDefault === true,
-      jsonData: dataSource.jsonData,
+      isDefault: datasource.isDefault === 1 || datasource.isDefault === true,
+      jsonData: datasource.jsonData,
       secureJsonData: {
-        basicAuthPassword: dataSource.basicAuthPassword,
+        basicAuthPassword: datasource.basicAuthPassword,
       },
     };
   }
-  return dataSource;
+  return datasource;
 }
 
 function removeEmptyProperties(obj) {
@@ -211,7 +211,7 @@ async function fetchAppConfig(stackSlug, env, pluginId) {
 async function fetchMultipleDatasources(stackSlug, env, datasourceNames) {
   try {
     const fetchPromises = datasourceNames.map((dsName) =>
-      fetchDataSource(stackSlug, env, dsName),
+      fetchDatasource(stackSlug, env, dsName),
     );
     if (fetchPromises.length > 0) {
       return Promise.all(fetchPromises);
@@ -223,7 +223,7 @@ async function fetchMultipleDatasources(stackSlug, env, datasourceNames) {
   }
 }
 
-async function fetchDataSource(stackSlug, env, datasourceName) {
+async function fetchDatasource(stackSlug, env, datasourceName) {
   try {
     const baseUrl = getBaseUrlByEnv(env);
     const url = `${baseUrl}/instances/${stackSlug}/datasources/${datasourceName}`;
@@ -233,10 +233,10 @@ async function fetchDataSource(stackSlug, env, datasourceName) {
         Authorization: `Bearer ${HG_TOKEN}`,
       },
     });
-    const dataSourceWithToken = await response.json();
-    const dataSourceWithNoEmptyField =
-      removeEmptyProperties(dataSourceWithToken);
-    return formatDataSource(dataSourceWithNoEmptyField, stackSlug);
+    const datasourceWithToken = await response.json();
+    const datasourceWithNoEmptyField =
+      removeEmptyProperties(datasourceWithToken);
+    return formatDatasource(datasourceWithNoEmptyField, stackSlug);
   } catch (error) {
     console.error(
       "Error fetching datasource",
@@ -248,7 +248,7 @@ async function fetchDataSource(stackSlug, env, datasourceName) {
   }
 }
 
-function createDataSourcesYamlFile() {
+function createDatasourcesYamlFile() {
   const dir = path.dirname(DATASOURCES_YAML_FILE);
 
   if (!fs.existsSync(dir)) {
@@ -308,8 +308,8 @@ function addAppConfigs(yamlData, appConfigs) {
   });
 }
 
-function addDataSourceConfigs(yamlData, dataSourceConfigs = []) {
-  dataSourceConfigs.forEach((dsConfig, i) => {
+function addDatasourceConfigs(yamlData, datasourceConfigs = []) {
+  datasourceConfigs.forEach((dsConfig, i) => {
     yamlData.datasources.push(dsConfig);
     console.log(
       `Data source with type '${dsConfig.type}' and name '${dsConfig.name}' has been added`,
@@ -317,7 +317,7 @@ function addDataSourceConfigs(yamlData, dataSourceConfigs = []) {
   });
 }
 
-function writeDataSourcesYamlFile(yamlData) {
+function writeDatasourcesYamlFile(yamlData) {
   const yamlString = yaml.dump(yamlData);
   fs.writeFileSync(DATASOURCES_YAML_FILE, yamlString);
   console.log("default.yaml data source file has been updated.");
@@ -372,20 +372,20 @@ async function fillAnswers(answers) {
   addAppConfigs(yamlAppsData, appConfigs);
   writeAppsYamlFile(yamlAppsData);
 
-  const dataSourceConfigs = await fetchMultipleDatasources(
+  const datasourceConfigs = await fetchMultipleDatasources(
     answers.STACK_SLUG,
     answers.ENV,
     answers.DATASOURCE_IDS,
   );
-  if (isError(dataSourceConfigs) || isEmpty(dataSourceConfigs)) {
+  if (isError(datasourceConfigs) || isEmpty(datasourceConfigs)) {
     console.error(
       `The data sources ${answers.DATASOURCE_IDS} cannot be loaded from the stack ${answers.STACK_SLUG} on environment ${answers.ENV}.`,
     );
     process.exit(1);
   }
-  const yamlDataSourcesData = createDataSourcesYamlFile();
-  addDataSourceConfigs(yamlDataSourcesData, dataSourceConfigs);
-  writeDataSourcesYamlFile(yamlDataSourcesData);
+  const yamlDatasourcesData = createDatasourcesYamlFile();
+  addDatasourceConfigs(yamlDatasourcesData, datasourceConfigs);
+  writeDatasourcesYamlFile(yamlDatasourcesData);
 
   const grafanaConfig = await fetchGrafanaConfig(
     answers.STACK_SLUG,
