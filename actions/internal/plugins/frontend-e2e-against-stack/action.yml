@@ -171,7 +171,7 @@ runs:
         E2E_GRAFANA_INI_PATH: ${{ inputs.grafana-ini-path }}
 
     - name: Start server
-      run: docker compose up -d --build --quiet-pull --timestamps
+      run: docker compose -f docker-compose.e2e.yaml up -d --build --quiet-pull --timestamps
       working-directory: ${{ inputs.plugin-directory }}
       shell: bash
 
@@ -189,7 +189,7 @@ runs:
         timeout=300  # 5 minutes timeout
         start_time=$(date +%s)
 
-        while ! docker logs grafana-csp-app 2>&1 | grep "Usage stats are ready to report" > /dev/null; do
+        while ! docker logs ${{ steps.extract-plugin-id.outputs.plugin-id }} 2>&1 | grep "Usage stats are ready to report" > /dev/null; do
           current_time=$(date +%s)
           elapsed=$((current_time - start_time))
 
@@ -207,7 +207,7 @@ runs:
       working-directory: ${{ inputs.plugin-directory }}
 
     - name: Stop grafana docker
-      run: docker compose down
+      run: docker compose -f docker-compose.e2e.yaml down
       working-directory: ${{ inputs.plugin-directory }}
       shell: bash
 
