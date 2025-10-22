@@ -70,6 +70,7 @@ runs:
     - name: Install e2e action dependencies
       run: yarn install
       shell: bash
+      working-directory: ${{ github.action_path }}
 
     - name: Login to Google Cloud
       id: gcloud-auth
