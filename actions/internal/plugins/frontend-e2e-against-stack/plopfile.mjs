@@ -467,7 +467,7 @@ export default function (plop) {
       },
       {
         type: "add",
-        path: "./docker-compose.e2e.yaml",
+        path: "docker-compose.e2e.yaml",
         templateFile: "plop-templates/docker-compose.hbs.yaml",
         force: true,
       },
