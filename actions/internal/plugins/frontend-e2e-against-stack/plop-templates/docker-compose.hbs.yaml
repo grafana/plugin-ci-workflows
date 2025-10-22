@@ -18,7 +18,8 @@ services:
       - 3000:3000/tcp
     volumes:
       - ./dist:/var/lib/grafana/plugins/{{{GF_PLUGIN_ID}}}
-      - ./provisioning:/etc/grafana/provisioning
+      - ./provisioning/datasources/default.yaml:/etc/grafana/provisioning/datasources/default.yaml
+      - ./provisioning/plugins/apps.yaml:/etc/grafana/provisioning/plugins/apps.yaml
       {{#if GRAFANA_INI_PATH}}
       - ./{{{GRAFANA_INI_PATH}}}:/etc/grafana/grafana.ini
       {{/if}}
