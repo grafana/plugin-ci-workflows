@@ -85,7 +85,9 @@ runs:
       if: inputs.npm-registry-auth == 'true'
       shell: bash
       working-directory: ${{ inputs.plugin-directory }}
-      run: GOOGLE_APPLICATION_CREDENTIALS=${{ env.GOOGLE_APPLICATION_CREDENTIALS }} npx google-artifactregistry-auth --credential-config ./.npmrc
+      env:
+        GOOGLE_APPLICATION_CREDENTIALS: ${{ env.GOOGLE_APPLICATION_CREDENTIALS }}
+      run: npx google-artifactregistry-auth --credential-config ./.npmrc
 
     - name: Install dependencies
       shell: bash
@@ -182,15 +184,18 @@ runs:
 
     - name: Wait for Grafana to be ready
       shell: bash
+      env:
+        MAIN_PLUGIN_ID: ${{ steps.extract-plugin-id.outputs.plugin-id }}
+        OTHER_PLUGINS: ${{ inputs.other_plugins }}
       run: |
         echo "Waiting for Grafana to be available..."
-        timeout=480  # 8 minutes timeout
+        timeout=300  # 5 minutes timeout
         start_time=$(date +%s)
 
-        # Parse expected plugins from environment variables
-        expected_plugins="${{ steps.extract-plugin-id.outputs.plugin-id }}"
-        if [ -n "${{ inputs.other_plugins }}" ]; then
-          expected_plugins="$expected_plugins,${{ inputs.other_plugins }}"
+        # Parse expected plugins from environment variables (safely)
+        expected_plugins="$MAIN_PLUGIN_ID"
+        if [ -n "$OTHER_PLUGINS" ]; then
+          expected_plugins="$expected_plugins,$OTHER_PLUGINS"
         fi
         
         # Convert comma-separated list to array for easier processing
@@ -205,7 +210,7 @@ runs:
           if [ $elapsed -ge $timeout ]; then
             echo "Timeout reached: Grafana did not become ready within 5 minutes."
             echo "Container logs:"
-            docker logs ${{ steps.extract-plugin-id.outputs.plugin-id }} --tail 50
+            docker logs "$MAIN_PLUGIN_ID" --tail 50
             echo "Installed plugins:"
             curl -s http://localhost:3000/api/plugins 2>/dev/null | jq -r '.[].id' 2>/dev/null || echo "Could not fetch plugins list"
             exit 1
