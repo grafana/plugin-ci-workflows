@@ -158,7 +158,7 @@ runs:
 
     - name: Generate provisioning
       shell: bash
-      run: npx plop e2e-testing-provisioning
+      run: npx plop --plopfile ${{ github.action_path }}/plopfile.mjs e2e-testing-provisioning
       working-directory: ${{ inputs.plugin-directory }}
       env:
         E2E_STACK_SLUG: ${{ inputs.stack_slug }}
