@@ -180,30 +180,48 @@ runs:
       working-directory: ${{ inputs.plugin-directory }}
       shell: bash
 
-    - name: Run Playwright tests
+    - name: Wait for Grafana to be ready
       shell: bash
-      env:
-        NODE_ENV: production
       run: |
         echo "Waiting for Grafana to be available..."
         timeout=300  # 5 minutes timeout
         start_time=$(date +%s)
 
-        while ! docker logs ${{ steps.extract-plugin-id.outputs.plugin-id }} 2>&1 | grep "Usage stats are ready to report" > /dev/null; do
+        while true; do
           current_time=$(date +%s)
           elapsed=$((current_time - start_time))
 
           if [ $elapsed -ge $timeout ]; then
             echo "Timeout reached: Grafana did not become ready within 5 minutes."
+            echo "Container logs:"
+            docker logs ${{ steps.extract-plugin-id.outputs.plugin-id }} --tail 50
             exit 1
           fi
 
-          echo "Waiting for Grafana..."
-          sleep 5 # Wait for 5 seconds before checking again
-        done
+          # Check if Grafana is responding to health checks
+          if curl -f -s http://localhost:3000/api/health > /dev/null 2>&1; then
+            echo "Grafana health endpoint is responding!"
+            
+            # Additional check: ensure the API is fully ready
+            if curl -f -s http://localhost:3000/api/org > /dev/null 2>&1; then
+              echo "Grafana is fully ready!"
+              break
+            else
+              echo "Grafana health OK, but API not fully ready yet..."
+            fi
+          else
+            echo "Waiting for Grafana... (${elapsed}s elapsed)"
+          fi
 
-        echo "Grafana is ready!"
-        npx playwright test
+          sleep 5
+        done
+      working-directory: ${{ inputs.plugin-directory }}
+
+    - name: Run Playwright tests
+      shell: bash
+      env:
+        NODE_ENV: production
+      run: npx playwright test
       working-directory: ${{ inputs.plugin-directory }}
 
     - name: Stop grafana docker
