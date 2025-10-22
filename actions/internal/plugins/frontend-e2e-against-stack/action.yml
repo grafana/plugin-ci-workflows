@@ -184,8 +184,19 @@ runs:
       shell: bash
       run: |
         echo "Waiting for Grafana to be available..."
-        timeout=300  # 5 minutes timeout
+        timeout=480  # 8 minutes timeout
         start_time=$(date +%s)
+
+        # Parse expected plugins from environment variables
+        expected_plugins="${{ steps.extract-plugin-id.outputs.plugin-id }}"
+        if [ -n "${{ inputs.other_plugins }}" ]; then
+          expected_plugins="$expected_plugins,${{ inputs.other_plugins }}"
+        fi
+        
+        # Convert comma-separated list to array for easier processing
+        IFS=',' read -ra PLUGIN_ARRAY <<< "$expected_plugins"
+        
+        echo "Expected plugins: $expected_plugins"
 
         while true; do
           current_time=$(date +%s)
@@ -195,25 +206,55 @@ runs:
             echo "Timeout reached: Grafana did not become ready within 5 minutes."
             echo "Container logs:"
             docker logs ${{ steps.extract-plugin-id.outputs.plugin-id }} --tail 50
+            echo "Installed plugins:"
+            curl -s http://localhost:3000/api/plugins 2>/dev/null | jq -r '.[].id' 2>/dev/null || echo "Could not fetch plugins list"
             exit 1
           fi
 
           # Check if Grafana is responding to health checks
           if curl -f -s http://localhost:3000/api/health > /dev/null 2>&1; then
-            echo "Grafana health endpoint is responding!"
+            echo "Grafana health endpoint is responding! (${elapsed}s elapsed)"
             
-            # Additional check: ensure the API is fully ready
+            # Check if API is ready
             if curl -f -s http://localhost:3000/api/org > /dev/null 2>&1; then
-              echo "Grafana is fully ready!"
-              break
+              echo "Grafana API is ready! Now checking plugins..."
+              
+              # Get list of installed plugins
+              installed_plugins=$(curl -s http://localhost:3000/api/plugins 2>/dev/null | jq -r '.[].id' 2>/dev/null)
+              
+              if [ $? -eq 0 ] && [ -n "$installed_plugins" ]; then
+                # Check if all expected plugins are installed
+                all_plugins_ready=true
+                missing_plugins=""
+                
+                for expected_plugin in "${PLUGIN_ARRAY[@]}"; do
+                  # Trim whitespace
+                  expected_plugin=$(echo "$expected_plugin" | xargs)
+                  if [ -n "$expected_plugin" ]; then
+                    if ! echo "$installed_plugins" | grep -q "^${expected_plugin}$"; then
+                      all_plugins_ready=false
+                      missing_plugins="$missing_plugins $expected_plugin"
+                    fi
+                  fi
+                done
+                
+                if [ "$all_plugins_ready" = true ]; then
+                  echo "All expected plugins are installed and ready!"
+                  break
+                else
+                  echo "Still waiting for plugins:$missing_plugins (${elapsed}s elapsed)"
+                fi
+              else
+                echo "Could not fetch plugins list, retrying... (${elapsed}s elapsed)"
+              fi
             else
-              echo "Grafana health OK, but API not fully ready yet..."
+              echo "Grafana health OK, but API not fully ready yet... (${elapsed}s elapsed)"
             fi
           else
-            echo "Waiting for Grafana... (${elapsed}s elapsed)"
+            echo "Waiting for Grafana health endpoint... (${elapsed}s elapsed)"
           fi
 
-          sleep 5
+          sleep 10
         done
       working-directory: ${{ inputs.plugin-directory }}
 
