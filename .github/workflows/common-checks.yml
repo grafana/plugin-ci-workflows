@@ -13,8 +13,7 @@ jobs:
 
       - name: Check for rolling releases channel
         run: |
-          set -xe
-          diff=$(grep -E 'grafana/plugin-ci-workflows.+@main' -rn .github/workflows/)
+          diff=$(grep -E 'grafana/plugin-ci-workflows.+@main' -rn .github/workflows/ || true)
           if [[ -n "$diff" ]]; then
             echo "Found usage of rolling releases channel in the following files:"
             echo "$diff"
