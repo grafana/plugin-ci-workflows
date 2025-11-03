@@ -161,6 +161,13 @@ on:
         type: string
         required: false
 
+      # Feature toggle: plugin-validator
+      run-plugin-validator:
+        description: Whether to run plugin-validator.
+        type: boolean
+        required: false
+        default: false
+
       # Options for building PRs. Those values should come from the PR event and should not be set manually.
       plugin-version-suffix:
         description: |
@@ -426,6 +433,17 @@ jobs:
           folder: dist-artifacts
           include-detectors: ${{ inputs.trufflehog-include-detectors }}
           exclude-detectors: ${{ inputs.trufflehog-exclude-detectors }}
+
+      - name: plugin-validator
+        if: ${{ inputs.run-plugin-validator == true }}
+        run: |
+          cd dist-artifacts
+          docker run --pull=always \
+            -v $PWD/dist-artifacts:/dist-artifacts \
+            grafana/plugin-validator-cli -analyzer=metadatavalid "/dist-artifacts/${UNIVERSAL_ZIP}"
+        env:
+          UNIVERSAL_ZIP: ${{ steps.universal-zip.outputs.zip }}
+        shell: bash
 
       - name: Define outputs
         id: outputs

@@ -185,7 +185,14 @@ on:
         type: string
         required: false
 
-      # Artifacts attestation for build provenance
+      # Feature toggle: plugin-validator
+      run-plugin-validator:
+        description: Whether to run plugin-validator.
+        type: boolean
+        required: false
+        default: false
+
+      # Feature toggle: Artifacts attestation for build provenance
       attestation:
         description: Create a verifiable attestation for the plugin using Github OIDC.
         type: boolean
@@ -391,6 +398,7 @@ jobs:
       go-setup-caching: ${{ inputs.go-setup-caching }}
       node-version: ${{ inputs.node-version }}
       golangci-lint-version: ${{ inputs.golangci-lint-version }}
+      run-plugin-validator: ${{ inputs.run-plugin-validator }}
       run-playwright: ${{ inputs.run-playwright }}
       run-playwright-docker: ${{ inputs.run-playwright-docker }}
       run-playwright-with-grafana-dependency: ${{ inputs.run-playwright-with-grafana-dependency }}
