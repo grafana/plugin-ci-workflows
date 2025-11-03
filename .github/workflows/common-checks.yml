@@ -4,8 +4,8 @@ on:
   workflow_call:
 
 jobs:
-  warn-on-rolling-releases:
-    name: Warn on rolling releases
+  check-for-rolling-releases:
+    name: Check for rolling releases channel
     runs-on: ubuntu-arm64-small
     steps:
       - name: Checkout
