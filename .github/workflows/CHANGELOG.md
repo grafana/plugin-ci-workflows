@@ -1,5 +1,28 @@
 # Changelog
 
+## [4.0.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v3.2.0...ci-cd-workflows/v4.0.0) (2025-11-03)
+
+
+### ⚠ BREAKING CHANGES
+
+* move unexported actions to `internal` folder ([#338](https://github.com/grafana/plugin-ci-workflows/issues/338))
+
+### 🎉 Features
+
+* adding a non-required input called signature-type ([#356](https://github.com/grafana/plugin-ci-workflows/issues/356)) ([4c800de](https://github.com/grafana/plugin-ci-workflows/commit/4c800dee4b72ceff1816693f74c22fd557be27c4))
+
+
+### ♻️ Code Refactoring
+
+* move unexported actions to `internal` folder ([#338](https://github.com/grafana/plugin-ci-workflows/issues/338)) ([46a32e8](https://github.com/grafana/plugin-ci-workflows/commit/46a32e8d3c688e39345a945ca835d636e0e5c9a4))
+
+
+### 🔧 Chores
+
+* **deps:** update softprops/action-gh-release action to v2.4.1 ([#359](https://github.com/grafana/plugin-ci-workflows/issues/359)) ([f48c11a](https://github.com/grafana/plugin-ci-workflows/commit/f48c11a872a3d36624007f2bfad11d8278caeb0a))
+* **deps:** update stefanzweifel/git-auto-commit-action action to v7 ([#361](https://github.com/grafana/plugin-ci-workflows/issues/361)) ([50034ea](https://github.com/grafana/plugin-ci-workflows/commit/50034eabfee9faa714b55ef3aacbd8f1c448cd1f))
+* **main:** release plugins-release-please 1.0.0 ([#357](https://github.com/grafana/plugin-ci-workflows/issues/357)) ([cdbd54b](https://github.com/grafana/plugin-ci-workflows/commit/cdbd54b803f39ed605a3b2d33c2590a045aee2e0))
+
 ## [3.2.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v3.1.0...ci-cd-workflows/v3.2.0) (2025-10-14)
 
 
