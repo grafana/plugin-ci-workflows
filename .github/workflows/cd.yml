@@ -303,7 +303,7 @@ env:
 jobs:
   common:
     name: Common checks
-    uses: grafana/plugin-ci-workflows/.github/workflows/common-checks.yml@giuseppe/warn-on-rolling-releases
+    uses: grafana/plugin-ci-workflows/.github/workflows/common-checks.yml@main
 
   setup:
     name: Check and setup environment
