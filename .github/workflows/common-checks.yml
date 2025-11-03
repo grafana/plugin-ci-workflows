@@ -19,7 +19,7 @@ jobs:
             echo "$nntifare"
 
             title="Rolling release channel detected"
-            message="You are using workflows from plugin-ci-workflows rolling releases channel ('@ main' reference). \
+            message="You are using workflows from plugin-ci-workflows rolling releases channel (`@main`). \
           This is discouraged as it may lead to unexpected breaking changes. \
           Please pin to a specific tagged release to ensure better stability. \
           For more information, refer to the docs: https://enghub.grafana-ops.net/docs/default/component/grafana-plugins-platform/plugins-ci-github-actions/010-plugins-ci-github-actions/#versions-and-release-channels"
