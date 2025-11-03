@@ -69,6 +69,9 @@ importers:
       '@types/node':
         specifier: ^20.8.7
         version: 20.19.24
+      '@types/react':
+        specifier: ^19.2.2
+        version: 19.2.2
       '@types/testing-library__jest-dom':
         specifier: 5.14.8
         version: 5.14.8
