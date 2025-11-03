@@ -437,7 +437,6 @@ jobs:
       - name: plugin-validator
         if: ${{ inputs.run-plugin-validator == true }}
         run: |
-          cd dist-artifacts
           docker run --pull=always \
             -v $PWD/dist-artifacts:/dist-artifacts \
             grafana/plugin-validator-cli -analyzer=metadatavalid "/dist-artifacts/${UNIVERSAL_ZIP}"
