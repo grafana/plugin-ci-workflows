@@ -267,6 +267,10 @@ env:
   VAULT_INSTANCE: ops
 
 jobs:
+  common:
+    name: Common checks
+    uses: grafana/plugin-ci-workflows/.github/workflows/common-checks.yml@giuseppe/warn-on-rolling-releases
+
   test-and-build:
     name: Test and build plugin
     runs-on: ubuntu-x64-large
