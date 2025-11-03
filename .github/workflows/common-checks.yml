@@ -13,8 +13,11 @@ jobs:
 
       - name: Check for rolling releases channel
         run: |
-          grep -E 'grafana/plugin-ci-workflows.+@main' -rn .github/workflows/
-          if [ $? -eq 0 ]; then
+          diff=$(grep -E 'grafana/plugin-ci-workflows.+@main' -rn .github/workflows/)
+          if [[ -n "$diff" ]]; then
+            echo "Found usage of rolling releases channel in the following files:"
+            echo "$diff"
+
             title="Rolling release channel detected"
             message="You are using workflows from plugin-ci-workflows rolling releases channel ('@ main' reference). \
           This is discouraged as it may lead to unexpected breaking changes. \
