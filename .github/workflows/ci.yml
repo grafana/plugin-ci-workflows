@@ -366,7 +366,7 @@ jobs:
 
           # Plugin version should not exceed 190 characters including suffix
           if [ ${#pr_version} -gt 190 ]; then
-            echo "❌Error: Plugin version with suffix exceeds 190 character limit"
+            echo "❌ Error: Plugin version with suffix exceeds 190 character limit"
             exit 1
           fi
 
