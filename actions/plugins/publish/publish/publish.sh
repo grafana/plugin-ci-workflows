@@ -160,7 +160,7 @@ if [[ $(echo "$out" | jq -r '.plugin.id? // empty') != "" ]]; then
 else
     error_code=$(echo "$out" | jq -r '.code? // empty')
     error_message=$(echo "$out" | jq -r '.message? // empty')
-    if [[ "${IGNORE_CONFLICTS,,}" == "true" && "${error_code}" == "InvalidArgument" && "${error_message}" == *"version already exists"* ]]; then
+    if [[ "${IGNORE_CONFLICTS,,}" == "true" && "${error_code}" == "InvalidArgument" && "${error_message}" == *"already exists"* ]]; then
         echo -e "\nPlugin version already exists; IGNORE_CONFLICTS=true so treating as success"
         exit 0
     fi
