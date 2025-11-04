@@ -1,5 +1,22 @@
 # Changelog
 
+## [4.1.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v4.0.0...ci-cd-workflows/v4.1.0) (2025-11-04)
+
+
+### 🎉 Features
+
+* add warning message when using rolling releases channel (`[@main](https://github.com/main)`) ([#365](https://github.com/grafana/plugin-ci-workflows/issues/365)) ([e3a460d](https://github.com/grafana/plugin-ci-workflows/commit/e3a460d2760d04069db3046d557f7174fa5151bd))
+
+
+### 🐛 Bug Fixes
+
+* fail when plugin version exceeds 190 chars ([#368](https://github.com/grafana/plugin-ci-workflows/issues/368)) ([a75ba23](https://github.com/grafana/plugin-ci-workflows/commit/a75ba23f00686932691dd82b64ae6eca15f9b69e))
+
+
+### 🔧 Chores
+
+* **main:** release plugins-publish-publish 2.0.1 ([#371](https://github.com/grafana/plugin-ci-workflows/issues/371)) ([82366d7](https://github.com/grafana/plugin-ci-workflows/commit/82366d73b461d28a73a14fd360798a39425fb6ef))
+
 ## [4.0.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v3.2.0...ci-cd-workflows/v4.0.0) (2025-11-03)
 
 
