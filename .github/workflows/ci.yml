@@ -458,8 +458,8 @@ jobs:
           EOF
           fi
           docker run --rm --pull=always \
-            -v $PWD/dist-artifacts:/workspace/dist-artifacts:ro \
-            -v $PWD/.plugin-validator.yaml:/workspace/.plugin-validator.yaml:ro \
+            -v "$PWD/dist-artifacts:/workspace/dist-artifacts:ro" \
+            -v "$PWD/.plugin-validator.yaml:/workspace/.plugin-validator.yaml:ro" \
             grafana/plugin-validator-cli -config=/workspace/.plugin-validator.yaml "/workspace/dist-artifacts/${UNIVERSAL_ZIP}"
         env:
           UNIVERSAL_ZIP: ${{ steps.universal-zip.outputs.zip }}
