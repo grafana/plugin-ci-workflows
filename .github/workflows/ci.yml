@@ -437,9 +437,19 @@ jobs:
       - name: plugin-validator
         if: ${{ inputs.run-plugin-validator == true }}
         run: |
-          docker run --pull=always \
-            -v $PWD/dist-artifacts:/dist-artifacts \
-            grafana/plugin-validator-cli -analyzer=metadatavalid "/dist-artifacts/${UNIVERSAL_ZIP}"
+          if [ ! -f ".plugin-validator.yaml" ]; then
+            echo "⚠️ .plugin-validator.yaml configuration file is missing. Providing a default one as fallback."
+            cat <<EOF > .plugin-validator.yaml
+          global:
+            enabled: true
+            severity: warning
+            reportAll: false
+          EOF
+          fi
+          docker run --rm --pull=always \
+            -v $PWD/dist-artifacts:/workspace/dist-artifacts:ro \
+            -v $PWD/.plugin-validator.yaml:/workspace/.plugin-validator.yaml:ro \
+            grafana/plugin-validator-cli -config=/workspace/.plugin-validator.yaml "/workspace/dist-artifacts/${UNIVERSAL_ZIP}"
         env:
           UNIVERSAL_ZIP: ${{ steps.universal-zip.outputs.zip }}
         shell: bash
