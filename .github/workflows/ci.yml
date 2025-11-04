@@ -367,6 +367,13 @@ jobs:
           package_json_path="$PLUGIN_DIRECTORY/package.json"
           version=$(jq -r .version "$package_json_path")
           pr_version="$version+${PLUGIN_VERSION_SUFFIX}"
+
+          # Plugin version should not exceed 190 characters including suffix
+          if [ ${#pr_version} -gt 190 ]; then
+            echo "❌ Error: Plugin version with suffix exceeds 190 character limit"
+            exit 1
+          fi
+
           echo "Replacing plugin version \"$version\" with \"$pr_version\" in $package_json_path"
           jq --arg pr_version "$pr_version" '.version = $pr_version' "$package_json_path" > /tmp/package.json
           mv /tmp/package.json "$package_json_path"
