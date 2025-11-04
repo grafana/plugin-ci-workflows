@@ -1,0 +1,30 @@
+name: Common checks
+
+on:
+  workflow_call:
+
+jobs:
+  check-for-rolling-releases:
+    name: Check for rolling releases channel
+    runs-on: ubuntu-arm64-small
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+
+      - name: Check for rolling releases channel
+        run: |
+          diff=$(grep -E 'grafana/plugin-ci-workflows.+@main' -rn .github/workflows/ || true)
+          if [[ -n "$diff" ]]; then
+            echo "Found usage of rolling releases channel in the following files:"
+            echo "$diff"
+
+            title="Rolling release channel detected"
+            message="You are using workflows from plugin-ci-workflows rolling releases channel (\`@main\`). \
+          This is discouraged as it may lead to unexpected breaking changes. \
+          Please pin to a specific tagged release to ensure better stability. \
+          For more information, refer to the docs: https://enghub.grafana-ops.net/docs/default/component/grafana-plugins-platform/plugins-ci-github-actions/010-plugins-ci-github-actions/#versions-and-release-channels"
+
+            echo "::warning title=$title::$message"
+            exit 0
+          fi
+        shell: bash
