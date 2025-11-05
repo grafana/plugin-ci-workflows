@@ -464,6 +464,7 @@ jobs:
             -v "$PWD/dist-artifacts:/workspace/dist-artifacts:ro" \
             -v "$PWD:/workspace:ro" \
             -e SKIP_CLAMAV=1 \
+            -e DEBUG=1 \
             grafana/plugin-validator-cli \
             -config=/workspace/.plugin-validator.yaml \
             -sourceCodeUri=file:///workspace \
