@@ -462,8 +462,11 @@ jobs:
           #fi
           docker run --name=plugin-validator --pull=always \
             -v "$PWD/dist-artifacts:/workspace/dist-artifacts:ro" \
-            -v "$PWD/.plugin-validator.yaml:/workspace/.plugin-validator.yaml:ro" \
-            grafana/plugin-validator-cli -config=/workspace/.plugin-validator.yaml "/workspace/dist-artifacts/${UNIVERSAL_ZIP}"
+            -v "$PWD:/workspace:ro" \
+            grafana/plugin-validator-cli \
+            -config=/workspace/.plugin-validator.yaml \
+            -sourceCodeUri=file:///workspace \
+            "/workspace/dist-artifacts/${UNIVERSAL_ZIP}"
           exit $(docker inspect plugin-validator --format='{{.State.ExitCode}}')
         env:
           UNIVERSAL_ZIP: ${{ steps.universal-zip.outputs.zip }}
