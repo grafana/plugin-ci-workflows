@@ -466,6 +466,7 @@ jobs:
             -e SKIP_CLAMAV=1 \
             -e DEBUG=1 \
             grafana/plugin-validator-cli \
+            -ghaOutput \
             -config=/workspace/.plugin-validator.yaml \
             -sourceCodeUri=file:///workspace \
             "/workspace/dist-artifacts/${UNIVERSAL_ZIP}"
