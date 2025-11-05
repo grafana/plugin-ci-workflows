@@ -457,9 +457,9 @@ jobs:
             reportAll: false
           EOF
           fi
-          if [ -f validator-output.txt ]; then
-            cat >&2 validator-output.txt
-          fi
+          #if [ -f validator-output.txt ]; then
+          #  cat >&2 validator-output.txt
+          #fi
           docker run --name=plugin-validator --pull=always \
             -v "$PWD/dist-artifacts:/workspace/dist-artifacts:ro" \
             -v "$PWD/.plugin-validator.yaml:/workspace/.plugin-validator.yaml:ro" \
