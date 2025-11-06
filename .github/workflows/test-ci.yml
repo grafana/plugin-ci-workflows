@@ -33,7 +33,7 @@ jobs:
           plugins=$(find . -maxdepth 1 -type d ! -name '.' -printf '%f\n' | jq -R . | jq -cs .)
           echo "plugin-directories=$plugins" >> "$GITHUB_OUTPUT"
 
-  simple-ci:
+  ci:
     name: CI
     needs: find-tests
     strategy:
