@@ -62,18 +62,28 @@ jobs:
   
   ci-plugin-validator:
     name: CI plugin-validator
+    strategy:
+      matrix:
+        plugin-validator-config-file:
+          - ""
+          - |
+            global:
+              enabled: true
+              severity: warning
+              reportAll: false
     permissions:
       contents: read
       id-token: write
     uses: ./.github/workflows/ci.yml
     with:
       testing: true
-      concurrency-prefix: plugin-validator-
+      concurrency-prefix: plugin-validator-${{ matrix.plugin-validator-config-file }}
       plugin-directory: tests/simple-backend
       dist-artifacts-prefix: custom-inputs
       plugin-version-suffix: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || '' }}
       run-playwright: false
 
       run-plugin-validator: true
+      plugin-validator-config-file: ${{ matrix.plugin-validator-config-file }}
 
 
