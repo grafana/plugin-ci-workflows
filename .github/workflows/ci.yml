@@ -494,7 +494,7 @@ jobs:
           docker run --name=plugin-validator --pull=always \
             -v "$PWD/${PLUGIN_VALIDATOR_CONFIG_PATH}:/workspace/.plugin-validator.yaml:ro" \
             -v "$PWD/dist-artifacts:/workspace/dist-artifacts:ro" \
-            -v "$PWD/${PLUGIN_DIRECTORY}:/workspace:ro" \
+            -v "$PWD/${PLUGIN_DIRECTORY}:/workspace" \
             -e SKIP_CLAMAV=1 \
             grafana/plugin-validator-cli \
             -ghaOutput \
