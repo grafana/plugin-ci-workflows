@@ -79,7 +79,7 @@ jobs:
       testing: true
       concurrency-prefix: plugin-validator-${{ matrix.plugin-validator-config-file }}
       plugin-directory: tests/simple-backend
-      dist-artifacts-prefix: custom-inputs
+      dist-artifacts-prefix: plugin-validator-${{ matrix.plugin-validator-config-file }}
       plugin-version-suffix: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || '' }}
       run-playwright: false
 
