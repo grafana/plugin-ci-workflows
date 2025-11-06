@@ -33,7 +33,7 @@ jobs:
           plugins=$(find . -maxdepth 1 -type d ! -name '.' -printf '%f\n' | jq -R . | jq -cs .)
           echo "plugin-directories=$plugins" >> "$GITHUB_OUTPUT"
 
-  ci:
+  simple-ci:
     name: CI
     needs: find-tests
     strategy:
@@ -59,3 +59,20 @@ jobs:
 
       # TODO: enable in a follow-up PR
       run-playwright: false
+  
+  ci-plugin-validator:
+    name: CI plugin-validator
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/ci.yml
+    with:
+      testing: true
+      plugin-directory: tests/simple-backend
+      dist-artifacts-prefix: custom-inputs
+      plugin-version-suffix: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || '' }}
+      run-playwright: false
+
+      run-plugin-validator: true
+
+
