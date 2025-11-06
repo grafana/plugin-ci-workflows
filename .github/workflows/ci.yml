@@ -463,7 +463,7 @@ jobs:
       - name: plugin-validator
         if: ${{ inputs.run-plugin-validator == true }}
         run: |
-          if [ ! -z "${PLUGIN_VALIDATOR_CONFIG_FILE}" ]; then
+          if [ -n "${PLUGIN_VALIDATOR_CONFIG_FILE}" ]; then
             echo "Using provided plugin-validator configuration content."
             echo "${PLUGIN_VALIDATOR_CONFIG_FILE}" > .plugin-validator.yaml
             PLUGIN_VALIDATOR_CONFIG_PATH=.plugin-validator.yaml
