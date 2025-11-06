@@ -486,11 +486,14 @@ jobs:
           echo "Using configuration:"
           cat "${PLUGIN_VALIDATOR_CONFIG_PATH}"
 
+          mkdir -p /tmp/empty
+
           # Do not run clamav because it takes too long (and because it would scan node_modules as well)
           docker run --name=plugin-validator --pull=always \
             -v "$PWD/${PLUGIN_VALIDATOR_CONFIG_PATH}:/workspace/.plugin-validator.yaml:ro" \
             -v "$PWD/dist-artifacts:/workspace/dist-artifacts:ro" \
             -v "$PWD/${PLUGIN_DIRECTORY}:/workspace" \
+            -v "/tmp/empty:/workspace/node_modules" \
             -e SKIP_CLAMAV=1 \
             grafana/plugin-validator-cli \
             -ghaOutput \
