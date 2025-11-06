@@ -68,6 +68,7 @@ jobs:
     uses: ./.github/workflows/ci.yml
     with:
       testing: true
+      concurrency-prefix: plugin-validator-
       plugin-directory: tests/simple-backend
       dist-artifacts-prefix: custom-inputs
       plugin-version-suffix: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || '' }}
