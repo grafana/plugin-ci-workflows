@@ -167,7 +167,7 @@ on:
         type: boolean
         required: false
         default: false
-      plugin-validator-config-file:
+      plugin-validator-config:
         description: |
           Content of the plugin validator configuration file (yaml) to use.
           If not provided, the action will look for the file specified in `plugin-validator-config-path` input instead.
@@ -463,9 +463,9 @@ jobs:
       - name: plugin-validator
         if: ${{ inputs.run-plugin-validator == true }}
         run: |
-          if [ -n "${PLUGIN_VALIDATOR_CONFIG_FILE}" ]; then
+          if [ -n "${PLUGIN_VALIDATOR_CONFIG}" ]; then
             echo "Using provided plugin-validator configuration content."
-            echo "${PLUGIN_VALIDATOR_CONFIG_FILE}" > .plugin-validator.yaml
+            echo "${PLUGIN_VALIDATOR_CONFIG}" > .plugin-validator.yaml
             PLUGIN_VALIDATOR_CONFIG_PATH=.plugin-validator.yaml
             cat ${PLUGIN_VALIDATOR_CONFIG_PATH}
           elif [ -f "${PLUGIN_VALIDATOR_CONFIG_PATH}" ]; then
@@ -505,7 +505,7 @@ jobs:
           exit "$(docker inspect plugin-validator --format='{{.State.ExitCode}}')"
         env:
           UNIVERSAL_ZIP: ${{ steps.universal-zip.outputs.zip }}
-          PLUGIN_VALIDATOR_CONFIG_FILE: ${{ inputs.plugin-validator-config-file }}
+          PLUGIN_VALIDATOR_CONFIG: ${{ inputs.plugin-validator-config }}
           PLUGIN_VALIDATOR_CONFIG_PATH: ${{ inputs.plugin-validator-config-path }}
           PLUGIN_DIRECTORY: ${{ inputs.plugin-directory }}
         shell: bash

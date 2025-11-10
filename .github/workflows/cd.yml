@@ -191,7 +191,7 @@ on:
         type: boolean
         required: false
         default: false
-      plugin-validator-config-file:
+      plugin-validator-config:
         description: |
           Content of the plugin validator configuration file (yaml) to use.
           If not provided, the action will look for the file specified in `plugin-validator-config-path` input instead.
@@ -422,7 +422,7 @@ jobs:
       golangci-lint-version: ${{ inputs.golangci-lint-version }}
 
       run-plugin-validator: ${{ inputs.run-plugin-validator }}
-      plugin-validator-config-file: ${{ inputs.plugin-validator-config-file }}
+      plugin-validator-config: ${{ inputs.plugin-validator-config }}
       plugin-validator-config-path: ${{ inputs.plugin-validator-config-path }}
 
       run-playwright: ${{ inputs.run-playwright }}
