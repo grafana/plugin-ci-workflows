@@ -474,12 +474,10 @@ jobs:
 
           if [ ! -f "${PLUGIN_VALIDATOR_CONFIG_PATH}" ]; then
             PLUGIN_VALIDATOR_CONFIG_PATH=".plugin-validator.yaml"
-            echo "⚠️ ${PLUGIN_VALIDATOR_CONFIG_PATH} configuration file is missing. Providing a default one as fallback."
+            echo "${PLUGIN_VALIDATOR_CONFIG_PATH} configuration file is missing. Providing a default one as fallback."
             cat <<EOF > "${PLUGIN_VALIDATOR_CONFIG_PATH}"
           global:
             enabled: true
-            severity: warning
-            reportAll: true
           EOF
           fi
 
