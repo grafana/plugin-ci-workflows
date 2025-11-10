@@ -194,18 +194,20 @@ on:
       plugin-validator-config:
         description: |
           Content of the plugin validator configuration file (yaml) to use.
+          It has higher priority than `plugin-validator-config-path` input.
           If not provided, the action will look for the file specified in `plugin-validator-config-path` input instead.
+          If neither is provided, a default configuration will be used.
         type: string
         required: false
         default: ""
       plugin-validator-config-path:
         description: |
           Path to the plugin validator configuration file (yaml) to use.
-          Defaults to `.plugin-validator.yaml`.
-          If the file is not present, the action will use a default configuration instead.
+          It will be used only if `plugin-validator-config` input is not provided.
+          If not provided, a default configuration will be used.
         type: string
         required: false
-        default: .plugin-validator.yaml
+        default: ""
 
       # Feature toggle: Artifacts attestation for build provenance
       attestation:

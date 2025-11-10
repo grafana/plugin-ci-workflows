@@ -170,18 +170,20 @@ on:
       plugin-validator-config:
         description: |
           Content of the plugin validator configuration file (yaml) to use.
+          It has higher priority than `plugin-validator-config-path` input.
           If not provided, the action will look for the file specified in `plugin-validator-config-path` input instead.
+          If neither is provided, a default configuration will be used.
         type: string
         required: false
         default: ""
       plugin-validator-config-path:
         description: |
           Path to the plugin validator configuration file (yaml) to use.
-          Defaults to `.plugin-validator.yaml`.
-          If the file is not present, the action will use a default configuration instead.
+          It will be used only if `plugin-validator-config` input is not provided.
+          If not provided, a default configuration will be used.
         type: string
         required: false
-        default: .plugin-validator.yaml
+        default: ""
 
       # Options for building PRs. Those values should come from the PR event and should not be set manually.
       plugin-version-suffix:
@@ -464,15 +466,19 @@ jobs:
         if: ${{ inputs.run-plugin-validator == true }}
         run: |
           if [ -n "${PLUGIN_VALIDATOR_CONFIG}" ]; then
+            # User-provided configuration content
             echo "Using provided plugin-validator configuration content."
-            echo "${PLUGIN_VALIDATOR_CONFIG}" > .plugin-validator.yaml
-            PLUGIN_VALIDATOR_CONFIG_PATH=.plugin-validator.yaml
-            cat ${PLUGIN_VALIDATOR_CONFIG_PATH}
-          elif [ -f "${PLUGIN_VALIDATOR_CONFIG_PATH}" ]; then
+            PLUGIN_VALIDATOR_CONFIG_PATH=".plugin-validator.yaml"
+            echo "${PLUGIN_VALIDATOR_CONFIG}" > ${PLUGIN_VALIDATOR_CONFIG_PATH}
+          elif [ -n "${PLUGIN_VALIDATOR_CONFIG_PATH}" ]; then
+            # User-provided configuration file path
             echo "Using plugin-validator configuration file at path: ${PLUGIN_VALIDATOR_CONFIG_PATH}"
-          fi
-
-          if [ ! -f "${PLUGIN_VALIDATOR_CONFIG_PATH}" ]; then
+            if [ ! -f "${PLUGIN_VALIDATOR_CONFIG_PATH}" ]; then
+              echo "::error title=plugin-validator: missing config file::${PLUGIN_VALIDATOR_CONFIG_PATH} configuration file is missing."
+              exit 1
+            fi
+          else
+            # Default hardcoded configuration
             PLUGIN_VALIDATOR_CONFIG_PATH=".plugin-validator.yaml"
             echo "${PLUGIN_VALIDATOR_CONFIG_PATH} configuration file is missing. Providing a default one as fallback."
             cat <<EOF > "${PLUGIN_VALIDATOR_CONFIG_PATH}"
