@@ -332,6 +332,8 @@ jobs:
               isReleaseBranch = branchInput === releaseBranchInput;
             }
 
+            // TODO: determine if it's an open PR, and block prod deployments from PRs
+
             const o = { isReleaseBranch };
             console.log(JSON);
             return o;
