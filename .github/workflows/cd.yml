@@ -6,7 +6,7 @@
 #  - ('prod' target only) Publishes docs to the website, if they exist.
 #  - ('prod' target only) Creates a lightweight Git tag and a drafts a new GitHub.
 #
-#  This workflow can also publish a PR (or any other non-main branch), but only to the 'dev' catalog.
+#  This workflow can also release a new version of a plugin from a PR to the catalog (usually dev only).
 
 name: Plugins - Publish plugin
 
@@ -287,6 +287,10 @@ on:
         default: main
         type: string
 
+      release-branch:
+        default: main
+        type: string
+
 concurrency:
   group: cd-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
@@ -314,21 +318,38 @@ jobs:
       plugin-version-suffix: ${{ steps.plugin-version-suffix.outputs.plugin_version_suffix }}
 
     steps:
+      - name: Determine workflow context
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        id: workflow-context
+        with:
+          script: |
+            const releaseBranchInput = process.env['INPUT_RELEASE_BRANCH'].trim().toLowerCase();
+            const branchInput = process.env['INPUT_BRANCH'].trim().toLowerCase();
+            let isReleaseBranch = false;
+            if (releaseBranchInput.endsWith('*')) {
+              isReleaseBranch = branchInput.startsWith(releaseBranchInput.replace('*', ''));
+            } else {
+              isReleaseBranch = branchInput === releaseBranchInput;
+            }
+
+            const o = { isReleaseBranch };
+            console.log(JSON);
+            return o;
+        env:
+          INPUT_RELEASE_BRANCH: ${{ inputs.release-branch }}
+          INPUT_BRANCH: ${{ inputs.branch }}
+
       - name: Check environment
         run: |
-          #if [ -n "${ENVIRONMENT}" ] && [ "${ENVIRONMENT}" != 'none' ] && [ "${ENVIRONMENT}" != 'dev' ] && [ "${BRANCH}" != 'main' ]; then
-          #  echo "Only 'dev' environment is allowed for non-main branches."
-          #  exit 1
-          #fi
-
           if [ "${DOCS_ONLY}" == 'true' ]; then
             if [ "${ENVIRONMENT}" != 'prod' ]; then
               echo "Only 'prod' environment is allowed for docs publishing."
               exit 1
             fi
 
-            if [ "${BRANCH}" != 'main' ]; then
-              echo "Only 'main' branch can be used for docs publishing."
+            # TODO: release branch
+            if [ "${IS_RELEASE_BRANCH}" != 'true' ]; then
+              echo "Non-release branches cannot be used for docs publishing."
               exit 1
             fi
           fi
@@ -336,6 +357,7 @@ jobs:
           ENVIRONMENT: ${{ inputs.environment }}
           BRANCH: ${{ inputs.branch }}
           DOCS_ONLY: ${{ inputs.docs-only }}
+          IS_RELEASE_BRANCH: ${{ fromJson(steps.workflow-context.outputs.result).isReleaseBranch }}
         shell: bash
 
       - name: Checkout specified branch
@@ -353,7 +375,7 @@ jobs:
             echo "plugin_version_suffix=${INPUT_PLUGIN_VERSION_SUFFIX}" >> "$GITHUB_OUTPUT"
           else
             # Default behavior:
-            # - Add commit hash for prod-canary only deployments OR non-main branches
+            # - Add commit hash for prod-canary only deployments OR non-release branches
             # - Otherwise, do not set the suffix
             IFS=',' read -ra envs <<< "$ENVIRONMENT"
             has_prod_canary=false
@@ -367,7 +389,7 @@ jobs:
               fi
             done
 
-            if { $has_prod_canary && ! $has_prod; } || [[ "${INPUT_BRANCH}" != 'main' ]]; then
+            if { $has_prod_canary && ! $has_prod; } || [[ "${INPUT_IS_RELEASE_BRANCH}" != 'true' ]]; then
               echo "setting plugin version suffix => ${COMMIT_SHA}"
               echo "plugin_version_suffix=${COMMIT_SHA}" >> "$GITHUB_OUTPUT"
             else
@@ -376,7 +398,7 @@ jobs:
           fi
         env:
           INPUT_PLUGIN_VERSION_SUFFIX: ${{ inputs.plugin-version-suffix }}
-          INPUT_BRANCH: ${{ inputs.branch }}
+          INPUT_IS_RELEASE_BRANCH: ${{ fromJson(steps.workflow-context.outputs.result).isReleaseBranch }}
           ENVIRONMENT: ${{ inputs.environment }}
           COMMIT_SHA: ${{ steps.checkout-specified-branch.outputs.commit }}
         shell: bash
