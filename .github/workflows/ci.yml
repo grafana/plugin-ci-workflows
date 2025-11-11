@@ -477,10 +477,6 @@ jobs:
               echo "::error title=plugin-validator: missing config file::${PLUGIN_VALIDATOR_CONFIG_PATH} configuration file is missing."
               exit 1
             fi
-            if [[ -d "${PLUGIN_VALIDATOR_CONFIG_PATH}" ]]; then
-              echo "::error title=plugin-validator: invalid config file::${PLUGIN_VALIDATOR_CONFIG_PATH} is a directory, expected a file."
-              exit 1
-            fi
           else
             # Default hardcoded configuration
             PLUGIN_VALIDATOR_CONFIG_PATH=".plugin-validator.yaml"
