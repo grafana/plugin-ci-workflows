@@ -389,7 +389,7 @@ jobs:
               fi
             done
 
-            if { $has_prod_canary && ! $has_prod; } || [[ "${INPUT_IS_RELEASE_BRANCH}" != 'true' ]]; then
+            if { $has_prod_canary && ! $has_prod; } || [[ "${IS_RELEASE_BRANCH}" != 'true' ]]; then
               echo "setting plugin version suffix => ${COMMIT_SHA}"
               echo "plugin_version_suffix=${COMMIT_SHA}" >> "$GITHUB_OUTPUT"
             else
@@ -398,7 +398,7 @@ jobs:
           fi
         env:
           INPUT_PLUGIN_VERSION_SUFFIX: ${{ inputs.plugin-version-suffix }}
-          INPUT_IS_RELEASE_BRANCH: ${{ fromJson(steps.workflow-context.outputs.result).isReleaseBranch }}
+          IS_RELEASE_BRANCH: ${{ fromJson(steps.workflow-context.outputs.result).isReleaseBranch }}
           ENVIRONMENT: ${{ inputs.environment }}
           COMMIT_SHA: ${{ steps.checkout-specified-branch.outputs.commit }}
         shell: bash
