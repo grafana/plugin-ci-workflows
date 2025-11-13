@@ -1,5 +1,18 @@
 # Changelog
 
+## [4.2.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v4.1.0...ci-cd-workflows/v4.2.0) (2025-11-13)
+
+
+### 🎉 Features
+
+* run plugin-validator as part of CI (opt-in) ([#366](https://github.com/grafana/plugin-ci-workflows/issues/366)) ([3456883](https://github.com/grafana/plugin-ci-workflows/commit/34568839361b8e990d500e52beba150640934b95))
+
+
+### 🔧 Chores
+
+* **deps:** update github artifact actions (major) ([#375](https://github.com/grafana/plugin-ci-workflows/issues/375)) ([0662937](https://github.com/grafana/plugin-ci-workflows/commit/0662937faaa02b98a54172eaee702533b502514f))
+* **deps:** update googleapis/release-please-action action to v4.4.0 ([#374](https://github.com/grafana/plugin-ci-workflows/issues/374)) ([5f3d206](https://github.com/grafana/plugin-ci-workflows/commit/5f3d206183ce3d29f184219d30bd990a36138b3f))
+
 ## [4.1.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v4.0.0...ci-cd-workflows/v4.1.0) (2025-11-04)
 
 
