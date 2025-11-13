@@ -33,7 +33,7 @@ runs:
     - name: Install Trufflehog
       shell: bash
       run: |
-        curl -sSfL https://raw.githubusercontent.com/trufflesecurity/trufflehog/v${TRUFFLEHOG_VERSION}/scripts/install.sh | bash -s -- "${TRUFFLEHOG_VERSION}"
+        curl -sSfL https://raw.githubusercontent.com/trufflesecurity/trufflehog/v${TRUFFLEHOG_VERSION}/scripts/install.sh | bash -s -- "v${TRUFFLEHOG_VERSION}"
       env:
         TRUFFLEHOG_VERSION: ${{ inputs.trufflehog-version }}
 
