@@ -377,7 +377,7 @@ jobs:
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
         with:
           script: |
-            const ioUtil = require('@actions/io/lib/io-util');
+            const fs = require('fs');
 
             // Helper to get input/env values
             function getInput(name, fallback = '') {
@@ -408,7 +408,7 @@ jobs:
             // has-backend is also returned by the ci job, but we do the check here again
             // so we don't have to depend on the ci job.
             // The ci workflow uses this same check to determine if the plugin has a backend.
-            const hasBackend = await ioUtil.exists('Magefile.go');
+            const hasBackend = fs.existsSync('Magefile.go');
             let platforms = ['any'];
             if (hasBackend) {
               platforms = ['linux', 'darwin', 'windows', 'any'];
