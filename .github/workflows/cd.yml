@@ -345,7 +345,7 @@ jobs:
     name: Debug OIDC claims
     steps:
       - name: Debug OIDC claims
-        uses: github/actions-oidc-debugger@bc12dcf1a852221e54f27c95b2db36d135c1b97f
+        uses: github/actions-oidc-debugger@9649f894cd935032350792327ca5354e88e662e3 # v1.0.0
         with:
           audience: '${{ github.server_url }}/${{ github.repository_owner }}'
 
