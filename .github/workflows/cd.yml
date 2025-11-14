@@ -337,18 +337,6 @@ env:
   GCS_ARTIFACTS_BUCKET: integration-artifacts
 
 jobs:
-  oidc-debug:
-    permissions:
-      contents: read
-      id-token: write
-    runs-on: ubuntu-arm64-small
-    name: Debug OIDC claims
-    steps:
-      - name: Debug OIDC claims
-        uses: github/actions-oidc-debugger@9649f894cd935032350792327ca5354e88e662e3 # v1.0.0
-        with:
-          audience: '${{ github.server_url }}/${{ github.repository_owner }}'
-
   common:
     name: Common checks
     uses: grafana/plugin-ci-workflows/.github/workflows/common-checks.yml@main
