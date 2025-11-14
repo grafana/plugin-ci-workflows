@@ -347,13 +347,15 @@ jobs:
         id: workflow-context
         with:
           script: |
-            const releaseBranchInput = process.env['INPUT_RELEASE_BRANCH'].trim().toLowerCase();
-            const branchInput = process.env['INPUT_BRANCH'].trim().toLowerCase();
+            const releaseBranchInput = process.env['INPUT_RELEASE_BRANCH'];
+            const branchInput = process.env['INPUT_BRANCH'];
             let isReleaseBranch = false;
-            if (releaseBranchInput.endsWith('*')) {
-              isReleaseBranch = branchInput.startsWith(releaseBranchInput.replace('*', ''));
-            } else {
-              isReleaseBranch = branchInput === releaseBranchInput;
+            try {
+              const releaseBranchRegex = new RegExp(releaseBranchInput);
+              isReleaseBranch = releaseBranchRegex.test(branchInput);
+            } catch (e) {
+              core.setFailed(`Invalid release branch regex: ${releaseBranchInput}`);
+              return;
             }
 
             // TODO: determine if it's an open PR, and block prod deployments from PRs
