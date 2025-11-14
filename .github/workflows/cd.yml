@@ -322,6 +322,13 @@ on:
             - `v\d+\.\d+\.\d+`: matches branches or tags like `v1.2.0`, `v10.0.0`, etc.
         default: main
         type: string
+      allow-publishing-prs-to-prod:
+        description: |
+          If true, allows branches with open PRs to deploy to `prod` environment.
+          It's recommended to keep this false to avoid deploying unreviewed code to production.
+          Default is false.
+        default: false
+        type: boolean
 
 concurrency:
   group: cd-${{ github.head_ref || github.run_id }}
@@ -589,7 +596,7 @@ jobs:
 
             // TODO: block prod deployment if not a release branch???
             // Block prod deployments from branches that correspond to open PRs
-            if (environments.includes('prod')) {
+            if (environments.includes('prod') && getInput('ALLOW_PUBLISHING_PRS_TO_PROD') !== 'true') {
               const branchInput = getInput('BRANCH');
               const { data: pullRequests } = await github.rest.pulls.list({
                 owner: context.repo.owner,
@@ -612,6 +619,7 @@ jobs:
             core.setOutput('publish-docs', String(publishDocs));
         env:
           BRANCH: ${{ inputs.branch }}
+          ALLOW_PUBLISHING_PRS_TO_PROD: ${{ inputs.allow-publishing-prs-to-prod }}
           ENVIRONMENT: ${{ inputs.environment }}
           DOCS_ONLY: ${{ inputs.docs-only }}
           HAS_BACKEND: ${{ fromJSON(needs.ci.outputs.plugin).has-backend }}
