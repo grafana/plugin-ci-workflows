@@ -317,7 +317,7 @@ on:
           A release reference is a git reference that is allowed to deploy to `prod` environment and to publish docs.
           If the reference has an open PR, it will be blocked from deploying to `prod` unless `allow-publishing-prs-to-prod` is true.
           Defaults to `main`.
-          
+
           Examples:
             - `main|my-pr-branch`: matches `main` and `my-pr-branch` branches, useful for temporarily testing PRs in prod.
             - `release\/.*`: matches branches or tags like `release/1.2.0`, `release/feature-x`, etc.
@@ -365,7 +365,6 @@ jobs:
       environments: ${{ steps.vars.outputs.environments }}
       publish-docs: ${{ steps.vars.outputs.publish-docs }}
       plugin-version-suffix: ${{ steps.vars.outputs.plugin-version-suffix }}
-      is-release-branch: ${{ steps.vars.outputs.is-release-branch }}
       platforms: ${{ steps.vars.outputs.platforms }}
     steps:
       - name: Checkout specified branch
@@ -396,16 +395,15 @@ jobs:
             const PLUGIN_VERSION_SUFFIX = getInput('PLUGIN_VERSION_SUFFIX', '');
             const COMMIT_SHA = getInput('COMMIT_SHA');
 
-            // Determine if the branch is a release branch (allowed to publish to prod)
-            let isReleaseBranch = false;
+            // Determine if the reference is a release one (allowed to publish to prod)
+            let isReleaseReference = false;
             try {
               const releaseBranchRegex = new RegExp(RELEASE_REFERENCE_REGEX);
-              isReleaseBranch = releaseBranchRegex.test(BRANCH);
+              isReleaseReference = releaseBranchRegex.test(BRANCH);
             } catch (e) {
               core.setFailed(`Invalid release branch regex: ${RELEASE_REFERENCE_REGEX}`);
               return;
             }
-            core.setOutput('is-release-branch', String(isReleaseBranch));
 
             // Determine target platforms
             // has-backend is also returned by the ci job, but we do the check here again
@@ -452,9 +450,9 @@ jobs:
               pluginVersionSuffix = PLUGIN_VERSION_SUFFIX;
             } else {
               // Default behavior:
-              // - Add commit hash for prod-canary only deployments OR non-release branches
+              // - Add commit hash for prod-canary only deployments OR non-release references
               // - Otherwise, do not set the suffix
-              if ((environments.includes('prod-canary') && !environments.includes('prod')) || !isReleaseBranch) {
+              if ((environments.includes('prod-canary') && !environments.includes('prod')) || !isReleaseReference) {
                 pluginVersionSuffix = COMMIT_SHA;
               }
             }
@@ -471,8 +469,8 @@ jobs:
                 core.setFailed(`Only 'prod' environment is allowed for docs publishing.`);
                 return;
               }
-              if (!isReleaseBranch) {
-                core.setFailed(`Non-release branches cannot be used for docs publishing.`);
+              if (!isReleaseReference) {
+                core.setFailed(`Non-release references cannot be used for docs publishing.`);
                 return;
               }
               core.setOutput('environments', JSON.stringify([]));
@@ -482,8 +480,8 @@ jobs:
 
             // Extra checks for prod and prod-canary deployments
             if (environments.includes('prod') || environments.includes('prod-canary')) {
-              // Block prod deployment when not targeting a release branch
-              if (!isReleaseBranch) {
+              // Block prod deployment when not targeting a release reference
+              if (!isReleaseReference) {
                 core.setFailed(
                   `The reference '${BRANCH}' is not a release reference. ` +
                   `Deploying to 'prod' is only allowed from release reference. ` +
