@@ -59,3 +59,5 @@ jobs:
 
       # TODO: enable in a follow-up PR
       run-playwright: false
+
+      run-plugin-validator: true

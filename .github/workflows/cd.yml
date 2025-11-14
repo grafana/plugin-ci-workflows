@@ -185,7 +185,31 @@ on:
         type: string
         required: false
 
-      # Artifacts attestation for build provenance
+      # Feature toggle: plugin-validator
+      run-plugin-validator:
+        description: Whether to run plugin-validator.
+        type: boolean
+        required: false
+        default: false
+      plugin-validator-config:
+        description: |
+          Content of the plugin validator configuration file (yaml) to use.
+          It has higher priority than `plugin-validator-config-path` input.
+          If not provided, the action will look for the file specified in `plugin-validator-config-path` input instead.
+          If neither is provided, a default configuration will be used.
+        type: string
+        required: false
+        default: ""
+      plugin-validator-config-path:
+        description: |
+          Path to the plugin validator configuration file (yaml) to use.
+          It will be used only if `plugin-validator-config` input is not provided.
+          If not provided, a default configuration will be used.
+        type: string
+        required: false
+        default: ""
+
+      # Feature toggle: Artifacts attestation for build provenance
       attestation:
         description: Create a verifiable attestation for the plugin using Github OIDC.
         type: boolean
@@ -413,12 +437,20 @@ jobs:
     with:
       branch: ${{ inputs.branch }}
       plugin-directory: ${{ inputs.plugin-directory }}
+      plugin-version-suffix: ${{ needs.setup.outputs.plugin-version-suffix }}
+
       package-manager: ${{ inputs.package-manager }}
       npm-registry-auth: ${{ inputs.npm-registry-auth }}
+
       go-version: ${{ inputs.go-version }}
       go-setup-caching: ${{ inputs.go-setup-caching }}
       node-version: ${{ inputs.node-version }}
       golangci-lint-version: ${{ inputs.golangci-lint-version }}
+
+      run-plugin-validator: ${{ inputs.run-plugin-validator }}
+      plugin-validator-config: ${{ inputs.plugin-validator-config }}
+      plugin-validator-config-path: ${{ inputs.plugin-validator-config-path }}
+
       run-playwright: ${{ inputs.run-playwright }}
       run-playwright-docker: ${{ inputs.run-playwright-docker }}
       run-playwright-with-grafana-dependency: ${{ inputs.run-playwright-with-grafana-dependency }}
@@ -430,14 +462,17 @@ jobs:
       playwright-config: ${{ inputs.playwright-config }}
       playwright-grafana-url: ${{ inputs.playwright-grafana-url }}
       playwright-secrets: ${{ inputs.playwright-secrets }}
+
       run-trufflehog: ${{ inputs.run-trufflehog }}
       trufflehog-version: ${{ inputs.trufflehog-version }}
       trufflehog-include-detectors: ${{ inputs.trufflehog-include-detectors }}
       trufflehog-exclude-detectors: ${{ inputs.trufflehog-exclude-detectors }}
-      plugin-version-suffix: ${{ needs.setup.outputs.plugin-version-suffix }}
+
       frontend-secrets: ${{ inputs.frontend-secrets }}
       backend-secrets: ${{ inputs.backend-secrets }}
+
       environment: ${{ inputs.environment }}
+
       allow-unsigned: ${{ inputs.allow-unsigned }}
       signature-type: ${{ inputs.signature-type }}
 
