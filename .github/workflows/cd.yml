@@ -311,14 +311,16 @@ on:
         default: main
         type: string
 
-      release-branch-regex:
+      release-reference-regex:
         description: |
-          Regex that is used to match against the `branch` input to determine if it's a release branch.
-          A release branch is a branch that is allowed to deploy to `prod` environment and to publish docs.
+          Regex that is used to match against the `branch` input to determine if it's a release reference.
+          A release reference is a git reference that is allowed to deploy to `prod` environment and to publish docs.
+          If the reference has an open PR, it will be blocked from deploying to `prod` unless `allow-publishing-prs-to-prod` is true.
           Defaults to `main`.
+          
           Examples:
             - `main|my-pr-branch`: matches `main` and `my-pr-branch` branches, useful for temporarily testing PRs in prod.
-            - `release\/.*`: matches branches like `release/1.2.0`, `release/feature-x`, etc.
+            - `release\/.*`: matches branches or tags like `release/1.2.0`, `release/feature-x`, etc.
             - `v\d+\.\d+\.\d+`: matches branches or tags like `v1.2.0`, `v10.0.0`, etc.
         default: main
         type: string
@@ -385,7 +387,7 @@ jobs:
               return process.env[name] !== undefined ? process.env[name] : fallback;
             }
 
-            const RELEASE_BRANCH_REGEX = getInput('RELEASE_BRANCH_REGEX');
+            const RELEASE_REFERENCE_REGEX = getInput('RELEASE_REFERENCE_REGEX');
             const ALLOW_PUBLISHING_PRS_TO_PROD = getInput('ALLOW_PUBLISHING_PRS_TO_PROD') === 'true';
             const BRANCH = getInput('BRANCH');
             const ENVIRONMENT = getInput('ENVIRONMENT', 'none');
@@ -397,10 +399,10 @@ jobs:
             // Determine if the branch is a release branch (allowed to publish to prod)
             let isReleaseBranch = false;
             try {
-              const releaseBranchRegex = new RegExp(RELEASE_BRANCH_REGEX);
+              const releaseBranchRegex = new RegExp(RELEASE_REFERENCE_REGEX);
               isReleaseBranch = releaseBranchRegex.test(BRANCH);
             } catch (e) {
-              core.setFailed(`Invalid release branch regex: ${RELEASE_BRANCH_REGEX}`);
+              core.setFailed(`Invalid release branch regex: ${RELEASE_REFERENCE_REGEX}`);
               return;
             }
             core.setOutput('is-release-branch', String(isReleaseBranch));
@@ -486,7 +488,7 @@ jobs:
                   `The reference '${BRANCH}' is not a release reference. ` +
                   `Deploying to 'prod' is only allowed from release reference. ` +
                   `You can specify which reference are considered as release ` +
-                  `via the 'release-branch-regex' input.`,
+                  `via the 'release-reference-regex' input.`,
                 );
                 return;
               }
@@ -516,7 +518,7 @@ jobs:
             core.setOutput('publish-docs', String(publishDocs));
         env:
           BRANCH: ${{ inputs.branch }}
-          RELEASE_BRANCH_REGEX: ${{ inputs.release-branch-regex }}
+          RELEASE_REFERENCE_REGEX: ${{ inputs.release-reference-regex }}
           ALLOW_PUBLISHING_PRS_TO_PROD: ${{ inputs.allow-publishing-prs-to-prod }}
           ENVIRONMENT: ${{ inputs.environment }}
           DOCS_ONLY: ${{ inputs.docs-only }}
