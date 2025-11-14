@@ -483,8 +483,10 @@ jobs:
               // Block prod deployment when not targeting a release branch
               if (!isReleaseBranch) {
                 core.setFailed(
-                  `The branch '${BRANCH}' is not a release branch. ` +
-                  `Deploying to 'prod' is only allowed from release branches.`,
+                  `The reference '${BRANCH}' is not a release reference. ` +
+                  `Deploying to 'prod' is only allowed from release reference. ` +
+                  `You can specify which reference are considered as release ` +
+                  `via the 'release-branch-regex' input.`,
                 );
                 return;
               }
