@@ -14,7 +14,7 @@ env:
 
 jobs:
   release-please:
-    runs-on: ubuntu-x64-small
+    runs-on: ubuntu-arm64-small
 
     permissions:
       contents: write # Needed to create releases and tags

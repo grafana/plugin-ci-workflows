@@ -77,7 +77,7 @@ permissions:
 jobs:
   resolve-versions:
     name: Resolve Grafana images
-    runs-on: ubuntu-x64-small
+    runs-on: ubuntu-arm64-small
     timeout-minutes: 3
     outputs:
       matrix: ${{ steps.resolve-versions.outputs.matrix }}
@@ -245,7 +245,7 @@ jobs:
   check-playwright-status:
     needs: playwright-tests
     name: Check Playwright E2E matrix status
-    runs-on: ubuntu-x64-small
+    runs-on: ubuntu-arm64-small
     if: always()
     steps:
       - name: Check matrix job status
