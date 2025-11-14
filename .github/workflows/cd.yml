@@ -311,7 +311,15 @@ on:
         default: main
         type: string
 
-      release-branch:
+      release-branch-regex:
+        description: |
+          Regex that is used to match against the `branch` input to determine if it's a release branch.
+          A release branch is a branch that is allowed to deploy to `prod` environment and to publish docs.
+          Defaults to `main`.
+          Examples:
+            - `main|my-pr-branch`: matches `main` and `my-pr-branch` branches, useful for temporarily testing PRs in prod.
+            - `release\/.*`: matches branches like `release/1.2.0`, `release/feature-x`, etc.
+            - `v\d+\.\d+\.\d+`: matches branches or tags like `v1.2.0`, `v10.0.0`, etc.
         default: main
         type: string
 
@@ -347,7 +355,7 @@ jobs:
         id: workflow-context
         with:
           script: |
-            const releaseBranchInput = process.env['INPUT_RELEASE_BRANCH'];
+            const releaseBranchInput = process.env['INPUT_RELEASE_BRANCH_REGEX'];
             const branchInput = process.env['INPUT_BRANCH'];
             let isReleaseBranch = false;
             try {
@@ -364,7 +372,7 @@ jobs:
             console.log(JSON);
             return o;
         env:
-          INPUT_RELEASE_BRANCH: ${{ inputs.release-branch }}
+          INPUT_RELEASE_BRANCH_REGEX: ${{ inputs.release-branch-regex }}
           INPUT_BRANCH: ${{ inputs.branch }}
 
       - name: Check environment
