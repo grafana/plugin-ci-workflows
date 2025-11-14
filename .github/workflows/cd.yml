@@ -386,8 +386,6 @@ jobs:
               echo "Only 'prod' environment is allowed for docs publishing."
               exit 1
             fi
-
-            # TODO: release branch
             if [ "${IS_RELEASE_BRANCH}" != 'true' ]; then
               echo "Non-release branches cannot be used for docs publishing."
               exit 1
@@ -521,6 +519,7 @@ jobs:
     runs-on: ubuntu-x64-small
 
     needs:
+      - setup
       - ci
 
     outputs:
@@ -594,20 +593,35 @@ jobs:
               return;
             }
 
-            // TODO: block prod deployment if not a release branch???
-            // Block prod deployments from branches that correspond to open PRs
-            if (environments.includes('prod') && getInput('ALLOW_PUBLISHING_PRS_TO_PROD') !== 'true') {
-              const branchInput = getInput('BRANCH');
-              const { data: pullRequests } = await github.rest.pulls.list({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                head: `${context.repo.owner}:${branchInput}`,
-              });
-              if (pullRequests.length > 0 && pullRequests[0].merged_at === null) {
+            const branchInput = getInput('BRANCH');
+            const allowPublishingPRsToProd = getInput('ALLOW_PUBLISHING_PRS_TO_PROD') === 'true';
+            const isReleaseBranch = getInput('IS_RELEASE_BRANCH') === 'true';
+
+            // Extra checks for prod and prod-canary deployments
+            if (environments.includes('prod') || environments.includes('prod-canary')) {
+              // Block prod deployments from branches that correspond to open PRs
+              if (!allowPublishingPRsToProd) {
+                const { data: pullRequests } = await github.rest.pulls.list({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  head: `${context.repo.owner}:${branchInput}`,
+                });
+                if (pullRequests.length > 0 && pullRequests[0].merged_at === null) {
+                  core.setFailed(
+                    `The branch '${branchInput}' is a release branch but it has an open PR. ` +
+                    `Deploying to 'prod' from branches with open PRs is not recommended. ` +
+                    `If you really want to deploy to 'prod' from this branch, you can set ` +
+                    `the 'allow-publishing-prs-to-prod' input to true.`,
+                  );
+                  return;
+                }
+              }
+
+              // Block prod deployment when not targeting a release branch
+              if (!isReleaseBranch) {
                 core.setFailed(
-                  `The branch '${branchInput}' is a release branch but it has an open PR. ` +
-                  `Deploying to 'prod' from branches with open PRs is not recommended. ` +
-                  `If you really want to deploy to 'prod' from this branch, please close the PR first.`,
+                  `The branch '${branchInput}' is not a release branch. ` +
+                  `Deploying to 'prod' is only allowed from release branches.`,
                 );
                 return;
               }
@@ -620,6 +634,7 @@ jobs:
         env:
           BRANCH: ${{ inputs.branch }}
           ALLOW_PUBLISHING_PRS_TO_PROD: ${{ inputs.allow-publishing-prs-to-prod }}
+          IS_RELEASE_BRANCH: ${{ fromJson(needs.setup.outputs.workflow-context).isReleaseBranch }}
           ENVIRONMENT: ${{ inputs.environment }}
           DOCS_ONLY: ${{ inputs.docs-only }}
           HAS_BACKEND: ${{ fromJSON(needs.ci.outputs.plugin).has-backend }}
