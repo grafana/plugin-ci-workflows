@@ -365,9 +365,6 @@ jobs:
               core.setFailed(`Invalid release branch regex: ${releaseBranchInput}`);
               return;
             }
-
-            // TODO: determine if it's an open PR, and block prod deployments from PRs
-
             const o = { isReleaseBranch };
             console.log(o);
             return o;
@@ -590,11 +587,31 @@ jobs:
               return;
             }
 
+            // TODO: block prod deployment if not a release branch???
+            // Block prod deployments from branches that correspond to open PRs
+            if (environments.includes('prod')) {
+              const branchInput = getInput('BRANCH');
+              const { data: pullRequests } = await github.rest.pulls.list({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                head: `${context.repo.owner}:${branchInput}`,
+              });
+              if (pullRequests.length > 0 && pullRequests[0].merged_at === null) {
+                core.setFailed(
+                  `The branch '${branchInput}' is a release branch but it has an open PR. ` +
+                  `Deploying to 'prod' from branches with open PRs is not recommended. ` +
+                  `If you really want to deploy to 'prod' from this branch, please close the PR first.`,
+                );
+                return;
+              }
+            }
+
             // publish-docs is true if 'prod' is in the environments list AND docs publishing is not disabled
             const publishDocs = environments.includes('prod') && DISABLE_DOCS_PUBLISHING === 'false';
             core.setOutput('environments', JSON.stringify(environments));
             core.setOutput('publish-docs', String(publishDocs));
         env:
+          BRANCH: ${{ inputs.branch }}
           ENVIRONMENT: ${{ inputs.environment }}
           DOCS_ONLY: ${{ inputs.docs-only }}
           HAS_BACKEND: ${{ fromJSON(needs.ci.outputs.plugin).has-backend }}
