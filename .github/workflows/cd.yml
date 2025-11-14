@@ -338,6 +338,7 @@ permissions:
   contents: write
   id-token: write
   attestations: write
+  pull-requests: read
 
 env:
   VAULT_INSTANCE: ops
