@@ -353,51 +353,18 @@ jobs:
     runs-on: ubuntu-x64-small
 
     outputs:
-      commit-sha: ${{ steps.checkout-specified-branch.outputs.commit }}
-      plugin-version-suffix: ${{ steps.plugin-version-suffix.outputs.plugin_version_suffix }}
-
+      # JSON list of target environments, based on the `environment` input.
+      # It returns a JSON array even if only one environment is targeted (e.g.: `dev` -> `["dev"]`)
+      # This output can be used to determine target catalogs.
+      # When targeting `prod`, all environments are returned, excluding `prod-canary` (`["dev", "ops", "prod"]`)
+      # When targeting `prod-canary` explicitly, it will be included in the list.
+      # If the environment value is exactly `none`, an empty array is returned (`[]`)
+      environments: ${{ steps.vars.outputs.environments }}
+      publish-docs: ${{ steps.vars.outputs.publish-docs }}
+      plugin-version-suffix: ${{ steps.vars.outputs.plugin-version-suffix }}
+      is-release-branch: ${{ steps.vars.outputs.is-release-branch }}
+      platforms: ${{ steps.vars.outputs.platforms }}
     steps:
-      - name: Determine workflow context
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
-        id: workflow-context
-        with:
-          script: |
-            const releaseBranchInput = process.env['INPUT_RELEASE_BRANCH_REGEX'];
-            const branchInput = process.env['INPUT_BRANCH'];
-            let isReleaseBranch = false;
-            try {
-              const releaseBranchRegex = new RegExp(releaseBranchInput);
-              isReleaseBranch = releaseBranchRegex.test(branchInput);
-            } catch (e) {
-              core.setFailed(`Invalid release branch regex: ${releaseBranchInput}`);
-              return;
-            }
-            const o = { isReleaseBranch };
-            console.log(o);
-            return o;
-        env:
-          INPUT_RELEASE_BRANCH_REGEX: ${{ inputs.release-branch-regex }}
-          INPUT_BRANCH: ${{ inputs.branch }}
-
-      - name: Check environment
-        run: |
-          if [ "${DOCS_ONLY}" == 'true' ]; then
-            if [ "${ENVIRONMENT}" != 'prod' ]; then
-              echo "Only 'prod' environment is allowed for docs publishing."
-              exit 1
-            fi
-            if [ "${IS_RELEASE_BRANCH}" != 'true' ]; then
-              echo "Non-release branches cannot be used for docs publishing."
-              exit 1
-            fi
-          fi
-        env:
-          ENVIRONMENT: ${{ inputs.environment }}
-          BRANCH: ${{ inputs.branch }}
-          DOCS_ONLY: ${{ inputs.docs-only }}
-          IS_RELEASE_BRANCH: ${{ fromJson(steps.workflow-context.outputs.result).isReleaseBranch }}
-        shell: bash
-
       - name: Checkout specified branch
         id: checkout-specified-branch
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
@@ -405,41 +372,153 @@ jobs:
           ref: ${{ inputs.branch }}
           persist-credentials: false
 
-      - name: Determine plugin version suffix
-        id: plugin-version-suffix
-        run: |
-          if [ -n "$INPUT_PLUGIN_VERSION_SUFFIX" ]; then
-            # Give priority to the input value
-            echo "plugin_version_suffix=${INPUT_PLUGIN_VERSION_SUFFIX}" >> "$GITHUB_OUTPUT"
-          else
-            # Default behavior:
-            # - Add commit hash for prod-canary only deployments OR non-release branches
-            # - Otherwise, do not set the suffix
-            IFS=',' read -ra envs <<< "$ENVIRONMENT"
-            has_prod_canary=false
-            has_prod=false
-            for e in "${envs[@]}"; do
-              if [[ "$e" == "prod-canary" ]]; then
-                has_prod_canary=true
-              fi
-              if [[ "$e" == "prod" ]]; then
-                has_prod=true
-              fi
-            done
+      - name: Define variables
+        id: vars
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          script: |
+            import * as ioUtil from '@actions/io/lib/io-util'
 
-            if { $has_prod_canary && ! $has_prod; } || [[ "${IS_RELEASE_BRANCH}" != 'true' ]]; then
-              echo "setting plugin version suffix => ${COMMIT_SHA}"
-              echo "plugin_version_suffix=${COMMIT_SHA}" >> "$GITHUB_OUTPUT"
-            else
-              echo "plugin_version_suffix=" >> "$GITHUB_OUTPUT"
-            fi
-          fi
+            // Helper to get input/env values
+            function getInput(name, fallback = '') {
+              return process.env[name] !== undefined ? process.env[name] : fallback;
+            }
+
+            const RELEASE_BRANCH_REGEX = getInput('RELEASE_BRANCH_REGEX');
+            const ALLOW_PUBLISHING_PRS_TO_PROD = getInput('ALLOW_PUBLISHING_PRS_TO_PROD') === 'true';
+            const BRANCH = getInput('BRANCH');
+            const ENVIRONMENT = getInput('ENVIRONMENT', 'none');
+            const DOCS_ONLY = getInput('DOCS_ONLY') === 'true';
+            const DISABLE_DOCS_PUBLISHING = getInput('DISABLE_DOCS_PUBLISHING') === 'true';
+            const PLUGIN_VERSION_SUFFIX = getInput('PLUGIN_VERSION_SUFFIX', '');
+            const COMMIT_SHA = getInput('COMMIT_SHA');
+
+            // Determine if the branch is a release branch (allowed to publish to prod)
+            let isReleaseBranch = false;
+            try {
+              const releaseBranchRegex = new RegExp(RELEASE_BRANCH_REGEX);
+              isReleaseBranch = releaseBranchRegex.test(BRANCH);
+            } catch (e) {
+              core.setFailed(`Invalid release branch regex: ${RELEASE_BRANCH_REGEX}`);
+              return;
+            }
+            core.setOutput('is-release-branch', String(isReleaseBranch));
+
+            // Determine target platforms
+            // has-backend is also returned by the ci job, but we do the check here again
+            // so we don't have to depend on the ci job.
+            // The ci workflow uses this same check to determine if the plugin has a backend.
+            const hasBackend = await ioUtil.exists('Magefile.go');
+            let platforms = ['any'];
+            if (hasBackend) {
+              platforms = ['linux', 'darwin', 'windows', 'any'];
+            }
+            core.setOutput('platforms', JSON.stringify(platforms));
+
+            // Determine target environment(s)
+            // Parse and filter environments
+            let environments = [];
+            if (ENVIRONMENT !== 'none') {
+              const allowedEnvironments = ['dev', 'ops', 'prod-canary', 'prod'];
+              const aliases = {staging: 'ops'};
+              environments = ENVIRONMENT.split(',')
+                .map(e => e.trim())
+                .map(e => aliases[e] || e) // resolve aliases
+                .filter(e => allowedEnvironments.includes(e));
+
+              // Special case: 'prod' means we deploy to all environments
+              if (environments.includes('prod')) {
+                // no need to publish the version to prod-canary because it uses the same catalog as prod
+                environments = allowedEnvironments.filter(e => e !== 'prod-canary');
+              }
+
+              // Remove duplicates and sort
+              environments = Array.from(new Set(environments)).sort();
+
+              if (environments.length === 0) {
+                core.setFailed(`Invalid environment(s): ${ENVIRONMENT}`);
+                return;
+              }
+            }
+
+            // Determine plugin version suffix
+            let pluginVersionSuffix = '';
+            if (PLUGIN_VERSION_SUFFIX !== '') {
+              // Give priority to the input value
+              pluginVersionSuffix = PLUGIN_VERSION_SUFFIX;
+            } else {
+              // Default behavior:
+              // - Add commit hash for prod-canary only deployments OR non-release branches
+              // - Otherwise, do not set the suffix
+              if ((environments.includes('prod-canary') && !environments.includes('prod')) || !isReleaseBranch) {
+                pluginVersionSuffix = COMMIT_SHA;
+              }
+            }
+            if (pluginVersionSuffix !== '') {
+              console.log(`Using plugin version suffix: ${pluginVersionSuffix}`);
+            } else {
+              console.log(`No plugin version suffix will be used.`);
+            }
+            core.setOutput('plugin-version-suffix', pluginVersionSuffix);
+
+            // Docs only: skip plugin deployment
+            if (!DISABLE_DOCS_PUBLISHING && DOCS_ONLY) {
+              if (!environments.includes('prod')) {
+                core.setFailed(`Only 'prod' environment is allowed for docs publishing.`);
+                return;
+              }
+              if (!isReleaseBranch) {
+                core.setFailed(`Non-release branches cannot be used for docs publishing.`);
+                return;
+              }
+              core.setOutput('environments', JSON.stringify([]));
+              core.setOutput('publish-docs', 'true');
+              return;
+            }
+
+            // Extra checks for prod and prod-canary deployments
+            if (environments.includes('prod') || environments.includes('prod-canary')) {
+              // Block prod deployment when not targeting a release branch
+              if (!isReleaseBranch) {
+                core.setFailed(
+                  `The branch '${branchInput}' is not a release branch. ` +
+                  `Deploying to 'prod' is only allowed from release branches.`,
+                );
+                return;
+              }
+
+              // Block prod deployments if the branch has an open PR, unless explicitly allowed
+              if (!ALLOW_PUBLISHING_PRS_TO_PROD) {
+                const { data: pullRequests } = await github.rest.pulls.list({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  head: `${context.repo.owner}:${branchInput}`,
+                });
+                if (pullRequests.length > 0 && pullRequests[0].merged_at === null) {
+                  core.setFailed(
+                    `The branch '${branchInput}' is a release branch but it has an open PR. ` +
+                    `Deploying to 'prod' from branches with open PRs is not recommended. ` +
+                    `If you really want to deploy to 'prod' from this branch, you can set ` +
+                    `the 'allow-publishing-prs-to-prod' input to true.`,
+                  );
+                  return;
+                }
+              }
+            }
+
+            // publish-docs is true if 'prod' is in the environments list AND docs publishing is not disabled
+            const publishDocs = environments.includes('prod') && DISABLE_DOCS_PUBLISHING === 'false';
+            core.setOutput('environments', JSON.stringify(environments));
+            core.setOutput('publish-docs', String(publishDocs));
         env:
-          INPUT_PLUGIN_VERSION_SUFFIX: ${{ inputs.plugin-version-suffix }}
-          IS_RELEASE_BRANCH: ${{ fromJson(steps.workflow-context.outputs.result).isReleaseBranch }}
+          BRANCH: ${{ inputs.branch }}
+          RELEASE_BRANCH_REGEX: ${{ inputs.release-branch-regex }}
+          ALLOW_PUBLISHING_PRS_TO_PROD: ${{ inputs.allow-publishing-prs-to-prod }}
           ENVIRONMENT: ${{ inputs.environment }}
+          DOCS_ONLY: ${{ inputs.docs-only }}
+          DISABLE_DOCS_PUBLISHING: ${{ inputs.disable-docs-publishing }}
           COMMIT_SHA: ${{ steps.checkout-specified-branch.outputs.commit }}
-        shell: bash
+          PLUGIN_VERSION_SUFFIX: ${{ inputs.plugin-version-suffix }}
 
   ci:
     name: CI
@@ -514,144 +593,18 @@ jobs:
         with:
           subject-path: /tmp/dist-artifacts/*.zip
 
-  define-variables:
-    name: Define variables
-    runs-on: ubuntu-x64-small
-
-    needs:
-      - setup
-      - ci
-
-    outputs:
-      # JSON list of target environments, based on the `environment` input.
-      # It returns a JSON array even if only one environment is targeted (e.g.: `dev` -> `["dev"]`)
-      # This output can be used to determine target catalogs.
-      # When targeting `prod`, all environments are returned, excluding `prod-canary` (`["dev", "ops", "prod"]`)
-      # When targeting `prod-canary` explicitly, it will be included in the list.
-      # If the environment value is exactly `none`, an empty array is returned (`[]`)
-      environments: ${{ steps.vars.outputs.environments }}
-      publish-docs: ${{ steps.vars.outputs.publish-docs }}
-      platforms: ${{ steps.vars.outputs.platforms }}
-
-    steps:
-      - name: Define variables
-        id: vars
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
-        with:
-          script: |
-            // Helper to get input/env values
-            function getInput(name, fallback = '') {
-              return process.env[name] !== undefined ? process.env[name] : fallback;
-            }
-
-            const ENVIRONMENT = getInput('ENVIRONMENT', 'none');
-            const DOCS_ONLY = getInput('DOCS_ONLY');
-            const HAS_BACKEND = getInput('HAS_BACKEND');
-            const DISABLE_DOCS_PUBLISHING = getInput('DISABLE_DOCS_PUBLISHING');
-
-            // Platforms matrix
-            let platforms = ['any'];
-            if (HAS_BACKEND === 'true') {
-              platforms = ['linux', 'darwin', 'windows', 'any'];
-            }
-            core.setOutput('platforms', JSON.stringify(platforms));
-
-            // Docs only: skip plugin deployment
-            if (DISABLE_DOCS_PUBLISHING === 'false' && DOCS_ONLY === 'true') {
-              core.setOutput('environments', JSON.stringify([]));
-              core.setOutput('publish-docs', 'true');
-              return;
-            }
-
-            // Special case to skip deployment
-            if (ENVIRONMENT === 'none') {
-              core.setOutput('environments', JSON.stringify([]));
-              core.setOutput('publish-docs', 'false');
-              return;
-            }
-
-            // Parse and filter environments
-            const allowedEnvironments = ['dev', 'ops', 'prod-canary', 'prod'];
-            const aliases = {staging: 'ops'};
-            let environments = [];
-            environments = ENVIRONMENT.split(',')
-              .map(e => e.trim())
-              .map(e => aliases[e] || e) // resolve aliases
-              .filter(e => allowedEnvironments.includes(e));
-
-            // Special case: 'prod' means we deploy to all environments
-            if (environments.includes('prod')) {
-              // no need to publish the version to prod-canary because it uses the same catalog as prod
-              environments = allowedEnvironments.filter(e => e !== 'prod-canary');
-            }
-
-            // Remove duplicates and sort
-            environments = Array.from(new Set(environments)).sort();
-
-            if (environments.length === 0) {
-              core.setFailed(`Invalid environment(s): ${ENVIRONMENT}`);
-              return;
-            }
-
-            const branchInput = getInput('BRANCH');
-            const allowPublishingPRsToProd = getInput('ALLOW_PUBLISHING_PRS_TO_PROD') === 'true';
-            const isReleaseBranch = getInput('IS_RELEASE_BRANCH') === 'true';
-
-            // Extra checks for prod and prod-canary deployments
-            if (environments.includes('prod') || environments.includes('prod-canary')) {
-              // Block prod deployments from branches that correspond to open PRs
-              if (!allowPublishingPRsToProd) {
-                const { data: pullRequests } = await github.rest.pulls.list({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  head: `${context.repo.owner}:${branchInput}`,
-                });
-                if (pullRequests.length > 0 && pullRequests[0].merged_at === null) {
-                  core.setFailed(
-                    `The branch '${branchInput}' is a release branch but it has an open PR. ` +
-                    `Deploying to 'prod' from branches with open PRs is not recommended. ` +
-                    `If you really want to deploy to 'prod' from this branch, you can set ` +
-                    `the 'allow-publishing-prs-to-prod' input to true.`,
-                  );
-                  return;
-                }
-              }
-
-              // Block prod deployment when not targeting a release branch
-              if (!isReleaseBranch) {
-                core.setFailed(
-                  `The branch '${branchInput}' is not a release branch. ` +
-                  `Deploying to 'prod' is only allowed from release branches.`,
-                );
-                return;
-              }
-            }
-
-            // publish-docs is true if 'prod' is in the environments list AND docs publishing is not disabled
-            const publishDocs = environments.includes('prod') && DISABLE_DOCS_PUBLISHING === 'false';
-            core.setOutput('environments', JSON.stringify(environments));
-            core.setOutput('publish-docs', String(publishDocs));
-        env:
-          BRANCH: ${{ inputs.branch }}
-          ALLOW_PUBLISHING_PRS_TO_PROD: ${{ inputs.allow-publishing-prs-to-prod }}
-          IS_RELEASE_BRANCH: ${{ fromJson(needs.setup.outputs.workflow-context).isReleaseBranch }}
-          ENVIRONMENT: ${{ inputs.environment }}
-          DOCS_ONLY: ${{ inputs.docs-only }}
-          HAS_BACKEND: ${{ fromJSON(needs.ci.outputs.plugin).has-backend }}
-          DISABLE_DOCS_PUBLISHING: ${{ inputs.disable-docs-publishing }}
-
   publish-to-catalog:
     name: Publish to catalog (${{ matrix.environment }})
-    if: ${{ !inputs.docs-only && !inputs.gcs-only && needs.define-variables.outputs.environments != '[]' }}
+    if: ${{ !inputs.docs-only && !inputs.gcs-only && needs.setup.outputs.environments != '[]' }}
     needs:
-      - define-variables
+      - setup
       - upload-to-gcs-release
       - ci
     strategy:
       # Allow each stage to be deployed independently, even if others fails
       fail-fast: false
       matrix:
-        environment: ${{ fromJson(needs.define-variables.outputs.environments) }}
+        environment: ${{ fromJson(needs.setup.outputs.environments) }}
     runs-on: ubuntu-x64-small
     steps:
       - name: Checkout
@@ -673,7 +626,7 @@ jobs:
             echo "ignore_conflicts=false" >> "$GITHUB_OUTPUT"
           fi
         env:
-          is_cd_to_prod: ${{ contains(needs.define-variables.outputs.environments, 'prod') }}
+          is_cd_to_prod: ${{ contains(needs.setup.outputs.environments, 'prod') }}
           current_environment: ${{ matrix.environment }}
 
       - name: Login to Google Cloud (ID token for IAP)
@@ -832,16 +785,16 @@ jobs:
 
     needs:
       - ci
-      - define-variables
+      - setup
 
-    if: ${{ !inputs.docs-only && needs.define-variables.outputs.environments != '[]' }}
+    if: ${{ !inputs.docs-only && needs.setup.outputs.environments != '[]' }}
 
     outputs:
       gcs-zip-urls: ${{ steps.generate-urls.outputs.gcs-zip-urls }}
 
     strategy:
       matrix:
-        platform: ${{ fromJson(needs.define-variables.outputs.platforms) }}
+        platform: ${{ fromJson(needs.setup.outputs.platforms) }}
 
     steps:
       - name: Download GitHub artifact
@@ -1002,7 +955,7 @@ jobs:
   publish-docs:
     name: Publish docs
     needs:
-      - define-variables
+      - setup
       - ci
       # Update the docs only after a successful GCOM deployment
       # This dependency can be skipped if gcs-only is true. In that case, this step
@@ -1011,7 +964,7 @@ jobs:
     if: >-
       ${{
         (needs.ci.outputs.has-docs == 'true')
-        && (needs.define-variables.outputs.publish-docs == 'true')
+        && (needs.setup.outputs.publish-docs == 'true')
         && !inputs.disable-docs-publishing
         && !(failure() || cancelled())
       }}
@@ -1058,7 +1011,7 @@ jobs:
     name: Create GitHub Release
     runs-on: ubuntu-x64-small
     needs:
-      - define-variables
+      - setup
       - ci
       # Create the release only after a successful GCOM deployment
       # This dependency can be skipped if gcs-only is true. In that case, this step
@@ -1067,7 +1020,7 @@ jobs:
     if: >-
       ${{
         !inputs.disable-github-release
-        && contains(fromJSON(needs.define-variables.outputs.environments), 'prod')
+        && contains(fromJSON(needs.setup.outputs.environments), 'prod')
         && !(failure() || cancelled())
       }}
     steps:
