@@ -350,7 +350,7 @@ jobs:
 
   setup:
     name: Check and setup environment
-    runs-on: ubuntu-x64-small
+    runs-on: ubuntu-arm64-small
 
     outputs:
       # JSON list of target environments, based on the `environment` input.
