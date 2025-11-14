@@ -307,7 +307,7 @@ on:
 
       # Options for deploying PRs. Those values should come from the PR event and should not be set manually.
       branch:
-        description: Branch to publish from. Can be used to deploy PRs to dev.
+        description: Branch or tag to publish from. Can be used to deploy PRs to dev.
         default: main
         type: string
 
