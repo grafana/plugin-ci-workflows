@@ -325,10 +325,6 @@ env:
   GCS_ARTIFACTS_BUCKET: integration-artifacts
 
 jobs:
-  common:
-    name: Common checks
-    uses: grafana/plugin-ci-workflows/.github/workflows/common-checks.yml@main
-
   setup:
     name: Check and setup environment
     runs-on: ubuntu-x64-small
