@@ -417,6 +417,7 @@ jobs:
 
             // Determine target environment(s)
             // Parse and filter environments
+            // Keep empty list for the special 'none' value
             let environments = [];
             if (ENVIRONMENT !== 'none') {
               const allowedEnvironments = ['dev', 'ops', 'prod-canary', 'prod'];
@@ -507,7 +508,7 @@ jobs:
             }
 
             // publish-docs is true if 'prod' is in the environments list AND docs publishing is not disabled
-            const publishDocs = environments.includes('prod') && DISABLE_DOCS_PUBLISHING === 'false';
+            const publishDocs = environments.includes('prod') && !DISABLE_DOCS_PUBLISHING;
             core.setOutput('environments', JSON.stringify(environments));
             core.setOutput('publish-docs', String(publishDocs));
         env:
