@@ -609,7 +609,7 @@ jobs:
       fail-fast: false
       matrix:
         environment: ${{ fromJson(needs.setup.outputs.environments) }}
-    runs-on: ubuntu-x64-small
+    runs-on: ubuntu-arm64-small
     steps:
       - name: Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
@@ -717,7 +717,7 @@ jobs:
 
   trigger-argo-workflow:
     name: Trigger Argo Workflow for Grafana Cloud deployment
-    runs-on: ubuntu-x64-small
+    runs-on: ubuntu-arm64-small
 
     needs:
       - ci
@@ -785,7 +785,7 @@ jobs:
   # tailored plugins catalog instead of using GCS.
   upload-to-gcs-release:
     name: Upload to GCS (release)
-    runs-on: ubuntu-x64-small
+    runs-on: ubuntu-arm64-small
 
     needs:
       - ci
@@ -1013,7 +1013,7 @@ jobs:
 
   create-github-release:
     name: Create GitHub Release
-    runs-on: ubuntu-x64-small
+    runs-on: ubuntu-arm64-small
     needs:
       - setup
       - ci
