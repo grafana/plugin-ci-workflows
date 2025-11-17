@@ -623,7 +623,7 @@ jobs:
 
   upload-to-gcs:
     name: Upload to GCS
-    runs-on: ubuntu-x64-small
+    runs-on: ubuntu-arm64-small
 
     # Skip the GCS upload (no access to the bucket) for PRs when run in non-trusted context (forks)
     if: ${{ fromJson(needs.test-and-build.outputs.workflow-context).isTrusted }}
