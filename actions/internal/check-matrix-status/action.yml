@@ -1,0 +1,23 @@
+name: Check matrix status
+description: Check the status of a matrix of jobs and fail if any have failed.
+
+inputs:
+  results:
+    description: |
+      The results of the matrix jobs to check.
+      Usually set from the `needs` context, like this: `${{ needs.ci.result }}`.
+    required: true
+    type: string
+
+runs:
+  using: composite
+  steps:
+    - name: Check matrix job status
+      run: |
+        if [ "${{ contains(inputs.results, 'failure') }}" = "true" ]; then
+          echo "One or more jobs in the matrix failed"
+          exit 1
+        else
+          echo "All jobs in the matrix have succeeded"
+        fi
+      shell: bash
