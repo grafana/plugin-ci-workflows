@@ -61,3 +61,14 @@ jobs:
       run-playwright: false
 
       run-plugin-validator: true
+  
+  check-matrix-status:
+    name: Check smoke tests matrix status
+    needs: ci
+    runs-on: ubuntu-arm64-small
+    if: always()
+    steps:
+      - name: Check matrix status
+        uses: grafana/plugin-ci-workflows/actions/internal/check-matrix-status@main
+        with:
+          results: ${{ needs.ci.result }}
