@@ -285,7 +285,7 @@ env:
   DEFAULT_NODE_VERSION: "22"
   DEFAULT_GO_VERSION: "1.24"
   DEFAULT_GOLANGCI_LINT_VERSION: "1.64.8"
-  DEFAULT_TRUFFLEHOG_VERSION: "3.90.6"
+  DEFAULT_TRUFFLEHOG_VERSION: "3.91.0"
 
   GCS_ARTIFACTS_BUCKET: integration-artifacts
   VAULT_INSTANCE: ops
@@ -644,7 +644,7 @@ jobs:
 
   upload-to-gcs:
     name: Upload to GCS
-    runs-on: ubuntu-x64-small
+    runs-on: ubuntu-arm64-small
 
     # Skip the GCS upload (no access to the bucket) for PRs when run in non-trusted context (forks)
     if: ${{ fromJson(needs.test-and-build.outputs.workflow-context).isTrusted }}
