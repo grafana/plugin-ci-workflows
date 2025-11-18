@@ -10,12 +10,12 @@ This action use the following input parameters to run:
 | `plugin-directory`    | Directory of the plugin, if not in the root of the repository. If provided, package-manager must also be provided. | .                 | No       |
 | `package-manager`     | The package manager to use for building the plugin                                                                 |                   | No       |
 | `npm-registry-auth`   | Whether to authenticate to the npm registry in Google Artifact Registry                                            | false             | No       |
-| `stack_slug`          | Name of the stack where you want to run the tests                                                                  |                   | Yes      |
+| `stack-slug`          | Name of the stack where you want to run the tests                                                                  |                   | Yes      |
 | `env`                 | Region of the stack where you want to run the tests                                                                |                   | Yes      |
-| `other_plugins`       | List of other plugins that you want to enable separated by comma                                                   |                   | No       |
-| `datasource_ids`      | List of data sources that you want to enable separated by comma                                                    |                   | No       |
-| `upload_report_path ` | Name of the folder where you want to store the test report                                                         | playwright-report | No       |
-| `upload_videos_path`  | Name of the folder where you want to store the test videos                                                         | playwright-videos | No       |
+| `other-plugins`       | List of other plugins that you want to enable separated by comma                                                   |                   | No       |
+| `datasource-ids`      | List of data sources that you want to enable separated by comma                                                    |                   | No       |
+| `upload-report-path`  | Name of the folder where you want to store the test report                                                         | playwright-report | No       |
+| `upload-videos-path`  | Name of the folder where you want to store the test videos                                                         | playwright-videos | No       |
 | `plugin-secrets`      | A JSON string containing key-value pairs of specific plugin secrets necessary to run the tests.                    |                   | No       |
 | `grafana-ini-path`    | Path to a custom grafana.ini file to configure the Grafana instance                                                |                   | No       |
 
@@ -51,12 +51,12 @@ jobs:
         uses: grafana/plugin-ci-workflows/actions/internal/plugins/frontend-e2e-against-stack@main
         with:
           npm-registry-auth: "true"
-          stack_slug: "mygrafanastack"
+          stack-slug: "mygrafanastack"
           env: "dev-central"
-          other_plugins: "grafana-plugin1-app,grafana-plugin2-app"
-          datasource_ids: "grafanacloud-mygrafanastack-prom,grafanacloud-mygrafanastack-logs"
-          upload_report_path: "playwright-cross-apps-report"
-          upload_videos_path: "playwright-cross-apps-videos"
+          other-plugins: "grafana-plugin1-app,grafana-plugin2-app"
+          datasource-ids: "grafanacloud-mygrafanastack-prom,grafanacloud-mygrafanastack-logs"
+          upload-report-path: "playwright-cross-apps-report"
+          upload-videos-path: "playwright-cross-apps-videos"
           plugin-secrets: ${{ steps.create-plugin-secrets.outputs.plugin-json-secrets }}
           grafana-ini-path: "provisioning/custom-grafana.ini"  # Optional
 ```
