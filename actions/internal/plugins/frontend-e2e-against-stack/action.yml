@@ -169,7 +169,7 @@ runs:
         HG_TOKEN: ${{ env.HG_TOKEN }}
         E2E_PLUGIN_ID: ${{ steps.extract-plugin-id.outputs.plugin-id }}
         E2E_OTHER_PLUGINS: ${{ inputs.other-plugins }}
-        E2E_DATASOURCE_IDS: ${{ inputs.datasourceids }}
+        E2E_DATASOURCE_IDS: ${{ inputs.datasource-ids }}
         E2E_GRAFANA_INI_PATH: ${{ inputs.grafana-ini-path }}
 
     - name: Start server
