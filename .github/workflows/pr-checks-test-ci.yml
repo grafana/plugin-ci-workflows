@@ -69,6 +69,6 @@ jobs:
     if: always()
     steps:
       - name: Check matrix status
-        uses: grafana/plugin-ci-workflows/actions/internal/check-matrix-status@main
+        uses: grafana/plugin-ci-workflows/actions/internal/check-matrix-status@giuseppe/ci-smoke-sink
         with:
           results: ${{ needs.ci.result }}
