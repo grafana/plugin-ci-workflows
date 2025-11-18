@@ -18,7 +18,7 @@ inputs:
     required: false
     default: "false"
 
-  stack_slug:
+  stack-slug:
     description: "Name of the stack where you want to run the tests"
     required: true
 
@@ -26,20 +26,20 @@ inputs:
     description: "Region of the stack where you want to run the tests"
     required: true
 
-  other_plugins:
+  other-plugins:
     description: "List of other plugins that you want to enable separated by comma"
     required: false
 
-  datasource_ids:
+  datasource-ids:
     description: "List of data sources that you want to enable separated by comma"
     required: false
 
-  upload_report_path:
+  upload-report-path:
     description: "Name of the artifact where you want to store the test report"
     required: false
     default: "playwright-report"
 
-  upload_videos_path:
+  upload-videos-path:
     description: "Name of the artifact where you want to store the test videos"
     required: false
     default: "playwright-videos"
@@ -164,12 +164,12 @@ runs:
       run: npx plop --plopfile ${{ github.action_path }}/plopfile.mjs --dest . e2e-testing-provisioning
       working-directory: ${{ inputs.plugin-directory }}
       env:
-        E2E_STACK_SLUG: ${{ inputs.stack_slug }}
+        E2E_STACK_SLUG: ${{ inputs.stack-slug }}
         E2E_ENV: ${{ inputs.env }}
         HG_TOKEN: ${{ env.HG_TOKEN }}
         E2E_PLUGIN_ID: ${{ steps.extract-plugin-id.outputs.plugin-id }}
-        E2E_OTHER_PLUGINS: ${{ inputs.other_plugins }}
-        E2E_DATASOURCE_IDS: ${{ inputs.datasource_ids }}
+        E2E_OTHER_PLUGINS: ${{ inputs.other-plugins }}
+        E2E_DATASOURCE_IDS: ${{ inputs.datasourceids }}
         E2E_GRAFANA_INI_PATH: ${{ inputs.grafana-ini-path }}
 
     - name: Start server
@@ -186,7 +186,7 @@ runs:
       shell: bash
       env:
         MAIN_PLUGIN_ID: ${{ steps.extract-plugin-id.outputs.plugin-id }}
-        OTHER_PLUGINS: ${{ inputs.other_plugins }}
+        OTHER_PLUGINS: ${{ inputs.other-plugins }}
       run: |
         echo "Waiting for Grafana to be available..."
         timeout=300  # 5 minutes timeout
@@ -279,7 +279,7 @@ runs:
       uses: actions/upload-artifact@v4
       if: always()
       with:
-        name: ${{ inputs.upload_report_path }}
+        name: ${{ inputs.upload-report-path }}
         path: playwright-report/
         retention-days: 30
 
@@ -287,7 +287,7 @@ runs:
       uses: actions/upload-artifact@v4
       if: always()
       with:
-        name: ${{ inputs.upload_videos_path }}
+        name: ${{ inputs.upload-videos-path }}
         path: test-results/
         retention-days: 30
 
