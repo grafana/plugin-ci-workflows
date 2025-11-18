@@ -46,7 +46,7 @@ jobs:
     with:
       # Treat as untrusted and disable GCS and Vault access
       # (WIF access is not available from plugin-ci-workflows itself)
-      testing: true
+      testing: false
 
       # Build the specific plugin from the matrix
       plugin-directory: tests/${{ matrix.plugin-directory }}
