@@ -5,7 +5,7 @@ inputs:
   results:
     description: |
       The results of the matrix jobs to check.
-      Usually set from the `needs` context, like this: `${{ needs.ci.result }}`.
+      Usually set from the `needs` context, like this: `needs.ci.result`
     required: true
     type: string
 
