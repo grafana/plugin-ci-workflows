@@ -147,6 +147,7 @@ runs:
       with:
         common_secrets: |
           HG_TOKEN=hg-ci:token
+        export_env: false
 
     - name: Set plugin secrets as environment variables
       id: set-env-vars
@@ -166,7 +167,7 @@ runs:
       env:
         E2E_STACK_SLUG: ${{ inputs.stack-slug }}
         E2E_ENV: ${{ inputs.env }}
-        HG_TOKEN: ${{ env.HG_TOKEN }}
+        HG_TOKEN: ${{ fromJSON(steps.get-common-secrets.outputs.secrets).HG_TOKEN }}
         E2E_PLUGIN_ID: ${{ steps.extract-plugin-id.outputs.plugin-id }}
         E2E_OTHER_PLUGINS: ${{ inputs.other-plugins }}
         E2E_DATASOURCE_IDS: ${{ inputs.datasource-ids }}
