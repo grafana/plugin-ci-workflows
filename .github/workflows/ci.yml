@@ -227,6 +227,10 @@ on:
         type: boolean
         required: false
         default: false
+      testing-act:
+        type: boolean
+        required: false
+        default: false
       dist-artifacts-prefix:
         description: |
           Prefix to use when uploading the dist artifacts as GitHub artifacts.
@@ -609,6 +613,7 @@ jobs:
   docs:
     name: Test docs
     runs-on: ubuntu-latest
+    if: ${{ !inputs.testing-act }}
     needs:
       # Not strictly necessary, but makes sure we fail fast if the workflow is misconfigured
       - check-for-release-channel
