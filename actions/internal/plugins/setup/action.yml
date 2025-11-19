@@ -14,7 +14,7 @@ inputs:
   go-setup-caching:
     description: Defines if setup-go action should have caching enabled (https://github.com/actions/setup-go#caching-dependency-files-and-build-outputs)
     required: false
-    default: "true"
+    default: true
   node-version-file:
     description: Node.js version file to use.
     required: false
@@ -28,12 +28,13 @@ runs:
       with:
         node-version: "${{ inputs.node-version }}"
         node-version-file: "${{ inputs.node-version-file }}"
+        cache: npm
 
     - name: Go
       uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
       with:
         go-version: "${{ inputs.go-version }}"
-        cache: "${{ inputs.go-setup-caching }}"
+        # cache: ${{ inputs.go-setup-caching }}
 
     - name: Mage
       shell: bash
