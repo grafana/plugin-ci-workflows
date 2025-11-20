@@ -298,6 +298,8 @@ jobs:
   common:
     name: Common checks
     uses: grafana/plugin-ci-workflows/.github/workflows/common-checks.yml@main
+    secrets:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   test-and-build:
     name: Test and build plugin
