@@ -12,8 +12,13 @@ import (
 )
 
 func TestSmoke(t *testing.T) {
-	for _, name := range []string{"simple-frontend"} {
-		t.Run("simple-frontend", func(t *testing.T) {
+	for _, name := range []string{
+		"simple-frontend",
+		"simple-frontend-yarn",
+		"simple-frontend-pnpm",
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 			testWorkflowFile, err := workflow.NewSimpleCI().With(
 				workflow.WithPluginDirectory(filepath.Join("tests", name)),
 				workflow.WithDistArtifactPrefix(name+"-"),
@@ -25,7 +30,7 @@ func TestSmoke(t *testing.T) {
 			require.NoError(t, err)
 			t.Cleanup(func() { os.Remove(fn) })
 
-			runner, err := act.NewRunner()
+			runner, err := act.NewRunner(t)
 			require.NoError(t, err)
 
 			err = runner.Run(fn)

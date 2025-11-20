@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"testing"
 )
 
 var (
@@ -31,9 +32,10 @@ const nektosActRunnerImage = "ghcr.io/catthehacker/ubuntu:act-latest"
 
 type Runner struct {
 	gitHubToken string
+	t           *testing.T
 }
 
-func NewRunner() (*Runner, error) {
+func NewRunner(t *testing.T) (*Runner, error) {
 	if err := checkExecutables(); err != nil {
 		return nil, err
 	}
@@ -49,6 +51,7 @@ func NewRunner() (*Runner, error) {
 	}
 
 	return &Runner{
+		t:           t,
 		gitHubToken: ghToken,
 	}, nil
 }
@@ -68,7 +71,7 @@ func (r *Runner) args(workflow string) []string {
 		// "--no-skip-checkout",
 		"--secret", "GITHUB_TOKEN=" + r.gitHubToken,
 		// TODO: remove
-		"--concurrent-jobs", "1",
+		// "--concurrent-jobs", "1",
 	}
 	for _, label := range selfHostedRunnerLabels {
 		args = append(args, "-P", label+"="+nektosActRunnerImage)
@@ -148,7 +151,7 @@ func (r *Runner) processStream(reader io.Reader) error {
 			continue
 		}
 		// Print in a human-readable format for now
-		fmt.Printf("[%s] %s\n", data.Job, strings.TrimSpace(data.Message))
+		fmt.Printf("%s: [%s] %s\n", r.t.Name(), data.Job, strings.TrimSpace(data.Message))
 	}
 	if err := scanner.Err(); err != nil {
 		return fmt.Errorf("scanner error: %w", err)
