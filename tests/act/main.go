@@ -50,6 +50,16 @@ func _main() error {
 		return fmt.Errorf("chdir to repo root: %w", err)
 	}
 
+	// Cleanup old temporary workflow files
+	files, err := filepath.Glob(filepath.Join(".github", "workflows", "act-*.yml"))
+	if err != nil {
+		return fmt.Errorf("glob old test workflow files: %w", err)
+	}
+	for _, f := range files {
+		fmt.Printf("removing %q\n", f)
+		os.Remove(f)
+	}
+
 	// Create a temporary workflow file to run the test
 	fn := "act-" + uuid.NewString() + ".yml"
 	fn = filepath.Join(".github", "workflows", fn)
