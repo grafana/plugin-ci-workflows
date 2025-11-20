@@ -149,7 +149,7 @@ func (r *Runner) processStream(reader io.Reader, name string) error {
 			continue
 		}
 		// Print in a human-readable format for now
-		fmt.Printf("[%s] %s\n", data.Job, data.Message)
+		fmt.Printf("[%s] %s\n", data.Job, strings.TrimSpace(data.Message))
 	}
 	if err := scanner.Err(); err != nil {
 		return fmt.Errorf("scanner error: %w", err)
