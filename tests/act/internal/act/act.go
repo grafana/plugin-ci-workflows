@@ -114,13 +114,13 @@ func (r *Runner) Run(workflow string) error {
 
 	errs := make(chan error, 2)
 	go func() {
-		if err := r.processStream(stdout, "stdout"); err != nil {
+		if err := r.processStream(stdout); err != nil {
 			errs <- fmt.Errorf("process act stdout: %w", err)
 		}
 		errs <- nil
 	}()
 	/* go func() {
-		if err := r.processStream(stderr, "stderr"); err != nil {
+		if err := r.processStream(stderr); err != nil {
 			errs <- fmt.Errorf("process act stderr: %w", err)
 		}
 		errs <- nil
@@ -137,7 +137,7 @@ func (r *Runner) Run(workflow string) error {
 	return finalErr
 }
 
-func (r *Runner) processStream(reader io.Reader, name string) error {
+func (r *Runner) processStream(reader io.Reader) error {
 	scanner := bufio.NewScanner(reader)
 	for scanner.Scan() {
 		var data logLine
