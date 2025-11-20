@@ -8,7 +8,6 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 )
 
@@ -31,18 +30,12 @@ var (
 const nektosActRunnerImage = "ghcr.io/catthehacker/ubuntu:act-latest"
 
 type Runner struct {
-	gitHubToken           string
-	pluginCiWorkflowsPath string
+	gitHubToken string
 }
 
 func NewRunner() (*Runner, error) {
 	if err := checkExecutables(); err != nil {
 		return nil, err
-	}
-
-	pciwfPath, err := filepath.Abs(filepath.Join("..", ".."))
-	if err != nil {
-		return nil, fmt.Errorf("determine plugin-ci-workflows absolute path: %w", err)
 	}
 
 	ghToken, ok := os.LookupEnv("GITHUB_TOKEN")
@@ -56,19 +49,23 @@ func NewRunner() (*Runner, error) {
 	}
 
 	return &Runner{
-		gitHubToken:           ghToken,
-		pluginCiWorkflowsPath: pciwfPath,
+		gitHubToken: ghToken,
 	}, nil
 }
 
 func (r *Runner) args(workflow string) []string {
+	pciwfRoot, err := os.Getwd()
+	if err != nil {
+		// TODO: do not fail silently
+		pciwfRoot = ""
+	}
 	args := []string{
 		"-W", workflow,
 		"--rm",
-		// "--json",
+		"--json",
 		"--artifact-server-path=/tmp/artifacts",
-		"--local-repository=grafana/plugin-ci-workflows@main=" + r.pluginCiWorkflowsPath,
-		"--no-skip-checkout",
+		"--local-repository=grafana/plugin-ci-workflows@main=" + pciwfRoot,
+		// "--no-skip-checkout",
 		"--secret", "GITHUB_TOKEN=" + r.gitHubToken,
 		// TODO: remove
 		"--concurrent-jobs", "1",
@@ -86,11 +83,10 @@ func (r *Runner) Run(workflow string) error {
 	actCmd := "act " + strings.Join(args, " ")
 	fmt.Println(actCmd)
 
+	// Use a shell otherwise git will not be able to clone anything,
+	// not even publis repositories like actions/checkout for some reason.
 	cmd := exec.Command("sh", "-c", actCmd)
 	cmd.Env = os.Environ()
-
-	// TODO: lapo
-	cmd.Dir = filepath.Join(r.pluginCiWorkflowsPath, "tests", "simple-frontend")
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
