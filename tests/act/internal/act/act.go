@@ -6,10 +6,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"os"
 	"os/exec"
 	"strings"
 	"testing"
+
+	"github.com/google/uuid"
 )
 
 var (
@@ -62,11 +65,17 @@ func (r *Runner) args(workflow string) []string {
 		// TODO: do not fail silently
 		pciwfRoot = ""
 	}
+	port, err := getFreePort()
+	if err != nil {
+		// TODO: do not fail silently
+		port = 34567
+	}
 	args := []string{
 		"-W", workflow,
 		"--rm",
 		"--json",
-		"--artifact-server-path=/tmp/artifacts",
+		"--artifact-server-path=/tmp/artifacts/" + uuid.NewString(),
+		"--artifact-server-port=" + fmt.Sprint(port),
 		"--local-repository=grafana/plugin-ci-workflows@main=" + pciwfRoot,
 		// "--no-skip-checkout",
 		"--secret", "GITHUB_TOKEN=" + r.gitHubToken,
@@ -172,4 +181,17 @@ func checkExecutables() error {
 		}
 	}
 	return nil
+}
+
+// getFreePort asks the kernel for a free open port that is ready to use.
+func getFreePort() (port int, err error) {
+	var a *net.TCPAddr
+	if a, err = net.ResolveTCPAddr("tcp", "localhost:0"); err == nil {
+		var l *net.TCPListener
+		if l, err = net.ListenTCP("tcp", a); err == nil {
+			defer l.Close()
+			return l.Addr().(*net.TCPAddr).Port, nil
+		}
+	}
+	return
 }

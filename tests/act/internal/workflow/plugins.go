@@ -45,6 +45,15 @@ func NewSimpleCI() SimpleCI {
 
 type WithOption func(SimpleCI) SimpleCI
 
+func WithJobName(name string) WithOption {
+	return func(w SimpleCI) SimpleCI {
+		job := w.Jobs[ciJob]
+		job.Name = name
+		w.Jobs[ciJob] = job
+		return w
+	}
+}
+
 func WithPluginDirectory(dir string) WithOption {
 	return func(w SimpleCI) SimpleCI {
 		w.Jobs[ciJob].With["plugin-directory"] = dir
