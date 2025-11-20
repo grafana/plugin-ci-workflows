@@ -94,16 +94,19 @@ func (r *Runner) Run(workflow string) error {
 	}
 	defer stdout.Close()
 
-	stderr, err := cmd.StderrPipe()
+	/* stderr, err := cmd.StderrPipe()
 	if err != nil {
 		return fmt.Errorf("get act stderr pipe: %w", err)
 	}
-	defer stderr.Close()
+	defer stderr.Close() */
+
+	// Just pipe stderr as nothing to parse there
+	cmd.Stderr = os.Stderr
 
 	// TODO: combine readers together
 
-	stdoutTee := io.TeeReader(stdout, os.Stdout)
-	stderrTee := io.TeeReader(stderr, os.Stderr)
+	// stdoutTee := io.TeeReader(stdout, os.Stdout)
+	// stderrTee := io.TeeReader(stderr, os.Stderr)
 
 	if err := cmd.Start(); err != nil {
 		return fmt.Errorf("start act: %w", err)
@@ -111,40 +114,42 @@ func (r *Runner) Run(workflow string) error {
 
 	errs := make(chan error, 2)
 	go func() {
-		if err := r.processStream(stdoutTee); err != nil {
+		if err := r.processStream(stdout, "stdout"); err != nil {
 			errs <- fmt.Errorf("process act stdout: %w", err)
 		}
 		errs <- nil
 	}()
-	go func() {
-		if err := r.processStream(stderrTee); err != nil {
+	/* go func() {
+		if err := r.processStream(stderr, "stderr"); err != nil {
 			errs <- fmt.Errorf("process act stderr: %w", err)
 		}
 		errs <- nil
-	}()
+	}() */
 
 	if err := cmd.Wait(); err != nil {
 		return fmt.Errorf("act exit: %w", err)
 	}
-	// Wait for stdout and stderr processing to complete
+	// Wait for stdout ~~and stderr~~ processing to complete
 	var finalErr error
-	for i := 0; i < 2; i++ {
-		finalErr = errors.Join(finalErr, <-errs)
-	}
+	//for i := 0; i < 2; i++ {
+	finalErr = errors.Join(finalErr, <-errs)
+	//}
 	return finalErr
 }
 
-func (r *Runner) processStream(reader io.Reader) error {
+func (r *Runner) processStream(reader io.Reader, name string) error {
 	scanner := bufio.NewScanner(reader)
 	for scanner.Scan() {
-		var data map[string]any
-		err := json.Unmarshal(scanner.Bytes(), &data)
+		var data logLine
+		line := scanner.Bytes()
+		err := json.Unmarshal(line, &data)
 		if err != nil {
-			// Ignore silently
+			// Print as-is to stdout
+			fmt.Println(string(line))
 			continue
 		}
-		// TODO: parse
-		// fmt.Printf("%+v\n", data)
+		// Print in a human-readable format for now
+		fmt.Printf("[%s] %s\n", data.Job, data.Message)
 	}
 	if err := scanner.Err(); err != nil {
 		return fmt.Errorf("scanner error: %w", err)
