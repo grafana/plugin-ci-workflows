@@ -7,52 +7,31 @@ import (
 	"testing"
 
 	"github.com/grafana/plugin-ci-workflows/tests/act/internal/act"
+	"github.com/grafana/plugin-ci-workflows/tests/act/internal/workflow"
 	"github.com/stretchr/testify/require"
 )
 
-const testWorkflowFile = `
-name: act
-
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
-
-permissions: {}
-
-jobs:
-  act:
-    name: act
-    uses: grafana/plugin-ci-workflows/.github/workflows/ci.yml@main
-    permissions:
-      contents: read
-      id-token: write
-    with:
-      plugin-version-suffix: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || '' }}
-      run-playwright: false
-      testing: true
-      testing-act: true
-      plugin-directory: tests/simple-frontend
-      dist-artifacts-prefix: simple-frontend-
-    secrets:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-`
-
 func TestSmoke(t *testing.T) {
-	t.Run("simple-frontend", func(t *testing.T) {
-		fn, err := act.CreateTempWorkflowFile([]byte(testWorkflowFile))
-		require.NoError(t, err)
-		t.Cleanup(func() { os.Remove(fn) })
+	for _, name := range []string{"simple-frontend"} {
+		t.Run("simple-frontend", func(t *testing.T) {
+			testWorkflowFile, err := workflow.NewSimpleCI().With(
+				workflow.WithPluginDirectory(filepath.Join("tests", name)),
+				workflow.WithDistArtifactPrefix(name+"-"),
+				workflow.WithPlaywright(false),
+			).Marshal()
+			require.NoError(t, err)
 
-		runner, err := act.NewRunner()
-		require.NoError(t, err)
+			fn, err := act.CreateTempWorkflowFile(testWorkflowFile)
+			require.NoError(t, err)
+			t.Cleanup(func() { os.Remove(fn) })
 
-		err = runner.Run(fn)
-		require.NoError(t, err)
-	})
+			runner, err := act.NewRunner()
+			require.NoError(t, err)
+
+			err = runner.Run(fn)
+			require.NoError(t, err)
+		})
+	}
 }
 
 func TestMain(m *testing.M) {
