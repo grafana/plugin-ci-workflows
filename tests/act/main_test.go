@@ -19,7 +19,7 @@ func TestSmoke(t *testing.T) {
 		"simple-frontend-pnpm",
 	} {
 		t.Run(name, func(t *testing.T) {
-			t.Parallel()
+			// t.Parallel()
 			testWorkflowFile, err := workflow.NewSimpleCI().With(
 				workflow.WithJobName(uuid.New().String()),
 				workflow.WithPluginDirectory(filepath.Join("tests", name)),
