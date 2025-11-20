@@ -81,7 +81,6 @@ func (r *Runner) Run(workflow string) error {
 
 	// TODO: escape args to avoid shell injection
 	actCmd := "act " + strings.Join(args, " ")
-	fmt.Println(actCmd)
 
 	// Use a shell otherwise git will not be able to clone anything,
 	// not even publis repositories like actions/checkout for some reason.
