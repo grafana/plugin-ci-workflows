@@ -62,7 +62,7 @@ func (r *Runner) args(workflow string) []string {
 	args := []string{
 		"-W", workflow,
 		"--rm",
-		"--json",
+		// "--json",
 		"--artifact-server-path=/tmp/artifacts",
 		"--local-repository=grafana/plugin-ci-workflows@main=" + pciwfRoot,
 		// "--no-skip-checkout",
