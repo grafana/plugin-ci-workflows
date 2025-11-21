@@ -35,7 +35,7 @@ func TestSmoke(t *testing.T) {
 			runner, err := act.NewRunner(t)
 			require.NoError(t, err)
 
-			err = runner.Run(fn)
+			err = runner.Run(fn, act.NewEventPayload(map[string]any{}))
 			require.NoError(t, err)
 		})
 	}
