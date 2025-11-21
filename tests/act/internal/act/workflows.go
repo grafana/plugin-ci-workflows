@@ -1,6 +1,7 @@
 package act
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -8,6 +9,26 @@ import (
 
 	"github.com/google/uuid"
 )
+
+type EventPayload map[string]any
+
+func NewEventPayload(data map[string]any) EventPayload {
+	// Default data that should always be present in the payload
+	data["act"] = true
+	return EventPayload(data)
+}
+
+func CreateTempEventFile(payload EventPayload) (string, error) {
+	f, err := os.CreateTemp("", "act-*-event.json")
+	if err != nil {
+		return "", fmt.Errorf("create temp event file: %w", err)
+	}
+	defer f.Close()
+	if err := json.NewEncoder(f).Encode(payload); err != nil {
+		return "", fmt.Errorf("encode event to temp file: %w", err)
+	}
+	return f.Name(), nil
+}
 
 func CreateTempWorkflowFile(content []byte) (string, error) {
 	fn := "act-" + uuid.NewString() + ".yml"

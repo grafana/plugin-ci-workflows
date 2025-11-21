@@ -59,7 +59,7 @@ func NewRunner(t *testing.T) (*Runner, error) {
 	}, nil
 }
 
-func (r *Runner) args(workflow string) []string {
+func (r *Runner) args(workflowFile string, payloadFile string) []string {
 	pciwfRoot, err := os.Getwd()
 	if err != nil {
 		// TODO: do not fail silently
@@ -71,7 +71,8 @@ func (r *Runner) args(workflow string) []string {
 		port = 34567
 	}
 	args := []string{
-		"-W", workflow,
+		"-W", workflowFile,
+		"-e", payloadFile,
 		"--rm",
 		"--json",
 		"--artifact-server-path=/tmp/artifacts/" + uuid.NewString(),
@@ -88,8 +89,14 @@ func (r *Runner) args(workflow string) []string {
 	return args
 }
 
-func (r *Runner) Run(workflow string) error {
-	args := r.args(workflow)
+func (r *Runner) Run(workflow string, eventPayload EventPayload) error {
+	payloadFile, err := CreateTempEventFile(eventPayload)
+	if err != nil {
+		return fmt.Errorf("create temp event file: %w", err)
+	}
+	defer os.Remove(payloadFile)
+
+	args := r.args(workflow, payloadFile)
 
 	// TODO: escape args to avoid shell injection
 	actCmd := "act " + strings.Join(args, " ")

@@ -32,7 +32,6 @@ func NewSimpleCI() SimpleCI {
 					With: map[string]any{
 						"plugin-version-suffix": "${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || '' }}",
 						"testing":               true,
-						"testing-act":           true,
 					},
 					Secrets: Secrets{
 						"GITHUB_TOKEN": "${{ secrets.GITHUB_TOKEN }}",
