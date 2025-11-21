@@ -52,6 +52,8 @@ jobs:
           go-version-file: tests/act/go.mod
           cache-dependency-path: tests/act/go.sum
 
+      # TODO: introduce some caching for act tool cache docker volume and nektos/act docker image
+
       - name: Run act tests
         run: |
           go test -v
