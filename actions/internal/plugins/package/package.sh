@@ -53,13 +53,6 @@ if [ ! -f "$dist/plugin.json" ]; then
     exit 1
 fi
 
-# HACK: rsync is required by the script, but act doesn't bundle it
-# by default (unless using the full image), so install it if needed.
-if [ -n "$ACT" ] && ! command -v rsync &> /dev/null; then
-    echo "Running inside act and rsync could not be found: installing it..."
-    apt-get update && apt-get install -y rsync
-fi
-
 mkdir -p $out
 
 cd $dist
