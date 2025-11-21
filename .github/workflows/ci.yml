@@ -356,7 +356,7 @@ jobs:
             const isTrustedEvent = ['push', 'workflow_dispatch'].includes(context.eventName);
             const isTrusted = (isTrustedEvent || (isPR && !isForkPR)) && !isTesting && (!isBot || isTrustedBot);
 
-            const o = { isTrusted, isForkPR, isBot };
+            const o = { isTrusted, isForkPR };
             console.log(JSON.stringify(o));
             return o
         env:
