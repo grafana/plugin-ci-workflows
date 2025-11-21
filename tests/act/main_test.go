@@ -17,25 +17,19 @@ func TestSmoke(t *testing.T) {
 		"simple-frontend",
 		"simple-frontend-yarn",
 		"simple-frontend-pnpm",
+		"simple-backend",
 	} {
 		t.Run(name, func(t *testing.T) {
 			// t.Parallel()
-			testWorkflowFile, err := workflow.NewSimpleCI().With(
+			runner, err := act.NewRunner(t)
+			require.NoError(t, err)
+
+			err = runner.Run(workflow.NewSimpleCI().With(
 				workflow.WithJobName(uuid.New().String()),
 				workflow.WithPluginDirectory(filepath.Join("tests", name)),
 				workflow.WithDistArtifactPrefix(name+"-"),
 				workflow.WithPlaywright(false),
-			).Marshal()
-			require.NoError(t, err)
-
-			fn, err := act.CreateTempWorkflowFile(testWorkflowFile)
-			require.NoError(t, err)
-			t.Cleanup(func() { os.Remove(fn) })
-
-			runner, err := act.NewRunner(t)
-			require.NoError(t, err)
-
-			err = runner.Run(fn, act.NewEventPayload(map[string]any{}))
+			), act.NewEmptyEventPayload())
 			require.NoError(t, err)
 		})
 	}

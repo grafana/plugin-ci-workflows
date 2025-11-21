@@ -80,3 +80,7 @@ func (w SimpleCI) With(opts ...WithOption) SimpleCI {
 	}
 	return w
 }
+
+// Static checks
+
+var _ Marshalable = SimpleCI{}

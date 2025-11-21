@@ -5,6 +5,10 @@ import "github.com/goccy/go-yaml"
 type Permissions map[string]string
 type Secrets map[string]string
 
+type Marshalable interface {
+	Marshal() ([]byte, error)
+}
+
 type Workflow struct {
 	Name        string
 	On          On

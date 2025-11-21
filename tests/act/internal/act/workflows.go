@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/google/uuid"
+	"github.com/grafana/plugin-ci-workflows/tests/act/internal/workflow"
 )
 
 type EventPayload map[string]any
@@ -16,6 +17,10 @@ func NewEventPayload(data map[string]any) EventPayload {
 	// Default data that should always be present in the payload
 	data["act"] = true
 	return EventPayload(data)
+}
+
+func NewEmptyEventPayload() EventPayload {
+	return NewEventPayload(map[string]any{})
 }
 
 func CreateTempEventFile(payload EventPayload) (string, error) {
@@ -30,7 +35,11 @@ func CreateTempEventFile(payload EventPayload) (string, error) {
 	return f.Name(), nil
 }
 
-func CreateTempWorkflowFile(content []byte) (string, error) {
+func CreateTempWorkflowFile(workflow workflow.Marshalable) (string, error) {
+	content, err := workflow.Marshal()
+	if err != nil {
+		return "", fmt.Errorf("marshal workflow: %w", err)
+	}
 	fn := "act-" + uuid.NewString() + ".yml"
 	fn = filepath.Join(".github", "workflows", fn)
 	if err := os.WriteFile(fn, content, 0o644); err != nil {
