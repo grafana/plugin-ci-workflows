@@ -30,7 +30,7 @@ jobs:
         id: set-output
         run: |
           cd tests
-          plugins=$(find . -maxdepth 1 -type d ! -name '.' -printf '%f\n' | jq -R . | jq -cs .)
+          plugins=$(find . -maxdepth 1 -type d ! -name '.' ! -name 'act' -printf '%f\n' | jq -R . | jq -cs .)
           echo "plugin-directories=$plugins" >> "$GITHUB_OUTPUT"
 
   ci:

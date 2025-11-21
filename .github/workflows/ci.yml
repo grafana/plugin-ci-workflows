@@ -571,6 +571,7 @@ jobs:
   docs:
     name: Test docs
     runs-on: ubuntu-latest
+    if: ${{ !github.event.act }}
     container:
       image: grafana/docs-base:latest # zizmor: ignore[unpinned-images]
       volumes:
