@@ -16,6 +16,10 @@ type Workflow struct {
 	Jobs        map[string]Job
 }
 
+func (w Workflow) Marshal() ([]byte, error) {
+	return yaml.Marshal(w)
+}
+
 type Job struct {
 	Name        string
 	Uses        string
@@ -35,8 +39,4 @@ type OnPush struct {
 
 type OnPullRequest struct {
 	Branches []string `yaml:"branches,omitempty"`
-}
-
-func (w Workflow) Marshal() ([]byte, error) {
-	return yaml.Marshal(w)
 }
