@@ -3,16 +3,14 @@ package act
 import (
 	"bufio"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
-	"net"
 	"os"
 	"os/exec"
 	"strings"
 	"testing"
 
-	"github.com/google/uuid"
+	"github.com/grafana/plugin-ci-workflows/tests/act/internal/workflow"
 )
 
 var (
@@ -28,14 +26,15 @@ var (
 		"ubuntu-arm64-xlarge",
 		"ubuntu-arm64-2xlarge",
 	}
-	_, isRunningInGHA = os.LookupEnv("CI")
+	// _, isRunningInGHA = os.LookupEnv("CI")
 )
 
 const nektosActRunnerImage = "ghcr.io/catthehacker/ubuntu:act-latest"
 
 type Runner struct {
-	gitHubToken string
-	t           *testing.T
+	gitHubToken    string
+	t              *testing.T
+	concurrentJobs int
 }
 
 func NewRunner(t *testing.T) (*Runner, error) {
@@ -65,23 +64,24 @@ func (r *Runner) args(workflowFile string, payloadFile string) []string {
 		// TODO: do not fail silently
 		pciwfRoot = ""
 	}
-	port, err := getFreePort()
+	/* port, err := getFreePort()
 	if err != nil {
 		// TODO: do not fail silently
 		port = 34567
-	}
+	} */
 	args := []string{
 		"-W", workflowFile,
 		"-e", payloadFile,
 		"--rm",
 		"--json",
-		"--artifact-server-path=/tmp/artifacts/" + uuid.NewString(),
-		"--artifact-server-port=" + fmt.Sprint(port),
+		"--artifact-server-path=/tmp/artifacts/", // + uuid.NewString(),
+		// "--artifact-server-port=" + fmt.Sprint(port),
 		"--local-repository=grafana/plugin-ci-workflows@main=" + pciwfRoot,
 		// "--no-skip-checkout",
 		"--secret", "GITHUB_TOKEN=" + r.gitHubToken,
-		// TODO: remove
-		// "--concurrent-jobs", "1",
+	}
+	if r.concurrentJobs > 0 {
+		args = append(args, "--concurrent-jobs", fmt.Sprint(r.concurrentJobs))
 	}
 	for _, label := range selfHostedRunnerLabels {
 		args = append(args, "-P", label+"="+nektosActRunnerImage)
@@ -89,14 +89,20 @@ func (r *Runner) args(workflowFile string, payloadFile string) []string {
 	return args
 }
 
-func (r *Runner) Run(workflow string, eventPayload EventPayload) error {
+func (r *Runner) Run(workflow workflow.Marshalable, eventPayload EventPayload) error {
+	workflowFile, err := CreateTempWorkflowFile(workflow)
+	if err != nil {
+		return fmt.Errorf("create temp workflow file: %w", err)
+	}
+	defer os.Remove(workflowFile)
+
 	payloadFile, err := CreateTempEventFile(eventPayload)
 	if err != nil {
 		return fmt.Errorf("create temp event file: %w", err)
 	}
 	defer os.Remove(payloadFile)
 
-	args := r.args(workflow, payloadFile)
+	args := r.args(workflowFile, payloadFile)
 
 	// TODO: escape args to avoid shell injection
 	actCmd := "act " + strings.Join(args, " ")
@@ -112,47 +118,27 @@ func (r *Runner) Run(workflow string, eventPayload EventPayload) error {
 	}
 	defer stdout.Close()
 
-	/* stderr, err := cmd.StderrPipe()
-	if err != nil {
-		return fmt.Errorf("get act stderr pipe: %w", err)
-	}
-	defer stderr.Close() */
-
 	// Just pipe stderr as nothing to parse there
 	cmd.Stderr = os.Stderr
-
-	// TODO: combine readers together
-
-	// stdoutTee := io.TeeReader(stdout, os.Stdout)
-	// stderrTee := io.TeeReader(stderr, os.Stderr)
 
 	if err := cmd.Start(); err != nil {
 		return fmt.Errorf("start act: %w", err)
 	}
 
-	errs := make(chan error, 2)
+	errs := make(chan error, 1)
 	go func() {
 		if err := r.processStream(stdout); err != nil {
 			errs <- fmt.Errorf("process act stdout: %w", err)
 		}
 		errs <- nil
 	}()
-	/* go func() {
-		if err := r.processStream(stderr); err != nil {
-			errs <- fmt.Errorf("process act stderr: %w", err)
-		}
-		errs <- nil
-	}() */
 
 	if err := cmd.Wait(); err != nil {
 		return fmt.Errorf("act exit: %w", err)
 	}
-	// Wait for stdout ~~and stderr~~ processing to complete
-	var finalErr error
-	//for i := 0; i < 2; i++ {
-	finalErr = errors.Join(finalErr, <-errs)
-	//}
-	return finalErr
+
+	// Wait for stdout processing to complete
+	return <-errs
 }
 
 func (r *Runner) processStream(reader io.Reader) error {
@@ -191,7 +177,7 @@ func checkExecutables() error {
 }
 
 // getFreePort asks the kernel for a free open port that is ready to use.
-func getFreePort() (port int, err error) {
+/* func getFreePort() (port int, err error) {
 	var a *net.TCPAddr
 	if a, err = net.ResolveTCPAddr("tcp", "localhost:0"); err == nil {
 		var l *net.TCPListener
@@ -201,4 +187,4 @@ func getFreePort() (port int, err error) {
 		}
 	}
 	return
-}
+} */
