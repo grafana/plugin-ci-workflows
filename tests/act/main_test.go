@@ -22,11 +22,14 @@ func TestSmoke(t *testing.T) {
 			runner, err := act.NewRunner(t)
 			require.NoError(t, err)
 
-			err = runner.Run(workflow.NewSimpleCI().With(
-				workflow.WithPluginDirectory(filepath.Join("tests", name)),
-				workflow.WithDistArtifactPrefix(name+"-"),
-				workflow.WithPlaywright(false),
-			), act.NewEmptyEventPayload())
+			err = runner.Run(
+				workflow.NewSimpleCI(
+					workflow.WithPluginDirectory(filepath.Join("tests", name)),
+					workflow.WithDistArtifactPrefix(name+"-"),
+					workflow.WithPlaywright(false),
+				),
+				act.NewEmptyEventPayload(),
+			)
 			require.NoError(t, err)
 		})
 	}
