@@ -38,9 +38,12 @@ type Runner struct {
 	// gitHubToken is the token used to authenticate with GitHub.
 	gitHubToken string
 
-	// concurrentJobs defines the number of jobs to run concurrently via act.
+	// ConcurrentJobs defines the number of jobs to run concurrently via act.
 	// By default (0), act uses the number of CPU cores.
-	concurrentJobs int
+	ConcurrentJobs int
+
+	// Verbose enables logging of JSON output from act back to stdout.
+	Verbose bool
 }
 
 // NewRunner creates a new Runner instance.
@@ -81,8 +84,8 @@ func (r *Runner) args(workflowFile string, payloadFile string) []string {
 		"--local-repository=grafana/plugin-ci-workflows@main=" + pciwfRoot,
 		"--secret", "GITHUB_TOKEN=" + r.gitHubToken,
 	}
-	if r.concurrentJobs > 0 {
-		args = append(args, "--concurrent-jobs", fmt.Sprint(r.concurrentJobs))
+	if r.ConcurrentJobs > 0 {
+		args = append(args, "--concurrent-jobs", fmt.Sprint(r.ConcurrentJobs))
 	}
 	// Map all self-hosted runners otherwise they don't run in act.
 	for _, label := range selfHostedRunnerLabels {
@@ -158,9 +161,10 @@ func (r *Runner) processStream(reader io.Reader) error {
 		var data logLine
 		line := scanner.Bytes()
 		err := json.Unmarshal(line, &data)
-		if err != nil {
-			// Invalid JSON, print as-is to stdout
+		if r.Verbose {
 			fmt.Println(string(line))
+		}
+		if err != nil {
 			continue
 		}
 		// Print back to stdout in a human-readable format for now
