@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/google/uuid"
 	"github.com/grafana/plugin-ci-workflows/tests/act/internal/act"
 	"github.com/grafana/plugin-ci-workflows/tests/act/internal/workflow"
 	"github.com/stretchr/testify/require"
@@ -20,12 +19,10 @@ func TestSmoke(t *testing.T) {
 		"simple-backend",
 	} {
 		t.Run(name, func(t *testing.T) {
-			// t.Parallel()
 			runner, err := act.NewRunner(t)
 			require.NoError(t, err)
 
 			err = runner.Run(workflow.NewSimpleCI().With(
-				workflow.WithJobName(uuid.New().String()),
 				workflow.WithPluginDirectory(filepath.Join("tests", name)),
 				workflow.WithDistArtifactPrefix(name+"-"),
 				workflow.WithPlaywright(false),
@@ -35,6 +32,7 @@ func TestSmoke(t *testing.T) {
 	}
 }
 
+// TestMain sets up the test environment before running the tests.
 func TestMain(m *testing.M) {
 	fmt.Println("preparing test environment")
 
