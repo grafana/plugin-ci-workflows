@@ -1,5 +1,31 @@
 # Changelog
 
+## [4.2.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v4.1.0...ci-cd-workflows/v4.2.0) (2025-11-24)
+
+
+### 🎉 Features
+
+* run plugin-validator as part of CI (opt-in) ([#366](https://github.com/grafana/plugin-ci-workflows/issues/366)) ([3456883](https://github.com/grafana/plugin-ci-workflows/commit/34568839361b8e990d500e52beba150640934b95))
+
+
+### 🐛 Bug Fixes
+
+* allow dependabot and renovate to access Vault ([#381](https://github.com/grafana/plugin-ci-workflows/issues/381)) ([0e62f4d](https://github.com/grafana/plugin-ci-workflows/commit/0e62f4de4c8e4921de802cc9a70b24f616bd4f87))
+* fix check-for-rolling-releases running twice when running cd workflow ([#383](https://github.com/grafana/plugin-ci-workflows/issues/383)) ([54da033](https://github.com/grafana/plugin-ci-workflows/commit/54da033a19ff10c1557f99ca6371cfae266b8d4c))
+* only trust renovate and dependabot rather than all bots ([#392](https://github.com/grafana/plugin-ci-workflows/issues/392)) ([45b9f89](https://github.com/grafana/plugin-ci-workflows/commit/45b9f892824a2bec7eb2ecf6e90692b68ce09b12))
+
+
+### 🔧 Chores
+
+* add job for smoke tests matrix check and pr checks refactoring ([#386](https://github.com/grafana/plugin-ci-workflows/issues/386)) ([80ce38a](https://github.com/grafana/plugin-ci-workflows/commit/80ce38ab114e7ecc15486247dc1657efa3069376))
+* **deps:** bump default Trufflehog version to v3.91.0 ([#384](https://github.com/grafana/plugin-ci-workflows/issues/384)) ([431b333](https://github.com/grafana/plugin-ci-workflows/commit/431b33329dc0b8fb542f8330145d229bd1dc5048))
+* **deps:** update github artifact actions (major) ([#375](https://github.com/grafana/plugin-ci-workflows/issues/375)) ([0662937](https://github.com/grafana/plugin-ci-workflows/commit/0662937faaa02b98a54172eaee702533b502514f))
+* **deps:** update googleapis/release-please-action action to v4.4.0 ([#374](https://github.com/grafana/plugin-ci-workflows/issues/374)) ([5f3d206](https://github.com/grafana/plugin-ci-workflows/commit/5f3d206183ce3d29f184219d30bd990a36138b3f))
+* **deps:** update softprops/action-gh-release action to v2.4.2 ([#393](https://github.com/grafana/plugin-ci-workflows/issues/393)) ([3a6ced2](https://github.com/grafana/plugin-ci-workflows/commit/3a6ced2f38434c7d293258d7dbefa4cd7e9ef03a))
+* **deps:** update step-security/harden-runner action to v2.13.2 ([#388](https://github.com/grafana/plugin-ci-workflows/issues/388)) ([3cc38b2](https://github.com/grafana/plugin-ci-workflows/commit/3cc38b22fd5bf56864555315a623c6040d7c493b))
+* **main:** release plugins-release-please 1.0.1 ([#376](https://github.com/grafana/plugin-ci-workflows/issues/376)) ([80407d0](https://github.com/grafana/plugin-ci-workflows/commit/80407d0289c509581f86bd8f55b82dbf7237fc1b))
+* switch GitHub Actions runners to arm64 ([#382](https://github.com/grafana/plugin-ci-workflows/issues/382)) ([38c232b](https://github.com/grafana/plugin-ci-workflows/commit/38c232ba18e13df42cba513fff2e90098a7f9156))
+
 ## [4.1.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v4.0.0...ci-cd-workflows/v4.1.0) (2025-11-04)
 
 
