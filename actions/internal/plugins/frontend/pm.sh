@@ -33,7 +33,21 @@ fi
 # Run the provided command with the detected package manager
 echo "Running '$1' with $pm..."
 if [ "$1" = "install" ]; then
-	"$pm" install
+	# Use CI-appropriate commands that fail if lock files are out of sync
+	case "$pm" in
+		npm)
+			npm ci
+			;;
+		pnpm)
+			pnpm install --frozen-lockfile
+			;;
+		yarn)
+			yarn install --frozen-lockfile
+			;;
+		*)
+			"$pm" install
+			;;
+	esac
 else
 	"$pm" run "$1"
 fi
