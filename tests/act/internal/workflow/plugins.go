@@ -2,13 +2,31 @@ package workflow
 
 const (
 	pciwfMain = "grafana/plugin-ci-workflows/.github/workflows/ci.yml@main"
-	ciJob     = "ci"
 )
 
+// SimpleCI is a predefined GitHub Actions workflow for testing plugins using act.
+// It uses the plugin-ci-workflows CI workflow as a base, with sane default values
+// and allows customization through options.
+// It implements the Marshalable interface to allow conversion to YAML format.
+// Instances must be created using NewSimpleCI.
 type SimpleCI struct {
 	Workflow
 }
 
+// NewSimpleCI creates a new SimpleCI workflow instance with default settings.
+// The returned instance can be further customized using WithOption functions.
+// For example:
+//
+// ```go
+//
+//	simpleCI := NewSimpleCI().With(
+//	    WithJobName("My CI Job"),
+//	    WithPluginDirectory("path/to/plugin"),
+//	    WithDistArtifactPrefix("my-plugin-"),
+//	    WithPlaywright(true),
+//	)
+//
+// ```
 func NewSimpleCI() SimpleCI {
 	return SimpleCI{
 		Workflow: Workflow{
@@ -22,7 +40,7 @@ func NewSimpleCI() SimpleCI {
 				},
 			},
 			Jobs: map[string]Job{
-				ciJob: {
+				"ci": {
 					Name: "CI",
 					Uses: pciwfMain,
 					Permissions: Permissions{
@@ -42,43 +60,40 @@ func NewSimpleCI() SimpleCI {
 	}
 }
 
-type WithOption func(SimpleCI) SimpleCI
-
-func WithJobName(name string) WithOption {
-	return func(w SimpleCI) SimpleCI {
-		job := w.Jobs[ciJob]
-		job.Name = name
-		w.Jobs[ciJob] = job
-		return w
-	}
-}
-
-func WithPluginDirectory(dir string) WithOption {
-	return func(w SimpleCI) SimpleCI {
-		w.Jobs[ciJob].With["plugin-directory"] = dir
-		return w
-	}
-}
-
-func WithDistArtifactPrefix(prefix string) WithOption {
-	return func(w SimpleCI) SimpleCI {
-		w.Jobs[ciJob].With["dist-artifacts-prefix"] = prefix
-		return w
-	}
-}
-
-func WithPlaywright(enabled bool) WithOption {
-	return func(w SimpleCI) SimpleCI {
-		w.Jobs[ciJob].With["run-playwright"] = enabled
-		return w
-	}
-}
-
+// With applies the given WithOption functions to the SimpleCI instance,
+// returning the modified instance.
 func (w SimpleCI) With(opts ...WithOption) SimpleCI {
 	for _, opt := range opts {
 		w = opt(w)
 	}
 	return w
+}
+
+// WithOption is a function that modifies a SimpleCI instance during its construction.
+type WithOption func(SimpleCI) SimpleCI
+
+// WithPluginDirectory sets the plugin-directory input for the CI job in the SimpleCI workflow.
+func WithPluginDirectory(dir string) WithOption {
+	return func(w SimpleCI) SimpleCI {
+		w.FirstJob().With["plugin-directory"] = dir
+		return w
+	}
+}
+
+// WithDistArtifactPrefix sets the dist-artifacts-prefix input for the CI job in the SimpleCI workflow.
+func WithDistArtifactPrefix(prefix string) WithOption {
+	return func(w SimpleCI) SimpleCI {
+		w.FirstJob().With["dist-artifacts-prefix"] = prefix
+		return w
+	}
+}
+
+// WithPlaywright sets the run-playwright input for the CI job in the SimpleCI workflow.
+func WithPlaywright(enabled bool) WithOption {
+	return func(w SimpleCI) SimpleCI {
+		w.FirstJob().With["run-playwright"] = enabled
+		return w
+	}
 }
 
 // Static checks

@@ -2,6 +2,7 @@ package act
 
 import "time"
 
+// logLine represents a single line in act's JSON log output.
 type logLine struct {
 	DryRun bool   `json:"dryrun"`
 	Job    string `json:"job"`
