@@ -1,5 +1,7 @@
 package workflow
 
+import "github.com/goccy/go-yaml"
+
 const (
 	pciwfMain = "grafana/plugin-ci-workflows/.github/workflows/ci.yml@main"
 )
@@ -39,20 +41,23 @@ func NewSimpleCI() SimpleCI {
 					Branches: []string{"main"},
 				},
 			},
-			Jobs: map[string]Job{
-				"ci": {
-					Name: "CI",
-					Uses: pciwfMain,
-					Permissions: Permissions{
-						"contents": "read",
-						"id-token": "write",
-					},
-					With: map[string]any{
-						"plugin-version-suffix": "${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || '' }}",
-						"testing":               true,
-					},
-					Secrets: Secrets{
-						"GITHUB_TOKEN": "${{ secrets.GITHUB_TOKEN }}",
+			Jobs: yaml.MapSlice{
+				yaml.MapItem{
+					Key: "ci",
+					Value: &Job{
+						Name: "CI",
+						Uses: pciwfMain,
+						Permissions: Permissions{
+							"contents": "read",
+							"id-token": "write",
+						},
+						With: map[string]any{
+							"plugin-version-suffix": "${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || '' }}",
+							"testing":               true,
+						},
+						Secrets: Secrets{
+							"GITHUB_TOKEN": "${{ secrets.GITHUB_TOKEN }}",
+						},
 					},
 				},
 			},
