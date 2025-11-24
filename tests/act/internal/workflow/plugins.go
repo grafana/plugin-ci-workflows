@@ -16,21 +16,9 @@ type SimpleCI struct {
 }
 
 // NewSimpleCI creates a new SimpleCI workflow instance with default settings.
-// The returned instance can be further customized using WithOption functions.
-// For example:
-//
-// ```go
-//
-//	simpleCI := NewSimpleCI().With(
-//	    WithJobName("My CI Job"),
-//	    WithPluginDirectory("path/to/plugin"),
-//	    WithDistArtifactPrefix("my-plugin-"),
-//	    WithPlaywright(true),
-//	)
-//
-// ```
-func NewSimpleCI() SimpleCI {
-	return SimpleCI{
+// The caller can provide options to customize the workflow.
+func NewSimpleCI(opts ...WithOption) SimpleCI {
+	w := SimpleCI{
 		Workflow: Workflow{
 			Name: "act",
 			On: On{
@@ -63,11 +51,6 @@ func NewSimpleCI() SimpleCI {
 			},
 		},
 	}
-}
-
-// With applies the given WithOption functions to the SimpleCI instance,
-// returning the modified instance.
-func (w SimpleCI) With(opts ...WithOption) SimpleCI {
 	for _, opt := range opts {
 		w = opt(w)
 	}
