@@ -15,7 +15,18 @@ type Workflow struct {
 	Name        string
 	On          On
 	Permissions Permissions
-	Jobs        map[string]Job
+
+	// Jobs is a map slice of job names to Job definitions.
+	// It uses yaml.MapSlice to preserve the order of jobs as defined.
+	// Example:
+	//
+	// ```go
+	// 	yaml.MapSlice{
+	//     	yaml.MapItem{Key: "build", Value: Job{...}},
+	//     	yaml.MapItem{Key: "test", Value: Job{...}},
+	// 	}
+	// ```
+	Jobs yaml.MapSlice
 }
 
 // Marshal converts the Workflow instance to its YAML representation.
@@ -27,7 +38,7 @@ func (w Workflow) Marshal() ([]byte, error) {
 // If there are no jobs, it returns empty string and nil.
 func (w Workflow) FirstJob() *Job {
 	for _, job := range w.Jobs {
-		return &job
+		return job.Value.(*Job)
 	}
 	return nil
 }
