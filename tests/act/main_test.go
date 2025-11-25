@@ -12,18 +12,17 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestSmoke(t *testing.T) {
-	type testAndBuildOutput struct {
-		ID         string `json:"id"`
-		Version    string `json:"version"`
-		HasBackend string `json:"has-backend"`
-		Executable string `json:"executable"`
-	}
+type testAndBuildOutput struct {
+	ID         string `json:"id"`
+	Version    string `json:"version"`
+	HasBackend string `json:"has-backend"`
+	Executable string `json:"executable"`
+}
 
+func TestSmoke(t *testing.T) {
 	type cas struct {
 		folder string
-
-		exp testAndBuildOutput
+		exp    testAndBuildOutput
 	}
 
 	for _, tc := range []cas{
@@ -142,8 +141,4 @@ func getRepoRootAbsPath() (string, error) {
 		return "", fmt.Errorf("stat .git directory: %w", err)
 	}
 	return "", fmt.Errorf(".git directory not found in any parent directories")
-}
-
-func stringPointer(s string) *string {
-	return &s
 }
