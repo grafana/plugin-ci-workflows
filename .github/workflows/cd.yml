@@ -311,6 +311,16 @@ on:
         default: main
         type: string
 
+      # Options for testing the workflow itself.
+      DO-NOT-USE-allow-pinned-commit-hashes:
+        description: |
+          FOR INTERNAL TESTING ONLY, DO NOT USE.
+          If `true`, skip hard fail in case the workflow is pinned to a commit hash.
+          Vault access may still fail in such cases, depending on the WIF policies in place.
+        type: boolean
+        required: false
+        default: false
+
 concurrency:
   group: cd-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
@@ -447,6 +457,8 @@ jobs:
 
       allow-unsigned: ${{ inputs.allow-unsigned }}
       signature-type: ${{ inputs.signature-type }}
+
+      DO-NOT-USE-allow-pinned-commit-hashes: ${{ inputs.DO-NOT-USE-allow-pinned-commit-hashes }}
 
   build-attestation:
     name: Build attestation

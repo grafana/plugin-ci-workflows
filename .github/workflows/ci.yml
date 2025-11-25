@@ -235,6 +235,14 @@ on:
         type: string
         required: false
         default: ""
+      DO-NOT-USE-allow-pinned-commit-hashes:
+        description: |
+          FOR INTERNAL TESTING ONLY, DO NOT USE.
+          If `true`, skip hard fail in case the workflow is pinned to a commit hash.
+          Vault access may still fail in such cases, depending on the WIF policies in place.
+        type: boolean
+        required: false
+        default: false
 
     outputs:
       plugin:
@@ -291,8 +299,8 @@ env:
   VAULT_INSTANCE: ops
 
 jobs:
-  check-for-rolling-releases:
-    name: Check for rolling releases channel
+  check-for-release-channel:
+    name: Check for release channel
     runs-on: ubuntu-arm64-small
     steps:
       - name: Checkout
@@ -305,7 +313,7 @@ jobs:
             echo "Found usage of rolling releases channel in the following files:"
             echo "$diff"
 
-            title="Rolling release channel detected"
+            title="Detected plugin-ci-workflows rolling release channel"
             message="You are using workflows from plugin-ci-workflows rolling releases channel (\`@main\`). \
           This is discouraged as it may lead to unexpected breaking changes. \
           Please pin to a specific tagged release to ensure better stability. \
@@ -316,9 +324,38 @@ jobs:
           fi
         shell: bash
 
+      - name: Check for plugin-ci-workflows pinned to commit hash
+        run: |
+          diff=$(grep -E 'grafana/plugin-ci-workflows.+@[0-9a-f]{6,40}' -rn .github/workflows/ || true)
+          if [[ -n "$diff" ]]; then
+            echo "Found plugin-ci-workflows pinned to a commit hash in the following files:"
+            echo "$diff"
+
+            title="Detected plugin-ci-workflows pinned to a commit hash"
+            message="You are pinning plugin-ci-workflows to a commit hash. \
+          To limit the amount of exposure (security reasons), this is not allowed and the workflow will fail. \
+          Please pin to a specific tagged release instead. \
+          For more information, refer to the docs: https://enghub.grafana-ops.net/docs/default/component/grafana-plugins-platform/plugins-ci-github-actions/010-plugins-ci-github-actions/#versions-and-release-channels"
+
+            echo "::error title=$title::$message"
+            if [ "${ALLOW_PINNED_COMMIT_HASHES}" != "true" ]; then
+              # Hard fail by default
+              exit 1
+            else
+              exit 0
+            fi
+          fi
+        env:
+          ALLOW_PINNED_COMMIT_HASHES: ${{ inputs.DO-NOT-USE-allow-pinned-commit-hashes }}
+        shell: bash
+
   test-and-build:
     name: Test and build plugin
     runs-on: ubuntu-x64-large
+
+    needs:
+      # Not strictly necessary, but makes sure we fail fast if the workflow is misconfigured
+      - check-for-release-channel
 
     outputs:
       plugin: ${{ steps.outputs.outputs.plugin }}
@@ -570,6 +607,9 @@ jobs:
   docs:
     name: Test docs
     runs-on: ubuntu-latest
+    needs:
+      # Not strictly necessary, but makes sure we fail fast if the workflow is misconfigured
+      - check-for-release-channel
     container:
       image: grafana/docs-base:latest # zizmor: ignore[unpinned-images]
       volumes:
