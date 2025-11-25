@@ -187,12 +187,12 @@ func (r *Runner) processStream(reader io.Reader, runResult *RunResult) error {
 					fmt.Printf("%s: [%s]: WARNING: received GHA set-output command without name, ignoring output", r.t.Name(), data.Job)
 					break
 				}
-				outputs, ok := runResult.JobOutputs[data.Job]
+				outputs, ok := runResult.JobOutputs[data.JobID]
 				if !ok {
 					outputs = map[string]string{}
 				}
 				outputs[data.Name] = data.Arg
-				runResult.JobOutputs[data.Job] = outputs
+				runResult.JobOutputs[data.JobID] = outputs
 			default:
 				// Nothing special to do, ignore silently
 				break
