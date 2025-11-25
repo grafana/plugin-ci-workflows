@@ -96,9 +96,7 @@ func (r *Runner) args(workflowFile string, payloadFile string) []string {
 
 // Run runs the given workflow with the given event payload using act.
 func (r *Runner) Run(workflow workflow.Marshalable, eventPayload EventPayload) (*RunResult, error) {
-	runResult := RunResult{
-		JobOutputs: JobOutputs{},
-	}
+	runResult := newRunResult()
 
 	// Create temp workflow file inside .github/workflows or act won't
 	// map the repo to the workflow correctly.
@@ -199,12 +197,9 @@ func (r *Runner) parseGHACommand(data logLine, runResult *RunResult) {
 			fmt.Printf("%s: [%s]: WARNING: received GHA set-output command without name, ignoring output", r.t.Name(), data.Job)
 			break
 		}
-		outputs, ok := runResult.JobOutputs[data.JobID]
-		if !ok {
-			outputs = map[string]string{}
-		}
-		outputs[data.Name] = data.Arg
-		runResult.JobOutputs[data.JobID] = outputs
+		// Store the output value. StepID can be an array in case of composite actions,
+		// group all composite action outputs under the first step ID for simplicity.
+		runResult.Outputs.Set(data.JobID, data.StepID[0], data.Name, data.Arg)
 	default:
 		// Nothing special to do, ignore silently
 		break
@@ -227,9 +222,52 @@ func (r *Runner) checkExecutables() error {
 	return nil
 }
 
-type JobOutputs map[string]map[string]string
+// Outputs represents the outputs of jobs in a workflow run.
+// Callers should use the Get and Set methods to access outputs.
+type Outputs struct {
+	// data is a map of job id -> step id -> output name (keys) -> output value (value)
+	data map[string]map[string]map[string]string
+}
+
+// newOutputs creates a new Outputs instance.
+func newOutputs() Outputs {
+	return Outputs{
+		data: make(map[string]map[string]map[string]string),
+	}
+}
+
+// Get retrieves the output value for the given job ID, step ID, and output name.
+func (o Outputs) Get(jobID, stepID, outputName string) (string, bool) {
+	if steps, ok := o.data[jobID]; ok {
+		if outputs, ok := steps[stepID]; ok {
+			if value, ok := outputs[outputName]; ok {
+				return value, true
+			}
+		}
+	}
+	return "", false
+}
+
+// Set sets the output value for the given job ID, step ID, and output name.
+func (o Outputs) Set(jobID, stepID, outputName, value string) {
+	steps, ok := o.data[jobID]
+	if !ok {
+		steps = map[string]map[string]string{}
+		o.data[jobID] = steps
+	}
+	outputs, ok := steps[stepID]
+	if !ok {
+		outputs = map[string]string{}
+		steps[stepID] = outputs
+	}
+	outputs[outputName] = value
+}
 
 type RunResult struct {
-	Success    bool
-	JobOutputs JobOutputs
+	Success bool
+	Outputs Outputs
+}
+
+func newRunResult() RunResult {
+	return RunResult{Outputs: newOutputs()}
 }
