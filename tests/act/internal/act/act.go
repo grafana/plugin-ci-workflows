@@ -96,7 +96,9 @@ func (r *Runner) args(workflowFile string, payloadFile string) []string {
 
 // Run runs the given workflow with the given event payload using act.
 func (r *Runner) Run(workflow workflow.Marshalable, eventPayload EventPayload) (*RunResult, error) {
-	var runResult RunResult
+	runResult := RunResult{
+		JobOutputs: JobOutputs{},
+	}
 
 	// Create temp workflow file inside .github/workflows or act won't
 	// map the repo to the workflow correctly.
