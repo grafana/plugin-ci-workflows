@@ -353,6 +353,10 @@ jobs:
     name: Test and build plugin
     runs-on: ubuntu-x64-large
 
+    needs:
+      # Not strictly necessary, but makes sure we fail fast if the workflow is misconfigured
+      - check-for-release-channel
+
     outputs:
       plugin: ${{ steps.outputs.outputs.plugin }}
 
