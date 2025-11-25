@@ -25,7 +25,7 @@ jobs:
       - name: Download actionlint
         id: get_actionlint
         run: |
-          bash <(curl https://raw.githubusercontent.com/rhysd/actionlint/v${ACTIONLINT_VERSION}/scripts/download-actionlint.bash) "${ACTIONLINT_VERSION}" /usr/bin
+          bash <(curl https://raw.githubusercontent.com/rhysd/actionlint/v${ACTIONLINT_VERSION}/scripts/download-actionlint.bash) "${ACTIONLINT_VERSION}" /usr/local/bin
         shell: bash
         env:
           ACTIONLINT_VERSION: ${{ env.ACTIONLINT_VERSION }}
