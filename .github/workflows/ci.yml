@@ -607,6 +607,9 @@ jobs:
   docs:
     name: Test docs
     runs-on: ubuntu-latest
+    needs:
+      # Not strictly necessary, but makes sure we fail fast if the workflow is misconfigured
+      - check-for-release-channel
     container:
       image: grafana/docs-base:latest # zizmor: ignore[unpinned-images]
       volumes:
