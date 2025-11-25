@@ -299,8 +299,8 @@ env:
   VAULT_INSTANCE: ops
 
 jobs:
-  check-for-rolling-releases:
-    name: Check for rolling releases channel
+  check-for-release-channel:
+    name: Check for release channel
     runs-on: ubuntu-arm64-small
     steps:
       - name: Checkout
