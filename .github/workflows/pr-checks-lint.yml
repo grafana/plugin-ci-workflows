@@ -7,8 +7,15 @@ on:
     branches:
       - main
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
+
+env:
+  ACTIONLINT_VERSION: "1.7.3"
 
 jobs:
   actionlint:
@@ -21,12 +28,12 @@ jobs:
         run: echo "::add-matcher::.github/actionlint-matcher.json"
       - name: Download actionlint
         id: get_actionlint
-        # v1.7.3
-        run: bash <(curl https://raw.githubusercontent.com/rhysd/actionlint/5db9d9cde2f3deb5035dea3e45f0a9fff2f29448/scripts/download-actionlint.bash)
+        run: |
+          bash <(curl "https://raw.githubusercontent.com/rhysd/actionlint/v${ACTIONLINT_VERSION}/scripts/download-actionlint.bash") "${ACTIONLINT_VERSION}" "/usr/local/bin"
         shell: bash
+        env:
+          ACTIONLINT_VERSION: ${{ env.ACTIONLINT_VERSION }}
       - name: Check workflow files
-        # This workflow comes from the testing instructions of the actionlint project.
-        # This templated run be safe because the install script is pinned and the output is pretty much fixed.
-        # zizmor: ignore[template-injection]
-        run: ${{ steps.get_actionlint.outputs.executable }} -color
+        run: |
+          actionlint -color
         shell: bash
