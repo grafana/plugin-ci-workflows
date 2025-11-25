@@ -9,27 +9,32 @@ import (
 
 	"github.com/grafana/plugin-ci-workflows/tests/act/internal/act"
 	"github.com/grafana/plugin-ci-workflows/tests/act/internal/workflow"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestSmoke(t *testing.T) {
+	type testAndBuildOutput struct {
+		ID         string `json:"id"`
+		Version    string `json:"version"`
+		HasBackend string `json:"has-backend"`
+		Executable string `json:"executable"`
+	}
+
 	type cas struct {
 		folder string
 
-		expPluginID      string
-		expPluginVersion string
-		expHasBackend    bool
-		expExecutable    *string
+		exp testAndBuildOutput
 	}
 
 	for _, tc := range []cas{
 		{
-			folder:           "simple-frontend",
-			expPluginID:      "grafana-simplefrontend-panel",
-			expPluginVersion: "1.0.0",
-			expHasBackend:    false,
-			expExecutable:    nil,
+			folder: "simple-frontend",
+			exp: testAndBuildOutput{
+				ID:         "grafana-simplefrontend-panel",
+				Version:    "1.0.0",
+				HasBackend: "false",
+				Executable: "null",
+			},
 		},
 		// "simple-frontend-yarn",
 		// "simple-frontend-pnpm",
@@ -52,24 +57,10 @@ func TestSmoke(t *testing.T) {
 			require.True(t, r.Success, "workflow should succeed")
 
 			// Assert outputs
-			jobOutput := r.JobOutputs["test-and-build"]
-
-			pluginOutputRaw := jobOutput["plugin"]
-			t.Log(pluginOutputRaw)
-			var pluginOutput map[string]any
-			err = json.Unmarshal([]byte(pluginOutputRaw), &pluginOutput)
+			var pluginOutput testAndBuildOutput
+			err = json.Unmarshal([]byte(r.JobOutputs["test-and-build"]["plugin"]), &pluginOutput)
 			require.NoError(t, err, "unmarshal plugin output JSON")
-
-			assert.Equal(t, tc.expPluginID, pluginOutput["id"])
-			assert.Equal(t, tc.expPluginVersion, pluginOutput["version"])
-			backend, ok := pluginOutput["backend"].(string)
-			require.True(t, ok, "backend field should be a boolean string")
-			assert.Equal(t, tc.expHasBackend, backend == "true")
-			if tc.expExecutable != nil {
-				assert.Equal(t, backend, *tc.expExecutable)
-			} else {
-				assert.Nil(t, backend)
-			}
+			require.Equal(t, tc.exp, pluginOutput)
 		})
 	}
 }
