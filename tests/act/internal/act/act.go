@@ -176,33 +176,39 @@ func (r *Runner) processStream(reader io.Reader, runResult *RunResult) error {
 		if err != nil {
 			continue
 		}
+
 		// Print back to stdout in a human-readable format for now
 		fmt.Printf("%s: [%s] %s\n", r.t.Name(), data.Job, strings.TrimSpace(data.Message))
 
-		if data.Command != "" {
-			// Parse GHA commands (outputs, annotations, etc.)
-			switch data.Command {
-			case "set-output":
-				if data.Name == "" {
-					fmt.Printf("%s: [%s]: WARNING: received GHA set-output command without name, ignoring output", r.t.Name(), data.Job)
-					break
-				}
-				outputs, ok := runResult.JobOutputs[data.JobID]
-				if !ok {
-					outputs = map[string]string{}
-				}
-				outputs[data.Name] = data.Arg
-				runResult.JobOutputs[data.JobID] = outputs
-			default:
-				// Nothing special to do, ignore silently
-				break
-			}
-		}
+		// Parse GHA commands (outputs, annotations, etc.)
+		r.parseGHACommand(data, runResult)
 	}
 	if err := scanner.Err(); err != nil {
 		return fmt.Errorf("scanner error: %w", err)
 	}
 	return nil
+}
+
+// parseGHACommand parses intercepted GHA commands from act log lines and
+// updates the RunResult accordingly. If the log line does not contain a
+// recognized command, it is ignored.
+func (r *Runner) parseGHACommand(data logLine, runResult *RunResult) {
+	switch data.Command {
+	case "set-output":
+		if data.Name == "" {
+			fmt.Printf("%s: [%s]: WARNING: received GHA set-output command without name, ignoring output", r.t.Name(), data.Job)
+			break
+		}
+		outputs, ok := runResult.JobOutputs[data.JobID]
+		if !ok {
+			outputs = map[string]string{}
+		}
+		outputs[data.Name] = data.Arg
+		runResult.JobOutputs[data.JobID] = outputs
+	default:
+		// Nothing special to do, ignore silently
+		break
+	}
 }
 
 // checkExecutable checks if the given executable is available in PATH.
