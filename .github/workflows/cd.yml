@@ -312,11 +312,11 @@ on:
         type: string
 
       # Options for testing the workflow itself.
-      allow-pinned-commit-hashes:
+      DO-NOT-USE-allow-pinned-commit-hashes:
         description: |
+          FOR INTERNAL TESTING ONLY, DO NOT USE.
           If `true`, skip hard fail in case the workflow is pinned to a commit hash.
           Vault access may still fail in such cases, depending on the WIF policies in place.
-          This should only be used for testing repositories and should not be changed in most cases.
         type: boolean
         required: false
         default: false
@@ -458,7 +458,7 @@ jobs:
       allow-unsigned: ${{ inputs.allow-unsigned }}
       signature-type: ${{ inputs.signature-type }}
 
-      allow-pinned-commit-hashes: ${{ inputs.allow-pinned-commit-hashes }}
+      DO-NOT-USE-allow-pinned-commit-hashes: ${{ inputs.DO-NOT-USE-allow-pinned-commit-hashes }}
 
   build-attestation:
     name: Build attestation
