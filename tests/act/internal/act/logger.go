@@ -15,4 +15,10 @@ type logLine struct {
 	Step    string    `json:"step"`
 	StepID  []string  `json:"stepID"`
 	Time    time.Time `json:"time"`
+
+	// Intercepted GHA commands
+
+	Command string `json:"command,omitempty"`
+	Name    string `json:"name,omitempty"`
+	Arg     string `json:"arg,omitempty"`
 }

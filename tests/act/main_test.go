@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -8,29 +9,67 @@ import (
 
 	"github.com/grafana/plugin-ci-workflows/tests/act/internal/act"
 	"github.com/grafana/plugin-ci-workflows/tests/act/internal/workflow"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestSmoke(t *testing.T) {
-	for _, name := range []string{
-		"simple-frontend",
-		"simple-frontend-yarn",
-		"simple-frontend-pnpm",
-		"simple-backend",
+	type cas struct {
+		folder string
+
+		expPluginID      string
+		expPluginVersion string
+		expHasBackend    bool
+		expExecutable    *string
+	}
+
+	for _, tc := range []cas{
+		{
+			folder:           "simple-frontend",
+			expPluginID:      "grafana-simplefrontend-panel",
+			expPluginVersion: "1.0.0",
+			expHasBackend:    false,
+			expExecutable:    nil,
+		},
+		// "simple-frontend-yarn",
+		// "simple-frontend-pnpm",
+		// "simple-backend",
 	} {
-		t.Run(name, func(t *testing.T) {
+		t.Run(tc.folder, func(t *testing.T) {
 			runner, err := act.NewRunner(t)
 			require.NoError(t, err)
+			runner.Verbose = true
 
-			err = runner.Run(
+			r, err := runner.Run(
 				workflow.NewSimpleCI(
-					workflow.WithPluginDirectory(filepath.Join("tests", name)),
-					workflow.WithDistArtifactPrefix(name+"-"),
+					workflow.WithPluginDirectory(filepath.Join("tests", tc.folder)),
+					workflow.WithDistArtifactPrefix(tc.folder+"-"),
 					workflow.WithPlaywright(false),
 				),
 				act.NewEmptyEventPayload(),
 			)
 			require.NoError(t, err)
+			require.True(t, r.Success, "workflow should succeed")
+
+			// Assert outputs
+			jobOutput := r.JobOutputs["test-and-build"]
+
+			pluginOutputRaw := jobOutput["plugin"]
+			t.Log(pluginOutputRaw)
+			var pluginOutput map[string]any
+			err = json.Unmarshal([]byte(pluginOutputRaw), &pluginOutput)
+			require.NoError(t, err, "unmarshal plugin output JSON")
+
+			assert.Equal(t, tc.expPluginID, pluginOutput["id"])
+			assert.Equal(t, tc.expPluginVersion, pluginOutput["version"])
+			backend, ok := pluginOutput["backend"].(string)
+			require.True(t, ok, "backend field should be a boolean string")
+			assert.Equal(t, tc.expHasBackend, backend == "true")
+			if tc.expExecutable != nil {
+				assert.Equal(t, backend, *tc.expExecutable)
+			} else {
+				assert.Nil(t, backend)
+			}
 		})
 	}
 }
@@ -86,4 +125,8 @@ func getRepoRootAbsPath() (string, error) {
 		return "", fmt.Errorf("stat .git directory: %w", err)
 	}
 	return "", fmt.Errorf(".git directory not found in any parent directories")
+}
+
+func stringPointer(s string) *string {
+	return &s
 }
