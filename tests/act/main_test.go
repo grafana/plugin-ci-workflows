@@ -36,9 +36,33 @@ func TestSmoke(t *testing.T) {
 				Executable: "null",
 			},
 		},
-		// "simple-frontend-yarn",
-		// "simple-frontend-pnpm",
-		// "simple-backend",
+		{
+			folder: "simple-frontend-yarn",
+			exp: testAndBuildOutput{
+				ID:         "grafana-simplefrontendyarn-panel",
+				Version:    "1.0.0",
+				HasBackend: "false",
+				Executable: "null",
+			},
+		},
+		{
+			folder: "simple-frontend-pnpm",
+			exp: testAndBuildOutput{
+				ID:         "grafana-simplefrontendpnpm-panel",
+				Version:    "1.0.0",
+				HasBackend: "false",
+				Executable: "null",
+			},
+		},
+		{
+			folder: "simple-backend",
+			exp: testAndBuildOutput{
+				ID:         "grafana-simplebackend-datasource",
+				Version:    "1.0.0",
+				HasBackend: "true",
+				Executable: "gpx_simple_backend",
+			},
+		},
 	} {
 		t.Run(tc.folder, func(t *testing.T) {
 			runner, err := act.NewRunner(t)
@@ -58,7 +82,9 @@ func TestSmoke(t *testing.T) {
 
 			// Assert outputs
 			var pluginOutput testAndBuildOutput
-			err = json.Unmarshal([]byte(r.JobOutputs["test-and-build"]["plugin"]), &pluginOutput)
+			rawOutput := r.JobOutputs["test-and-build"]["plugin"]
+			t.Log(rawOutput)
+			err = json.Unmarshal([]byte(rawOutput), &pluginOutput)
 			require.NoError(t, err, "unmarshal plugin output JSON")
 			require.Equal(t, tc.exp, pluginOutput)
 		})
