@@ -155,6 +155,7 @@ func (r *Runner) Run(workflow workflow.Marshalable, eventPayload EventPayload) (
 		}
 		return nil, fmt.Errorf("act exit: %w", err)
 	}
+	runResult.Success = true
 
 	// Wait for stdout processing to complete
 	return &runResult, <-errs
