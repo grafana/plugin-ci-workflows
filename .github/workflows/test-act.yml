@@ -4,10 +4,10 @@ on:
   pull_request:
     branches:
       - main
+      - giuseppe/act
   push:
     branches:
       - main
-      - giuseppe/act
     paths:
       - "tests/**"
       - ".github/workflows/test-act.yml"
