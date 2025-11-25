@@ -6,7 +6,6 @@ on:
   pull_request:
     branches:
       - main
-      - giuseppe/act
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
