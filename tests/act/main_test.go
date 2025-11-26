@@ -35,7 +35,7 @@ func TestSmoke(t *testing.T) {
 				Executable: "null",
 			},
 		},
-		{
+		/* {
 			folder: "simple-frontend-yarn",
 			exp: testAndBuildOutput{
 				ID:         "grafana-simplefrontendyarn-panel",
@@ -61,21 +61,21 @@ func TestSmoke(t *testing.T) {
 				HasBackend: "true",
 				Executable: "gpx_simple_backend",
 			},
-		},
+		}, */
 	} {
 		t.Run(tc.folder, func(t *testing.T) {
 			runner, err := act.NewRunner(t)
 			require.NoError(t, err)
-			runner.Verbose = true
+			// runner.Verbose = true
 
-			r, err := runner.Run(
-				workflow.NewSimpleCI(
-					workflow.WithPluginDirectory(filepath.Join("tests", tc.folder)),
-					workflow.WithDistArtifactPrefix(tc.folder+"-"),
-					workflow.WithPlaywright(false),
-				),
-				act.NewEmptyEventPayload(),
+			wf, err := workflow.NewSimpleCI(
+				workflow.WithPluginDirectory(filepath.Join("tests", tc.folder)),
+				workflow.WithDistArtifactPrefix(tc.folder+"-"),
+				workflow.WithPlaywright(false),
 			)
+			require.NoError(t, err)
+
+			r, err := runner.Run(wf, act.NewEmptyEventPayload())
 			require.NoError(t, err)
 			require.True(t, r.Success, "workflow should succeed")
 

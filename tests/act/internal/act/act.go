@@ -95,7 +95,7 @@ func (r *Runner) args(workflowFile string, payloadFile string) []string {
 }
 
 // Run runs the given workflow with the given event payload using act.
-func (r *Runner) Run(workflow workflow.Marshalable, eventPayload EventPayload) (*RunResult, error) {
+func (r *Runner) Run(workflow workflow.Workflow, eventPayload EventPayload) (*RunResult, error) {
 	runResult := newRunResult()
 
 	// Create temp workflow file inside .github/workflows or act won't
@@ -104,7 +104,8 @@ func (r *Runner) Run(workflow workflow.Marshalable, eventPayload EventPayload) (
 	if err != nil {
 		return nil, fmt.Errorf("create temp workflow file: %w", err)
 	}
-	defer os.Remove(workflowFile)
+	// TODO: enable again and also remove child workflows
+	// defer os.Remove(workflowFile)
 
 	// Create temp event payload file to simulate a GitHub event
 	payloadFile, err := CreateTempEventFile(eventPayload)
