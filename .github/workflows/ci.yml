@@ -380,7 +380,9 @@ jobs:
           script: |
             const trustedBots = [
               'dependabot[bot]',
-              'renovate-sh-app[bot]'
+              'renovate-sh-app[bot]',
+              // Used by other shared workflows such as the version bump workflow
+              'grafana-plugins-platform-bot[bot]'
             ].map((s) => s.toLowerCase());
 
             const isPR = context.eventName === 'pull_request';
