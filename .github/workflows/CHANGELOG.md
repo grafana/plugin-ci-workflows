@@ -1,5 +1,25 @@
 # Changelog
 
+## [4.3.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v4.2.0...ci-cd-workflows/v4.3.0) (2025-11-26)
+
+
+### 🎉 Features
+
+* add a more user-friendly error when pinning plugin-ci-workflows to a commit hash ([f2c945a](https://github.com/grafana/plugin-ci-workflows/commit/f2c945af2f13d37c5ebfa544b549f09fd01c56c1))
+* block workflow if pinned to a commit hash rather than a tag/branch reference ([f2c945a](https://github.com/grafana/plugin-ci-workflows/commit/f2c945af2f13d37c5ebfa544b549f09fd01c56c1))
+
+
+### 🐛 Bug Fixes
+
+* trust grafana-plugins-platform-bot[bot] ([#404](https://github.com/grafana/plugin-ci-workflows/issues/404)) ([dc5bcf5](https://github.com/grafana/plugin-ci-workflows/commit/dc5bcf59949e3a962289aaa43badf3f39f536de3))
+
+
+### 🔧 Chores
+
+* add ACTIONLINT_VERSION to simplify actionlint version bumps ([f422460](https://github.com/grafana/plugin-ci-workflows/commit/f42246017310591f720cd9f250037b90052b88bc))
+* add concurrency to actionlint job ([f422460](https://github.com/grafana/plugin-ci-workflows/commit/f42246017310591f720cd9f250037b90052b88bc))
+* changed warning message for rolling release channel detection ([f2c945a](https://github.com/grafana/plugin-ci-workflows/commit/f2c945af2f13d37c5ebfa544b549f09fd01c56c1))
+
 ## [4.2.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v4.1.0...ci-cd-workflows/v4.2.0) (2025-11-24)
 
 
