@@ -403,7 +403,7 @@ jobs:
           INPUT_TESTING: ${{ inputs.testing }}
 
       - name: Setup
-        uses: grafana/plugin-ci-workflows/actions/internal/plugins/setup@main
+        uses: grafana/plugin-ci-workflows/actions/internal/plugins/setup@ci-cd-workflows/v4.3.0
         with:
           # The priority to setup the node version is:
           # 1. inputs.node-version
@@ -476,7 +476,7 @@ jobs:
         working-directory: ${{ inputs.plugin-directory }}
 
       - name: Test and build frontend
-        uses: grafana/plugin-ci-workflows/actions/internal/plugins/frontend@main
+        uses: grafana/plugin-ci-workflows/actions/internal/plugins/frontend@ci-cd-workflows/v4.3.0
         with:
           package-manager: ${{ inputs.package-manager }}
           plugin-directory: ${{ inputs.plugin-directory }}
@@ -485,7 +485,7 @@ jobs:
 
       - name: Test and build backend
         if: ${{ steps.check-for-backend.outputs.has-backend == 'true' }}
-        uses: grafana/plugin-ci-workflows/actions/internal/plugins/backend@main
+        uses: grafana/plugin-ci-workflows/actions/internal/plugins/backend@ci-cd-workflows/v4.3.0
         with:
           github-token: ${{ steps.generate-github-token.outputs.token }}
           plugin-directory: ${{ inputs.plugin-directory }}
@@ -493,7 +493,7 @@ jobs:
 
       - name: Package universal ZIP
         id: universal-zip
-        uses: grafana/plugin-ci-workflows/actions/internal/plugins/package@main
+        uses: grafana/plugin-ci-workflows/actions/internal/plugins/package@ci-cd-workflows/v4.3.0
         with:
           universal: "true"
           dist-folder: dist
@@ -504,7 +504,7 @@ jobs:
 
       - name: Package os/arch ZIPs
         id: os-arch-zips
-        uses: grafana/plugin-ci-workflows/actions/internal/plugins/package@main
+        uses: grafana/plugin-ci-workflows/actions/internal/plugins/package@ci-cd-workflows/v4.3.0
         with:
           universal: "false"
           dist-folder: dist
@@ -515,7 +515,7 @@ jobs:
 
       - name: Trufflehog secrets scanning
         if: ${{ inputs.run-trufflehog == true }}
-        uses: grafana/plugin-ci-workflows/actions/internal/plugins/trufflehog@main
+        uses: grafana/plugin-ci-workflows/actions/internal/plugins/trufflehog@ci-cd-workflows/v4.3.0
         with:
           trufflehog-version: ${{ inputs.trufflehog-version || env.DEFAULT_TRUFFLEHOG_VERSION }}
           folder: dist-artifacts
@@ -641,11 +641,11 @@ jobs:
         shell: bash
 
       - name: Test docs
-        uses: grafana/plugin-ci-workflows/actions/internal/plugins/docs/test@main
+        uses: grafana/plugin-ci-workflows/actions/internal/plugins/docs/test@ci-cd-workflows/v4.3.0
 
   playwright:
     name: Playwright E2E tests
-    uses: grafana/plugin-ci-workflows/.github/workflows/playwright.yml@main
+    uses: grafana/plugin-ci-workflows/.github/workflows/playwright.yml@ci-cd-workflows/v4.3.0
     if: ${{ inputs.run-playwright == true }}
     needs:
       - test-and-build
@@ -667,7 +667,7 @@ jobs:
 
   playwright-docker:
     name: Plugins - Dockerized Playwright E2E tests
-    uses: grafana/plugin-ci-workflows/.github/workflows/playwright-docker.yml@main
+    uses: grafana/plugin-ci-workflows/.github/workflows/playwright-docker.yml@ci-cd-workflows/v4.3.0
     if: ${{ inputs.run-playwright-docker == true }}
     needs:
       - test-and-build
