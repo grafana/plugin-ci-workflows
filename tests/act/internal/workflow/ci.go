@@ -126,7 +126,8 @@ func WithRunTruffleHogInput(enabled bool) SimpleCIOption {
 }
 
 // WithMockedDist modifies the SimpleCI workflow to mock the test-and-build job
-// to copy pre-built dist files from the tests/act/mockdata folder instead of building them.
+// to copy pre-built dist files (js + assets + backend executable, NOT the ZIP files)
+// from the tests/act/mockdata folder instead of building them.
 // This can be used for tests that need to assert on side-effects of building the plugin,
 // without actually building it, which saves execution time.
 // The pluginFolder parameter is the name of the plugin folder inside tests/act/mockdata/dist.
