@@ -4,6 +4,10 @@ on:
   pull_request:
     branches:
       - main
+    paths:
+      - "tests/**"
+      - ".github/workflows/pr-checks-test-ci.yml"
+      - ".github/workflows/ci.yml"
   push:
     branches:
       - main
