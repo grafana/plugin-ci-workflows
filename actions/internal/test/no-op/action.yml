@@ -1,9 +1,0 @@
-name: No-op
-description: An re-usable action that does nothing and always succeeds.
-
-runs:
-  using: "composite"
-  steps:
-    - name: No-op
-      run: echo "no-op"
-      shell: bash
