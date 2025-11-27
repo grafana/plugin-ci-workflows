@@ -34,6 +34,7 @@ on:
         description: Defines if setup-go action should have caching enabled (https://github.com/actions/setup-go#caching-dependency-files-and-build-outputs)olangci-lint version to use
         type: boolean
         required: false
+        default: true
       trufflehog-version:
         description: Trufflehog version to use
         type: string
@@ -609,6 +610,7 @@ jobs:
   docs:
     name: Test docs
     runs-on: ubuntu-latest
+    if: ${{ !github.event.act }}
     needs:
       # Not strictly necessary, but makes sure we fail fast if the workflow is misconfigured
       - check-for-release-channel
