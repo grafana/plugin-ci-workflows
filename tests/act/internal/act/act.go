@@ -69,12 +69,21 @@ func NewRunner(t *testing.T) (*Runner, error) {
 }
 
 // args returns the CLI arguments to pass to act for the given workflow and event payload files.
-func (r *Runner) args(workflowFile string, payloadFile string) []string {
+func (r *Runner) args(workflowFile string, payloadFile string) ([]string, error) {
 	pciwfRoot, err := os.Getwd()
 	if err != nil {
-		// TODO: do not fail silently
-		pciwfRoot = ""
+		return nil, fmt.Errorf("get working directory: %w", err)
 	}
+	f, err := os.Open(".release-please-manifest.json")
+	if err != nil {
+		return nil, fmt.Errorf("open .release-please-manifest.json: %w", err)
+	}
+	defer f.Close()
+	var releasePleaseManifest map[string]string
+	if err := json.NewDecoder(f).Decode(&releasePleaseManifest); err != nil {
+		return nil, fmt.Errorf("decode release-please-config.json: %w", err)
+	}
+	releasePleaseTag := "ci-cd-workflows/" + "v" + releasePleaseManifest[".github/workflows"]
 	args := []string{
 		"-W", workflowFile,
 		"-e", payloadFile,
@@ -82,6 +91,7 @@ func (r *Runner) args(workflowFile string, payloadFile string) []string {
 		"--json",
 		"--artifact-server-path=/tmp/artifacts/",
 		"--local-repository=grafana/plugin-ci-workflows@main=" + pciwfRoot,
+		"--local-repository=grafana/plugin-ci-workflows@" + releasePleaseTag + "=" + pciwfRoot,
 		"--secret", "GITHUB_TOKEN=" + r.gitHubToken,
 	}
 	if r.ConcurrentJobs > 0 {
@@ -91,7 +101,7 @@ func (r *Runner) args(workflowFile string, payloadFile string) []string {
 	for _, label := range selfHostedRunnerLabels {
 		args = append(args, "-P", label+"="+nektosActRunnerImage)
 	}
-	return args
+	return args, nil
 }
 
 // Run runs the given workflow with the given event payload using act.
@@ -114,7 +124,10 @@ func (r *Runner) Run(workflow workflow.Workflow, eventPayload EventPayload) (*Ru
 	}
 	defer os.Remove(payloadFile)
 
-	args := r.args(workflowFile, payloadFile)
+	args, err := r.args(workflowFile, payloadFile)
+	if err != nil {
+		return fmt.Errorf("get act args: %w", err)
+	}
 
 	// TODO: escape args to avoid shell injection
 	actCmd := "act " + strings.Join(args, " ")
