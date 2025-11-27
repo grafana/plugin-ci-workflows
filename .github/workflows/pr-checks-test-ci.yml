@@ -10,7 +10,7 @@ on:
       - main
     paths:
       - "tests/**"
-      - ".github/workflows/test-act.yml"
+      - ".github/workflows/pr-checks-test-ci.yml"
       - ".github/workflows/ci.yml"
 
 env:
