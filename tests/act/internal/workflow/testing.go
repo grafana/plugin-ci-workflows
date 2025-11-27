@@ -4,8 +4,6 @@ import (
 	"github.com/google/uuid"
 )
 
-// type mock func(*TestingWorkflow)
-
 // TestingWorkflow represents a workflow that is meant to be temporary and used for testing purposes.
 // It generates a unique filename for each instance.
 // It embeds BaseWorkflow to inherit its the properties for marshaling
@@ -55,6 +53,32 @@ func NewTestingWorkflow(baseName string, workflow BaseWorkflow, opts ...NewTesti
 		BaseWorkflow:     workflow,
 		children:         map[string]*TestingWorkflow{},
 	}
+
+	// Add a job to get the workflow run ID and output it.
+	// This is useful for retrieving artifacts by the workflow run ID.
+	const getWorkflowRunIDJobName = "get-workflow-run-id"
+	workflow.Jobs[getWorkflowRunIDJobName] = &Job{
+		Name:   "Get workflow run ID",
+		RunsOn: "ubuntu-arm64-small",
+		Steps: Steps{
+			{
+				Name:  "Get workflow run ID",
+				ID:    "run-id",
+				Run:   `echo run-id=${{ github.run_id }} >> $GITHUB_OUTPUT`,
+				Shell: "bash",
+			},
+		},
+	}
+
+	// Make sure all other jobs depend on the get-workflow-run-id job, so it runs first
+	for jid, j := range wf.Jobs {
+		if jid == getWorkflowRunIDJobName {
+			continue
+		}
+		j.Needs = append(j.Needs, getWorkflowRunIDJobName)
+	}
+
+	// Apply options to customize the TestingWorkflow instance.
 	for _, opt := range opts {
 		opt(&wf)
 	}
@@ -63,20 +87,8 @@ func NewTestingWorkflow(baseName string, workflow BaseWorkflow, opts ...NewTesti
 
 type NewTestingWorkflowOption func(*TestingWorkflow)
 
-/* func WithChildWorkflow(name string, workflow TestingWorkflow) NewTestingWorkflowOption {
-	return func(t *TestingWorkflow) {
-		t.children[name] = workflow
-	}
-} */
-
 func WithUUID(id uuid.UUID) NewTestingWorkflowOption {
 	return func(t *TestingWorkflow) {
 		t.uuid = id
 	}
 }
-
-/* func WithMock(mock mock) NewTestingWorkflowOption {
-	return func(t *TestingWorkflow) {
-		mock(t)
-	}
-} */

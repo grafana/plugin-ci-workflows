@@ -3,6 +3,7 @@ package act
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -88,12 +89,15 @@ func (r *Runner) args(workflowFile string, payloadFile string) ([]string, error)
 		"-W", workflowFile,
 		"-e", payloadFile,
 		"--rm",
+		// "--reuse",
 		"--json",
 		"--artifact-server-path=/tmp/artifacts/",
 		"--local-repository=grafana/plugin-ci-workflows@main=" + pciwfRoot,
 		"--local-repository=grafana/plugin-ci-workflows@" + releasePleaseTag + "=" + pciwfRoot,
 		"--secret", "GITHUB_TOKEN=" + r.gitHubToken,
+		"--container-options", `"-v $PWD/tests/act/mockdata:/mockdata"`,
 	}
+	fmt.Printf("%+v\n", args)
 	if r.ConcurrentJobs > 0 {
 		args = append(args, "--concurrent-jobs", fmt.Sprint(r.ConcurrentJobs))
 	}
@@ -284,4 +288,15 @@ type RunResult struct {
 
 func newRunResult() RunResult {
 	return RunResult{Outputs: newOutputs()}
+}
+
+// GetTestingWorkflowRunID retrieves the GitHub Actions workflow run ID.
+// For this to work, the workflow must have been created via NewTestingWorkflow,
+// which adds a job to get the run ID and expose it as an output.
+func (r *RunResult) GetTestingWorkflowRunID() (string, error) {
+	runID, ok := r.Outputs.Get("get-workflow-run-id", "run-id", "run-id")
+	if !ok {
+		return "", errors.New("could not get workflow run id. make sure you created the testing workflow via NewTestingWorkflow")
+	}
+	return runID, nil
 }

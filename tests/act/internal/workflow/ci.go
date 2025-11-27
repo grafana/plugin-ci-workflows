@@ -78,6 +78,12 @@ func NewSimpleCI(opts ...SimpleCIOption) (SimpleCI, error) {
 	return testingWf, nil
 }
 
+// CIWorkflow returns the TestingWorkflow instance representing the "ci" child workflow.
+// This can be used to further customize/mock steps and jobs in the child workflow.
+func (w *SimpleCI) CIWorkflow() *TestingWorkflow {
+	return w.GetChild("ci")
+}
+
 // SimpleCIOption is a function that modifies a SimpleCI instance during its construction.
 type SimpleCIOption func(*SimpleCI)
 
@@ -99,6 +105,18 @@ func WithDistArtifactPrefix(prefix string) SimpleCIOption {
 func WithPlaywright(enabled bool) SimpleCIOption {
 	return func(w *SimpleCI) {
 		w.Jobs["ci"].With["run-playwright"] = enabled
+	}
+}
+
+func WithRunPluginValidator(enabled bool) SimpleCIOption {
+	return func(w *SimpleCI) {
+		w.Jobs["ci"].With["run-plugin-validator"] = enabled
+	}
+}
+
+func WithRunTruffleHog(enabled bool) SimpleCIOption {
+	return func(w *SimpleCI) {
+		w.Jobs["ci"].With["run-trufflehog"] = enabled
 	}
 }
 

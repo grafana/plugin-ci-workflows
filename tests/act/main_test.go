@@ -35,7 +35,7 @@ func TestSmoke(t *testing.T) {
 				Executable: "null",
 			},
 		},
-		/* {
+		{
 			folder: "simple-frontend-yarn",
 			exp: testAndBuildOutput{
 				ID:         "grafana-simplefrontendyarn-panel",
@@ -61,7 +61,7 @@ func TestSmoke(t *testing.T) {
 				HasBackend: "true",
 				Executable: "gpx_simple_backend",
 			},
-		}, */
+		},
 	} {
 		t.Run(tc.folder, func(t *testing.T) {
 			runner, err := act.NewRunner(t)
@@ -72,15 +72,6 @@ func TestSmoke(t *testing.T) {
 				workflow.WithPluginDirectory(filepath.Join("tests", tc.folder)),
 				workflow.WithDistArtifactPrefix(tc.folder+"-"),
 				workflow.WithPlaywright(false),
-				/* func(w *workflow.SimpleCI) {
-					w.GetChild("ci").Jobs["check-for-release-channel"].Steps = []workflow.Step{
-						{
-							Name:  "Fail",
-							Run:   "echo 'nntifare' && exit 1",
-							Shell: "bash",
-						},
-					}
-				}, */
 			)
 			require.NoError(t, err)
 
@@ -98,6 +89,46 @@ func TestSmoke(t *testing.T) {
 			require.Equal(t, tc.exp, pluginOutput)
 		})
 	}
+}
+
+func TestPackage(t *testing.T) {
+	runner, err := act.NewRunner(t)
+	require.NoError(t, err)
+
+	const folder = "simple-frontend"
+
+	wf, err := workflow.NewSimpleCI(
+		workflow.WithPluginDirectory(filepath.Join("tests", folder)),
+		workflow.WithDistArtifactPrefix(folder+"-"),
+		workflow.WithPlaywright(false),
+		workflow.WithRunTruffleHog(false),
+		// Mock the test-and-build job to copy pre-built dist files
+		func(w *workflow.SimpleCI) {
+			testAndBuild := w.CIWorkflow().Jobs["test-and-build"]
+			require.NoError(t, testAndBuild.RemoveStep("setup"))
+			require.NoError(t, testAndBuild.ReplaceStep("frontend", workflow.Step{
+				Name: "Copy mock dist files",
+				Run: workflow.Commands{
+					"set -x",
+					"mkdir -p ${{ github.workspace }}/${{ inputs.plugin-directory }}/dist",
+					"cp -r /mockdata/dist/" + folder + "/. ${{ github.workspace }}/${{ inputs.plugin-directory }}/dist/",
+					"cd ${{ github.workspace }}/${{ inputs.plugin-directory }}/dist",
+					"ls -la",
+				}.String(),
+				Shell: "bash",
+			}))
+			require.NoError(t, testAndBuild.RemoveStep("backend"))
+		},
+	)
+	require.NoError(t, err)
+
+	r, err := runner.Run(wf, act.NewEmptyEventPayload())
+	require.NoError(t, err)
+	require.True(t, r.Success, "workflow should succeed")
+
+	runID, err := r.GetTestingWorkflowRunID()
+	require.NoError(t, err)
+	t.Logf("gha run id is: %s", runID)
 }
 
 // TestMain sets up the test environment before running the tests.

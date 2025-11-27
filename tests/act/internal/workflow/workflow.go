@@ -5,6 +5,7 @@ package workflow
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/goccy/go-yaml"
 )
@@ -50,6 +51,8 @@ func (w *BaseWorkflow) Marshal() ([]byte, error) {
 type Permissions map[string]string
 type Secrets map[string]string
 
+type Steps []Step
+
 type Job struct {
 	Name string `yaml:"name,omitempty"`
 
@@ -66,9 +69,61 @@ type Job struct {
 
 	Secrets Secrets `yaml:"secrets,omitempty"`
 
-	Steps []Step `yaml:"steps,omitempty"`
+	Steps Steps `yaml:"steps,omitempty"`
 
 	Container ContainerJob `yaml:"container,omitempty"`
+}
+
+func (j *Job) ReplaceStep(id string, steps ...Step) error {
+	stepIndex := j.GetStepIndex(id)
+	if stepIndex == -1 {
+		return fmt.Errorf("step with id %q not found", id)
+	}
+	// Replace the step with the new steps, injecting them at the same position
+	j.Steps = append(j.Steps[:stepIndex], append(steps, j.Steps[stepIndex+1:]...)...)
+	return nil
+}
+
+func (j *Job) RemoveStep(id string) error {
+	stepIndex := j.GetStepIndex(id)
+	if stepIndex == -1 {
+		return fmt.Errorf("step with id %q not found", id)
+	}
+	// Remove the step
+	j.Steps = append(j.Steps[:stepIndex], j.Steps[stepIndex+1:]...)
+	return nil
+}
+
+func (j *Job) NoOpStep(id string) error {
+	stepIndex := j.GetStepIndex(id)
+	if stepIndex == -1 {
+		return fmt.Errorf("step with id %q not found", id)
+	}
+	j.Steps[stepIndex] = Step{
+		Name:  j.Steps[stepIndex].Name,
+		ID:    j.Steps[stepIndex].ID,
+		Run:   "echo 'noop-ed step for testing'",
+		Shell: "bash",
+	}
+	return nil
+}
+
+func (j *Job) GetStepIndex(id string) int {
+	for i, step := range j.Steps {
+		if step.ID == id {
+			return i
+		}
+	}
+	return -1
+}
+
+func (j *Job) GetStep(id string) *Step {
+	for i, step := range j.Steps {
+		if step.ID == id {
+			return &j.Steps[i]
+		}
+	}
+	return nil
 }
 
 type ContainerJob struct {
@@ -121,4 +176,10 @@ type WorkflowCallInput struct {
 type WorkflowCallOutput struct {
 	Description string `yaml:"description,omitempty"`
 	Value       string `yaml:"value,omitempty"`
+}
+
+type Commands []string
+
+func (c Commands) String() string {
+	return strings.Join(c, "\n")
 }
