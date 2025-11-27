@@ -94,7 +94,6 @@ func (r *Runner) args(workflowFile string, payloadFile string) ([]string, error)
 		"--local-repository=grafana/plugin-ci-workflows@" + releasePleaseTag + "=" + pciwfRoot,
 		"--secret", "GITHUB_TOKEN=" + r.gitHubToken,
 	}
-	fmt.Printf("%+v\n", args)
 	if r.ConcurrentJobs > 0 {
 		args = append(args, "--concurrent-jobs", fmt.Sprint(r.ConcurrentJobs))
 	}
