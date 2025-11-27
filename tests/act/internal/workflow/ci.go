@@ -73,48 +73,32 @@ func NewSimpleCI(opts ...SimpleCIOption) (SimpleCI, error) {
 	// Apply options to customize the SimpleCI instance.
 	// These opts can also modify the child testing workflow.
 	for _, opt := range opts {
-		testingWf = opt(testingWf)
+		opt(&testingWf)
 	}
 	return testingWf, nil
 }
 
 // SimpleCIOption is a function that modifies a SimpleCI instance during its construction.
-type SimpleCIOption func(SimpleCI) SimpleCI
+type SimpleCIOption func(*SimpleCI)
 
 // WithPluginDirectory sets the plugin-directory input for the CI job in the SimpleCI workflow.
 func WithPluginDirectory(dir string) SimpleCIOption {
-	return func(w SimpleCI) SimpleCI {
+	return func(w *SimpleCI) {
 		w.Jobs["ci"].With["plugin-directory"] = dir
-		return w
 	}
 }
 
 // WithDistArtifactPrefix sets the dist-artifacts-prefix input for the CI job in the SimpleCI workflow.
 func WithDistArtifactPrefix(prefix string) SimpleCIOption {
-	return func(w SimpleCI) SimpleCI {
+	return func(w *SimpleCI) {
 		w.Jobs["ci"].With["dist-artifacts-prefix"] = prefix
-		return w
 	}
 }
 
 // WithPlaywright sets the run-playwright input for the CI job in the SimpleCI workflow.
 func WithPlaywright(enabled bool) SimpleCIOption {
-	return func(w SimpleCI) SimpleCI {
+	return func(w *SimpleCI) {
 		w.Jobs["ci"].With["run-playwright"] = enabled
-		return w
-	}
-}
-
-func WithLapo() SimpleCIOption {
-	return func(w SimpleCI) SimpleCI {
-		w.GetChild("ci").Jobs["check-for-release-channel"].Steps = []Step{
-			{
-				Name:  "Fail",
-				Run:   "echo 'nntifare' && exit 1",
-				Shell: "bash",
-			},
-		}
-		return w
 	}
 }
 

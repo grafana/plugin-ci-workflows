@@ -72,6 +72,15 @@ func TestSmoke(t *testing.T) {
 				workflow.WithPluginDirectory(filepath.Join("tests", tc.folder)),
 				workflow.WithDistArtifactPrefix(tc.folder+"-"),
 				workflow.WithPlaywright(false),
+				/* func(w *workflow.SimpleCI) {
+					w.GetChild("ci").Jobs["check-for-release-channel"].Steps = []workflow.Step{
+						{
+							Name:  "Fail",
+							Run:   "echo 'nntifare' && exit 1",
+							Shell: "bash",
+						},
+					}
+				}, */
 			)
 			require.NoError(t, err)
 
