@@ -126,7 +126,7 @@ func (r *Runner) Run(workflow workflow.Workflow, eventPayload EventPayload) (*Ru
 
 	args, err := r.args(workflowFile, payloadFile)
 	if err != nil {
-		return fmt.Errorf("get act args: %w", err)
+		return nil, fmt.Errorf("get act args: %w", err)
 	}
 
 	// TODO: escape args to avoid shell injection
