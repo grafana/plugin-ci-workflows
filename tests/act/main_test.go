@@ -69,9 +69,9 @@ func TestSmoke(t *testing.T) {
 			// runner.Verbose = true
 
 			wf, err := workflow.NewSimpleCI(
-				workflow.WithPluginDirectory(filepath.Join("tests", tc.folder)),
-				workflow.WithDistArtifactPrefix(tc.folder+"-"),
-				workflow.WithPlaywright(false),
+				workflow.WithPluginDirectoryInput(filepath.Join("tests", tc.folder)),
+				workflow.WithDistArtifactPrefixInput(tc.folder+"-"),
+				workflow.WithPlaywrightInput(false),
 			)
 			require.NoError(t, err)
 
@@ -95,30 +95,17 @@ func TestPackage(t *testing.T) {
 	runner, err := act.NewRunner(t)
 	require.NoError(t, err)
 
-	const folder = "simple-frontend"
+	const pluginFolder = "simple-frontend"
 
 	wf, err := workflow.NewSimpleCI(
-		workflow.WithPluginDirectory(filepath.Join("tests", folder)),
-		workflow.WithDistArtifactPrefix(folder+"-"),
-		workflow.WithPlaywright(false),
-		workflow.WithRunTruffleHog(false),
+		// CI workflow options
+		workflow.WithPluginDirectoryInput(filepath.Join("tests", pluginFolder)),
+		workflow.WithDistArtifactPrefixInput(pluginFolder+"-"),
+		workflow.WithPlaywrightInput(false),
+		workflow.WithRunTruffleHogInput(false),
+
 		// Mock the test-and-build job to copy pre-built dist files
-		func(w *workflow.SimpleCI) {
-			testAndBuild := w.CIWorkflow().Jobs["test-and-build"]
-			require.NoError(t, testAndBuild.RemoveStep("setup"))
-			require.NoError(t, testAndBuild.ReplaceStep("frontend", workflow.Step{
-				Name: "Copy mock dist files",
-				Run: workflow.Commands{
-					"set -x",
-					"mkdir -p ${{ github.workspace }}/${{ inputs.plugin-directory }}/dist",
-					"cp -r /mockdata/dist/" + folder + "/. ${{ github.workspace }}/${{ inputs.plugin-directory }}/dist/",
-					"cd ${{ github.workspace }}/${{ inputs.plugin-directory }}/dist",
-					"ls -la",
-				}.String(),
-				Shell: "bash",
-			}))
-			require.NoError(t, testAndBuild.RemoveStep("backend"))
-		},
+		workflow.WithMockedDist(t, pluginFolder),
 	)
 	require.NoError(t, err)
 

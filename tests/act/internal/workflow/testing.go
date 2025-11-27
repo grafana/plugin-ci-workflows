@@ -87,7 +87,7 @@ func NewTestingWorkflow(baseName string, workflow BaseWorkflow, opts ...NewTesti
 
 type NewTestingWorkflowOption func(*TestingWorkflow)
 
-func WithUUID(id uuid.UUID) NewTestingWorkflowOption {
+func withUUID(id uuid.UUID) NewTestingWorkflowOption {
 	return func(t *TestingWorkflow) {
 		t.uuid = id
 	}
