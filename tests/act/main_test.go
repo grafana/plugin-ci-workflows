@@ -116,6 +116,8 @@ func TestPackage(t *testing.T) {
 	runID, err := r.GetTestingWorkflowRunID()
 	require.NoError(t, err)
 	t.Logf("gha run id is: %s", runID)
+
+	// TODO: Download the artifact and assert its contents
 }
 
 // TestMain sets up the test environment before running the tests.

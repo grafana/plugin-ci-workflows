@@ -84,7 +84,7 @@ func (r *Runner) args(workflowFile string, payloadFile string) ([]string, error)
 	if err := json.NewDecoder(f).Decode(&releasePleaseManifest); err != nil {
 		return nil, fmt.Errorf("decode release-please-config.json: %w", err)
 	}
-	releasePleaseTag := "ci-cd-workflows/" + "v" + releasePleaseManifest[".github/workflows"]
+	releasePleaseTag := "ci-cd-workflows/v" + releasePleaseManifest[".github/workflows"]
 	args := []string{
 		"-W", workflowFile,
 		"-e", payloadFile,
@@ -97,7 +97,6 @@ func (r *Runner) args(workflowFile string, payloadFile string) ([]string, error)
 		"--secret", "GITHUB_TOKEN=" + r.gitHubToken,
 		"--container-options", `"-v $PWD/tests/act/mockdata:/mockdata"`,
 	}
-	fmt.Printf("%+v\n", args)
 	if r.ConcurrentJobs > 0 {
 		args = append(args, "--concurrent-jobs", fmt.Sprint(r.ConcurrentJobs))
 	}
