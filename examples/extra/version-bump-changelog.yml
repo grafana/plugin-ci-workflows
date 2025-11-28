@@ -1,3 +1,30 @@
+# Version Bump with Changelog Generation
+#
+# This workflow bumps the npm version, generates a changelog, and creates a git tag.
+#
+# USAGE OPTIONS:
+#
+# Option 1: Run from main branch (traditional)
+#   - Trigger this workflow while on the main branch
+#   - Version bump is applied directly to latest main
+#   - Simple and straightforward for low-traffic repos
+#
+# Option 2: Run from a tag (prevents race conditions - RECOMMENDED)
+#   - Create a tag at the desired commit: git tag v1.0.0-prepare && git push origin v1.0.0-prepare
+#   - Trigger this workflow using that tag (select the tag in GitHub Actions UI)
+#   - Benefits:
+#     * Locks the version bump to a specific commit
+#     * Prevents race conditions if PRs are merged during the release process
+#     * Action automatically rebases onto latest main if needed
+#   - If main has moved ahead since tag creation:
+#     * Version bump is automatically rebased onto latest main before pushing
+#     * If rebase conflicts occur, clear error messages guide resolution
+#
+# WHEN TO USE TAG-BASED WORKFLOW:
+#   Use tags when you need to ensure no new commits are unintentionally included
+#   in your release, especially in active repositories where PRs may be merged
+#   during the versioning process.
+#
 name: Version bump, changelog
 
 on:

@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### 🎉 Features
+
+* Support running version bump from tags to prevent race conditions during releases ([#403](https://github.com/grafana/plugin-ci-workflows/issues/403))
+  - Action now detects when running from a tag (detached HEAD) and handles it appropriately
+  - Automatically rebases version bump onto latest main if main has moved ahead since tag creation
+  - Maintains full backward compatibility with branch-based execution
+  - Provides clear error messages and guidance for conflict scenarios
+
 ## [1.1.0](https://github.com/grafana/plugin-ci-workflows/compare/plugins-version-bump-changelog/v1.0.0...plugins-version-bump-changelog/v1.1.0) (2025-10-08)
 
 
