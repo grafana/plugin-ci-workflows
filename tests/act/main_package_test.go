@@ -3,31 +3,37 @@ package main
 import (
 	"encoding/json"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/grafana/plugin-ci-workflows/tests/act/internal/act"
 	"github.com/grafana/plugin-ci-workflows/tests/act/internal/workflow"
+	"github.com/spf13/afero"
 	"github.com/stretchr/testify/require"
 )
 
 func TestPackage(t *testing.T) {
+
 	for _, tc := range []struct {
-		folder        string
-		expPluginID   string
-		expBackend    bool
-		expPluginType string
+		folder           string
+		expPluginID      string
+		expPluginVersion string
+		expBackend       bool
+		expPluginType    string
 	}{
 		{
-			folder:        "simple-frontend",
-			expPluginID:   "grafana-simplefrontend-panel",
-			expBackend:    false,
-			expPluginType: "panel",
+			folder:           "simple-frontend",
+			expPluginID:      "grafana-simplefrontend-panel",
+			expPluginVersion: "1.0.0",
+			expBackend:       false,
+			expPluginType:    "panel",
 		},
 		{
-			folder:        "simple-backend",
-			expPluginID:   "grafana-simplebackend-datasource",
-			expBackend:    true,
-			expPluginType: "datasource",
+			folder:           "simple-backend",
+			expPluginID:      "grafana-simplebackend-datasource",
+			expPluginVersion: "1.0.0",
+			expBackend:       true,
+			expPluginType:    "datasource",
 		},
 	} {
 		t.Run(tc.folder, func(t *testing.T) {
@@ -57,50 +63,60 @@ func TestPackage(t *testing.T) {
 			t.Cleanup(func() { require.NoError(t, distArtifacts.Close()) })
 
 			// Expect the "any" zip file + their hashes
-			anyZipFileName := tc.expPluginID + "-1.0.0.zip"
+			anyZipFileName := anyZIPFileName(tc.expPluginID, tc.expPluginVersion)
 			expArtifactFiles := []string{
 				anyZipFileName,
 				anyZipFileName + ".md5",
 				anyZipFileName + ".sha1",
 			}
+			osArchCombos := [...]string{
+				"darwin_amd64",
+				"darwin_arm64",
+				"linux_amd64",
+				"linux_arm",
+				"linux_arm64",
+				"windows_amd64",
+			}
 			if tc.expBackend {
 				// Expect the os/arch backend zips + their hashes
-				for _, osArch := range []string{
-					"darwin_amd64",
-					"darwin_arm64",
-					"linux_amd64",
-					"linux_arm",
-					"linux_arm64",
-					"windows_amd64",
-				} {
+				for _, osArch := range osArchCombos {
+					osArchZIPFileName := osArchZIPFileName(tc.expPluginID, tc.expPluginVersion, osArch)
 					expArtifactFiles = append(
 						expArtifactFiles,
-						tc.expPluginID+"-1.0.0."+osArch+".zip",
-						tc.expPluginID+"-1.0.0."+osArch+".zip.md5",
-						tc.expPluginID+"-1.0.0."+osArch+".zip.sha1",
+						osArchZIPFileName,
+						osArchZIPFileName+".md5",
+						osArchZIPFileName+".sha1",
 					)
 				}
 			}
 			require.NoError(t, checkFilesExist(distArtifacts.Fs, expArtifactFiles, checkFilesExistOptions{strict: true}))
 
-			// Check the checksum files (any)
-			zipFileContent, err := distArtifacts.ReadFile(anyZipFileName)
-			require.NoError(t, err)
+			// Check the checksum files
+			checkChecksumFiles := func(fn string) {
+				zipFileContent, err := distArtifacts.ReadFile(fn)
+				require.NoError(t, err)
 
-			md5, err := distArtifacts.ReadFile(anyZipFileName + ".md5")
-			require.NoError(t, err)
-			require.Equal(t, md5Hash(zipFileContent), string(md5), "wrong md5 checksum")
+				md5, err := distArtifacts.ReadFile(fn + ".md5")
+				require.NoError(t, err)
+				require.Equal(t, md5Hash(zipFileContent), string(md5), "wrong md5 checksum")
 
-			sha1, err := distArtifacts.ReadFile(anyZipFileName + ".sha1")
-			require.NoError(t, err)
-			require.Equal(t, sha1Hash(zipFileContent), string(sha1), "wrong sha1 checksum")
+				sha1, err := distArtifacts.ReadFile(fn + ".sha1")
+				require.NoError(t, err)
+				require.Equal(t, sha1Hash(zipFileContent), string(sha1), "wrong sha1 checksum")
+			}
+			checkChecksumFiles(anyZipFileName)
 
-			// TODO: check checksums for os/arch backend zips
+			// Check os/arch zip checksums
+			if tc.expBackend {
+				for _, osArch := range osArchCombos {
+					checkChecksumFiles(osArchZIPFileName(tc.expPluginID, tc.expPluginVersion, osArch))
+				}
+			}
 
-			// Check the nested plugin ZIP artifact (any)
-			pluginZIP, err := distArtifacts.OpenZIP(anyZipFileName)
-			require.NoError(t, err)
-			expPluginZipFiles := []string{
+			// Check the nested plugin ZIP artifact for the "any" zip and then for os/arch zips
+
+			// Start from the "any" zip
+			basePluginFiles := [...]string{
 				filepath.Join(tc.expPluginID, "CHANGELOG.md"),
 				filepath.Join(tc.expPluginID, "LICENSE"),
 				filepath.Join(tc.expPluginID, "module.js"),
@@ -109,48 +125,91 @@ func TestPackage(t *testing.T) {
 				filepath.Join(tc.expPluginID, "README.md"),
 				filepath.Join(tc.expPluginID, "img/logo.svg"),
 			}
+			anyPluginZIP, err := distArtifacts.OpenZIP(anyZipFileName)
+			require.NoError(t, err)
+			expBasePluginZipFiles := make([]string, len(basePluginFiles))
+			copy(expBasePluginZipFiles, basePluginFiles[:])
 			if tc.expBackend {
-				expPluginZipFiles = append(
-					expPluginZipFiles,
+				// Additional backend files for the "any" zip (all os+arch executables)
+				// copy basePluginFiles
+				expBasePluginZipFiles = append(
+					expBasePluginZipFiles,
 					filepath.Join(tc.expPluginID, "go_plugin_build_manifest"),
 				)
-				for _, osArch := range []string{
-					"darwin_amd64",
-					"darwin_arm64",
-					"linux_amd64",
-					"linux_arm",
-					"linux_arm64",
-					"windows_amd64.exe",
-				} {
-					expPluginZipFiles = append(
-						expPluginZipFiles,
+				for _, osArch := range osArchCombos {
+					if strings.Contains(osArch, "windows") {
+						osArch += ".exe"
+					}
+					expBasePluginZipFiles = append(
+						expBasePluginZipFiles,
 						filepath.Join(tc.expPluginID, "gpx_simple_backend_"+osArch),
 					)
 				}
 			}
-			require.NoError(t, checkFilesExist(pluginZIP, expPluginZipFiles, checkFilesExistOptions{strict: true}))
+			require.NoError(t, checkFilesExist(anyPluginZIP, expBasePluginZipFiles, checkFilesExistOptions{strict: true}))
 
-			// Inspect plugin.json
-			pluginJSONFile, err := pluginZIP.Open(filepath.Join(tc.expPluginID, "plugin.json"))
-			require.NoError(t, err)
-			t.Cleanup(func() { require.NoError(t, pluginJSONFile.Close()) })
+			// plugin.json exists, check its content
+			checkPluginJSON := func(zf afero.Fs) {
+				pluginJSONFile, err := zf.Open(filepath.Join(tc.expPluginID, "plugin.json"))
+				require.NoError(t, err)
+				t.Cleanup(func() { require.NoError(t, pluginJSONFile.Close()) })
 
-			var pluginJSON struct {
-				ID      string `json:"id"`
-				Type    string `json:"type"`
-				Backend bool   `json:"backend"`
-				Name    string `json:"name"`
-				Info    struct {
-					Version string `json:"version"`
-				} `json:"info"`
+				var pluginJSON struct {
+					ID      string `json:"id"`
+					Type    string `json:"type"`
+					Backend bool   `json:"backend"`
+					Name    string `json:"name"`
+					Info    struct {
+						Version string `json:"version"`
+					} `json:"info"`
+				}
+				require.NoError(t, json.NewDecoder(pluginJSONFile).Decode(&pluginJSON))
+				require.Equal(t, tc.expPluginID, pluginJSON.ID)
+				require.Equal(t, tc.expPluginVersion, pluginJSON.Info.Version)
+				require.Equal(t, tc.expPluginType, pluginJSON.Type)
+				require.Equal(t, tc.expBackend, pluginJSON.Backend)
 			}
-			require.NoError(t, json.NewDecoder(pluginJSONFile).Decode(&pluginJSON))
-			require.Equal(t, tc.expPluginID, pluginJSON.ID)
-			require.Equal(t, "1.0.0", pluginJSON.Info.Version)
-			require.Equal(t, tc.expPluginType, pluginJSON.Type)
-			require.Equal(t, tc.expBackend, pluginJSON.Backend)
+			checkPluginJSON(anyPluginZIP)
 
-			// TODO: check the os/arch zips for their content
+			// Check ZIP content for os/arch combos zips
+			if tc.expBackend {
+				// Base files should be present
+				expBasePluginZipFiles = make([]string, len(basePluginFiles))
+				copy(expBasePluginZipFiles, basePluginFiles[:])
+
+				// Backend manifest should be present
+				expBasePluginZipFiles = append(expBasePluginZipFiles, filepath.Join(tc.expPluginID, "go_plugin_build_manifest"))
+
+				for _, osArch := range osArchCombos {
+					t.Logf("checking plugin ZIP for %s", osArch)
+
+					// Create a copy of the expected base files for each zip file we check
+					expPluginZipFiles := make([]string, len(expBasePluginZipFiles))
+					copy(expPluginZipFiles, expBasePluginZipFiles[:])
+					backendExeFn := "gpx_simple_backend_" + osArch
+					if strings.Contains(osArch, "windows") {
+						backendExeFn += ".exe"
+					}
+					// Expect the backend executable for this os/arch
+					expPluginZipFiles = append(expPluginZipFiles, filepath.Join(tc.expPluginID, backendExeFn))
+
+					// Check that all files exist
+					osArchPluginZIP, err := distArtifacts.OpenZIP(osArchZIPFileName(tc.expPluginID, tc.expPluginVersion, osArch))
+					require.NoError(t, err)
+					require.NoError(t, checkFilesExist(osArchPluginZIP, expPluginZipFiles, checkFilesExistOptions{strict: true}))
+
+					// Check plugin.json content rather than just file existence
+					checkPluginJSON(osArchPluginZIP)
+				}
+			}
 		})
 	}
+}
+
+func anyZIPFileName(pluginID, version string) string {
+	return pluginID + "-" + version + ".zip"
+}
+
+func osArchZIPFileName(pluginID, version, osArch string) string {
+	return pluginID + "-" + version + "." + osArch + ".zip"
 }
