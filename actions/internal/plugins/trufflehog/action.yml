@@ -40,7 +40,7 @@ runs:
     - name: Run Trufflehog
       shell: bash
       run: |
-        ./bin/trufflehog filesystem "${FOLDER}" \
+        ./bin/trufflehog filesystem "${FOLDER}" --debug \
         --no-update --fail --github-actions \
         --results=verified,unknown \
         --include-detectors="${INCLUDE_DETECTORS}" \
