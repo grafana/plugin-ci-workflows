@@ -100,7 +100,6 @@ func TestSmoke(t *testing.T) {
 				anyZipFn + ".md5",
 				anyZipFn + ".sha1",
 			}
-			require.NoError(t, checkFilesExist(distArtifacts.Fs, expFns, checkFilesExistOptions{strict: true}))
 			if hasBackend {
 				// Additional zips for os/arch combos
 				for _, osArch := range osArchCombos {
@@ -108,6 +107,7 @@ func TestSmoke(t *testing.T) {
 					expFns = append(expFns, osArchFn, osArchFn+".md5", osArchFn+".sha1")
 				}
 			}
+			require.NoError(t, checkFilesExist(distArtifacts.Fs, expFns, checkFilesExistOptions{strict: true}))
 
 			// Sanity check the content of the "any" zip file
 			zfs, err := distArtifacts.OpenZIP(anyZipFn)
@@ -117,9 +117,14 @@ func TestSmoke(t *testing.T) {
 				filepath.Join(tc.exp.ID, "module.js"),
 			}))
 			if hasBackend {
-				require.NoError(t, checkFilesExist(zfs, []string{
-					tc.exp.Executable,
-				}))
+				for _, osArch := range osArchCombos {
+					if strings.Contains(osArch, "windows") {
+						osArch = osArch + ".exe"
+					}
+					require.NoError(t, checkFilesExist(zfs, []string{
+						filepath.Join(tc.exp.ID, tc.exp.Executable+"_"+osArch),
+					}))
+				}
 			}
 			require.NoError(
 				t,
