@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/grafana/plugin-ci-workflows/tests/act/internal/act"
+	"github.com/grafana/plugin-ci-workflows/tests/act/internal/workflow"
 	"github.com/spf13/afero"
 )
 
@@ -31,6 +32,59 @@ func TestMain(m *testing.M) {
 	// Clean up old temp workflow files
 	if err := act.CleanupTempWorkflowFiles(); err != nil {
 		panic(err)
+	}
+
+	// Warm up act-toolcache volume, otherwise we get weird errors
+	// when running the "setup/*" actions in parallel tests since they
+	// all share the same act-toolcache volume.
+	runner, err := act.NewRunner(&testing.T{})
+	if err != nil {
+		panic(err)
+	}
+	cacheWarmupWf := workflow.BaseWorkflow{
+		Name: "Act tool cache warm up",
+		On: workflow.On{
+			Push: workflow.OnPush{
+				Branches: []string{"main"},
+			},
+		},
+		Jobs: map[string]*workflow.Job{
+			"warmup": {
+				Name:   "Warm up tool cache",
+				RunsOn: "ubuntu-arm64-small",
+				Steps: []workflow.Step{
+					{
+						Name: "Setup Go",
+						Uses: "actions/setup-go@v6.1.0",
+						With: map[string]any{
+							"go-version": "1.24",
+						},
+					},
+					{
+						Name: "Setup Node.js",
+						Uses: "actions/setup-node@v4.4.0",
+						With: map[string]any{
+							"node-version": "22",
+						},
+					},
+					{
+						Name:  "Install yarn",
+						Run:   "npm install -g yarn",
+						Shell: "bash",
+					},
+				},
+			},
+		},
+	}
+	r, err := runner.Run(
+		workflow.NewTestingWorkflow("toolcache-warmup", cacheWarmupWf),
+		act.NewEmptyEventPayload(),
+	)
+	if err != nil {
+		panic(fmt.Errorf("warm up act toolcache: %w", err))
+	}
+	if !r.Success {
+		panic("warm up act toolcache: workflow failed")
 	}
 
 	fmt.Println("test environment ready")
