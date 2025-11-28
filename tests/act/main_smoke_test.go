@@ -106,15 +106,19 @@ func TestSmoke(t *testing.T) {
 			zfs, err := distArtifacts.OpenZIP(anyZipFn)
 			require.NoError(t, err)
 			require.NoError(t, checkFilesExist(zfs, []string{
-				"plugin.json",
-				"module.js",
+				filepath.Join(tc.exp.ID, "plugin.json"),
+				filepath.Join(tc.exp.ID, "module.js"),
 			}))
 			if tc.exp.HasBackend == "true" {
 				require.NoError(t, checkFilesExist(zfs, []string{
 					tc.exp.Executable,
 				}))
 			}
-			require.NoError(t, checkFilesDontExist(zfs, []string{"MANIFEST.txt"}), "plugin should not be signed")
+			require.NoError(
+				t,
+				checkFilesDontExist(zfs, []string{filepath.Join(tc.exp.ID, "MANIFEST.txt")}),
+				"plugin should not be signed",
+			)
 		})
 	}
 }
