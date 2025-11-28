@@ -110,6 +110,8 @@ for file in $(find "$backend_folder" -type f -name "${exe_basename}_*"); do
     # Copy all files but the executables
     mkdir -p "$plugin_id"
     rsync -a --exclude "${exe_basename}*" "$dist/" "$plugin_id"
+    # TODO: this instead of rsync
+    # find "$dist" -type f ! -name "${exe_basename}*" -exec cp --parents {} "$plugin_id" \;
 
     # Copy only the current executable
     cp "$dist/$file" "$plugin_id/$backend_folder"

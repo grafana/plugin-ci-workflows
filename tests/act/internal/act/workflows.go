@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/google/uuid"
 	"github.com/grafana/plugin-ci-workflows/tests/act/internal/workflow"
 )
 
@@ -47,18 +46,23 @@ func CreateTempEventFile(payload EventPayload) (string, error) {
 }
 
 // CreateTempWorkflowFile creates a temporary workflow file inside .github/workflows
-// containing the given workflow marshaled to YAML.
+// containing the given workflow marshaled to YAML, with the file name returned by workflow.FileName().
 // The function returns the path to the created file.
 // The caller is responsible for deleting the file when no longer needed.
-func CreateTempWorkflowFile(workflow workflow.Marshalable) (string, error) {
+func CreateTempWorkflowFile(workflow workflow.Workflow) (string, error) {
 	content, err := workflow.Marshal()
 	if err != nil {
 		return "", fmt.Errorf("marshal workflow: %w", err)
 	}
-	fn := "act-" + uuid.NewString() + ".yml"
-	fn = filepath.Join(".github", "workflows", fn)
+	fn := filepath.Join(".github", "workflows", workflow.FileName())
 	if err := os.WriteFile(fn, content, 0o644); err != nil {
 		return "", fmt.Errorf("write temp workflow file: %w", err)
+	}
+	// Create temporary child workflows if any
+	for _, child := range workflow.Children() {
+		if _, err := CreateTempWorkflowFile(child); err != nil {
+			return "", fmt.Errorf("create child workflow file: %w", err)
+		}
 	}
 	return fn, nil
 }
