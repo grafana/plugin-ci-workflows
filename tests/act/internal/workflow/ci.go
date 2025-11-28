@@ -134,7 +134,7 @@ func WithRunTruffleHogInput(enabled bool) SimpleCIOption {
 func WithMockedDist(t *testing.T, pluginFolder string) SimpleCIOption {
 	return func(w *SimpleCI) {
 		testAndBuild := w.CIWorkflow().Jobs["test-and-build"]
-		require.NoError(t, testAndBuild.RemoveStep("setup"))
+		// require.NoError(t, testAndBuild.RemoveStep("setup"))
 		require.NoError(t, testAndBuild.ReplaceStep(
 			"frontend",
 			CopyMockFilesStep("dist/"+pluginFolder, "${{ github.workspace }}/${{ inputs.plugin-directory }}/dist/"),

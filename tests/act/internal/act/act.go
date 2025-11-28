@@ -34,7 +34,8 @@ const nektosActRunnerImage = "ghcr.io/catthehacker/ubuntu:act-latest"
 // Runner is a test runner that can execute GitHub Actions workflows using act.
 type Runner struct {
 	// t is the testing.T instance for the current test.
-	t *testing.T
+	t                *testing.T
+	ArtifactsStorage ArtifactsStorage
 
 	// gitHubToken is the token used to authenticate with GitHub.
 	gitHubToken string
@@ -60,8 +61,9 @@ func NewRunner(t *testing.T) (*Runner, error) {
 		ghToken = strings.TrimSpace(string(output))
 	}
 	r := &Runner{
-		t:           t,
-		gitHubToken: ghToken,
+		t:                t,
+		ArtifactsStorage: newDefaultArtifactsStorage(),
+		gitHubToken:      ghToken,
 	}
 	if err := r.checkExecutables(); err != nil {
 		return nil, err
