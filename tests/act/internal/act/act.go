@@ -98,6 +98,8 @@ func (r *Runner) args(workflowFile string, payloadFile string) ([]string, error)
 		return nil, fmt.Errorf("decode release-please-config.json: %w", err)
 	}
 	releasePleaseTag := "ci-cd-workflows/v" + releasePleaseManifest[".github/workflows"]
+
+	// toolCacheVolume := "act-toolcache-" + r.uuid.String()
 	args := []string{
 		"-W", workflowFile,
 		"-e", payloadFile,
@@ -105,8 +107,8 @@ func (r *Runner) args(workflowFile string, payloadFile string) ([]string, error)
 		"--json",
 
 		// Per-runner unique cache and toolcache paths to avoid conflicts when running tests in parallel
-		"--action-cache-path=/tmp/act-cache/" + r.uuid.String(),
-		"--env RUNNER_TOOL_CACHE=/opt/hostedtoolcache/" + r.uuid.String(),
+		// "--action-cache-path=/tmp/act-cache/" + r.uuid.String(),
+		// "--env RUNNER_TOOL_CACHE=/opt/hostedtoolcache/" + r.uuid.String(),
 
 		// Spin up artifact server on a different port per runner instance, so tests can run in parallel
 		fmt.Sprintf("--artifact-server-port=%d", artifactServerPort),
@@ -121,7 +123,8 @@ func (r *Runner) args(workflowFile string, payloadFile string) ([]string, error)
 
 		// Mount mockdata (for mocks)
 		// and unique toolcache volume, so that multiple runners don't clash when running in parallel
-		"--container-options", `"-v $PWD/tests/act/mockdata:/mockdata -v act-toolcache-` + r.uuid.String() + `:/opt/hostedtoolcache/` + r.uuid.String() + `"`,
+		// "--container-options", `"-v $PWD/tests/act/mockdata:/mockdata -v ` + toolCacheVolume + `:/opt/hostedtoolcache/` + r.uuid.String() + `"`,
+		"--container-options", `"-v $PWD/tests/act/mockdata:/mockdata"`,
 	}
 	if r.ConcurrentJobs > 0 {
 		args = append(args, "--concurrent-jobs", fmt.Sprint(r.ConcurrentJobs))
