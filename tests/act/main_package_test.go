@@ -37,6 +37,8 @@ func TestPackage(t *testing.T) {
 		},
 	} {
 		t.Run(tc.folder, func(t *testing.T) {
+			t.Parallel()
+
 			runner, err := act.NewRunner(t)
 			require.NoError(t, err)
 			wf, err := workflow.NewSimpleCI(
