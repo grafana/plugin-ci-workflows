@@ -97,6 +97,9 @@ func checkFilesExist(fs afero.Fs, exp []string, opt ...checkFilesExistOptions) e
 			return nil
 		}
 		if _, ok := expectedFiles[path]; ok {
+			if info.Size() == 0 {
+				return fmt.Errorf("expected file %q is empty", path)
+			}
 			delete(expectedFiles, path)
 		} else if o.strict {
 			return fmt.Errorf("unexpected file %q found in artifact", path)
