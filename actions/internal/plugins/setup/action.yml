@@ -35,7 +35,7 @@ runs:
       if: ${{ env.ACT }}
       shell: bash
       run: |
-        npm install -g yarn
+        corepack install -g yarn
         apt-get update
         apt-get install -y rsync
 
