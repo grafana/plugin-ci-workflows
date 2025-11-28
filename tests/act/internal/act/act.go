@@ -171,7 +171,6 @@ func (r *Runner) Run(workflow workflow.Workflow, eventPayload EventPayload) (*Ru
 	if err != nil {
 		return nil, fmt.Errorf("get act stdout pipe: %w", err)
 	}
-	defer stdout.Close()
 
 	// Just pipe stderr as nothing to parse there
 	cmd.Stderr = os.Stderr
