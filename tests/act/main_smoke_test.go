@@ -33,7 +33,7 @@ func TestSmoke(t *testing.T) {
 				Executable: "null",
 			},
 		},
-		/* {
+		{
 			folder: "simple-frontend-yarn",
 			exp: testAndBuildOutput{
 				ID:         "grafana-simplefrontendyarn-panel",
@@ -59,7 +59,7 @@ func TestSmoke(t *testing.T) {
 				HasBackend: "true",
 				Executable: "gpx_simple_backend",
 			},
-		}, */
+		},
 	} {
 		t.Run(tc.folder, func(t *testing.T) {
 			runner, err := act.NewRunner(t)
@@ -86,11 +86,8 @@ func TestSmoke(t *testing.T) {
 			require.NoError(t, err, "unmarshal plugin output JSON")
 			require.Equal(t, tc.exp, pluginOutput)
 
-			// Sanity check the artifacts content (built plugin)
-			if tc.exp.HasBackend == "true" {
-				// TODO: ...
-				return
-			}
+			// Sanity check the artifacts content (plugin ZIP files)
+			hasBackend := tc.exp.HasBackend == "true"
 			runID, err := r.GetTestingWorkflowRunID()
 			require.NoError(t, err)
 			distArtifacts, err := runner.ArtifactsStorage.GetFolder(runID, tc.folder+"-dist-artifacts")
@@ -98,18 +95,28 @@ func TestSmoke(t *testing.T) {
 			t.Cleanup(func() { require.NoError(t, distArtifacts.Close()) })
 
 			anyZipFn := anyZipFileName(tc.exp.ID, tc.exp.Version)
-			require.NoError(t, checkFilesExist(distArtifacts.Fs, []string{
+			expFns := []string{
 				anyZipFn,
 				anyZipFn + ".md5",
 				anyZipFn + ".sha1",
-			}, checkFilesExistOptions{strict: true}))
+			}
+			require.NoError(t, checkFilesExist(distArtifacts.Fs, expFns, checkFilesExistOptions{strict: true}))
+			if hasBackend {
+				// Additional zips for os/arch combos
+				for _, osArch := range osArchCombos {
+					osArchFn := osArchZipFileName(tc.exp.ID, tc.exp.Version, osArch)
+					expFns = append(expFns, osArchFn, osArchFn+".md5", osArchFn+".sha1")
+				}
+			}
+
+			// Sanity check the content of the "any" zip file
 			zfs, err := distArtifacts.OpenZIP(anyZipFn)
 			require.NoError(t, err)
 			require.NoError(t, checkFilesExist(zfs, []string{
 				filepath.Join(tc.exp.ID, "plugin.json"),
 				filepath.Join(tc.exp.ID, "module.js"),
 			}))
-			if tc.exp.HasBackend == "true" {
+			if hasBackend {
 				require.NoError(t, checkFilesExist(zfs, []string{
 					tc.exp.Executable,
 				}))

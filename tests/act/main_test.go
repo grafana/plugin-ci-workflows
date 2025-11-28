@@ -151,3 +151,12 @@ func anyZipFileName(pluginID, version string) string {
 func osArchZipFileName(pluginID, version, osArch string) string {
 	return pluginID + "-" + version + "." + osArch + ".zip"
 }
+
+var osArchCombos = [...]string{
+	"darwin_amd64",
+	"darwin_arm64",
+	"linux_amd64",
+	"linux_arm",
+	"linux_arm64",
+	"windows_amd64",
+}

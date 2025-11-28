@@ -69,14 +69,6 @@ func TestPackage(t *testing.T) {
 				anyZipFn + ".md5",
 				anyZipFn + ".sha1",
 			}
-			osArchCombos := [...]string{
-				"darwin_amd64",
-				"darwin_arm64",
-				"linux_amd64",
-				"linux_arm",
-				"linux_arm64",
-				"windows_amd64",
-			}
 			if tc.expBackend {
 				// Expect the os/arch backend zips + their hashes
 				for _, osArch := range osArchCombos {
