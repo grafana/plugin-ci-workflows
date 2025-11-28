@@ -36,6 +36,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha || github.ref }}
           fetch-depth: 0
+          lfs: true
 
       # This is needed otherwise actions/checkout puts the repo in detached head
       # and act complains it cannot determine to which branch the current commit belongs to.
