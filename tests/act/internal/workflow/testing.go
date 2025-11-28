@@ -38,6 +38,10 @@ func (t *TestingWorkflow) Children() []Workflow {
 	return children
 }
 
+func (t *TestingWorkflow) Jobs() map[string]*Job {
+	return t.BaseWorkflow.Jobs
+}
+
 func (t *TestingWorkflow) GetChild(name string) *TestingWorkflow {
 	return t.children[name]
 }
@@ -71,7 +75,7 @@ func NewTestingWorkflow(baseName string, workflow BaseWorkflow, opts ...NewTesti
 	}
 
 	// Make sure all other jobs depend on the get-workflow-run-id job, so it runs first
-	for jid, j := range wf.Jobs {
+	for jid, j := range wf.Jobs() {
 		if jid == getWorkflowRunIDJobName {
 			continue
 		}

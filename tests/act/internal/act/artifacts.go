@@ -53,9 +53,9 @@ type ArtifactsStorage struct {
 	basePath string
 }
 
-func newDefaultArtifactsStorage() ArtifactsStorage {
+func newArtifactsStorage(r *Runner) ArtifactsStorage {
 	return ArtifactsStorage{
-		basePath: "/tmp/artifacts",
+		basePath: "/tmp/act-artifacts/" + r.uuid.String() + "/",
 	}
 }
 

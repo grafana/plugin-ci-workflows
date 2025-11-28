@@ -71,7 +71,21 @@ func NewSimpleCI(opts ...SimpleCIOption) (SimpleCI, error) {
 	testingWf.AddChild("ci", childTestingWf)
 
 	// Change the parent workflow so it calls the mocked child workflow
-	testingWf.Jobs["ci"].Uses = pciwfBaseRef + "/" + testingWf.GetChild("ci").FileName() + "@main"
+	testingWf.BaseWorkflow.Jobs["ci"].Uses = pciwfBaseRef + "/" + testingWf.GetChild("ci").FileName() + "@main"
+
+	// Add uuid to each job in the workflow and all its children in order to
+	// make unique contianer names and allow tests to run in parallel, so that
+	// container names created by act don't clash
+	// TODO: move to TestingWorkflow instead?
+	for _, wf := range append([]Workflow{testingWf.TestingWorkflow}, testingWf.Children()...) {
+		for _, j := range wf.Jobs() {
+			if j.Name != "" {
+				j.Name = j.Name + "-" + testingWf.uuid.String()
+			} else {
+				j.Name = testingWf.uuid.String()
+			}
+		}
+	}
 
 	// Apply options to customize the SimpleCI instance.
 	// These opts can also modify the child testing workflow.
@@ -93,35 +107,35 @@ type SimpleCIOption func(*SimpleCI)
 // WithPluginDirectoryInput sets the plugin-directory input for the CI job in the SimpleCI workflow.
 func WithPluginDirectoryInput(dir string) SimpleCIOption {
 	return func(w *SimpleCI) {
-		w.Jobs["ci"].With["plugin-directory"] = dir
+		w.BaseWorkflow.Jobs["ci"].With["plugin-directory"] = dir
 	}
 }
 
 // WithDistArtifactPrefixInput sets the dist-artifacts-prefix input for the CI job in the SimpleCI workflow.
 func WithDistArtifactPrefixInput(prefix string) SimpleCIOption {
 	return func(w *SimpleCI) {
-		w.Jobs["ci"].With["dist-artifacts-prefix"] = prefix
+		w.BaseWorkflow.Jobs["ci"].With["dist-artifacts-prefix"] = prefix
 	}
 }
 
 // WithPlaywrightInput sets the run-playwright input for the CI job in the SimpleCI workflow.
 func WithPlaywrightInput(enabled bool) SimpleCIOption {
 	return func(w *SimpleCI) {
-		w.Jobs["ci"].With["run-playwright"] = enabled
+		w.BaseWorkflow.Jobs["ci"].With["run-playwright"] = enabled
 	}
 }
 
 // WithRunPluginValidatorInput sets the run-plugin-validator input for the CI job in the SimpleCI workflow.
 func WithRunPluginValidatorInput(enabled bool) SimpleCIOption {
 	return func(w *SimpleCI) {
-		w.Jobs["ci"].With["run-plugin-validator"] = enabled
+		w.BaseWorkflow.Jobs["ci"].With["run-plugin-validator"] = enabled
 	}
 }
 
 // WithRunTruffleHogInput sets the run-trufflehog input for the CI job in the SimpleCI workflow.
 func WithRunTruffleHogInput(enabled bool) SimpleCIOption {
 	return func(w *SimpleCI) {
-		w.Jobs["ci"].With["run-trufflehog"] = enabled
+		w.BaseWorkflow.Jobs["ci"].With["run-trufflehog"] = enabled
 	}
 }
 
@@ -133,7 +147,7 @@ func WithRunTruffleHogInput(enabled bool) SimpleCIOption {
 // The pluginFolder parameter is the name of the plugin folder inside tests/act/mockdata/dist.
 func WithMockedDist(t *testing.T, pluginFolder string) SimpleCIOption {
 	return func(w *SimpleCI) {
-		testAndBuild := w.CIWorkflow().Jobs["test-and-build"]
+		testAndBuild := w.CIWorkflow().BaseWorkflow.Jobs["test-and-build"]
 		// require.NoError(t, testAndBuild.RemoveStep("setup"))
 		require.NoError(t, testAndBuild.ReplaceStep(
 			"frontend",

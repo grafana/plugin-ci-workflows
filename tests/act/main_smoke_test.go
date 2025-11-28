@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/grafana/plugin-ci-workflows/tests/act/internal/act"
@@ -62,9 +63,10 @@ func TestSmoke(t *testing.T) {
 		},
 	} {
 		t.Run(tc.folder, func(t *testing.T) {
+			t.Parallel()
+
 			runner, err := act.NewRunner(t)
 			require.NoError(t, err)
-			// runner.Verbose = true
 
 			wf, err := workflow.NewSimpleCI(
 				workflow.WithPluginDirectoryInput(filepath.Join("tests", tc.folder)),

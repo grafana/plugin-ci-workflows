@@ -19,6 +19,7 @@ type Workflow interface {
 	Marshal() ([]byte, error)
 
 	Children() []Workflow
+	Jobs() map[string]*Job
 }
 
 // BaseWorkflow represents a GitHub Actions workflow definition.

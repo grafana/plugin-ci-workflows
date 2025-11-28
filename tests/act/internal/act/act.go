@@ -6,15 +6,19 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"os"
 	"os/exec"
+	"regexp"
 	"strings"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/grafana/plugin-ci-workflows/tests/act/internal/workflow"
 )
 
 var (
+	logUUIDRegex           = regexp.MustCompile(`-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`)
 	selfHostedRunnerLabels = [...]string{
 		"ubuntu-x64-small",
 		"ubuntu-x64",
@@ -35,6 +39,7 @@ const nektosActRunnerImage = "ghcr.io/catthehacker/ubuntu:act-latest"
 type Runner struct {
 	// t is the testing.T instance for the current test.
 	t                *testing.T
+	uuid             uuid.UUID
 	ArtifactsStorage ArtifactsStorage
 
 	// gitHubToken is the token used to authenticate with GitHub.
@@ -61,18 +66,24 @@ func NewRunner(t *testing.T) (*Runner, error) {
 		ghToken = strings.TrimSpace(string(output))
 	}
 	r := &Runner{
-		t:                t,
-		ArtifactsStorage: newDefaultArtifactsStorage(),
-		gitHubToken:      ghToken,
+		t:           t,
+		uuid:        uuid.New(),
+		gitHubToken: ghToken,
 	}
 	if err := r.checkExecutables(); err != nil {
 		return nil, err
 	}
+	r.ArtifactsStorage = newArtifactsStorage(r)
 	return r, nil
 }
 
 // args returns the CLI arguments to pass to act for the given workflow and event payload files.
 func (r *Runner) args(workflowFile string, payloadFile string) ([]string, error) {
+	artifactServerPort, err := getFreePort()
+	if err != nil {
+		return nil, fmt.Errorf("get free port for artifact server: %w", err)
+	}
+
 	pciwfRoot, err := os.Getwd()
 	if err != nil {
 		return nil, fmt.Errorf("get working directory: %w", err)
@@ -91,13 +102,26 @@ func (r *Runner) args(workflowFile string, payloadFile string) ([]string, error)
 		"-W", workflowFile,
 		"-e", payloadFile,
 		"--rm",
-		// "--reuse",
 		"--json",
-		"--artifact-server-path=/tmp/artifacts/",
+
+		// Per-runner unique cache and toolcache paths to avoid conflicts when running tests in parallel
+		"--action-cache-path=/tmp/act-cache/" + r.uuid.String(),
+		"--env RUNNER_TOOL_CACHE=/opt/hostedtoolcache/" + r.uuid.String(),
+
+		// Spin up artifact server on a different port per runner instance, so tests can run in parallel
+		fmt.Sprintf("--artifact-server-port=%d", artifactServerPort),
+		"--artifact-server-path=/tmp/act-artifacts/" + r.uuid.String() + "/",
+
+		// Replace the plugin-ci-workflows action with the local checkout
 		"--local-repository=grafana/plugin-ci-workflows@main=" + pciwfRoot,
 		"--local-repository=grafana/plugin-ci-workflows@" + releasePleaseTag + "=" + pciwfRoot,
+
+		// Required for cloning private repos
 		"--secret", "GITHUB_TOKEN=" + r.gitHubToken,
-		"--container-options", `"-v $PWD/tests/act/mockdata:/mockdata"`,
+
+		// Mount mockdata (for mocks)
+		// and unique toolcache volume, so that multiple runners don't clash when running in parallel
+		"--container-options", `"-v $PWD/tests/act/mockdata:/mockdata -v act-toolcache-` + r.uuid.String() + `:/opt/hostedtoolcache/` + r.uuid.String() + `"`,
 	}
 	if r.ConcurrentJobs > 0 {
 		args = append(args, "--concurrent-jobs", fmt.Sprint(r.ConcurrentJobs))
@@ -195,6 +219,8 @@ func (r *Runner) processStream(reader io.Reader, runResult *RunResult) error {
 		}
 
 		// Print back to stdout in a human-readable format for now
+		// Clean up uuids from data.Job for cleaner output
+		data.Job = logUUIDRegex.ReplaceAllString(data.Job, "")
 		fmt.Printf("%s: [%s] %s\n", r.t.Name(), data.Job, strings.TrimSpace(data.Message))
 
 		// Parse GHA commands (outputs, annotations, etc.)
@@ -300,4 +326,17 @@ func (r *RunResult) GetTestingWorkflowRunID() (string, error) {
 		return "", errors.New("could not get workflow run id. make sure you created the testing workflow via NewTestingWorkflow")
 	}
 	return runID, nil
+}
+
+// getFreePort asks the kernel for a free open port that is ready to use.
+func getFreePort() (port int, err error) {
+	var a *net.TCPAddr
+	if a, err = net.ResolveTCPAddr("tcp", "localhost:0"); err == nil {
+		var l *net.TCPListener
+		if l, err = net.ListenTCP("tcp", a); err == nil {
+			defer l.Close()
+			return l.Addr().(*net.TCPAddr).Port, nil
+		}
+	}
+	return
 }
