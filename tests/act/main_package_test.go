@@ -31,9 +31,6 @@ func TestPackage(t *testing.T) {
 		},
 	} {
 		t.Run(tc.folder, func(t *testing.T) {
-			if !tc.expBackend {
-				t.Skip()
-			}
 			runner, err := act.NewRunner(t)
 			require.NoError(t, err)
 			wf, err := workflow.NewSimpleCI(
