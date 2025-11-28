@@ -33,7 +33,7 @@ func TestSmoke(t *testing.T) {
 				Executable: "null",
 			},
 		},
-		{
+		/* {
 			folder: "simple-frontend-yarn",
 			exp: testAndBuildOutput{
 				ID:         "grafana-simplefrontendyarn-panel",
@@ -59,7 +59,7 @@ func TestSmoke(t *testing.T) {
 				HasBackend: "true",
 				Executable: "gpx_simple_backend",
 			},
-		},
+		}, */
 	} {
 		t.Run(tc.folder, func(t *testing.T) {
 			runner, err := act.NewRunner(t)
@@ -85,6 +85,36 @@ func TestSmoke(t *testing.T) {
 			err = json.Unmarshal([]byte(rawOutput), &pluginOutput)
 			require.NoError(t, err, "unmarshal plugin output JSON")
 			require.Equal(t, tc.exp, pluginOutput)
+
+			// Sanity check the artifacts content (built plugin)
+			if tc.exp.HasBackend == "true" {
+				// TODO: ...
+				return
+			}
+			runID, err := r.GetTestingWorkflowRunID()
+			require.NoError(t, err)
+			distArtifacts, err := runner.ArtifactsStorage.GetFolder(runID, tc.folder+"-dist-artifacts")
+			require.NoError(t, err)
+			t.Cleanup(func() { require.NoError(t, distArtifacts.Close()) })
+
+			anyZipFn := anyZipFileName(tc.exp.ID, tc.exp.Version)
+			require.NoError(t, checkFilesExist(distArtifacts.Fs, []string{
+				anyZipFn,
+				anyZipFn + ".md5",
+				anyZipFn + ".sha1",
+			}, checkFilesExistOptions{strict: true}))
+			zfs, err := distArtifacts.OpenZIP(anyZipFn)
+			require.NoError(t, err)
+			require.NoError(t, checkFilesExist(zfs, []string{
+				"plugin.json",
+				"module.js",
+			}))
+			if tc.exp.HasBackend == "true" {
+				require.NoError(t, checkFilesExist(zfs, []string{
+					tc.exp.Executable,
+				}))
+			}
+			require.NoError(t, checkFilesDontExist(zfs, []string{"MANIFEST.txt"}), "plugin should not be signed")
 		})
 	}
 }

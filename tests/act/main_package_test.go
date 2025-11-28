@@ -63,11 +63,11 @@ func TestPackage(t *testing.T) {
 			t.Cleanup(func() { require.NoError(t, distArtifacts.Close()) })
 
 			// Expect the "any" zip file + their hashes
-			anyZipFileName := anyZIPFileName(tc.expPluginID, tc.expPluginVersion)
+			anyZipFn := anyZipFileName(tc.expPluginID, tc.expPluginVersion)
 			expArtifactFiles := []string{
-				anyZipFileName,
-				anyZipFileName + ".md5",
-				anyZipFileName + ".sha1",
+				anyZipFn,
+				anyZipFn + ".md5",
+				anyZipFn + ".sha1",
 			}
 			osArchCombos := [...]string{
 				"darwin_amd64",
@@ -80,12 +80,12 @@ func TestPackage(t *testing.T) {
 			if tc.expBackend {
 				// Expect the os/arch backend zips + their hashes
 				for _, osArch := range osArchCombos {
-					osArchZIPFileName := osArchZIPFileName(tc.expPluginID, tc.expPluginVersion, osArch)
+					osArchZipFn := osArchZipFileName(tc.expPluginID, tc.expPluginVersion, osArch)
 					expArtifactFiles = append(
 						expArtifactFiles,
-						osArchZIPFileName,
-						osArchZIPFileName+".md5",
-						osArchZIPFileName+".sha1",
+						osArchZipFn,
+						osArchZipFn+".md5",
+						osArchZipFn+".sha1",
 					)
 				}
 			}
@@ -104,12 +104,12 @@ func TestPackage(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, sha1Hash(zipFileContent), string(sha1), "wrong sha1 checksum")
 			}
-			checkChecksumFiles(anyZipFileName)
+			checkChecksumFiles(anyZipFn)
 
 			// Check os/arch zip checksums
 			if tc.expBackend {
 				for _, osArch := range osArchCombos {
-					checkChecksumFiles(osArchZIPFileName(tc.expPluginID, tc.expPluginVersion, osArch))
+					checkChecksumFiles(osArchZipFileName(tc.expPluginID, tc.expPluginVersion, osArch))
 				}
 			}
 
@@ -125,7 +125,7 @@ func TestPackage(t *testing.T) {
 				filepath.Join(tc.expPluginID, "README.md"),
 				filepath.Join(tc.expPluginID, "img/logo.svg"),
 			}
-			anyPluginZIP, err := distArtifacts.OpenZIP(anyZipFileName)
+			anyPluginZIP, err := distArtifacts.OpenZIP(anyZipFn)
 			require.NoError(t, err)
 			expBasePluginZipFiles := make([]string, len(basePluginFiles))
 			copy(expBasePluginZipFiles, basePluginFiles[:])
@@ -194,7 +194,7 @@ func TestPackage(t *testing.T) {
 					expPluginZipFiles = append(expPluginZipFiles, filepath.Join(tc.expPluginID, backendExeFn))
 
 					// Check that all files exist
-					osArchPluginZIP, err := distArtifacts.OpenZIP(osArchZIPFileName(tc.expPluginID, tc.expPluginVersion, osArch))
+					osArchPluginZIP, err := distArtifacts.OpenZIP(osArchZipFileName(tc.expPluginID, tc.expPluginVersion, osArch))
 					require.NoError(t, err)
 					require.NoError(t, checkFilesExist(osArchPluginZIP, expPluginZipFiles, checkFilesExistOptions{strict: true}))
 
@@ -204,12 +204,4 @@ func TestPackage(t *testing.T) {
 			}
 		})
 	}
-}
-
-func anyZIPFileName(pluginID, version string) string {
-	return pluginID + "-" + version + ".zip"
-}
-
-func osArchZIPFileName(pluginID, version, osArch string) string {
-	return pluginID + "-" + version + "." + osArch + ".zip"
 }

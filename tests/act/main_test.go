@@ -4,6 +4,7 @@ import (
 	"crypto/md5"
 	"crypto/sha1"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -79,15 +80,7 @@ func checkFilesExist(fs afero.Fs, exp []string, opt ...checkFilesExistOptions) e
 		o = checkFilesExistOptions{}
 	}
 
-	expectedFiles := make(map[string]struct{}, len(exp))
-	for _, f := range exp {
-		// Add leading slash for consistency with afero.Walk paths
-		if !strings.HasPrefix(f, "/") {
-			f = "/" + f
-		}
-		expectedFiles[f] = struct{}{}
-	}
-
+	expectedFiles := aferoFilesMap(exp)
 	if err := afero.Walk(fs, "/", func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -102,16 +95,43 @@ func checkFilesExist(fs afero.Fs, exp []string, opt ...checkFilesExistOptions) e
 			}
 			delete(expectedFiles, path)
 		} else if o.strict {
-			return fmt.Errorf("unexpected file %q found in artifact", path)
+			return fmt.Errorf("unexpected file %q found", path)
 		}
 		return nil
 	}); err != nil {
 		return err
 	}
 	if len(expectedFiles) > 0 {
-		return fmt.Errorf("expected files not found in artifact: %v", expectedFiles)
+		return fmt.Errorf("expected files not found: %v", expectedFiles)
 	}
 	return nil
+}
+
+func checkFilesDontExist(fs afero.Fs, notExp []string) error {
+	unexpectedFiles := aferoFilesMap(notExp)
+	var finalErr error
+	for fn := range unexpectedFiles {
+		exists, err := afero.Exists(fs, fn)
+		if err != nil {
+			return fmt.Errorf("check existence of file %q: %w", fn, err)
+		}
+		if exists {
+			finalErr = errors.Join(finalErr, fmt.Errorf("unexpected file %q found", fn))
+		}
+	}
+	return finalErr
+}
+
+func aferoFilesMap(files []string) map[string]struct{} {
+	r := make(map[string]struct{}, len(files))
+	for _, f := range files {
+		// Add leading slash for consistency with afero.Walk paths
+		if !strings.HasPrefix(f, "/") {
+			f = "/" + f
+		}
+		r[f] = struct{}{}
+	}
+	return r
 }
 
 func md5Hash(b []byte) string {
@@ -122,4 +142,12 @@ func md5Hash(b []byte) string {
 func sha1Hash(b []byte) string {
 	h := sha1.Sum(b)
 	return hex.EncodeToString(h[:])
+}
+
+func anyZipFileName(pluginID, version string) string {
+	return pluginID + "-" + version + ".zip"
+}
+
+func osArchZipFileName(pluginID, version, osArch string) string {
+	return pluginID + "-" + version + "." + osArch + ".zip"
 }
