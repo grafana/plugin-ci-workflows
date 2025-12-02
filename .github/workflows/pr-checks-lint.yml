@@ -1,0 +1,39 @@
+name: Lint GitHub Actions workflows
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  ACTIONLINT_VERSION: "1.7.3"
+
+jobs:
+  actionlint:
+    runs-on: ubuntu-arm64-small
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+        with:
+          persist-credentials: false
+      - name: Enable action lint matcher
+        run: echo "::add-matcher::.github/actionlint-matcher.json"
+      - name: Download actionlint
+        id: get_actionlint
+        run: |
+          bash <(curl "https://raw.githubusercontent.com/rhysd/actionlint/v${ACTIONLINT_VERSION}/scripts/download-actionlint.bash") "${ACTIONLINT_VERSION}" "/usr/local/bin"
+        shell: bash
+        env:
+          ACTIONLINT_VERSION: ${{ env.ACTIONLINT_VERSION }}
+      - name: Check workflow files
+        run: |
+          actionlint -color
+        shell: bash

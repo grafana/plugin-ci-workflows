@@ -14,7 +14,7 @@ env:
 
 jobs:
   release-please:
-    runs-on: ubuntu-x64-small
+    runs-on: ubuntu-arm64-small
 
     permissions:
       contents: write # Needed to create releases and tags
@@ -42,11 +42,11 @@ jobs:
           owner: ${{ github.repository_owner }}
 
       - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@f4a75cfd619ee5ce8d5b864b0d183aff3c69b55a # v2.13.1
+        uses: step-security/harden-runner@95d9a5deda9de15063e7595e9719c11c38c90ae2 # v2.13.2
         with:
           egress-policy: audit
 
-      - uses: googleapis/release-please-action@c2a5a2bd6a758a0937f1ddb1e8950609867ed15c # v4.3.0
+      - uses: googleapis/release-please-action@16a9c90856f42705d54a6fda1823352bdc62cf38 # v4.4.0
         id: release
         with:
           config-file: release-please-config.json

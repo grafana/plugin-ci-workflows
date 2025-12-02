@@ -77,13 +77,13 @@ permissions:
 jobs:
   resolve-versions:
     name: Resolve Grafana images
-    runs-on: ubuntu-x64-small
+    runs-on: ubuntu-arm64-small
     timeout-minutes: 3
     outputs:
       matrix: ${{ steps.resolve-versions.outputs.matrix }}
     steps:
       - name: Checkout
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
         with:
           persist-credentials: false
 
@@ -105,7 +105,7 @@ jobs:
     name: e2e ${{ matrix.GRAFANA_IMAGE.name }}@${{ matrix.GRAFANA_IMAGE.VERSION }}
     runs-on: ubuntu-x64-large
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
         with:
           persist-credentials: false
 
@@ -175,7 +175,7 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Download GitHub artifact
-        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
         with:
           name: dist-artifacts
           path: /tmp/dist-artifacts
@@ -235,7 +235,7 @@ jobs:
         working-directory: ${{ inputs.plugin-directory }}
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         if: ${{ (inputs.upload-artifacts == true) && ((always() && steps.run-tests.outcome == 'success') || (failure() && steps.run-tests.outcome == 'failure')) }}
         with:
           name: playwright-report-${{ matrix.GRAFANA_IMAGE.NAME }}-v${{ matrix.GRAFANA_IMAGE.VERSION }}-${{github.run_id}}
@@ -245,15 +245,10 @@ jobs:
   check-playwright-status:
     needs: playwright-tests
     name: Check Playwright E2E matrix status
-    runs-on: ubuntu-x64-small
+    runs-on: ubuntu-arm64-small
     if: always()
     steps:
       - name: Check matrix job status
-        # This step will fail if any of the matrix jobs failed
-        run: |
-          if [ "${{ contains(needs.playwright-tests.result, 'failure') }}" = "true" ]; then
-            echo "One or more jobs in the E2E testing matrix failed"
-            exit 1
-          else
-            echo "All E2E test jobs succeeded"
-          fi
+        uses: grafana/plugin-ci-workflows/actions/internal/check-matrix-status@main
+        with:
+          results: ${{ needs.playwright-tests.result }}

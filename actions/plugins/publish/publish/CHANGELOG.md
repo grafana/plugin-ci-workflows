@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.1](https://github.com/grafana/plugin-ci-workflows/compare/plugins-publish-publish/v2.0.0...plugins-publish-publish/v2.0.1) (2025-11-04)
+
+
+### 🐛 Bug Fixes
+
+* parse new gcom error message ([#370](https://github.com/grafana/plugin-ci-workflows/issues/370)) ([dd5a62c](https://github.com/grafana/plugin-ci-workflows/commit/dd5a62c43f27517be25472ee9637dbeda026282b))
+
 ## [2.0.0](https://github.com/grafana/plugin-ci-workflows/compare/plugins-publish-publish/v1.2.0...plugins-publish-publish/v2.0.0) (2025-10-08)
 
 

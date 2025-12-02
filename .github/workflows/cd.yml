@@ -185,7 +185,31 @@ on:
         type: string
         required: false
 
-      # Artifacts attestation for build provenance
+      # Feature toggle: plugin-validator
+      run-plugin-validator:
+        description: Whether to run plugin-validator.
+        type: boolean
+        required: false
+        default: false
+      plugin-validator-config:
+        description: |
+          Content of the plugin validator configuration file (yaml) to use.
+          It has higher priority than `plugin-validator-config-path` input.
+          If not provided, the action will look for the file specified in `plugin-validator-config-path` input instead.
+          If neither is provided, a default configuration will be used.
+        type: string
+        required: false
+        default: ""
+      plugin-validator-config-path:
+        description: |
+          Path to the plugin validator configuration file (yaml) to use.
+          It will be used only if `plugin-validator-config` input is not provided.
+          If not provided, a default configuration will be used.
+        type: string
+        required: false
+        default: ""
+
+      # Feature toggle: Artifacts attestation for build provenance
       attestation:
         description: Create a verifiable attestation for the plugin using Github OIDC.
         type: boolean
@@ -287,6 +311,16 @@ on:
         default: main
         type: string
 
+      # Options for testing the workflow itself.
+      DO-NOT-USE-allow-pinned-commit-hashes:
+        description: |
+          FOR INTERNAL TESTING ONLY, DO NOT USE.
+          If `true`, skip hard fail in case the workflow is pinned to a commit hash.
+          Vault access may still fail in such cases, depending on the WIF policies in place.
+        type: boolean
+        required: false
+        default: false
+
 concurrency:
   group: cd-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
@@ -303,7 +337,7 @@ env:
 jobs:
   setup:
     name: Check and setup environment
-    runs-on: ubuntu-x64-small
+    runs-on: ubuntu-arm64-small
 
     outputs:
       commit-sha: ${{ steps.checkout-specified-branch.outputs.commit }}
@@ -336,7 +370,7 @@ jobs:
 
       - name: Checkout specified branch
         id: checkout-specified-branch
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
         with:
           ref: ${{ inputs.branch }}
           persist-credentials: false
@@ -385,12 +419,20 @@ jobs:
     with:
       branch: ${{ inputs.branch }}
       plugin-directory: ${{ inputs.plugin-directory }}
+      plugin-version-suffix: ${{ needs.setup.outputs.plugin-version-suffix }}
+
       package-manager: ${{ inputs.package-manager }}
       npm-registry-auth: ${{ inputs.npm-registry-auth }}
+
       go-version: ${{ inputs.go-version }}
       go-setup-caching: ${{ inputs.go-setup-caching }}
       node-version: ${{ inputs.node-version }}
       golangci-lint-version: ${{ inputs.golangci-lint-version }}
+
+      run-plugin-validator: ${{ inputs.run-plugin-validator }}
+      plugin-validator-config: ${{ inputs.plugin-validator-config }}
+      plugin-validator-config-path: ${{ inputs.plugin-validator-config-path }}
+
       run-playwright: ${{ inputs.run-playwright }}
       run-playwright-docker: ${{ inputs.run-playwright-docker }}
       run-playwright-with-grafana-dependency: ${{ inputs.run-playwright-with-grafana-dependency }}
@@ -402,16 +444,21 @@ jobs:
       playwright-config: ${{ inputs.playwright-config }}
       playwright-grafana-url: ${{ inputs.playwright-grafana-url }}
       playwright-secrets: ${{ inputs.playwright-secrets }}
+
       run-trufflehog: ${{ inputs.run-trufflehog }}
       trufflehog-version: ${{ inputs.trufflehog-version }}
       trufflehog-include-detectors: ${{ inputs.trufflehog-include-detectors }}
       trufflehog-exclude-detectors: ${{ inputs.trufflehog-exclude-detectors }}
-      plugin-version-suffix: ${{ needs.setup.outputs.plugin-version-suffix }}
+
       frontend-secrets: ${{ inputs.frontend-secrets }}
       backend-secrets: ${{ inputs.backend-secrets }}
+
       environment: ${{ inputs.environment }}
+
       allow-unsigned: ${{ inputs.allow-unsigned }}
       signature-type: ${{ inputs.signature-type }}
+
+      DO-NOT-USE-allow-pinned-commit-hashes: ${{ inputs.DO-NOT-USE-allow-pinned-commit-hashes }}
 
   build-attestation:
     name: Build attestation
@@ -427,7 +474,7 @@ jobs:
 
     steps:
       - name: Download GitHub artifact
-        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
         with:
           name: dist-artifacts
           path: /tmp/dist-artifacts
@@ -441,7 +488,7 @@ jobs:
 
   define-variables:
     name: Define variables
-    runs-on: ubuntu-x64-small
+    runs-on: ubuntu-arm64-small
 
     needs:
       - ci
@@ -539,10 +586,10 @@ jobs:
       fail-fast: false
       matrix:
         environment: ${{ fromJson(needs.define-variables.outputs.environments) }}
-    runs-on: ubuntu-x64-small
+    runs-on: ubuntu-arm64-small
     steps:
       - name: Checkout
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
         with:
           ref: ${{ inputs.branch }}
           persist-credentials: false
@@ -647,7 +694,7 @@ jobs:
 
   trigger-argo-workflow:
     name: Trigger Argo Workflow for Grafana Cloud deployment
-    runs-on: ubuntu-x64-small
+    runs-on: ubuntu-arm64-small
 
     needs:
       - ci
@@ -715,7 +762,7 @@ jobs:
   # tailored plugins catalog instead of using GCS.
   upload-to-gcs-release:
     name: Upload to GCS (release)
-    runs-on: ubuntu-x64-small
+    runs-on: ubuntu-arm64-small
 
     needs:
       - ci
@@ -732,7 +779,7 @@ jobs:
 
     steps:
       - name: Download GitHub artifact
-        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
         with:
           name: dist-artifacts
           path: /tmp/dist-artifacts
@@ -912,7 +959,7 @@ jobs:
         - /home/runner/work/_actions:/home/runner/work/_actions
     steps:
       - name: Checkout
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
         with:
           ref: ${{ inputs.branch }}
           persist-credentials: false
@@ -943,7 +990,7 @@ jobs:
 
   create-github-release:
     name: Create GitHub Release
-    runs-on: ubuntu-x64-small
+    runs-on: ubuntu-arm64-small
     needs:
       - define-variables
       - ci
@@ -959,13 +1006,13 @@ jobs:
       }}
     steps:
       - name: Checkout
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
         with:
           ref: ${{ inputs.branch }}
           persist-credentials: false
 
       - name: Download GitHub artifact
-        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
         with:
           name: dist-artifacts
           path: /tmp/dist-artifacts
@@ -1003,7 +1050,7 @@ jobs:
           PLUGIN_VERSION: ${{ fromJSON(needs.ci.outputs.plugin).version }}
 
       - name: Create Github release
-        uses: softprops/action-gh-release@6cbd405e2c4e67a21c47fa9e383d020e4e28b836 # v2.3.3
+        uses: softprops/action-gh-release@5be0e66d93ac7ed76da52eca8bb058f665c3a5fe # v2.4.2
         with:
           draft: ${{ inputs.github-draft-release }}
           name: ${{ fromJSON(needs.ci.outputs.plugin).id }} v${{ fromJSON(needs.ci.outputs.plugin).version }}
