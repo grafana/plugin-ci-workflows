@@ -70,36 +70,78 @@ func NewRunner(t *testing.T) (*Runner, error) {
 
 // args returns the CLI arguments to pass to act for the given workflow and event payload files.
 func (r *Runner) args(workflowFile string, payloadFile string) ([]string, error) {
-	pciwfRoot, err := os.Getwd()
-	if err != nil {
-		return nil, fmt.Errorf("get working directory: %w", err)
-	}
-	f, err := os.Open(".release-please-manifest.json")
-	if err != nil {
-		return nil, fmt.Errorf("open .release-please-manifest.json: %w", err)
-	}
-	defer f.Close()
-	var releasePleaseManifest map[string]string
-	if err := json.NewDecoder(f).Decode(&releasePleaseManifest); err != nil {
-		return nil, fmt.Errorf("decode release-please-config.json: %w", err)
-	}
-	releasePleaseTag := "ci-cd-workflows/" + "v" + releasePleaseManifest[".github/workflows"]
 	args := []string{
 		"-W", workflowFile,
 		"-e", payloadFile,
 		"--rm",
 		"--json",
 		"--artifact-server-path=/tmp/artifacts/",
-		"--local-repository=grafana/plugin-ci-workflows@main=" + pciwfRoot,
-		"--local-repository=grafana/plugin-ci-workflows@" + releasePleaseTag + "=" + pciwfRoot,
 		"--secret", "GITHUB_TOKEN=" + r.gitHubToken,
 	}
+
+	// Map local all possible references of plugin-ci-workflows to the local repository
+	localRepoArgs, err := r.localRepositoryArgs()
+	if err != nil {
+		return nil, err
+	}
+	args = append(args, localRepoArgs...)
+
 	if r.ConcurrentJobs > 0 {
 		args = append(args, "--concurrent-jobs", fmt.Sprint(r.ConcurrentJobs))
 	}
 	// Map all self-hosted runners otherwise they don't run in act.
 	for _, label := range selfHostedRunnerLabels {
 		args = append(args, "-P", label+"="+nektosActRunnerImage)
+	}
+	return args, nil
+}
+
+// localRepositoryArgs returns act CLI arguments to map local references of plugin-ci-workflows
+// to the local repository based on release-please configuration and manifest.
+// It adds a CLI flag for each release-please component.
+func (r *Runner) localRepositoryArgs() ([]string, error) {
+	var args []string
+
+	// Get local repository path
+	pciwfRoot, err := os.Getwd()
+	if err != nil {
+		return nil, fmt.Errorf("get working directory: %w", err)
+	}
+
+	// Read release-please config: this contains the tags's prefixes
+	var releasePleaseConfig struct {
+		Packages map[string]struct {
+			PackageName string `json:"package-name"`
+		} `json:"packages"`
+	}
+	cfgF, err := os.Open("release-please-config.json")
+	if err != nil {
+		return nil, fmt.Errorf("open release-please-config.json: %w", err)
+	}
+	defer cfgF.Close()
+	if err := json.NewDecoder(cfgF).Decode(&releasePleaseConfig); err != nil {
+		return nil, fmt.Errorf("decode release-please-config.json: %w", err)
+	}
+
+	// Read release-please manifest: this contains the actual semver versions (suffixes)
+	manifestF, err := os.Open(".release-please-manifest.json")
+	if err != nil {
+		return nil, fmt.Errorf("open .release-please-manifest.json: %w", err)
+	}
+	defer manifestF.Close()
+	var releasePleaseManifest map[string]string
+	if err := json.NewDecoder(manifestF).Decode(&releasePleaseManifest); err != nil {
+		return nil, fmt.Errorf("decode release-please-config.json: %w", err)
+	}
+
+	// For each component in the manifest, map its tag to the local repository
+	for componentName, tag := range releasePleaseManifest {
+		releasePleasePackage, ok := releasePleaseConfig.Packages[componentName]
+		if !ok {
+			continue
+		}
+		tag := releasePleasePackage.PackageName + "/v" + tag
+		args = append(args, "--local-repository=grafana/plugin-ci-workflows@"+tag+"="+pciwfRoot)
 	}
 	return args, nil
 }
