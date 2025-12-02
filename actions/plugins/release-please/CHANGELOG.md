@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.2](https://github.com/grafana/plugin-ci-workflows/compare/plugins-release-please/v1.0.1...plugins-release-please/v1.0.2) (2025-12-02)
+
+
+### 🔧 Chores
+
+* **deps:** update actions/checkout action to v5.0.1 ([#413](https://github.com/grafana/plugin-ci-workflows/issues/413)) ([8c591cd](https://github.com/grafana/plugin-ci-workflows/commit/8c591cdfe41c0ead6a235dcdb51f5e74af15642d))
+
 ## [1.0.1](https://github.com/grafana/plugin-ci-workflows/compare/plugins-release-please/v1.0.0...plugins-release-please/v1.0.1) (2025-11-21)
 
 
