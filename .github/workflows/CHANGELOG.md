@@ -1,5 +1,91 @@
 # Changelog
 
+## [4.3.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v4.2.0...ci-cd-workflows/v4.3.0) (2025-11-26)
+
+
+### 🎉 Features
+
+* add a more user-friendly error when pinning plugin-ci-workflows to a commit hash ([f2c945a](https://github.com/grafana/plugin-ci-workflows/commit/f2c945af2f13d37c5ebfa544b549f09fd01c56c1))
+* block workflow if pinned to a commit hash rather than a tag/branch reference ([f2c945a](https://github.com/grafana/plugin-ci-workflows/commit/f2c945af2f13d37c5ebfa544b549f09fd01c56c1))
+
+
+### 🐛 Bug Fixes
+
+* trust grafana-plugins-platform-bot[bot] ([#404](https://github.com/grafana/plugin-ci-workflows/issues/404)) ([dc5bcf5](https://github.com/grafana/plugin-ci-workflows/commit/dc5bcf59949e3a962289aaa43badf3f39f536de3))
+
+
+### 🔧 Chores
+
+* add ACTIONLINT_VERSION to simplify actionlint version bumps ([f422460](https://github.com/grafana/plugin-ci-workflows/commit/f42246017310591f720cd9f250037b90052b88bc))
+* add concurrency to actionlint job ([f422460](https://github.com/grafana/plugin-ci-workflows/commit/f42246017310591f720cd9f250037b90052b88bc))
+* changed warning message for rolling release channel detection ([f2c945a](https://github.com/grafana/plugin-ci-workflows/commit/f2c945af2f13d37c5ebfa544b549f09fd01c56c1))
+
+## [4.2.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v4.1.0...ci-cd-workflows/v4.2.0) (2025-11-24)
+
+
+### 🎉 Features
+
+* run plugin-validator as part of CI (opt-in) ([#366](https://github.com/grafana/plugin-ci-workflows/issues/366)) ([3456883](https://github.com/grafana/plugin-ci-workflows/commit/34568839361b8e990d500e52beba150640934b95))
+
+
+### 🐛 Bug Fixes
+
+* allow dependabot and renovate to access Vault ([#381](https://github.com/grafana/plugin-ci-workflows/issues/381)) ([0e62f4d](https://github.com/grafana/plugin-ci-workflows/commit/0e62f4de4c8e4921de802cc9a70b24f616bd4f87))
+* fix check-for-rolling-releases running twice when running cd workflow ([#383](https://github.com/grafana/plugin-ci-workflows/issues/383)) ([54da033](https://github.com/grafana/plugin-ci-workflows/commit/54da033a19ff10c1557f99ca6371cfae266b8d4c))
+* only trust renovate and dependabot rather than all bots ([#392](https://github.com/grafana/plugin-ci-workflows/issues/392)) ([45b9f89](https://github.com/grafana/plugin-ci-workflows/commit/45b9f892824a2bec7eb2ecf6e90692b68ce09b12))
+
+
+### 🔧 Chores
+
+* add job for smoke tests matrix check and pr checks refactoring ([#386](https://github.com/grafana/plugin-ci-workflows/issues/386)) ([80ce38a](https://github.com/grafana/plugin-ci-workflows/commit/80ce38ab114e7ecc15486247dc1657efa3069376))
+* **deps:** bump default Trufflehog version to v3.91.0 ([#384](https://github.com/grafana/plugin-ci-workflows/issues/384)) ([431b333](https://github.com/grafana/plugin-ci-workflows/commit/431b33329dc0b8fb542f8330145d229bd1dc5048))
+* **deps:** update github artifact actions (major) ([#375](https://github.com/grafana/plugin-ci-workflows/issues/375)) ([0662937](https://github.com/grafana/plugin-ci-workflows/commit/0662937faaa02b98a54172eaee702533b502514f))
+* **deps:** update googleapis/release-please-action action to v4.4.0 ([#374](https://github.com/grafana/plugin-ci-workflows/issues/374)) ([5f3d206](https://github.com/grafana/plugin-ci-workflows/commit/5f3d206183ce3d29f184219d30bd990a36138b3f))
+* **deps:** update softprops/action-gh-release action to v2.4.2 ([#393](https://github.com/grafana/plugin-ci-workflows/issues/393)) ([3a6ced2](https://github.com/grafana/plugin-ci-workflows/commit/3a6ced2f38434c7d293258d7dbefa4cd7e9ef03a))
+* **deps:** update step-security/harden-runner action to v2.13.2 ([#388](https://github.com/grafana/plugin-ci-workflows/issues/388)) ([3cc38b2](https://github.com/grafana/plugin-ci-workflows/commit/3cc38b22fd5bf56864555315a623c6040d7c493b))
+* **main:** release plugins-release-please 1.0.1 ([#376](https://github.com/grafana/plugin-ci-workflows/issues/376)) ([80407d0](https://github.com/grafana/plugin-ci-workflows/commit/80407d0289c509581f86bd8f55b82dbf7237fc1b))
+* switch GitHub Actions runners to arm64 ([#382](https://github.com/grafana/plugin-ci-workflows/issues/382)) ([38c232b](https://github.com/grafana/plugin-ci-workflows/commit/38c232ba18e13df42cba513fff2e90098a7f9156))
+
+## [4.1.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v4.0.0...ci-cd-workflows/v4.1.0) (2025-11-04)
+
+
+### 🎉 Features
+
+* add warning message when using rolling releases channel (`[@main](https://github.com/main)`) ([#365](https://github.com/grafana/plugin-ci-workflows/issues/365)) ([e3a460d](https://github.com/grafana/plugin-ci-workflows/commit/e3a460d2760d04069db3046d557f7174fa5151bd))
+
+
+### 🐛 Bug Fixes
+
+* fail when plugin version exceeds 190 chars ([#368](https://github.com/grafana/plugin-ci-workflows/issues/368)) ([a75ba23](https://github.com/grafana/plugin-ci-workflows/commit/a75ba23f00686932691dd82b64ae6eca15f9b69e))
+
+
+### 🔧 Chores
+
+* **main:** release plugins-publish-publish 2.0.1 ([#371](https://github.com/grafana/plugin-ci-workflows/issues/371)) ([82366d7](https://github.com/grafana/plugin-ci-workflows/commit/82366d73b461d28a73a14fd360798a39425fb6ef))
+
+## [4.0.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v3.2.0...ci-cd-workflows/v4.0.0) (2025-11-03)
+
+
+### ⚠ BREAKING CHANGES
+
+* move unexported actions to `internal` folder ([#338](https://github.com/grafana/plugin-ci-workflows/issues/338))
+
+### 🎉 Features
+
+* adding a non-required input called signature-type ([#356](https://github.com/grafana/plugin-ci-workflows/issues/356)) ([4c800de](https://github.com/grafana/plugin-ci-workflows/commit/4c800dee4b72ceff1816693f74c22fd557be27c4))
+
+
+### ♻️ Code Refactoring
+
+* move unexported actions to `internal` folder ([#338](https://github.com/grafana/plugin-ci-workflows/issues/338)) ([46a32e8](https://github.com/grafana/plugin-ci-workflows/commit/46a32e8d3c688e39345a945ca835d636e0e5c9a4))
+
+
+### 🔧 Chores
+
+* **deps:** update softprops/action-gh-release action to v2.4.1 ([#359](https://github.com/grafana/plugin-ci-workflows/issues/359)) ([f48c11a](https://github.com/grafana/plugin-ci-workflows/commit/f48c11a872a3d36624007f2bfad11d8278caeb0a))
+* **deps:** update stefanzweifel/git-auto-commit-action action to v7 ([#361](https://github.com/grafana/plugin-ci-workflows/issues/361)) ([50034ea](https://github.com/grafana/plugin-ci-workflows/commit/50034eabfee9faa714b55ef3aacbd8f1c448cd1f))
+* **main:** release plugins-release-please 1.0.0 ([#357](https://github.com/grafana/plugin-ci-workflows/issues/357)) ([cdbd54b](https://github.com/grafana/plugin-ci-workflows/commit/cdbd54b803f39ed605a3b2d33c2590a045aee2e0))
+
 ## [3.2.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v3.1.0...ci-cd-workflows/v3.2.0) (2025-10-14)
 
 

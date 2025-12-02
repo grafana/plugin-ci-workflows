@@ -34,6 +34,7 @@ on:
         description: Defines if setup-go action should have caching enabled (https://github.com/actions/setup-go#caching-dependency-files-and-build-outputs)olangci-lint version to use
         type: boolean
         required: false
+        default: true
       trufflehog-version:
         description: Trufflehog version to use
         type: string
@@ -161,6 +162,30 @@ on:
         type: string
         required: false
 
+      # Feature toggle: plugin-validator
+      run-plugin-validator:
+        description: Whether to run plugin-validator.
+        type: boolean
+        required: false
+        default: false
+      plugin-validator-config:
+        description: |
+          Content of the plugin validator configuration file (yaml) to use.
+          It has higher priority than `plugin-validator-config-path` input.
+          If not provided, the action will look for the file specified in `plugin-validator-config-path` input instead.
+          If neither is provided, a default configuration will be used.
+        type: string
+        required: false
+        default: ""
+      plugin-validator-config-path:
+        description: |
+          Path to the plugin validator configuration file (yaml) to use.
+          It will be used only if `plugin-validator-config` input is not provided.
+          If not provided, a default configuration will be used.
+        type: string
+        required: false
+        default: ""
+
       # Options for building PRs. Those values should come from the PR event and should not be set manually.
       plugin-version-suffix:
         description: |
@@ -211,6 +236,14 @@ on:
         type: string
         required: false
         default: ""
+      DO-NOT-USE-allow-pinned-commit-hashes:
+        description: |
+          FOR INTERNAL TESTING ONLY, DO NOT USE.
+          If `true`, skip hard fail in case the workflow is pinned to a commit hash.
+          Vault access may still fail in such cases, depending on the WIF policies in place.
+        type: boolean
+        required: false
+        default: false
 
     outputs:
       plugin:
@@ -261,15 +294,69 @@ env:
   DEFAULT_NODE_VERSION: "22"
   DEFAULT_GO_VERSION: "1.24"
   DEFAULT_GOLANGCI_LINT_VERSION: "1.64.8"
-  DEFAULT_TRUFFLEHOG_VERSION: "3.90.6"
+  DEFAULT_TRUFFLEHOG_VERSION: "3.91.0"
 
   GCS_ARTIFACTS_BUCKET: integration-artifacts
   VAULT_INSTANCE: ops
 
 jobs:
+  check-for-release-channel:
+    name: Check for release channel
+    runs-on: ubuntu-arm64-small
+    steps:
+      - name: Checkout
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+
+      - name: Check for rolling releases channel
+        run: |
+          diff=$(grep -E 'grafana/plugin-ci-workflows.+@main' -rn .github/workflows/ || true)
+          if [[ -n "$diff" ]]; then
+            echo "Found usage of rolling releases channel in the following files:"
+            echo "$diff"
+
+            title="Detected plugin-ci-workflows rolling release channel"
+            message="You are using workflows from plugin-ci-workflows rolling releases channel (\`@main\`). \
+          This is discouraged as it may lead to unexpected breaking changes. \
+          Please pin to a specific tagged release to ensure better stability. \
+          For more information, refer to the docs: https://enghub.grafana-ops.net/docs/default/component/grafana-plugins-platform/plugins-ci-github-actions/010-plugins-ci-github-actions/#versions-and-release-channels"
+
+            echo "::warning title=$title::$message"
+            exit 0
+          fi
+        shell: bash
+
+      - name: Check for plugin-ci-workflows pinned to commit hash
+        run: |
+          diff=$(grep -E 'grafana/plugin-ci-workflows.+@[0-9a-f]{6,40}' -rn .github/workflows/ || true)
+          if [[ -n "$diff" ]]; then
+            echo "Found plugin-ci-workflows pinned to a commit hash in the following files:"
+            echo "$diff"
+
+            title="Detected plugin-ci-workflows pinned to a commit hash"
+            message="You are pinning plugin-ci-workflows to a commit hash. \
+          To limit the amount of exposure (security reasons), this is not allowed and the workflow will fail. \
+          Please pin to a specific tagged release instead. \
+          For more information, refer to the docs: https://enghub.grafana-ops.net/docs/default/component/grafana-plugins-platform/plugins-ci-github-actions/010-plugins-ci-github-actions/#versions-and-release-channels"
+
+            echo "::error title=$title::$message"
+            if [ "${ALLOW_PINNED_COMMIT_HASHES}" != "true" ]; then
+              # Hard fail by default
+              exit 1
+            else
+              exit 0
+            fi
+          fi
+        env:
+          ALLOW_PINNED_COMMIT_HASHES: ${{ inputs.DO-NOT-USE-allow-pinned-commit-hashes }}
+        shell: bash
+
   test-and-build:
     name: Test and build plugin
     runs-on: ubuntu-x64-large
+
+    needs:
+      # Not strictly necessary, but makes sure we fail fast if the workflow is misconfigured
+      - check-for-release-channel
 
     outputs:
       plugin: ${{ steps.outputs.outputs.plugin }}
@@ -282,7 +369,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
         with:
           ref: ${{ inputs.branch }}
           persist-credentials: false
@@ -292,23 +379,24 @@ jobs:
         id: workflow-context
         with:
           script: |
-            const bots = [
+            const trustedBots = [
               'dependabot[bot]',
-              'renovate[bot]',
-              'github-actions[bot]',
-              'renovate-sh-app[bot]'
+              'renovate-sh-app[bot]',
+              // Used by other shared workflows such as the version bump workflow
+              'grafana-plugins-platform-bot[bot]'
             ].map((s) => s.toLowerCase());
 
             const isPR = context.eventName === 'pull_request';
-            const isBot = bots.includes(context.actor?.toLowerCase());
+            const isBot = context.actor?.toLowerCase().endsWith('[bot]');
+            const isTrustedBot = trustedBots.includes(context.actor?.toLowerCase());
             const isForkPR = isPR && context.payload.pull_request.head.repo.full_name !== context.payload.repository.full_name;
             const isTesting = process.env['INPUT_TESTING'] === 'true';
 
             // Events that are considered trusted because can be run by a trusted user (unless it's a bot)
             const isTrustedEvent = ['push', 'workflow_dispatch'].includes(context.eventName);
-            const isTrusted = (isTrustedEvent || (isPR && !isForkPR)) && !isBot && !isTesting;
+            const isTrusted = (isTrustedEvent || (isPR && !isForkPR)) && !isTesting && (!isBot || isTrustedBot);
 
-            const o = { isTrusted, isForkPR, isBot };
+            const o = { isTrusted, isForkPR };
             console.log(JSON.stringify(o));
             return o
         env:
@@ -363,6 +451,13 @@ jobs:
           package_json_path="$PLUGIN_DIRECTORY/package.json"
           version=$(jq -r .version "$package_json_path")
           pr_version="$version+${PLUGIN_VERSION_SUFFIX}"
+
+          # Plugin version should not exceed 190 characters including suffix
+          if [ ${#pr_version} -gt 190 ]; then
+            echo "❌ Error: Plugin version with suffix exceeds 190 character limit"
+            exit 1
+          fi
+
           echo "Replacing plugin version \"$version\" with \"$pr_version\" in $package_json_path"
           jq --arg pr_version "$pr_version" '.version = $pr_version' "$package_json_path" > /tmp/package.json
           mv /tmp/package.json "$package_json_path"
@@ -427,6 +522,58 @@ jobs:
           include-detectors: ${{ inputs.trufflehog-include-detectors }}
           exclude-detectors: ${{ inputs.trufflehog-exclude-detectors }}
 
+      - name: plugin-validator
+        if: ${{ inputs.run-plugin-validator == true }}
+        run: |
+          if [ -n "${PLUGIN_VALIDATOR_CONFIG}" ]; then
+            # User-provided configuration content
+            echo "Using provided plugin-validator configuration content."
+            PLUGIN_VALIDATOR_CONFIG_PATH=".plugin-validator.yaml"
+            echo "${PLUGIN_VALIDATOR_CONFIG}" > ${PLUGIN_VALIDATOR_CONFIG_PATH}
+          elif [ -n "${PLUGIN_VALIDATOR_CONFIG_PATH}" ]; then
+            # User-provided configuration file path
+            echo "Using plugin-validator configuration file at path: ${PLUGIN_VALIDATOR_CONFIG_PATH}"
+            if [ ! -f "${PLUGIN_VALIDATOR_CONFIG_PATH}" ]; then
+              echo "::error title=plugin-validator: missing config file::${PLUGIN_VALIDATOR_CONFIG_PATH} configuration file is missing."
+              exit 1
+            fi
+          else
+            # Default hardcoded configuration
+            PLUGIN_VALIDATOR_CONFIG_PATH=".plugin-validator.yaml"
+            echo "${PLUGIN_VALIDATOR_CONFIG_PATH} configuration file is missing. Providing a default one as fallback."
+            cat <<EOF > "${PLUGIN_VALIDATOR_CONFIG_PATH}"
+          global:
+            enabled: true
+          EOF
+          fi
+
+          echo "Using configuration:"
+          cat "${PLUGIN_VALIDATOR_CONFIG_PATH}"
+
+          # Create an empty dir for mounting it instead of node_modules, otherwise some validator analyzers
+          # will recurse into the plugin's directory (including node_modules).
+          mkdir -p /tmp/empty
+
+          # Do not run clamav because it takes too long
+          docker run --name=plugin-validator --pull=always \
+            -v "$PWD/${PLUGIN_VALIDATOR_CONFIG_PATH}:/workspace/.plugin-validator.yaml:ro" \
+            -v "$PWD/dist-artifacts:/workspace/dist-artifacts:ro" \
+            -v "$PWD/${PLUGIN_DIRECTORY}:/workspace" \
+            -v "/tmp/empty:/workspace/node_modules" \
+            -e SKIP_CLAMAV=1 \
+            grafana/plugin-validator-cli \
+            -ghaOutput \
+            -config=/workspace/.plugin-validator.yaml \
+            -sourceCodeUri=file:///workspace \
+            "/workspace/dist-artifacts/${UNIVERSAL_ZIP}"
+          exit "$(docker inspect plugin-validator --format='{{.State.ExitCode}}')"
+        env:
+          UNIVERSAL_ZIP: ${{ steps.universal-zip.outputs.zip }}
+          PLUGIN_VALIDATOR_CONFIG: ${{ inputs.plugin-validator-config }}
+          PLUGIN_VALIDATOR_CONFIG_PATH: ${{ inputs.plugin-validator-config-path }}
+          PLUGIN_DIRECTORY: ${{ inputs.plugin-directory }}
+        shell: bash
+
       - name: Define outputs
         id: outputs
         run: |
@@ -454,7 +601,7 @@ jobs:
         shell: bash
 
       - name: Upload GitHub artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         with:
           name: ${{ inputs.dist-artifacts-prefix }}dist-artifacts
           path: dist-artifacts/
@@ -463,6 +610,10 @@ jobs:
   docs:
     name: Test docs
     runs-on: ubuntu-latest
+    if: ${{ !github.event.act }}
+    needs:
+      # Not strictly necessary, but makes sure we fail fast if the workflow is misconfigured
+      - check-for-release-channel
     container:
       image: grafana/docs-base:latest # zizmor: ignore[unpinned-images]
       volumes:
@@ -476,7 +627,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
         with:
           ref: ${{ inputs.branch }}
           persist-credentials: false
@@ -536,7 +687,7 @@ jobs:
 
   upload-to-gcs:
     name: Upload to GCS
-    runs-on: ubuntu-x64-small
+    runs-on: ubuntu-arm64-small
 
     # Skip the GCS upload (no access to the bucket) for PRs when run in non-trusted context (forks)
     if: ${{ fromJson(needs.test-and-build.outputs.workflow-context).isTrusted }}
@@ -553,7 +704,7 @@ jobs:
 
     steps:
       - name: Download GitHub artifact
-        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
         with:
           name: ${{ inputs.dist-artifacts-prefix }}dist-artifacts
           path: /tmp/dist-artifacts
