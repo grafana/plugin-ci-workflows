@@ -1,5 +1,20 @@
 # Changelog
 
+## [4.3.1](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v4.3.0...ci-cd-workflows/v4.3.1) (2025-12-02)
+
+
+### ✅ Tests
+
+* add concurrency to pr-checks-test-ci workflow ([630b056](https://github.com/grafana/plugin-ci-workflows/commit/630b0567a932b5c1595d7fee1db70dd7cb1ba746))
+* pin actions in pr-checks-test-ci workflow ([630b056](https://github.com/grafana/plugin-ci-workflows/commit/630b0567a932b5c1595d7fee1db70dd7cb1ba746))
+* run smoke tests with act ([#389](https://github.com/grafana/plugin-ci-workflows/issues/389)) ([0f2f7c6](https://github.com/grafana/plugin-ci-workflows/commit/0f2f7c6fc427418a4367065129b398fae3e16831))
+* use local repository for release please manifest tag when running act ([630b056](https://github.com/grafana/plugin-ci-workflows/commit/630b0567a932b5c1595d7fee1db70dd7cb1ba746))
+
+
+### 🔧 Chores
+
+* **deps:** update actions/checkout action to v5.0.1 ([#413](https://github.com/grafana/plugin-ci-workflows/issues/413)) ([8c591cd](https://github.com/grafana/plugin-ci-workflows/commit/8c591cdfe41c0ead6a235dcdb51f5e74af15642d))
+
 ## [4.3.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v4.2.0...ci-cd-workflows/v4.3.0) (2025-11-26)
 
 
