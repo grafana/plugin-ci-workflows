@@ -332,6 +332,16 @@ on:
         default: false
         type: boolean
 
+      # Options for testing the workflow itself.
+      DO-NOT-USE-allow-pinned-commit-hashes:
+        description: |
+          FOR INTERNAL TESTING ONLY, DO NOT USE.
+          If `true`, skip hard fail in case the workflow is pinned to a commit hash.
+          Vault access may still fail in such cases, depending on the WIF policies in place.
+        type: boolean
+        required: false
+        default: false
+
 concurrency:
   group: cd-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
@@ -347,10 +357,6 @@ env:
   GCS_ARTIFACTS_BUCKET: integration-artifacts
 
 jobs:
-  common:
-    name: Common checks
-    uses: grafana/plugin-ci-workflows/.github/workflows/common-checks.yml@main
-
   setup:
     name: Check and setup environment
     runs-on: ubuntu-arm64-small
@@ -369,7 +375,7 @@ jobs:
     steps:
       - name: Checkout specified branch
         id: checkout-specified-branch
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
         with:
           ref: ${{ inputs.branch }}
           persist-credentials: false
@@ -571,6 +577,8 @@ jobs:
       allow-unsigned: ${{ inputs.allow-unsigned }}
       signature-type: ${{ inputs.signature-type }}
 
+      DO-NOT-USE-allow-pinned-commit-hashes: ${{ inputs.DO-NOT-USE-allow-pinned-commit-hashes }}
+
   build-attestation:
     name: Build attestation
     if: ${{ inputs.attestation }}
@@ -612,7 +620,7 @@ jobs:
     runs-on: ubuntu-arm64-small
     steps:
       - name: Checkout
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
         with:
           ref: ${{ inputs.branch }}
           persist-credentials: false
@@ -982,7 +990,7 @@ jobs:
         - /home/runner/work/_actions:/home/runner/work/_actions
     steps:
       - name: Checkout
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
         with:
           ref: ${{ inputs.branch }}
           persist-credentials: false
@@ -1029,7 +1037,7 @@ jobs:
       }}
     steps:
       - name: Checkout
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
         with:
           ref: ${{ inputs.branch }}
           persist-credentials: false
@@ -1073,7 +1081,7 @@ jobs:
           PLUGIN_VERSION: ${{ fromJSON(needs.ci.outputs.plugin).version }}
 
       - name: Create Github release
-        uses: softprops/action-gh-release@6da8fa9354ddfdc4aeace5fc48d7f679b5214090 # v2.4.1
+        uses: softprops/action-gh-release@5be0e66d93ac7ed76da52eca8bb058f665c3a5fe # v2.4.2
         with:
           draft: ${{ inputs.github-draft-release }}
           name: ${{ fromJSON(needs.ci.outputs.plugin).id }} v${{ fromJSON(needs.ci.outputs.plugin).version }}

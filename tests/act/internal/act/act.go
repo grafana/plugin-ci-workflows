@@ -1,0 +1,207 @@
+package act
+
+import (
+	"bufio"
+	"encoding/json"
+	"fmt"
+	"io"
+	"os"
+	"os/exec"
+	"strings"
+	"testing"
+
+	"github.com/grafana/plugin-ci-workflows/tests/act/internal/workflow"
+)
+
+var (
+	selfHostedRunnerLabels = [...]string{
+		"ubuntu-x64-small",
+		"ubuntu-x64",
+		"ubuntu-x64-large",
+		"ubuntu-x64-xlarge",
+		"ubuntu-x64-2xlarge",
+		"ubuntu-arm64-small",
+		"ubuntu-arm64",
+		"ubuntu-arm64-large",
+		"ubuntu-arm64-xlarge",
+		"ubuntu-arm64-2xlarge",
+	}
+)
+
+const nektosActRunnerImage = "ghcr.io/catthehacker/ubuntu:act-latest"
+
+// Runner is a test runner that can execute GitHub Actions workflows using act.
+type Runner struct {
+	// t is the testing.T instance for the current test.
+	t *testing.T
+
+	// gitHubToken is the token used to authenticate with GitHub.
+	gitHubToken string
+
+	// ConcurrentJobs defines the number of jobs to run concurrently via act.
+	// By default (0), act uses the number of CPU cores.
+	ConcurrentJobs int
+
+	// Verbose enables logging of JSON output from act back to stdout.
+	Verbose bool
+}
+
+// NewRunner creates a new Runner instance.
+func NewRunner(t *testing.T) (*Runner, error) {
+	// Get GitHub token from environment (GHA) or gh CLI (local)
+	ghToken, ok := os.LookupEnv("GITHUB_TOKEN")
+	if !ok || ghToken == "" {
+		cmd := exec.Command("gh", "auth", "token")
+		output, err := cmd.Output()
+		if err != nil {
+			return nil, fmt.Errorf("exec 'gh auth token': %w", err)
+		}
+		ghToken = strings.TrimSpace(string(output))
+	}
+	r := &Runner{
+		t:           t,
+		gitHubToken: ghToken,
+	}
+	if err := r.checkExecutables(); err != nil {
+		return nil, err
+	}
+	return r, nil
+}
+
+// args returns the CLI arguments to pass to act for the given workflow and event payload files.
+func (r *Runner) args(workflowFile string, payloadFile string) ([]string, error) {
+	pciwfRoot, err := os.Getwd()
+	if err != nil {
+		return nil, fmt.Errorf("get working directory: %w", err)
+	}
+	f, err := os.Open(".release-please-manifest.json")
+	if err != nil {
+		return nil, fmt.Errorf("open .release-please-manifest.json: %w", err)
+	}
+	defer f.Close()
+	var releasePleaseManifest map[string]string
+	if err := json.NewDecoder(f).Decode(&releasePleaseManifest); err != nil {
+		return nil, fmt.Errorf("decode release-please-config.json: %w", err)
+	}
+	releasePleaseTag := "ci-cd-workflows/" + "v" + releasePleaseManifest[".github/workflows"]
+	args := []string{
+		"-W", workflowFile,
+		"-e", payloadFile,
+		"--rm",
+		"--json",
+		"--artifact-server-path=/tmp/artifacts/",
+		"--local-repository=grafana/plugin-ci-workflows@main=" + pciwfRoot,
+		"--local-repository=grafana/plugin-ci-workflows@" + releasePleaseTag + "=" + pciwfRoot,
+		"--secret", "GITHUB_TOKEN=" + r.gitHubToken,
+	}
+	if r.ConcurrentJobs > 0 {
+		args = append(args, "--concurrent-jobs", fmt.Sprint(r.ConcurrentJobs))
+	}
+	// Map all self-hosted runners otherwise they don't run in act.
+	for _, label := range selfHostedRunnerLabels {
+		args = append(args, "-P", label+"="+nektosActRunnerImage)
+	}
+	return args, nil
+}
+
+// Run runs the given workflow with the given event payload using act.
+func (r *Runner) Run(workflow workflow.Marshalable, eventPayload EventPayload) error {
+	// Create temp workflow file inside .github/workflows or act won't
+	// map the repo to the workflow correctly.
+	workflowFile, err := CreateTempWorkflowFile(workflow)
+	if err != nil {
+		return fmt.Errorf("create temp workflow file: %w", err)
+	}
+	defer os.Remove(workflowFile)
+
+	// Create temp event payload file to simulate a GitHub event
+	payloadFile, err := CreateTempEventFile(eventPayload)
+	if err != nil {
+		return fmt.Errorf("create temp event file: %w", err)
+	}
+	defer os.Remove(payloadFile)
+
+	args, err := r.args(workflowFile, payloadFile)
+	if err != nil {
+		return fmt.Errorf("get act args: %w", err)
+	}
+
+	// TODO: escape args to avoid shell injection
+	actCmd := "act " + strings.Join(args, " ")
+
+	// Use a shell otherwise git will not be able to clone anything,
+	// not even publis repositories like actions/checkout for some reason.
+	cmd := exec.Command("sh", "-c", actCmd)
+	cmd.Env = os.Environ()
+
+	// Get stdout pipe to parse act output
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return fmt.Errorf("get act stdout pipe: %w", err)
+	}
+	defer stdout.Close()
+
+	// Just pipe stderr as nothing to parse there
+	cmd.Stderr = os.Stderr
+
+	// Run act in the background
+	if err := cmd.Start(); err != nil {
+		return fmt.Errorf("start act: %w", err)
+	}
+
+	// Process json logs in stdout stream
+	errs := make(chan error, 1)
+	go func() {
+		if err := r.processStream(stdout); err != nil {
+			errs <- fmt.Errorf("process act stdout: %w", err)
+		}
+		errs <- nil
+	}()
+
+	// Wait for act to finish
+	if err := cmd.Wait(); err != nil {
+		return fmt.Errorf("act exit: %w", err)
+	}
+
+	// Wait for stdout processing to complete
+	return <-errs
+}
+
+// processStream processes the given reader line by line as JSON log lines generated by act.
+func (r *Runner) processStream(reader io.Reader) error {
+	scanner := bufio.NewScanner(reader)
+	for scanner.Scan() {
+		var data logLine
+		line := scanner.Bytes()
+		err := json.Unmarshal(line, &data)
+		if r.Verbose {
+			fmt.Println(string(line))
+		}
+		if err != nil {
+			continue
+		}
+		// Print back to stdout in a human-readable format for now
+		fmt.Printf("%s: [%s] %s\n", r.t.Name(), data.Job, strings.TrimSpace(data.Message))
+		// TODO: parse logs to get outputs, artifacts, annotations, gha commands, etc.
+	}
+	if err := scanner.Err(); err != nil {
+		return fmt.Errorf("scanner error: %w", err)
+	}
+	return nil
+}
+
+// checkExecutable checks if the given executable is available in PATH.
+func checkExecutable(name string) bool {
+	_, err := exec.LookPath(name)
+	return err == nil
+}
+
+// checkExecutables checks if all executables required by the Runner are available in PATH.
+func (r *Runner) checkExecutables() error {
+	for _, name := range []string{"act", "gh"} {
+		if !checkExecutable(name) {
+			return fmt.Errorf("%q executable not found", name)
+		}
+	}
+	return nil
+}
