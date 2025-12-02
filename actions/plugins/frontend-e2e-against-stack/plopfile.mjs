@@ -158,7 +158,7 @@ function removeEmptyProperties(obj) {
 
 function isProdEnvironment(env) {
   const envType = env.split("-")[0];
-  return envType === "prod";
+  return envType === "prod" || env === "us-central2";
 }
 
 /**

@@ -61,6 +61,9 @@
     "actions/plugins/release-please": {
       "package-name": "plugins-release-please"
     },
+    "actions/plugins/frontend-e2e-against-stack": {
+      "package-name": "plugins-frontend-e2e-against-stack"
+    },
     ".github/workflows": {
       "package-name": "ci-cd-workflows"
     }
