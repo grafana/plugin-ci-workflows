@@ -26,7 +26,7 @@ runs:
     - name: Detect package manager
       id: package-manager
       # TODO: Fix this once we have a version of the package-manager-detect action
-      uses: grafana/plugin-actions/package-manager-detect@jackw/pm-detect
+      uses: grafana/plugin-actions/package-manager-detect@main # zizmor: ignore[unpinned-uses]
 
     - name: Install pnpm
       if: steps.package-manager.outputs.name == 'pnpm'

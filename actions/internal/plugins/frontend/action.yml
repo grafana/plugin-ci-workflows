@@ -44,7 +44,7 @@ runs:
     - name: Detect package manager
       id: package-manager
       # TODO: Fix this once we have a version of the package-manager-detect action
-      uses: grafana/plugin-actions/package-manager-detect@jackw/pm-detect # zizmor: ignore[unpinned-uses]
+      uses: grafana/plugin-actions/package-manager-detect@main # zizmor: ignore[unpinned-uses]
       with:
         working-directory: ${{ inputs.plugin-directory }}
 
