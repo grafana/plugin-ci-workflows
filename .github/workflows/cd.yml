@@ -71,15 +71,10 @@ on:
 
       # Build options.
       plugin-directory:
-        description: Directory of the plugin, if not in the root of the repository. If provided, package-manager must also be provided.
+        description: Directory of the plugin, if not in the root of the repository.
         type: string
         required: false
         default: .
-      package-manager:
-        description: The package manager to use.
-        type: string
-        required: false
-        default: ""
       npm-registry-auth:
         description: |
           Whether to authenticate to the npm registry in Google Artifact Registry.
@@ -413,15 +408,13 @@ jobs:
 
   ci:
     name: CI
-    uses: grafana/plugin-ci-workflows/.github/workflows/ci.yml@main
+    uses: grafana/plugin-ci-workflows/.github/workflows/ci.yml@jackw/pm-detect
     needs:
       - setup
     with:
       branch: ${{ inputs.branch }}
       plugin-directory: ${{ inputs.plugin-directory }}
       plugin-version-suffix: ${{ needs.setup.outputs.plugin-version-suffix }}
-
-      package-manager: ${{ inputs.package-manager }}
       npm-registry-auth: ${{ inputs.npm-registry-auth }}
 
       go-version: ${{ inputs.go-version }}
@@ -655,7 +648,7 @@ jobs:
           ENVIRONMENT: ${{ matrix.environment }}
 
       - name: Check and create stub
-        uses: grafana/plugin-ci-workflows/actions/internal/plugins/publish/check-and-create-stub@main
+        uses: grafana/plugin-ci-workflows/actions/internal/plugins/publish/check-and-create-stub@jackw/pm-detect
         if: ${{ matrix.environment != 'prod' && matrix.environment != 'prod-canary' }}
         with:
           plugin-id: ${{ fromJSON(needs.ci.outputs.plugin).id }}
@@ -664,13 +657,13 @@ jobs:
           gcloud-auth-token: ${{ steps.gcloud.outputs.id_token }}
 
       - name: Check artifact ZIP(s)
-        uses: grafana/plugin-ci-workflows/actions/internal/plugins/publish/check-artifacts@main
+        uses: grafana/plugin-ci-workflows/actions/internal/plugins/publish/check-artifacts@jackw/pm-detect
         with:
           zips: ${{ needs.upload-to-gcs-release.outputs.gcs-zip-urls }}
           plugin-id: ${{ fromJSON(needs.ci.outputs.plugin).id }}
 
       - name: Publish to catalog
-        uses: grafana/plugin-ci-workflows/actions/plugins/publish/publish@main
+        uses: grafana/plugin-ci-workflows/actions/plugins/publish/publish@jackw/pm-detect
         with:
           zips: ${{ needs.upload-to-gcs-release.outputs.gcs-zip-urls }}
           environment: ${{ matrix.environment == 'prod-canary' && 'prod' || matrix.environment }}
@@ -982,7 +975,7 @@ jobs:
           owner: ${{ github.repository_owner }}
 
       - name: Publish docs
-        uses: grafana/plugin-ci-workflows/actions/internal/plugins/docs/publish@main
+        uses: grafana/plugin-ci-workflows/actions/internal/plugins/docs/publish@jackw/pm-detect
         with:
           id: ${{ fromJSON(needs.ci.outputs.plugin).id }}
           version: ${{ fromJSON(needs.ci.outputs.plugin).version }}
@@ -1019,7 +1012,7 @@ jobs:
 
       - name: Parse changelog
         id: changelog
-        uses: grafana/plugin-ci-workflows/actions/internal/plugins/changelog@main
+        uses: grafana/plugin-ci-workflows/actions/internal/plugins/changelog@jackw/pm-detect
         with:
           changelog-path: ${{ inputs.plugin-directory }}/CHANGELOG.md
 
