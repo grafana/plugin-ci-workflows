@@ -35,7 +35,12 @@ runs:
       if: ${{ env.ACT }}
       shell: bash
       run: |
-        npm install -g yarn
+        # Double-check if yarn is installed, as it may be installed by another test
+        # running in parallel and sharing the same act-toolcache volume.
+        # If try to install yarn twice, we get an "ENOTEMPTY: directory not empty" error.
+        if ! command -v yarn >/dev/null 2>&1; then
+          npm install -g yarn
+        fi
         apt-get update
         apt-get install -y rsync
 
