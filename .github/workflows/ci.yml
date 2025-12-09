@@ -583,12 +583,13 @@ jobs:
           {
             ID=$(jq -r .id "${PLUGIN_DIRECTORY}/dist/plugin.json")
             VERSION=$(jq -r .info.version "${PLUGIN_DIRECTORY}/dist/plugin.json")
+            EXECUTABLE=$(jq -r .executable "${PLUGIN_DIRECTORY}/dist/plugin.json")
 
             echo plugin="$(jq -n -c \
                 --arg id "${ID}" \
                 --arg version "${VERSION}" \
                 --arg has-backend "${HAS_BACKEND}" \
-                --arg executable "$(jq -r .executable ${PLUGIN_DIRECTORY}/dist/plugin.json)" \
+                --arg executable "${EXECUTABLE}" \
                 '$ARGS.named'
               )"
 
