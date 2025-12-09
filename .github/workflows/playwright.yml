@@ -249,6 +249,6 @@ jobs:
     if: always()
     steps:
       - name: Check matrix job status
-        uses: grafana/plugin-ci-workflows/actions/internal/check-matrix-status@main
+        uses: grafana/plugin-ci-workflows/actions/internal/check-matrix-status@plugins-frontend-e2e-against-stack/v1.0.0
         with:
           results: ${{ needs.playwright-tests.result }}
