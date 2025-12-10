@@ -98,7 +98,7 @@ func (r *Runner) args(workflowFile string, payloadFile string) ([]string, error)
 
 // localRepositoryArgs returns act CLI arguments to map local references of plugin-ci-workflows
 // to the local repository based on release-please configuration and manifest.
-// It adds a CLI flag for each release-please component.
+// It adds a CLI flag for each release-please component and the main branch.
 func (r *Runner) localRepositoryArgs() ([]string, error) {
 	var args []string
 
