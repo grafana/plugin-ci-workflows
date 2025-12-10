@@ -57,14 +57,14 @@ func TestMain(m *testing.M) {
 						Name: "Setup Go",
 						Uses: "actions/setup-go@v6.1.0",
 						With: map[string]any{
-							"go-version": "1.24",
+							"go-version": "1.25",
 						},
 					},
 					{
 						Name: "Setup Node.js",
 						Uses: "actions/setup-node@v4.4.0",
 						With: map[string]any{
-							"node-version": "22",
+							"node-version": "24",
 						},
 					},
 					{
