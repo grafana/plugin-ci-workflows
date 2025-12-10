@@ -403,6 +403,7 @@ jobs:
           INPUT_TESTING: ${{ inputs.testing }}
 
       - name: Setup
+        id: setup
         uses: grafana/plugin-ci-workflows/actions/internal/plugins/setup@main
         with:
           # The priority to setup the node version is:
@@ -476,6 +477,7 @@ jobs:
         working-directory: ${{ inputs.plugin-directory }}
 
       - name: Test and build frontend
+        id: frontend
         uses: grafana/plugin-ci-workflows/actions/internal/plugins/frontend@main
         with:
           package-manager: ${{ inputs.package-manager }}
@@ -484,6 +486,7 @@ jobs:
           npm-registry-auth: ${{ inputs.npm-registry-auth }}
 
       - name: Test and build backend
+        id: backend
         if: ${{ steps.check-for-backend.outputs.has-backend == 'true' }}
         uses: grafana/plugin-ci-workflows/actions/internal/plugins/backend@main
         with:
@@ -496,8 +499,8 @@ jobs:
         uses: grafana/plugin-ci-workflows/actions/internal/plugins/package@main
         with:
           universal: "true"
-          dist-folder: dist
-          output-folder: dist-artifacts
+          dist-folder: ${{ inputs.plugin-directory }}/dist
+          output-folder: ${{ inputs.plugin-directory }}/dist-artifacts
           access-policy-token: ${{ fromJson(steps.workflow-context.outputs.result).isTrusted && fromJSON(steps.get-secrets.outputs.secrets).SIGN_PLUGIN_ACCESS_POLICY_TOKEN || '' }}
           allow-unsigned: ${{ ((inputs.environment == 'dev' || inputs.environment == '' || inputs.environment == 'none') && !(fromJson(steps.workflow-context.outputs.result).isTrusted)) || inputs.allow-unsigned }}
           signature-type: ${{ inputs.signature-type }}
@@ -507,8 +510,8 @@ jobs:
         uses: grafana/plugin-ci-workflows/actions/internal/plugins/package@main
         with:
           universal: "false"
-          dist-folder: dist
-          output-folder: dist-artifacts
+          dist-folder: ${{ inputs.plugin-directory }}/dist
+          output-folder: ${{ inputs.plugin-directory }}/dist-artifacts
           access-policy-token: ${{ fromJson(steps.workflow-context.outputs.result).isTrusted && fromJSON(steps.get-secrets.outputs.secrets).SIGN_PLUGIN_ACCESS_POLICY_TOKEN || '' }}
           allow-unsigned: ${{ ((inputs.environment == 'dev' || inputs.environment == '' || inputs.environment == 'none') && !(fromJson(steps.workflow-context.outputs.result).isTrusted)) || inputs.allow-unsigned }}
           signature-type: ${{ inputs.signature-type }}
@@ -518,7 +521,7 @@ jobs:
         uses: grafana/plugin-ci-workflows/actions/internal/plugins/trufflehog@main
         with:
           trufflehog-version: ${{ inputs.trufflehog-version || env.DEFAULT_TRUFFLEHOG_VERSION }}
-          folder: dist-artifacts
+          folder: ${{ inputs.plugin-directory }}/dist-artifacts
           include-detectors: ${{ inputs.trufflehog-include-detectors }}
           exclude-detectors: ${{ inputs.trufflehog-exclude-detectors }}
 
@@ -557,7 +560,7 @@ jobs:
           # Do not run clamav because it takes too long
           docker run --name=plugin-validator --pull=always \
             -v "$PWD/${PLUGIN_VALIDATOR_CONFIG_PATH}:/workspace/.plugin-validator.yaml:ro" \
-            -v "$PWD/dist-artifacts:/workspace/dist-artifacts:ro" \
+            -v "$PWD/${PLUGIN_DIRECTORY}/dist-artifacts:/workspace/dist-artifacts:ro" \
             -v "$PWD/${PLUGIN_DIRECTORY}:/workspace" \
             -v "/tmp/empty:/workspace/node_modules" \
             -e SKIP_CLAMAV=1 \
@@ -578,11 +581,15 @@ jobs:
         id: outputs
         run: |
           {
+            ID=$(jq -r .id "${PLUGIN_DIRECTORY}/dist/plugin.json")
+            VERSION=$(jq -r .info.version "${PLUGIN_DIRECTORY}/dist/plugin.json")
+            EXECUTABLE=$(jq -r .executable "${PLUGIN_DIRECTORY}/dist/plugin.json")
+
             echo plugin="$(jq -n -c \
-                --arg id "$(jq -r .id dist/plugin.json)" \
-                --arg version "$(jq -r .info.version dist/plugin.json)" \
+                --arg id "${ID}" \
+                --arg version "${VERSION}" \
                 --arg has-backend "${HAS_BACKEND}" \
-                --arg executable "$(jq -r .executable dist/plugin.json)" \
+                --arg executable "${EXECUTABLE}" \
                 '$ARGS.named'
               )"
 
@@ -595,6 +602,7 @@ jobs:
           }  >> "$GITHUB_OUTPUT"
           cat "$GITHUB_OUTPUT"
         env:
+          PLUGIN_DIRECTORY: ${{ inputs.plugin-directory }}
           HAS_BACKEND: ${{ steps.check-for-backend.outputs.has-backend }}
           UNIVERSAL_ZIP: ${{ steps.universal-zip.outputs.zip }}
           OS_ARCH_ZIPS: ${{ steps.os-arch-zips.outputs.zip }}
@@ -604,7 +612,7 @@ jobs:
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         with:
           name: ${{ inputs.dist-artifacts-prefix }}dist-artifacts
-          path: dist-artifacts/
+          path: ${{ inputs.plugin-directory }}/dist-artifacts/
           retention-days: 7
 
   docs:
@@ -707,7 +715,7 @@ jobs:
         uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
         with:
           name: ${{ inputs.dist-artifacts-prefix }}dist-artifacts
-          path: /tmp/dist-artifacts
+          path: /tmp/${{ inputs.dist-artifacts-prefix }}dist-artifacts
 
       - name: Login to Google Cloud
         uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
@@ -734,7 +742,7 @@ jobs:
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main'}}
         uses: google-github-actions/upload-cloud-storage@6397bd7208e18d13ba2619ee21b9873edc94427a # v3.0.0
         with:
-          path: /tmp/dist-artifacts
+          path: /tmp/${{ inputs.dist-artifacts-prefix }}dist-artifacts
           destination: ${{ env.gcs_artifacts_path_latest }}
           parent: false
           process_gcloudignore: false
@@ -743,7 +751,7 @@ jobs:
         id: gcs-upload-commit
         uses: google-github-actions/upload-cloud-storage@6397bd7208e18d13ba2619ee21b9873edc94427a # v3.0.0
         with:
-          path: /tmp/dist-artifacts
+          path: /tmp/${{ inputs.dist-artifacts-prefix }}dist-artifacts
           destination: ${{ env.gcs_artifacts_path_commit }}
           parent: false
           process_gcloudignore: false
