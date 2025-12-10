@@ -90,10 +90,7 @@ func (r *Runner) args(workflowFile string, payloadFile string) ([]string, error)
 		"-e", payloadFile,
 		"--rm",
 		"--json",
-
-		// Per-runner unique cache and toolcache paths to avoid conflicts when running tests in parallel
-		// "--action-cache-path=/tmp/act-cache/" + r.uuid.String(),
-		// "--env RUNNER_TOOL_CACHE=/opt/hostedtoolcache/" + r.uuid.String(),
+		// Unique artifact server port and path per act runner instance
 		fmt.Sprintf("--artifact-server-port=%d", artifactServerPort),
 		"--artifact-server-path=/tmp/act-artifacts/" + r.uuid.String() + "/",
 
@@ -102,7 +99,6 @@ func (r *Runner) args(workflowFile string, payloadFile string) ([]string, error)
 
 		// Mount mockdata (for mocks)
 		// and unique toolcache volume, so that multiple runners don't clash when running in parallel
-		// "--container-options", `"-v $PWD/tests/act/mockdata:/mockdata -v ` + toolCacheVolume + `:/opt/hostedtoolcache/` + r.uuid.String() + `"`,
 		"--container-options", `"-v $PWD/tests/act/mockdata:/mockdata"`,
 	}
 
