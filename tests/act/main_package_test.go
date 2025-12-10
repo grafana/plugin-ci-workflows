@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// TestPackage tests the packaging step of the CI workflow.
 func TestPackage(t *testing.T) {
 
 	for _, tc := range []struct {

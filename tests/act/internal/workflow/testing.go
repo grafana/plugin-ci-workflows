@@ -26,10 +26,12 @@ type TestingWorkflow struct {
 	children map[string]*TestingWorkflow
 }
 
+// FileName returns the file name for the testing workflow.
 func (t *TestingWorkflow) FileName() string {
 	return "act-" + t.baseWorkflowName + "-" + t.uuid.String() + ".yml"
 }
 
+// Children returns the child workflows of this testing workflow.
 func (t *TestingWorkflow) Children() []Workflow {
 	children := make([]Workflow, 0, len(t.children))
 	for _, child := range t.children {
@@ -38,18 +40,23 @@ func (t *TestingWorkflow) Children() []Workflow {
 	return children
 }
 
+// Jobs returns the jobs defined in the testing workflow.
 func (t *TestingWorkflow) Jobs() map[string]*Job {
 	return t.BaseWorkflow.Jobs
 }
 
+// GetChild retrieves a child TestingWorkflow by its name.
 func (t *TestingWorkflow) GetChild(name string) *TestingWorkflow {
 	return t.children[name]
 }
 
+// AddChild adds a child TestingWorkflow to this testing workflow.
 func (t *TestingWorkflow) AddChild(name string, child *TestingWorkflow) {
 	t.children[name] = child
 }
 
+// NewTestingWorkflow creates a new TestingWorkflow instance.
+// It accepts a base workflow name, a BaseWorkflow instance, and optional configuration options.
 func NewTestingWorkflow(baseName string, workflow BaseWorkflow, opts ...NewTestingWorkflowOption) *TestingWorkflow {
 	wf := TestingWorkflow{
 		uuid:             uuid.New(),
@@ -89,8 +96,12 @@ func NewTestingWorkflow(baseName string, workflow BaseWorkflow, opts ...NewTesti
 	return &wf
 }
 
+// NewTestingWorkflowOption defines a function type for configuring TestingWorkflow instances.
 type NewTestingWorkflowOption func(*TestingWorkflow)
 
+// withUUID is a NewTestingWorkflowOption that sets a specific UUID for the TestingWorkflow.
+// This is useful for linking child workflows to their parents in tests.
+// If both have the same UUID, they will have predictable file names.
 func withUUID(id uuid.UUID) NewTestingWorkflowOption {
 	return func(t *TestingWorkflow) {
 		t.uuid = id

@@ -38,8 +38,12 @@ const nektosActRunnerImage = "ghcr.io/catthehacker/ubuntu:act-latest"
 // Runner is a test runner that can execute GitHub Actions workflows using act.
 type Runner struct {
 	// t is the testing.T instance for the current test.
-	t                *testing.T
-	uuid             uuid.UUID
+	t *testing.T
+
+	// uuid is a unique identifier for this Runner instance.
+	uuid uuid.UUID
+
+	// ArtifactsStorage is the storage for artifacts uploaded during the workflow run.
 	ArtifactsStorage ArtifactsStorage
 
 	// gitHubToken is the token used to authenticate with GitHub.

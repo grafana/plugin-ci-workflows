@@ -122,16 +122,23 @@ func getRepoRootAbsPath() (string, error) {
 	return "", fmt.Errorf(".git directory not found in any parent directories")
 }
 
-type checkFilesExistOptions struct {
-	strict bool
-}
+// Utilities for tests
 
+// checkFilesExist checks that all expected files exist in the given afero.Fs.
+// and they are not empty.
+// It accepts an optional checkFilesExistOptions to customize the behavior.
+// If more than one option is provided, an error is returned.
+// If strict mode is enabled via the options, the function will also return
+// an error if any unexpected files are found.
+// Otherwise, unexpected files are allowed and won't cause the assertion to fail.
 func checkFilesExist(fs afero.Fs, exp []string, opt ...checkFilesExistOptions) error {
 	var o checkFilesExistOptions
-	if len(opt) > 0 {
+	if len(opt) == 1 {
 		o = opt[0]
-	} else {
+	} else if len(opt) == 0 {
 		o = checkFilesExistOptions{}
+	} else {
+		return fmt.Errorf("only one option allowed, got %d", len(opt))
 	}
 
 	expectedFiles := aferoFilesMap(exp)
@@ -161,6 +168,17 @@ func checkFilesExist(fs afero.Fs, exp []string, opt ...checkFilesExistOptions) e
 	return nil
 }
 
+// checkFilesExistOptions defines options for the checkFilesExist function.
+type checkFilesExistOptions struct {
+	// strict indicates whether to fail if unexpected files are found.
+	// If true, unexpected files will cause an error.
+	// If false, unexpected files are ignored and won't cause the assertion to fail.
+	strict bool
+}
+
+// checkFilesDontExist checks that none of the files in the notExp slice exist in the given afero.Fs.
+// If any of the files exist, an error is returned listing the unexpected files found.
+// If none of the files exist, nil is returned.
 func checkFilesDontExist(fs afero.Fs, notExp []string) error {
 	unexpectedFiles := aferoFilesMap(notExp)
 	var finalErr error
@@ -176,6 +194,7 @@ func checkFilesDontExist(fs afero.Fs, notExp []string) error {
 	return finalErr
 }
 
+// aferoFilesMap converts a slice of file paths into a map for easy lookup.
 func aferoFilesMap(files []string) map[string]struct{} {
 	r := make(map[string]struct{}, len(files))
 	for _, f := range files {
@@ -188,24 +207,29 @@ func aferoFilesMap(files []string) map[string]struct{} {
 	return r
 }
 
+// md5Hash returns the MD5 hash of the given byte slice as a hexadecimal string.
 func md5Hash(b []byte) string {
 	h := md5.Sum(b)
 	return hex.EncodeToString(h[:])
 }
 
+// sha1Hash returns the SHA1 hash of the given byte slice as a hexadecimal string.
 func sha1Hash(b []byte) string {
 	h := sha1.Sum(b)
 	return hex.EncodeToString(h[:])
 }
 
+// anyZipFileName returns the file name for the "any" ZIP file of the given plugin ID and version.
 func anyZipFileName(pluginID, version string) string {
 	return pluginID + "-" + version + ".zip"
 }
 
+// osArchZipFileName returns the file name for the OS/Arch specific ZIP file
 func osArchZipFileName(pluginID, version, osArch string) string {
 	return pluginID + "-" + version + "." + osArch + ".zip"
 }
 
+// osArchCombos defines the supported OS/Arch combinations for plugin packaging.
 var osArchCombos = [...]string{
 	"darwin_amd64",
 	"darwin_arm64",
