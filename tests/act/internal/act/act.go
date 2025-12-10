@@ -143,6 +143,7 @@ func (r *Runner) localRepositoryArgs() ([]string, error) {
 		tag := releasePleasePackage.PackageName + "/v" + tag
 		args = append(args, "--local-repository=grafana/plugin-ci-workflows@"+tag+"="+pciwfRoot)
 	}
+	args = append(args, "--local-repository=grafana/plugin-ci-workflows@main="+pciwfRoot)
 	return args, nil
 }
 
