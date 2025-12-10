@@ -95,20 +95,6 @@ func (j *Job) RemoveStep(id string) error {
 	return nil
 }
 
-func (j *Job) NoOpStep(id string) error {
-	stepIndex := j.GetStepIndex(id)
-	if stepIndex == -1 {
-		return fmt.Errorf("step with id %q not found", id)
-	}
-	j.Steps[stepIndex] = Step{
-		Name:  j.Steps[stepIndex].Name,
-		ID:    j.Steps[stepIndex].ID,
-		Run:   "echo 'noop-ed step for testing'",
-		Shell: "bash",
-	}
-	return nil
-}
-
 func (j *Job) GetStepIndex(id string) int {
 	for i, step := range j.Steps {
 		if step.ID == id {
