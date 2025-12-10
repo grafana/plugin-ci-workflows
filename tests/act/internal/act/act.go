@@ -97,8 +97,7 @@ func (r *Runner) args(workflowFile string, payloadFile string) ([]string, error)
 		// Required for cloning private repos
 		"--secret", "GITHUB_TOKEN=" + r.gitHubToken,
 
-		// Mount mockdata (for mocks)
-		// and unique toolcache volume, so that multiple runners don't clash when running in parallel
+		// Mount mockdata (for mocked testdata)
 		"--container-options", `"-v $PWD/tests/act/mockdata:/mockdata"`,
 	}
 
@@ -344,11 +343,16 @@ func (o Outputs) Set(jobID, stepID, outputName, value string) {
 	outputs[outputName] = value
 }
 
+// RunResult represents the result of a test workflow that was run via act.
 type RunResult struct {
+	// Success indicates whether the workflow run was successful.
 	Success bool
+
+	// Outputs contains the outputs for each job + step of the workflow run.
 	Outputs Outputs
 }
 
+// newRunResult creates a new empty RunResult instance.
 func newRunResult() RunResult {
 	return RunResult{Outputs: newOutputs()}
 }
