@@ -203,12 +203,12 @@ type WorkflowCallOutput struct {
 // ```go
 //
 //	step := Step{
-//	    Name: "Example Step",
-//	    Run:  Commands{
-//	        "echo Hello, World!",
-//	        "ls -la",
-//	    }.String(),
-//	    Shell: "bash",
+//		Name: "Example Step",
+//		Run:  Commands{
+//			"echo Hello, World!",
+//			"ls -la"
+//		}.String(),
+//		Shell: "bash",
 //	}
 //
 // ```

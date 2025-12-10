@@ -131,6 +131,14 @@ func getRepoRootAbsPath() (string, error) {
 // If strict mode is enabled via the options, the function will also return
 // an error if any unexpected files are found.
 // Otherwise, unexpected files are allowed and won't cause the assertion to fail.
+// The caller should assert on the returned error via testify, for example:
+//
+// ```go
+//
+//	err := checkFilesExist(fs, expectedFiles, checkFilesExistOptions{strict: true})
+//	require.NoError(t, err)
+//
+// ```
 func checkFilesExist(fs afero.Fs, exp []string, opt ...checkFilesExistOptions) error {
 	var o checkFilesExistOptions
 	if len(opt) == 1 {
@@ -179,6 +187,14 @@ type checkFilesExistOptions struct {
 // checkFilesDontExist checks that none of the files in the notExp slice exist in the given afero.Fs.
 // If any of the files exist, an error is returned listing the unexpected files found.
 // If none of the files exist, nil is returned.
+// The caller should assert on the returned error via testify, for example:
+//
+// ```go
+//
+//	err := checkFilesDontExist(fs, unexpectedFiles)
+//	require.NoError(t, err)
+//
+// ```
 func checkFilesDontExist(fs afero.Fs, notExp []string) error {
 	unexpectedFiles := aferoFilesMap(notExp)
 	var finalErr error
