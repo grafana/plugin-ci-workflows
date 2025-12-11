@@ -1,8 +1,10 @@
 package workflow
 
 import (
+	"encoding/json"
 	"fmt"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -154,6 +156,79 @@ func WithMockedDist(t *testing.T, pluginFolder string) SimpleCIOption {
 			CopyMockFilesStep("dist/"+pluginFolder, "${{ github.workspace }}/${{ inputs.plugin-directory }}/dist/"),
 		))
 		require.NoError(t, testAndBuild.RemoveStep("backend"))
+	}
+}
+
+type Context struct {
+	IsTrusted bool `json:"isTrusted"`
+	IsForkPR  bool `json:"isForkPR"`
+}
+
+func WithMockedWorkflowContext(t *testing.T, ctx Context) SimpleCIOption {
+	ctxJSON, err := json.Marshal(ctx)
+	require.NoError(t, err, "marshal mocked workflow context to JSON")
+
+	return func(w *SimpleCI) {
+		const stepID = "workflow-context"
+		err := w.CIWorkflow().BaseWorkflow.Jobs["test-and-build"].ReplaceStep(stepID, Step{
+			Name: "Determine workflow context (mocked)",
+			Run: Commands{
+				`echo "result=$RESULT" >> "$GITHUB_OUTPUT"`,
+			}.String(),
+			Env: map[string]string{
+				"RESULT": string(ctxJSON),
+			},
+			Shell: "bash",
+		})
+		require.NoError(t, err)
+	}
+}
+
+// WithMockedGCS modifies the SimpleCI workflow to mock all GCS upload steps
+// (which use the google-github-actions/upload-cloud-storage action)
+// to instead copy files to a local folder mounted into the act container at /gcs.
+// This allows testing GCS upload functionality without actually accessing GCS.
+// Since GCS is only used in trusted contexts, callers should most likely also use WithMockedWorkflowContext.
+func WithMockedGCS(t *testing.T) SimpleCIOption {
+	const uploadGCSAction = "google-github-actions/upload-cloud-storage"
+
+	return func(w *SimpleCI) {
+		jobs := w.CIWorkflow().BaseWorkflow.Jobs
+		for jk, job := range jobs {
+			for i, step := range job.Steps {
+				if !strings.HasPrefix(step.Uses, uploadGCSAction) {
+					continue
+				}
+
+				// Extract the existing inputs and use them in the mocked bash step.
+				// Make sure they are strings and not empty
+				srcPath, ok1 := step.With["path"].(string)
+				destPath, ok2 := step.With["destination"].(string)
+				if srcPath == "" || destPath == "" || !ok1 || !ok2 {
+					require.Fail(t, "could not mock gcs in job %q step %q (index: %d) because inputs are not valid", jk, step.ID, i)
+				}
+
+				// Replace the step
+				err := job.ReplaceStepAtIndex(i, Step{
+					Name: "Upload to GCS (mocked)",
+					Run: Commands{
+						"set -x",
+						"cp -r " + srcPath + " /gcs/" + destPath,
+						"echo 'Mock GCS upload complete. Mock GCS bucket content:'",
+						"ls -la /gcs/" + destPath,
+					}.String(),
+					Shell: "bash",
+				})
+				require.NoError(t, err)
+			}
+		}
+	}
+}
+
+func WithNoOpStep(t *testing.T, id string) SimpleCIOption {
+	return func(w *SimpleCI) {
+		err := w.CIWorkflow().BaseWorkflow.Jobs["test-and-build"].ReplaceStep(id, NoOpStep(id))
+		require.NoError(t, err)
 	}
 }
 

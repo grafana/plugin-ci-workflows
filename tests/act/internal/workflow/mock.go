@@ -19,3 +19,12 @@ func CopyMockFilesStep(sourceFolder string, destFolder string) Step {
 		Shell: "bash",
 	}
 }
+
+func NoOpStep(id string) Step {
+	return Step{
+		Name:  id + " (no-opp'ed for testing)",
+		ID:    id,
+		Run:   "echo 'noop-ed step for testing'",
+		Shell: "bash",
+	}
+}
