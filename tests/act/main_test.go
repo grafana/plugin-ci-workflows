@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -245,6 +246,15 @@ func anyZipFileName(pluginID, version string) string {
 // osArchZipFileName returns the file name for the OS/Arch specific ZIP file
 func osArchZipFileName(pluginID, version, osArch string) string {
 	return pluginID + "-" + version + "." + osArch + ".zip"
+}
+
+func getGitCommitSHA() (string, error) {
+	cmd := exec.Command("git", "rev-parse", "HEAD")
+	output, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(output)), nil
 }
 
 // osArchCombos defines the supported OS/Arch combinations for plugin packaging.

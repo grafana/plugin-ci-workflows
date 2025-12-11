@@ -141,6 +141,12 @@ func WithRunTruffleHogInput(enabled bool) SimpleCIOption {
 	}
 }
 
+func WithAllowUnsignedInput(enabled bool) SimpleCIOption {
+	return func(w *SimpleCI) {
+		w.BaseWorkflow.Jobs["ci"].With["allow-unsigned"] = enabled
+	}
+}
+
 // WithMockedDist modifies the SimpleCI workflow to mock the test-and-build job
 // to copy pre-built dist files (js + assets + backend executable, NOT the ZIP files)
 // from the tests/act/mockdata folder instead of building them.
@@ -187,39 +193,49 @@ func WithMockedWorkflowContext(t *testing.T, ctx Context) SimpleCIOption {
 // WithMockedGCS modifies the SimpleCI workflow to mock all GCS upload steps
 // (which use the google-github-actions/upload-cloud-storage action)
 // to instead copy files to a local folder mounted into the act container at /gcs.
+// It also takes all google-github-actions/auth steps and removes them,
+// as authentication is not needed for local file copy.
 // This allows testing GCS upload functionality without actually accessing GCS.
 // Since GCS is only used in trusted contexts, callers should most likely also use WithMockedWorkflowContext.
 func WithMockedGCS(t *testing.T) SimpleCIOption {
-	const uploadGCSAction = "google-github-actions/upload-cloud-storage"
+	const (
+		gcsLoginAction  = "google-github-actions/auth"
+		gcsUploadAction = "google-github-actions/upload-cloud-storage"
+	)
 
 	return func(w *SimpleCI) {
 		jobs := w.CIWorkflow().BaseWorkflow.Jobs
 		for jk, job := range jobs {
 			for i, step := range job.Steps {
-				if !strings.HasPrefix(step.Uses, uploadGCSAction) {
-					continue
-				}
+				switch {
+				case strings.HasPrefix(step.Uses, gcsLoginAction):
+					// Remove the login step entirely
+					err := job.RemoveStepAtIndex(i)
+					require.NoError(t, err)
 
-				// Extract the existing inputs and use them in the mocked bash step.
-				// Make sure they are strings and not empty
-				srcPath, ok1 := step.With["path"].(string)
-				destPath, ok2 := step.With["destination"].(string)
-				if srcPath == "" || destPath == "" || !ok1 || !ok2 {
-					require.Fail(t, "could not mock gcs in job %q step %q (index: %d) because inputs are not valid", jk, step.ID, i)
-				}
+				case strings.HasPrefix(step.Uses, gcsUploadAction):
+					// Extract the existing inputs and use them in the mocked bash step.
+					// Make sure they are strings and not empty
+					srcPath, ok1 := step.With["path"].(string)
+					destPath, ok2 := step.With["destination"].(string)
+					if srcPath == "" || destPath == "" || !ok1 || !ok2 {
+						require.Fail(t, "could not mock gcs in job %q step %q (index: %d) because inputs are not valid", jk, step.ID, i)
+					}
 
-				// Replace the step
-				err := job.ReplaceStepAtIndex(i, Step{
-					Name: "Upload to GCS (mocked)",
-					Run: Commands{
-						"set -x",
-						"cp -r " + srcPath + " /gcs/" + destPath,
-						"echo 'Mock GCS upload complete. Mock GCS bucket content:'",
-						"ls -la /gcs/" + destPath,
-					}.String(),
-					Shell: "bash",
-				})
-				require.NoError(t, err)
+					// Replace the step
+					err := job.ReplaceStepAtIndex(i, Step{
+						Name: "Upload to GCS (mocked)",
+						Run: Commands{
+							"set -x",
+							`mkdir -p /gcs/` + destPath,
+							"cp -r " + srcPath + " /gcs/" + destPath,
+							"echo 'Mock GCS upload complete. Mock GCS bucket content:'",
+							"ls -la /gcs/" + destPath,
+						}.String(),
+						Shell: "bash",
+					})
+					require.NoError(t, err)
+				}
 			}
 		}
 	}

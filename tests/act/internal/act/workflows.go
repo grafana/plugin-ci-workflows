@@ -16,6 +16,21 @@ import (
 // which makes it possible to detect when the workflow is running under act in the workflow itself.
 type EventPayload map[string]any
 
+func (e EventPayload) Name() string {
+	if name, ok := e["event_name"].(string); ok {
+		return name
+	}
+	return ""
+}
+
+func (e EventPayload) IsPush() bool {
+	return e.Name() == "push"
+}
+
+func (e EventPayload) IsPullRequest() bool {
+	return e.Name() == "pull_request"
+}
+
 // NewEventPayload creates a new EventPayload with the given data.
 // It always includes an "act": true key-value pair.
 func NewEventPayload(data map[string]any) EventPayload {
@@ -27,6 +42,21 @@ func NewEventPayload(data map[string]any) EventPayload {
 // NewEmptyEventPayload creates a new EventPayload with only the default "act": true key-value pair.
 func NewEmptyEventPayload() EventPayload {
 	return NewEventPayload(map[string]any{})
+}
+
+func NewPushEventPayload(branch string) EventPayload {
+	return NewEventPayload(map[string]any{
+		"event_name": "push",
+		"ref":        "refs/heads/" + branch,
+	})
+}
+
+func NewPullRequestEventPayload(prBranch string) EventPayload {
+	return NewEventPayload(map[string]any{
+		"event_name": "pull_request",
+		"head_ref":   prBranch,
+		// "ref":        "refs/pull/1/merge",
+	})
 }
 
 // CreateTempEventFile creates a temporary file in a temporary folder

@@ -2,46 +2,28 @@ package act
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
+
+	"github.com/spf13/afero"
 )
 
 type GCS struct {
 	basePath string
+
+	// Fs is a read-only afero filesystem chroot-ed into the mock GCS base path.
+	// It can be used to verify the presence of uploaded files.
+	Fs afero.Fs
 }
 
 func newGCS(r *Runner) (GCS, error) {
-	path := filepath.Join("/tmp", "gcs", r.uuid.String())
+	path := filepath.Join("/tmp", "act-gcs", r.uuid.String())
 	if err := os.MkdirAll(path, 0755); err != nil {
 		return GCS{}, fmt.Errorf("mkdir mock gcs %q: %w", path, err)
 	}
-	return GCS{basePath: path}, nil
-}
-
-func (g *GCS) Get(fn string) (io.ReadCloser, error) {
-	fn = sanitizeGCSFileName(fn)
-	f, err := os.Open(filepath.Join(g.basePath, fn))
-	if err != nil {
-		return nil, fmt.Errorf("open mock gcs path %q: %w", g.basePath, err)
-	}
-	return f, nil
-}
-
-func (g *GCS) List(fn string) ([]string, error) {
-	fn = sanitizeGCSFileName(fn)
-	dirPath := filepath.Join(g.basePath, fn)
-	entries, err := os.ReadDir(dirPath)
-	if err != nil {
-		return nil, fmt.Errorf("read dir mock gcs path %q: %w", dirPath, err)
-	}
-	names := make([]string, 0, len(entries))
-	for _, e := range entries {
-		names = append(names, e.Name())
-	}
-	return names, nil
-}
-
-func sanitizeGCSFileName(fn string) string {
-	return filepath.FromSlash(fn)
+	return GCS{
+		basePath: path,
+		// Read only afero fs chroot-ed into the mock gcs path
+		Fs: afero.NewReadOnlyFs(afero.NewBasePathFs(afero.NewOsFs(), path)),
+	}, nil
 }

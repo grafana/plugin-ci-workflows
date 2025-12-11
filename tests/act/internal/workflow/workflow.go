@@ -128,20 +128,30 @@ func (j *Job) ReplaceStep(id string, steps ...Step) error {
 	return j.ReplaceStepAtIndex(stepIndex, steps...)
 }
 
-// RemoveStep removes a step with the given id from the job's steps.
-// If the step is not found, an error is returned.
+// RemoveStep removes a step at the given index from the job's steps.
+// This is similar to RemoveStep, but uses the step index instead of the step id.
 // This can be used for removing steps in tests, for example to skip certain actions
 // that are not relevant to the test in order to speed up execution.
 // Be careful when removing steps that are required by other steps (e.g.: steps that set outputs
 // used by later steps), as this may cause the workflow to fail.
+func (j *Job) RemoveStepAtIndex(stepIndex int) error {
+	if stepIndex < 0 || stepIndex >= len(j.Steps) {
+		return fmt.Errorf("step index %d out of range", stepIndex)
+	}
+	// Remove the step
+	j.Steps = append(j.Steps[:stepIndex], j.Steps[stepIndex+1:]...)
+	return nil
+}
+
+// RemoveStep is similar to RemoveStepAtIndex, but looks up the step by its id.
+// See the documentation of RemoveStepAtIndex for more details.
 func (j *Job) RemoveStep(id string) error {
 	stepIndex := j.getStepIndex(id)
 	if stepIndex == -1 {
 		return fmt.Errorf("step with id %q not found", id)
 	}
 	// Remove the step
-	j.Steps = append(j.Steps[:stepIndex], j.Steps[stepIndex+1:]...)
-	return nil
+	return j.RemoveStepAtIndex(stepIndex)
 }
 
 // getStepIndex returns the index of the step with the given id.
