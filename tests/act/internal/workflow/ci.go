@@ -229,8 +229,16 @@ func WithMockedGCS(t *testing.T) SimpleCIOption {
 							"set -x",
 							`mkdir -p /gcs/` + destPath,
 							"cp -r " + srcPath + " /gcs/" + destPath,
+
+							// For debugging
 							"echo 'Mock GCS upload complete. Mock GCS bucket content:'",
 							"ls -la /gcs/" + destPath,
+
+							// Get list of all uploaded files, separate them by commas
+							`files=$(find ` + srcPath + ` -type f | sed 's|^\./||' | tr '\n' ',' | sed 's/,$//')`,
+
+							// Set output
+							`echo "uploaded=$files" >> "$GITHUB_OUTPUT"`,
 						}.String(),
 						Shell: "bash",
 					})
