@@ -248,6 +248,8 @@ func osArchZipFileName(pluginID, version, osArch string) string {
 	return pluginID + "-" + version + "." + osArch + ".zip"
 }
 
+// getGitCommitSHA returns the current git commit SHA of the repository in the current working directory.
+// git must be installed.
 func getGitCommitSHA() (string, error) {
 	cmd := exec.Command("git", "rev-parse", "HEAD")
 	output, err := cmd.Output()

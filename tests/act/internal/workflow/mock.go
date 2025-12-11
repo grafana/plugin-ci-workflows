@@ -20,6 +20,8 @@ func CopyMockFilesStep(sourceFolder string, destFolder string) Step {
 	}
 }
 
+// NoOpStep returns a Step that does nothing (no-op) for testing purposes.
+// The step simply echoes a message indicating it is a no-op step.
 func NoOpStep(id string) Step {
 	return Step{
 		Name:  id + " (no-opp'ed for testing)",

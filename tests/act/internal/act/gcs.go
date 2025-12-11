@@ -8,6 +8,9 @@ import (
 	"github.com/spf13/afero"
 )
 
+// GCS represents a mock Google Cloud Storage service for testing purposes.
+// It provides a read-only filesystem interface based on afero.Fs, which can be used
+// to verify the presence of uploaded files during tests.
 type GCS struct {
 	basePath string
 
@@ -16,6 +19,7 @@ type GCS struct {
 	Fs afero.Fs
 }
 
+// newGCS creates a new mock GCS instance for the given Runner.
 func newGCS(r *Runner) (GCS, error) {
 	path := filepath.Join("/tmp", "act-gcs", r.uuid.String())
 	if err := os.MkdirAll(path, 0755); err != nil {
@@ -27,3 +31,5 @@ func newGCS(r *Runner) (GCS, error) {
 		Fs: afero.NewReadOnlyFs(afero.NewBasePathFs(afero.NewOsFs(), path)),
 	}, nil
 }
+
+// TODO: GCS.Close() ?
