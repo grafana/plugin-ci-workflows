@@ -33,7 +33,7 @@ func TestGCS(t *testing.T) {
 		},
 	} {
 		t.Run(tc.folder, func(t *testing.T) {
-			// t.Parallel()
+			t.Parallel()
 
 			for _, event := range []act.EventPayload{
 				act.NewPushEventPayload("main"),
