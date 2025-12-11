@@ -52,19 +52,21 @@ func TestMain(m *testing.M) {
 			"warmup": {
 				Name:   "Warm up tool cache",
 				RunsOn: "ubuntu-arm64-small",
+				// TODO: we should read the go-version and node-version from ci.yml:
+				//	DEFAULT_GO_VERSION and DEFAULT_NODE_VERSION
 				Steps: []workflow.Step{
 					{
 						Name: "Setup Go",
 						Uses: "actions/setup-go@v6.1.0",
 						With: map[string]any{
-							"go-version": "1.25",
+							"go-version": "1.24",
 						},
 					},
 					{
 						Name: "Setup Node.js",
 						Uses: "actions/setup-node@v4.4.0",
 						With: map[string]any{
-							"node-version": "24",
+							"node-version": "22",
 						},
 					},
 					{
