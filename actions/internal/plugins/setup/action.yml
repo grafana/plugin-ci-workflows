@@ -46,12 +46,17 @@ runs:
       if: ${{ env.ACT }}
       shell: bash
       run: |
-        npm install -g yarn
+        # Double-check if yarn is installed, as it may be installed by another test
+        # running in parallel and sharing the same act-toolcache volume.
+        # If try to install yarn twice, we get an "ENOTEMPTY: directory not empty" error.
+        if ! command -v yarn >/dev/null 2>&1; then
+          npm install -g yarn
+        fi
         apt-get update
         apt-get install -y rsync
 
     - name: Go
-      uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
+      uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
       with:
         go-version: "${{ inputs.go-version }}"
         cache: ${{ inputs.go-setup-caching }}
