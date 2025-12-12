@@ -236,7 +236,7 @@ jobs:
 
       - name: Run Playwright tests
         id: run-tests
-        run: ${{ steps.package-manager.outputs.execCmd }} playwright test --config "${PLAYWRIGHT_CONFIG}"
+        run: ${{ steps.package-manager.outputs.execLocalCmd }} playwright test --config "${PLAYWRIGHT_CONFIG}"
         env:
           PLAYWRIGHT_CONFIG: ${{ inputs.playwright-config }}
           GRAFANA_VERSION: ${{ matrix.GRAFANA_IMAGE.VERSION }}
