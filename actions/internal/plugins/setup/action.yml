@@ -19,15 +19,34 @@ inputs:
     description: Node.js version file to use.
     required: false
     default: ""
+  plugin-directory:
+    description: Directory of the plugin, if not in the root of the repository.
+    required: false
+    default: .
 
 runs:
   using: composite
   steps:
+    - name: Detect package manager
+      id: package-manager
+      uses: grafana/plugin-actions/package-manager-detect@package-manager-detect/v1.0.1
+      with:
+        working-directory: ${{ inputs.plugin-directory }}
+
+    - name: Install pnpm
+      if: steps.package-manager.outputs.name == 'pnpm'
+      uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
+      with:
+        version: ${{ steps.package-manager.outputs.version }}
+
+
     - name: Node
       uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
       with:
         node-version: "${{ inputs.node-version }}"
         node-version-file: "${{ inputs.node-version-file }}"
+        cache: ${{ steps.package-manager.outputs.name }}
+        cache-dependency-path: ${{ steps.package-manager.outputs.lockFilePath }}
 
     # Install additional dependencies that are not built-in to the slim act image
     # but are included in the default GitHub Actions runner image and are needed for plugin-ci-workflows.
@@ -35,12 +54,17 @@ runs:
       if: ${{ env.ACT }}
       shell: bash
       run: |
-        npm install -g yarn
+        # Double-check if yarn is installed, as it may be installed by another test
+        # running in parallel and sharing the same act-toolcache volume.
+        # If try to install yarn twice, we get an "ENOTEMPTY: directory not empty" error.
+        if ! command -v yarn >/dev/null 2>&1; then
+          npm install -g yarn
+        fi
         apt-get update
         apt-get install -y rsync
 
     - name: Go
-      uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
+      uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
       with:
         go-version: "${{ inputs.go-version }}"
         cache: ${{ inputs.go-setup-caching }}

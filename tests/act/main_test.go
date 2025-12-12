@@ -1,39 +1,20 @@
 package main
 
 import (
+	"crypto/md5"
+	"crypto/sha1"
+	"encoding/hex"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/grafana/plugin-ci-workflows/tests/act/internal/act"
 	"github.com/grafana/plugin-ci-workflows/tests/act/internal/workflow"
-	"github.com/stretchr/testify/require"
+	"github.com/spf13/afero"
 )
-
-func TestSmoke(t *testing.T) {
-	for _, name := range []string{
-		"simple-frontend",
-		"simple-frontend-yarn",
-		"simple-frontend-pnpm",
-		"simple-backend",
-	} {
-		t.Run(name, func(t *testing.T) {
-			runner, err := act.NewRunner(t)
-			require.NoError(t, err)
-
-			err = runner.Run(
-				workflow.NewSimpleCI(
-					workflow.WithPluginDirectory(filepath.Join("tests", name)),
-					workflow.WithDistArtifactPrefix(name+"-"),
-					workflow.WithPlaywright(false),
-				),
-				act.NewEmptyEventPayload(),
-			)
-			require.NoError(t, err)
-		})
-	}
-}
 
 // TestMain sets up the test environment before running the tests.
 func TestMain(m *testing.M) {
@@ -51,6 +32,61 @@ func TestMain(m *testing.M) {
 	// Clean up old temp workflow files
 	if err := act.CleanupTempWorkflowFiles(); err != nil {
 		panic(err)
+	}
+
+	// Warm up act-toolcache volume, otherwise we get weird errors
+	// when running the "setup/*" actions in parallel tests since they
+	// all share the same act-toolcache volume.
+	runner, err := act.NewRunner(&testing.T{})
+	if err != nil {
+		panic(err)
+	}
+	cacheWarmupWf := workflow.BaseWorkflow{
+		Name: "Act tool cache warm up",
+		On: workflow.On{
+			Push: workflow.OnPush{
+				Branches: []string{"main"},
+			},
+		},
+		Jobs: map[string]*workflow.Job{
+			"warmup": {
+				Name:   "Warm up tool cache",
+				RunsOn: "ubuntu-arm64-small",
+				// TODO: we should read the go-version and node-version from ci.yml:
+				//	DEFAULT_GO_VERSION and DEFAULT_NODE_VERSION
+				Steps: []workflow.Step{
+					{
+						Name: "Setup Go",
+						Uses: "actions/setup-go@v6.1.0",
+						With: map[string]any{
+							"go-version": "1.24",
+						},
+					},
+					{
+						Name: "Setup Node.js",
+						Uses: "actions/setup-node@v4.4.0",
+						With: map[string]any{
+							"node-version": "22",
+						},
+					},
+					{
+						Name:  "Install yarn",
+						Run:   "npm install -g yarn",
+						Shell: "bash",
+					},
+				},
+			},
+		},
+	}
+	r, err := runner.Run(
+		workflow.NewTestingWorkflow("toolcache-warmup", cacheWarmupWf),
+		act.NewEmptyEventPayload(),
+	)
+	if err != nil {
+		panic(fmt.Errorf("warm up act toolcache: %w", err))
+	}
+	if !r.Success {
+		panic("warm up act toolcache: workflow failed")
 	}
 
 	fmt.Println("test environment ready")
@@ -86,4 +122,137 @@ func getRepoRootAbsPath() (string, error) {
 		return "", fmt.Errorf("stat .git directory: %w", err)
 	}
 	return "", fmt.Errorf(".git directory not found in any parent directories")
+}
+
+// Utilities for tests
+
+// checkFilesExist checks that all expected files exist in the given afero.Fs.
+// and they are not empty.
+// It accepts an optional checkFilesExistOptions to customize the behavior.
+// If more than one option is provided, an error is returned.
+// If strict mode is enabled via the options, the function will also return
+// an error if any unexpected files are found.
+// Otherwise, unexpected files are allowed and won't cause the assertion to fail.
+// The caller should assert on the returned error via testify, for example:
+//
+// ```go
+//
+//	err := checkFilesExist(fs, expectedFiles, checkFilesExistOptions{strict: true})
+//	require.NoError(t, err)
+//
+// ```
+func checkFilesExist(fs afero.Fs, exp []string, opt ...checkFilesExistOptions) error {
+	var o checkFilesExistOptions
+	if len(opt) == 1 {
+		o = opt[0]
+	} else if len(opt) == 0 {
+		o = checkFilesExistOptions{}
+	} else {
+		return fmt.Errorf("only one option allowed, got %d", len(opt))
+	}
+
+	expectedFiles := aferoFilesMap(exp)
+	if err := afero.Walk(fs, "/", func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			// Skip directory entries, only care about files
+			return nil
+		}
+		if _, ok := expectedFiles[path]; ok {
+			if info.Size() == 0 {
+				return fmt.Errorf("expected file %q is empty", path)
+			}
+			delete(expectedFiles, path)
+		} else if o.strict {
+			return fmt.Errorf("unexpected file %q found", path)
+		}
+		return nil
+	}); err != nil {
+		return err
+	}
+	if len(expectedFiles) > 0 {
+		return fmt.Errorf("expected files not found: %v", expectedFiles)
+	}
+	return nil
+}
+
+// checkFilesExistOptions defines options for the checkFilesExist function.
+type checkFilesExistOptions struct {
+	// strict indicates whether to fail if unexpected files are found.
+	// If true, unexpected files will cause an error.
+	// If false, unexpected files are ignored and won't cause the assertion to fail.
+	strict bool
+}
+
+// checkFilesDontExist checks that none of the files in the notExp slice exist in the given afero.Fs.
+// If any of the files exist, an error is returned listing the unexpected files found.
+// If none of the files exist, nil is returned.
+// The caller should assert on the returned error via testify, for example:
+//
+// ```go
+//
+//	err := checkFilesDontExist(fs, unexpectedFiles)
+//	require.NoError(t, err)
+//
+// ```
+func checkFilesDontExist(fs afero.Fs, notExp []string) error {
+	unexpectedFiles := aferoFilesMap(notExp)
+	var finalErr error
+	for fn := range unexpectedFiles {
+		exists, err := afero.Exists(fs, fn)
+		if err != nil {
+			return fmt.Errorf("check existence of file %q: %w", fn, err)
+		}
+		if exists {
+			finalErr = errors.Join(finalErr, fmt.Errorf("unexpected file %q found", fn))
+		}
+	}
+	return finalErr
+}
+
+// aferoFilesMap converts a slice of file paths into a map for easy lookup.
+func aferoFilesMap(files []string) map[string]struct{} {
+	r := make(map[string]struct{}, len(files))
+	for _, f := range files {
+		// Add leading slash for consistency with afero.Walk paths
+		if !strings.HasPrefix(f, "/") {
+			f = "/" + f
+		}
+		r[f] = struct{}{}
+	}
+	return r
+}
+
+// md5Hash returns the MD5 hash of the given byte slice as a hexadecimal string.
+func md5Hash(b []byte) string {
+	h := md5.Sum(b)
+	return hex.EncodeToString(h[:])
+}
+
+// sha1Hash returns the SHA1 hash of the given byte slice as a hexadecimal string.
+func sha1Hash(b []byte) string {
+	h := sha1.Sum(b)
+	return hex.EncodeToString(h[:])
+}
+
+// anyZipFileName returns the file name for the "any" ZIP file of the given plugin ID and version.
+func anyZipFileName(pluginID, version string) string {
+	return pluginID + "-" + version + ".zip"
+}
+
+// osArchZipFileName returns the file name for the OS/Arch specific ZIP file
+func osArchZipFileName(pluginID, version, osArch string) string {
+	return pluginID + "-" + version + "." + osArch + ".zip"
+}
+
+// osArchCombos defines the supported OS/Arch combinations for plugin packaging.
+var osArchCombos = [...]string{
+	"darwin_amd64",
+	"darwin_arm64",
+	"linux_amd64",
+	"linux_arm",
+	"linux_arm64",
+	"windows_amd64",
 }
