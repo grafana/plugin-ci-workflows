@@ -3,13 +3,9 @@ description: Tests, lints, typechecks and builds the frontend.
 
 inputs:
   plugin-directory:
-    description: Directory of the plugin, if not in the root of the repository. If provided, package-manager must also be provided.
+    description: Directory of the plugin, if not in the root of the repository.
     required: false
     default: .
-  package-manager:
-    description: The package manager to use.
-    required: false
-    default: ""
   secrets:
     required: false
     type: string
@@ -45,37 +41,33 @@ runs:
       working-directory: ${{ inputs.plugin-directory }}
       run: GOOGLE_APPLICATION_CREDENTIALS=${{ env.GOOGLE_APPLICATION_CREDENTIALS }} npx google-artifactregistry-auth --credential-config ./.npmrc
 
+    - name: Detect package manager
+      id: package-manager
+      uses: grafana/plugin-actions/package-manager-detect@package-manager-detect/v1.0.1
+      with:
+        working-directory: ${{ inputs.plugin-directory }}
+
     - name: Install dependencies
       shell: bash
       working-directory: ${{ inputs.plugin-directory }}
-      run: ${{ github.action_path }}/pm.sh install
-      env:
-        PACKAGE_MANAGER: ${{ inputs.package-manager }}
+      run: ${{ steps.package-manager.outputs.frozenInstallCmd }}
 
     - name: Lint
       shell: bash
       working-directory: ${{ inputs.plugin-directory }}
-      run: ${{ github.action_path }}/pm.sh lint
-      env:
-        PACKAGE_MANAGER: ${{ inputs.package-manager }}
+      run: ${{ steps.package-manager.outputs.runCmd }} lint
 
     - name: Typecheck
       shell: bash
       working-directory: ${{ inputs.plugin-directory }}
-      run: ${{ github.action_path }}/pm.sh typecheck
-      env:
-        PACKAGE_MANAGER: ${{ inputs.package-manager }}
+      run: ${{ steps.package-manager.outputs.runCmd }} typecheck
 
     - name: Test
       shell: bash
       working-directory: ${{ inputs.plugin-directory }}
-      run: ${{ github.action_path }}/pm.sh test:ci
-      env:
-        PACKAGE_MANAGER: ${{ inputs.package-manager }}
+      run: ${{ steps.package-manager.outputs.runCmd }} test:ci
 
     - name: Build
       shell: bash
       working-directory: ${{ inputs.plugin-directory }}
-      run: ${{ github.action_path }}/pm.sh build
-      env:
-        PACKAGE_MANAGER: ${{ inputs.package-manager }}
+      run: ${{ steps.package-manager.outputs.runCmd }} build
