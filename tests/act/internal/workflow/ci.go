@@ -1,7 +1,6 @@
 package workflow
 
 import (
-	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -177,21 +176,12 @@ type Context struct {
 // to return the given mocked Context.
 // This can be used to test behavior that depends on whether the workflow is running in a trusted context or not.
 func WithMockedWorkflowContext(t *testing.T, ctx Context) SimpleCIOption {
-	ctxJSON, err := json.Marshal(ctx)
-	require.NoError(t, err, "marshal mocked workflow context to JSON")
-
 	return func(w *SimpleCI) {
+		step, err := MockWorkflowContextStep(ctx)
+		require.NoError(t, err)
+
 		const stepID = "workflow-context"
-		err := w.CIWorkflow().BaseWorkflow.Jobs["test-and-build"].ReplaceStep(stepID, Step{
-			Name: "Determine workflow context (mocked)",
-			Run: Commands{
-				`echo "result=$RESULT" >> "$GITHUB_OUTPUT"`,
-			}.String(),
-			Env: map[string]string{
-				"RESULT": string(ctxJSON),
-			},
-			Shell: "bash",
-		})
+		err = w.CIWorkflow().BaseWorkflow.Jobs["test-and-build"].ReplaceStep(stepID, step)
 		require.NoError(t, err)
 	}
 }
@@ -229,25 +219,7 @@ func WithMockedGCS(t *testing.T) SimpleCIOption {
 					}
 
 					// Replace the step
-					err := job.ReplaceStepAtIndex(i, Step{
-						Name: "Upload to GCS (mocked)",
-						Run: Commands{
-							"set -x",
-							`mkdir -p /gcs/` + destPath,
-							"cp -r " + srcPath + " /gcs/" + destPath,
-
-							// For debugging
-							"echo 'Mock GCS upload complete. Mock GCS bucket content:'",
-							"ls -la /gcs/" + destPath,
-
-							// Get list of all uploaded files, separate them by commas
-							`files=$(find ` + srcPath + ` -type f | sed 's|^\./||' | tr '\n' ',' | sed 's/,$//')`,
-
-							// Set output
-							`echo "uploaded=$files" >> "$GITHUB_OUTPUT"`,
-						}.String(),
-						Shell: "bash",
-					})
+					err := job.ReplaceStepAtIndex(i, MockGCSUploadStep(srcPath, destPath))
 					require.NoError(t, err)
 				}
 			}
