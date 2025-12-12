@@ -42,15 +42,10 @@ on:
 
       # Build options.
       plugin-directory:
-        description: Directory of the plugin, if not in the root of the repository. If provided, package-manager must also be provided.
+        description: Directory of the plugin, if not in the root of the repository.
         type: string
         required: false
         default: .
-      package-manager:
-        description: The package manager to use.
-        type: string
-        required: false
-        default: ""
       frontend-secrets:
         description: The secrets to use within frontend steps
         type: string
@@ -415,6 +410,7 @@ jobs:
           go-version: ${{ inputs.go-version || env.DEFAULT_GO_VERSION }}
           golangci-lint-version: ${{ inputs.golangci-lint-version || env.DEFAULT_GOLANGCI_LINT_VERSION }}
           go-setup-caching: ${{ inputs.go-setup-caching }}
+          plugin-directory: ${{ inputs.plugin-directory }}
 
       - name: Get secrets from Vault
         id: get-secrets
@@ -480,7 +476,6 @@ jobs:
         id: frontend
         uses: grafana/plugin-ci-workflows/actions/internal/plugins/frontend@main
         with:
-          package-manager: ${{ inputs.package-manager }}
           plugin-directory: ${{ inputs.plugin-directory }}
           secrets: ${{ (fromJson(steps.workflow-context.outputs.result).isTrusted && inputs.frontend-secrets != '') && inputs.frontend-secrets || '' }}
           npm-registry-auth: ${{ inputs.npm-registry-auth }}
