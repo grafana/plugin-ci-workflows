@@ -19,7 +19,10 @@ type Workflow interface {
 	// Marshal converts the Workflow instance to its YAML representation.
 	Marshal() ([]byte, error)
 
+	// Children returns the child workflows of this workflow.
 	Children() []Workflow
+
+	// Jobs returns the jobs defined in the workflow.
 	Jobs() map[string]*Job
 }
 
