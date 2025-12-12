@@ -46,6 +46,9 @@ type Runner struct {
 	// ArtifactsStorage is the storage for artifacts uploaded during the workflow run.
 	ArtifactsStorage ArtifactsStorage
 
+	// GCS is the GCS mock storage used during the workflow run.
+	GCS GCS
+
 	// gitHubToken is the token used to authenticate with GitHub.
 	gitHubToken string
 
@@ -78,6 +81,11 @@ func NewRunner(t *testing.T) (*Runner, error) {
 		return nil, err
 	}
 	r.ArtifactsStorage = newArtifactsStorage(r)
+	var err error
+	r.GCS, err = newGCS(r)
+	if err != nil {
+		return nil, fmt.Errorf("new gcs: %w", err)
+	}
 	return r, nil
 }
 
@@ -101,8 +109,8 @@ func (r *Runner) args(workflowFile string, payloadFile string) ([]string, error)
 		// Required for cloning private repos
 		"--secret", "GITHUB_TOKEN=" + r.gitHubToken,
 
-		// Mount mockdata (for mocked testdata)
-		"--container-options", `"-v $PWD/tests/act/mockdata:/mockdata"`,
+		// Mount mockdata (for mocked testdata, dist artifacts) and GCS (for mocked GCS)
+		"--container-options", `"-v $PWD/tests/act/mockdata:/mockdata -v ` + r.GCS.basePath + `:/gcs"`,
 	}
 
 	// Map local all possible references of plugin-ci-workflows to the local repository

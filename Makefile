@@ -6,6 +6,7 @@ clean-node-modules:
 clean-act-tmp:
 	rm -rf /tmp/act-artifacts
 	rm -rf /tmp/act-cache
+	rm -rf /tmp/act-gcs
 
 clean-act-toolcache-volumes:
 	docker volume ls -q | grep "^act-toolcache-" | xargs docker volume rm

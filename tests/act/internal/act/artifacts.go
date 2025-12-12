@@ -100,3 +100,5 @@ func (a ArtifactsStorage) GetFolder(runID string, artifactName string) (*Artifac
 	}
 	return &ArtifactFolder{Fs: zipfs.New(zf), rawFile: rawF}, nil
 }
+
+// TODO: ArtifactsStorage.Close() ?
