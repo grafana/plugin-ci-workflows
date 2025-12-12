@@ -111,7 +111,7 @@ jobs:
 
       - name: Detect package manager
         id: package-manager
-        uses: grafana/plugin-actions/package-manager-detect@package-manager-detect/v1.0.0
+        uses: grafana/plugin-actions/package-manager-detect@package-manager-detect/v1.0.1
         with:
           working-directory: ${{ inputs.plugin-directory }}
 
