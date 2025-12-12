@@ -19,6 +19,10 @@ inputs:
     description: Node.js version file to use.
     required: false
     default: ""
+  plugin-directory:
+    description: Directory of the plugin, if not in the root of the repository.
+    required: false
+    default: .
 
 runs:
   using: composite
@@ -26,6 +30,8 @@ runs:
     - name: Detect package manager
       id: package-manager
       uses: grafana/plugin-actions/package-manager-detect@package-manager-detect/v1.0.0
+      with:
+        working-directory: ${{ inputs.plugin-directory }}
 
     - name: Install pnpm
       if: steps.package-manager.outputs.name == 'pnpm'
