@@ -119,7 +119,6 @@ func TestGCS(t *testing.T) {
 					} {
 						rawOutput, ok := r.Outputs.Get("upload-to-gcs", "outputs", k)
 						require.True(t, ok, "output %q should be present", k)
-						t.Logf("GCS output %q: %s", k, rawOutput)
 						if v != "" {
 							require.Equal(t, v, rawOutput)
 						}
