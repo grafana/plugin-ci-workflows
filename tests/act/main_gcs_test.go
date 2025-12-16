@@ -144,12 +144,16 @@ func TestGCS(t *testing.T) {
 
 					// Get actual output
 					for _, exp := range []struct {
-						outputName string
-						expected   []string
+						outputName          string
+						expected            []string
+						shouldBePresentInPR bool
 					}{
-						{"zip_urls_commit", expCommitZIPURLs},
-						{"zip_urls_latest", expLatestZIPURLs},
+						{outputName: "zip_urls_commit", expected: expCommitZIPURLs, shouldBePresentInPR: true},
+						{outputName: "zip_urls_latest", expected: expLatestZIPURLs, shouldBePresentInPR: false},
 					} {
+						if !exp.shouldBePresentInPR && !event.IsPush() {
+							continue
+						}
 						jsonOutput, ok := r.Outputs.Get("upload-to-gcs", "outputs", exp.outputName)
 						require.Truef(t, ok, "output %q should be present", exp.outputName)
 						output := make([]string, 0, len(expLatestZIPURLs))
