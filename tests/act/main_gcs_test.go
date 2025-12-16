@@ -42,10 +42,6 @@ func TestGCS(t *testing.T) {
 				act.NewPullRequestEventPayload("feature-branch"),
 			} {
 				t.Run(event.Name(), func(t *testing.T) {
-					if !event.IsPush() { //  || tc.hasBackend {
-						t.Skip()
-					}
-
 					runner, err := act.NewRunner(t)
 					require.NoError(t, err)
 
