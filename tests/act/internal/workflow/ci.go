@@ -165,6 +165,50 @@ func WithMockedDist(t *testing.T, pluginFolder string) SimpleCIOption {
 	}
 }
 
+func WithMockedPackagedDistArtifacts(t *testing.T, pluginFolder string, signed bool) SimpleCIOption {
+	return func(w *SimpleCI) {
+		// Mock dist files as well (unpackaged plugin files), so if any steps require the dist files, they are present
+		WithMockedDist(t, pluginFolder)(w)
+
+		testAndBuild := w.CIWorkflow().BaseWorkflow.Jobs["test-and-build"]
+		// Remove unnecessary steps (those that build the plugin)
+		for _, id := range []string{
+			"setup",
+			"replace-plugin-version",
+		} {
+			require.NoError(t, testAndBuild.RemoveStep(id))
+		}
+
+		var mockFolder string
+		if signed {
+			mockFolder = "dist-artifacts-signed"
+		} else {
+			mockFolder = "dist-artifacts-unsigned"
+		}
+		dest := "${{ github.workspace }}/${{ inputs.plugin-directory }}/dist-artifacts/"
+
+		for i, id := range []string{
+			"universal-zip",
+			"os-arch-zips",
+		} {
+			mockStep := CopyMockFilesStep(mockFolder+"/"+pluginFolder, dest)
+			// Set step output
+			if i == 0 {
+				// Universal
+				mockStep.Run += "\n" + Commands{
+					`echo zip=$(ls -1 ` + dest + `/*.zip | xargs -n 1 basename) >> "${GITHUB_OUTPUT}"`,
+				}.String()
+			} else {
+				// os/arch
+				mockStep.Run += "\n" + Commands{
+					`echo zip=$(ls -1 ` + dest + `/*.zip | xargs -n 1 basename | jq -RncM '[inputs]') >> "${GITHUB_OUTPUT}"`,
+				}.String()
+			}
+			require.NoError(t, testAndBuild.ReplaceStep(id, mockStep))
+		}
+	}
+}
+
 // Context represents the mocked workflow context.
 // It is the JSON payload returned by the "workflow-context" step.
 type Context struct {

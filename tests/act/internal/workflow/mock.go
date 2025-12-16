@@ -13,7 +13,7 @@ import (
 // You can use GitHub Actions expressions in destFolder, e.g., "${{ github.workspace }}/plugins/my-plugin/dist".
 func CopyMockFilesStep(sourceFolder string, destFolder string) Step {
 	return Step{
-		Name: "Copy mock dist files",
+		Name: "Copy mock files",
 		Run: Commands{
 			"set -x",
 			"mkdir -p " + destFolder,
