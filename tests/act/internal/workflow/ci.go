@@ -228,11 +228,11 @@ func WithMockedGCS(t *testing.T) SimpleCIOption {
 }
 
 // WithNoOpStep modifies the SimpleCI workflow to replace the step with the given ID
-// in the test-and-build job with a no-op step.
+// in the job with the given name with a no-op step.
 // This can be used to skip steps that are not relevant for the test or that would fail otherwise.
-func WithNoOpStep(t *testing.T, id string) SimpleCIOption {
+func WithNoOpStep(t *testing.T, jobID, stepID string) SimpleCIOption {
 	return func(w *SimpleCI) {
-		err := w.CIWorkflow().BaseWorkflow.Jobs["test-and-build"].ReplaceStep(id, NoOpStep(id))
+		err := w.CIWorkflow().BaseWorkflow.Jobs[jobID].ReplaceStep(stepID, NoOpStep(stepID))
 		require.NoError(t, err)
 	}
 }

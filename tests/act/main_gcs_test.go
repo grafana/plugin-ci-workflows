@@ -65,8 +65,8 @@ func TestGCS(t *testing.T) {
 
 						// No-op steps that are normally executed in a trusted context
 						// but are not relevant for this test and would error out otherwise.
-						workflow.WithNoOpStep(t, "get-secrets"),
-						workflow.WithNoOpStep(t, "generate-github-token"),
+						workflow.WithNoOpStep(t, "test-and-build", "get-secrets"),
+						workflow.WithNoOpStep(t, "test-and-build", "generate-github-token"),
 						workflow.WithAllowUnsignedInput(true),
 					)
 					require.NoError(t, err)
