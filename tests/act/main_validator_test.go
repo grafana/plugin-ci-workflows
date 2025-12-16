@@ -11,7 +11,7 @@ import (
 )
 
 func TestValidator(t *testing.T) {
-	runner, err := act.NewRunner(t, act.WithLinuxAMD64ContainerArchitecture(), act.WithVerbose(false))
+	runner, err := act.NewRunner(t, act.WithLinuxAMD64ContainerArchitecture())
 	require.NoError(t, err)
 
 	wf, err := workflow.NewSimpleCI(
