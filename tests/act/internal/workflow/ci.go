@@ -165,10 +165,10 @@ func WithMockedDist(t *testing.T, pluginFolder string) SimpleCIOption {
 	}
 }
 
-func WithMockedPackagedDistArtifacts(t *testing.T, pluginFolder string, signed bool) SimpleCIOption {
+func WithMockedPackagedDistArtifacts(t *testing.T, distFolder string, packagedFolder string) SimpleCIOption {
 	return func(w *SimpleCI) {
 		// Mock dist files as well (unpackaged plugin files), so if any steps require the dist files, they are present
-		WithMockedDist(t, pluginFolder)(w)
+		WithMockedDist(t, distFolder)(w)
 
 		testAndBuild := w.CIWorkflow().BaseWorkflow.Jobs["test-and-build"]
 		// Remove unnecessary steps (those that build the plugin)
@@ -179,19 +179,12 @@ func WithMockedPackagedDistArtifacts(t *testing.T, pluginFolder string, signed b
 			require.NoError(t, testAndBuild.RemoveStep(id))
 		}
 
-		var mockFolder string
-		if signed {
-			mockFolder = "dist-artifacts-signed"
-		} else {
-			mockFolder = "dist-artifacts-unsigned"
-		}
 		dest := "${{ github.workspace }}/${{ inputs.plugin-directory }}/dist-artifacts/"
-
 		for i, id := range []string{
 			"universal-zip",
 			"os-arch-zips",
 		} {
-			mockStep := CopyMockFilesStep(mockFolder+"/"+pluginFolder, dest)
+			mockStep := CopyMockFilesStep(packagedFolder, dest)
 			// Set step output
 			if i == 0 {
 				// Universal

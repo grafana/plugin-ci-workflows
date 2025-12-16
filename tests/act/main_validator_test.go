@@ -11,31 +11,7 @@ import (
 )
 
 func TestValidator(t *testing.T) {
-	runner, err := act.NewRunner(t, act.WithLinuxAMD64ContainerArchitecture())
-	require.NoError(t, err)
-
-	wf, err := workflow.NewSimpleCI(
-		workflow.WithPluginDirectoryInput(filepath.Join("tests", "simple-frontend")),
-		workflow.WithDistArtifactPrefixInput("simple-frontend-"),
-
-		// Disable some features to speed up the test
-		workflow.WithPlaywrightInput(false),
-		workflow.WithRunTruffleHogInput(false),
-
-		// Enable the plugin validator (opt-in)
-		workflow.WithRunPluginValidatorInput(true),
-
-		// Mock dist so we don't spend time building the plugin
-		workflow.WithMockedPackagedDistArtifacts(t, "simple-frontend", false),
-	)
-	require.NoError(t, err)
-
-	r, err := runner.Run(wf, act.NewEmptyEventPayload())
-	require.NoError(t, err)
-	require.True(t, r.Success, "workflow should succeed")
-
-	// Check summary entries
-	expSummary := []act.SummaryEntry{
+	baseValidatorSummary := []act.SummaryEntry{
 		{
 			Level:   act.SummaryLevelWarning,
 			Title:   "plugin-validator: Warning: unsigned plugin",
@@ -58,12 +34,85 @@ func TestValidator(t *testing.T) {
 			Message: `Your current license file contains generic text from the license template. Please make sure to replace {name of copyright owner} and {yyyy} with the correct values in your LICENSE file.`,
 		},
 	}
-	require.Subset(t, r.Summary, expSummary)
-	var validatorSummaryCount int
-	for _, s := range r.Summary {
-		if strings.HasPrefix(s.Title, "plugin-validator:") {
-			validatorSummaryCount++
-		}
+	for _, tc := range []struct {
+		name               string
+		distFolder         string
+		packagedDistFolder string
+
+		expSuccess bool
+		expSummary []act.SummaryEntry
+	}{
+		{
+			name:               "simple-backend succeeds with warnings",
+			distFolder:         "simple-backend",
+			packagedDistFolder: filepath.Join("dist-artifacts-unsigned", "simple-backend"),
+			expSuccess:         true,
+			expSummary:         baseValidatorSummary,
+		},
+		{
+			name:               "simple-frontend-yarn succeeds with warnings",
+			distFolder:         "simple-frontend-yarn",
+			packagedDistFolder: filepath.Join("dist-artifacts-unsigned", "simple-frontend"),
+			expSuccess:         true,
+			expSummary:         baseValidatorSummary,
+		},
+		// Special ZIP where the archive is malformed, used to test plugin-validator error handling
+		{
+			name:               "simple-frontend-validator-error fails",
+			distFolder:         "simple-frontend",
+			packagedDistFolder: filepath.Join("dist-artifacts-other", "simple-frontend-validator-error"),
+			expSuccess:         false,
+			expSummary: []act.SummaryEntry{
+				{
+					Level:   act.SummaryLevelError,
+					Title:   "plugin-validator: Error: Archive contains more than one directory",
+					Message: `Archive should contain only one directory named after plugin id. Found 2 directories. Please see https://grafana.com/developers/plugin-tools/publish-a-plugin/package-a-plugin for more information on how to package a plugin.`,
+				}, {
+					Level:   act.SummaryLevelError,
+					Title:   "plugin-validator: Error: Plugin archive is improperly structured",
+					Message: `It is possible your plugin archive structure is incorrect. Please see https://grafana.com/developers/plugin-tools/publish-a-plugin/package-a-plugin for more information on how to package a plugin.`,
+				},
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			// t.Parallel()
+			runner, err := act.NewRunner(t, act.WithLinuxAMD64ContainerArchitecture())
+			require.NoError(t, err)
+
+			wf, err := workflow.NewSimpleCI(
+				workflow.WithPluginDirectoryInput(filepath.Join("tests", tc.distFolder)),
+				workflow.WithDistArtifactPrefixInput(tc.distFolder+"-"),
+
+				// Disable some features to speed up the test
+				workflow.WithPlaywrightInput(false),
+				workflow.WithRunTruffleHogInput(false),
+
+				// Enable the plugin validator (opt-in)
+				workflow.WithRunPluginValidatorInput(true),
+
+				// Mock dist so we don't spend time building the plugin
+				workflow.WithMockedPackagedDistArtifacts(t, tc.distFolder, tc.packagedDistFolder),
+			)
+			require.NoError(t, err)
+
+			r, err := runner.Run(wf, act.NewEmptyEventPayload())
+			require.NoError(t, err)
+			if tc.expSuccess {
+				require.True(t, r.Success, "workflow should succeed")
+			} else {
+				require.False(t, r.Success, "workflow should fail")
+			}
+
+			// Check summary entries
+			require.Subset(t, r.Summary, tc.expSummary)
+			var validatorSummaryCount int
+			for _, s := range r.Summary {
+				if strings.HasPrefix(s.Title, "plugin-validator:") {
+					validatorSummaryCount++
+				}
+			}
+			require.Equal(t, validatorSummaryCount, len(tc.expSummary), "found unexpected plugin-validator gha summary entries")
+		})
 	}
-	require.Equal(t, validatorSummaryCount, len(expSummary), "found unexpected plugin-validator gha summary entries")
 }
