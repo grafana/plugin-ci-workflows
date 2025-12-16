@@ -76,7 +76,7 @@ func TestValidator(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			// t.Parallel()
+			t.Parallel()
 			runner, err := act.NewRunner(t, act.WithLinuxAMD64ContainerArchitecture())
 			require.NoError(t, err)
 
