@@ -68,6 +68,13 @@ type Runner struct {
 // RunnerOption is a function that configures a Runner.
 type RunnerOption func(r *Runner)
 
+// WithVerbose enables or disables verbose logging of act output.
+func WithVerbose(verbose bool) RunnerOption {
+	return func(r *Runner) {
+		r.Verbose = verbose
+	}
+}
+
 // WithContainerArchitecture sets the container architecture to use for act.
 func WithContainerArchitecture(architecture string) RunnerOption {
 	return func(r *Runner) {
