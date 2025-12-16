@@ -196,12 +196,16 @@ func WithMockedPackagedDistArtifacts(t *testing.T, pluginFolder string, signed b
 			if i == 0 {
 				// Universal
 				mockStep.Run += "\n" + Commands{
-					`echo zip=$(ls -1 ` + dest + `/*.zip | xargs -n 1 basename) >> "${GITHUB_OUTPUT}"`,
+					// Output ONE zip file, get the name by excluding file names that contain '_'
+					// (which is used as a separator in os/arch zips)
+					`echo zip=$(ls -1 ` + dest + `/*.zip | xargs -n 1 basename | grep -v '_') >> "${GITHUB_OUTPUT}"`,
 				}.String()
 			} else {
 				// os/arch
 				mockStep.Run += "\n" + Commands{
-					`echo zip=$(ls -1 ` + dest + `/*.zip | xargs -n 1 basename | jq -RncM '[inputs]') >> "${GITHUB_OUTPUT}"`,
+					// Output ALL ZIP files that contains an '_' (separator for os/arch in zip file names)
+					// as a JSON array
+					`echo zip=$(ls -1 ` + dest + `/*.zip | xargs -n 1 basename | grep '_' | jq -RncM '[inputs]') >> "${GITHUB_OUTPUT}"`,
 				}.String()
 			}
 			require.NoError(t, testAndBuild.ReplaceStep(id, mockStep))
