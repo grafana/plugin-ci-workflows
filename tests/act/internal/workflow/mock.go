@@ -50,10 +50,12 @@ func MockGCSUploadStep(srcPath, destPath string) Step {
 
 			// For debugging
 			"echo 'Mock GCS upload complete. Mock GCS bucket content:'",
-			"ls -la /gcs/" + destPath,
+			"find /gcs -type f",
+			"cd " + srcPath,
 
-			// Get list of all uploaded files, separate them by commas
-			`files=$(find ` + srcPath + ` -type f | sed 's|^\./||' | tr '\n' ',' | sed 's/,$//')`,
+			// Get a list of all uploaded files, separated by commas.
+			// Find all files, prepend destPath, remove leading ./, get relative path (remove bucket name after `/gcs`), join with commas
+			`files=$(find . -type f | sed 's|^\./|` + destPath + `/|' | cut -d'/' -f2- | tr '\n' ',' | sed 's/,$//')`,
 
 			// Set output (simplified)
 			`echo "uploaded=$files" >> "$GITHUB_OUTPUT"`,
