@@ -325,9 +325,18 @@ func (r *Runner) parseGHACommand(data logLine, runResult *RunResult) {
 		// Store the output value. StepID can be an array in case of composite actions,
 		// group all composite action outputs under the first step ID for simplicity.
 		runResult.Outputs.Set(data.JobID, data.StepID[0], data.Name, data.Arg)
+	case "debug", "notice", "warning", "error":
+		// Summary
+		runResult.Summary = append(runResult.Summary, SummaryEntry{
+			Level:   SummaryLevel(data.Command),
+			Title:   data.KvPairs["title"],
+			Message: data.Arg,
+		})
 	default:
-		// Nothing special to do, ignore silently
-		break
+		// Nothing special to do
+		if r.Verbose && data.Command != "" {
+			fmt.Printf("%s: [%s]: unhandled GHA command %q, ignoring", r.t.Name(), data.Job, data.Command)
+		}
 	}
 }
 
@@ -395,6 +404,32 @@ type RunResult struct {
 
 	// Outputs contains the outputs for each job + step of the workflow run.
 	Outputs Outputs
+
+	// Summary contains the GitHub Actions summary entries generated during the workflow run.
+	Summary []SummaryEntry
+}
+
+// SummaryLevel represents the level of a GitHub Actions summary entry.
+type SummaryLevel string
+
+// Summary levels
+const (
+	SummaryLevelDebug   SummaryLevel = "debug"
+	SummaryLevelNotice  SummaryLevel = "notice"
+	SummaryLevelWarning SummaryLevel = "warning"
+	SummaryLevelError   SummaryLevel = "error"
+)
+
+// SummaryEntry represents a single GitHub Actions summary entry.
+type SummaryEntry struct {
+	// Level is the level of the summary entry.
+	Level SummaryLevel
+
+	// Title is the optional title of the summary entry.
+	Title string
+
+	// Message is the message of the summary entry itself.
+	Message string
 }
 
 // newRunResult creates a new empty RunResult instance.
