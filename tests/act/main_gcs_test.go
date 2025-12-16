@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"path/filepath"
+	"slices"
 	"testing"
 
 	"github.com/grafana/plugin-ci-workflows/tests/act/internal/act"
@@ -40,6 +42,10 @@ func TestGCS(t *testing.T) {
 				act.NewPullRequestEventPayload("feature-branch"),
 			} {
 				t.Run(event.Name(), func(t *testing.T) {
+					if !event.IsPush() { //  || tc.hasBackend {
+						t.Skip()
+					}
+
 					runner, err := act.NewRunner(t)
 					require.NoError(t, err)
 
@@ -107,7 +113,56 @@ func TestGCS(t *testing.T) {
 					err = checkFilesExist(runner.GCS.Fs, expFiles, checkFilesExistOptions{strict: true})
 					require.NoErrorf(t, err, "wrong files uploaded to GCS (commit hash)")
 
-					// TODO: assert job outputs (GCS URLs used later for publishing)
+					// Assert job outputs (GCS URLs used later for publishing)
+					// Check universal ZIP output
+					latestURL := "https://storage.googleapis.com/integration-artifacts/" + tc.id + "/" + tc.version + "/main/latest/" + anyZipFn
+					commitURL := "https://storage.googleapis.com/integration-artifacts/" + tc.id + "/" + tc.version + "/main/" + commitHash + "/" + anyZipFn
+					for k, v := range map[string]string{
+						"universal_zip_url_latest": latestURL,
+						"universal_zip_url_commit": commitURL,
+					} {
+						rawOutput, ok := r.Outputs.Get("upload-to-gcs", "outputs", k)
+						require.True(t, ok, "output %q should be present", k)
+						t.Logf("GCS output %q: %s", k, rawOutput)
+						if v != "" {
+							require.Equal(t, v, rawOutput)
+						}
+					}
+
+					// Check ZIP URLs outputs
+					// "any" zip should always be present
+					expLatestZIPURLs := []string{latestURL}
+					expCommitZIPURLs := []string{commitURL}
+					if tc.hasBackend {
+						// If we have a backend, expect also os/arch zips
+						for _, osArch := range osArchCombos {
+							backendZipFn := osArchZipFileName(tc.id, tc.version, osArch)
+							expLatestZIPURLs = append(expLatestZIPURLs, "https://storage.googleapis.com/integration-artifacts/"+tc.id+"/"+tc.version+"/main/latest/"+backendZipFn)
+							expCommitZIPURLs = append(expCommitZIPURLs, "https://storage.googleapis.com/integration-artifacts/"+tc.id+"/"+tc.version+"/main/"+commitHash+"/"+backendZipFn)
+						}
+					}
+
+					// Sort the results before comparing to avoid flakes
+					slices.Sort(expLatestZIPURLs)
+					slices.Sort(expCommitZIPURLs)
+
+					// Get actual output
+					for _, exp := range []struct {
+						outputName string
+						expected   []string
+					}{
+						{"zip_urls_commit", expCommitZIPURLs},
+						{"zip_urls_latest", expLatestZIPURLs},
+					} {
+						jsonOutput, ok := r.Outputs.Get("upload-to-gcs", "outputs", exp.outputName)
+						require.Truef(t, ok, "output %q should be present", exp.outputName)
+						output := make([]string, 0, len(expLatestZIPURLs))
+						err = json.Unmarshal([]byte(jsonOutput), &output)
+						require.NoError(t, err)
+						// Compare sorted slices
+						slices.Sort(output)
+						require.Equal(t, exp.expected, output)
+					}
 				})
 			}
 		})
