@@ -52,7 +52,7 @@ func TestValidator(t *testing.T) {
 		{
 			name:               "simple-frontend-yarn succeeds with warnings",
 			distFolder:         "simple-frontend-yarn",
-			packagedDistFolder: filepath.Join("dist-artifacts-unsigned", "simple-frontend"),
+			packagedDistFolder: filepath.Join("dist-artifacts-unsigned", "simple-frontend-yarn"),
 			expSuccess:         true,
 			expSummary:         baseValidatorSummary,
 		},
