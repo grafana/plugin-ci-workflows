@@ -413,7 +413,7 @@ jobs:
 
             // Both Go and Node versions are determined as follows:
             // 1. If explicitly provided as input, use that
-            // 2. If a version file (.nvmrc or go.mod) exists in the plugin directory, use that
+            // 2. If a version file (.nvmrc/go.mod) exists in the plugin directory, use that
             // 3. Otherwise, use the workflow-level default version
             
             let goVersion = '';
@@ -421,7 +421,6 @@ jobs:
             if (GO_VERSION) {
               goVersion = GO_VERSION;
             } else if (fs.existsSync(`${PLUGIN_DIRECTORY}/go.mod`))  {
-              goVersion = '';
               goVersionFile = `${PLUGIN_DIRECTORY}/go.mod`;
             } else {
               goVersion = DEFAULT_GO_VERSION;
@@ -432,14 +431,13 @@ jobs:
             if (NODE_VERSION) {
               nodeVersion = NODE_VERSION;
             } else if (fs.existsSync(`${PLUGIN_DIRECTORY}/.nvmrc`))  {
-              nodeVersion = '';
               nodeVersionFile = `${PLUGIN_DIRECTORY}/.nvmrc`;
             } else {
               nodeVersion = DEFAULT_NODE_VERSION;
             }
 
             const o = { goVersion, goVersionFile, nodeVersion, nodeVersionFile };
-            console.log(JSON.stringify(o));
+            console.log("Tooling versions:", JSON.stringify(o));
             return o;
         env:
           PLUGIN_DIRECTORY: ${{ inputs.plugin-directory }}
