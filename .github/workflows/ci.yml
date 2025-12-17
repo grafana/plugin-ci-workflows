@@ -835,8 +835,8 @@ jobs:
 
           universal_zip_file_name=$(basename "${UNIVERSAL_ZIP}")
           if [ -n "$universal_zip_file_name" ]; then
-            echo universal_zip_url_latest="$gcs_artifacts_path_latest/$universal_zip_file_name" >> "$GITHUB_OUTPUT"
-            echo universal_zip_url_commit="$gcs_artifacts_path_commit/$universal_zip_file_name" >> "$GITHUB_OUTPUT"
+            echo universal_zip_url_latest="https://storage.googleapis.com/$gcs_artifacts_path_latest/$universal_zip_file_name" >> "$GITHUB_OUTPUT"
+            echo universal_zip_url_commit="https://storage.googleapis.com/$gcs_artifacts_path_commit/$universal_zip_file_name" >> "$GITHUB_OUTPUT"
           fi
         env:
           GCS_UPLOADED_FILES_LATEST: ${{ steps.gcs-upload-latest.outputs.uploaded }}
