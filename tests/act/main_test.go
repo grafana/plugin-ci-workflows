@@ -56,23 +56,22 @@ func TestMain(m *testing.M) {
 				//	DEFAULT_GO_VERSION and DEFAULT_NODE_VERSION
 				Steps: []workflow.Step{
 					{
-						Name: "Setup Go",
-						Uses: "actions/setup-go@v6.1.0",
+						Name: "Warm up tooling",
+						Uses: "grafana/plugin-ci-workflows/actions/internal/plugins/setup@main",
 						With: map[string]any{
-							"go-version": "1.24",
+							"go-version":            "1.24",
+							"node-version":          "22",
+							"golangci-lint-version": "1.64.8",
+							"act-cache-warmup":      "true",
 						},
 					},
 					{
-						Name: "Setup Node.js",
-						Uses: "actions/setup-node@v4.4.0",
+						Name: "Warm up Trufflehog",
+						Uses: "grafana/plugin-ci-workflows/actions/internal/plugins/trufflehog@main",
 						With: map[string]any{
-							"node-version": "22",
+							"trufflehog-version": "3.91.0",
+							"setup-only":         "true",
 						},
-					},
-					{
-						Name:  "Install yarn",
-						Run:   "npm install -g yarn",
-						Shell: "bash",
 					},
 				},
 			},
