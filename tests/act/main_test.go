@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -156,6 +157,7 @@ func checkFilesExist(fs afero.Fs, exp []string, opt ...checkFilesExistOptions) e
 		return fmt.Errorf("only one option allowed, got %d", len(opt))
 	}
 
+	var finalErr error
 	expectedFiles := aferoFilesMap(exp)
 	if err := afero.Walk(fs, "/", func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -167,20 +169,22 @@ func checkFilesExist(fs afero.Fs, exp []string, opt ...checkFilesExistOptions) e
 		}
 		if _, ok := expectedFiles[path]; ok {
 			if info.Size() == 0 {
-				return fmt.Errorf("expected file %q is empty", path)
+				finalErr = errors.Join(finalErr, fmt.Errorf("expected file %q is empty", path))
+				return nil
 			}
 			delete(expectedFiles, path)
 		} else if o.strict {
-			return fmt.Errorf("unexpected file %q found", path)
+			finalErr = errors.Join(finalErr, fmt.Errorf("unexpected file %q found", path))
+			return nil
 		}
 		return nil
 	}); err != nil {
 		return err
 	}
 	if len(expectedFiles) > 0 {
-		return fmt.Errorf("expected files not found: %v", expectedFiles)
+		finalErr = errors.Join(finalErr, fmt.Errorf("expected files not found: %v", expectedFiles))
 	}
-	return nil
+	return finalErr
 }
 
 // checkFilesExistOptions defines options for the checkFilesExist function.
@@ -250,6 +254,17 @@ func anyZipFileName(pluginID, version string) string {
 // osArchZipFileName returns the file name for the OS/Arch specific ZIP file
 func osArchZipFileName(pluginID, version, osArch string) string {
 	return pluginID + "-" + version + "." + osArch + ".zip"
+}
+
+// getGitCommitSHA returns the current git commit SHA of the repository in the current working directory.
+// git must be installed.
+func getGitCommitSHA() (string, error) {
+	cmd := exec.Command("git", "rev-parse", "HEAD")
+	output, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(output)), nil
 }
 
 // osArchCombos defines the supported OS/Arch combinations for plugin packaging.
