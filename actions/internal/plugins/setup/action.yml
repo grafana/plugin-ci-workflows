@@ -2,25 +2,9 @@ name: Plugins - Setup
 description: Sets up the environment for building and testing the plugin.
 
 inputs:
-  go-version:
-    description: Go version to use.
-    required: true
-  node-version:
-    description: Node.js version to use.
-    required: true
-  golangci-lint-version:
-    description: golangci-lint version to use.
-    required: true
-  go-setup-caching:
-    description: Defines if setup-go action should have caching enabled (https://github.com/actions/setup-go#caching-dependency-files-and-build-outputs)
-    required: false
-    default: "true"
-  node-version-file:
-    description: Node.js version file to use.
-    required: false
-    default: ""
   plugin-directory:
-    description: Directory of the plugin, if not in the root of the repository.
+    description: |
+      Directory of the plugin, if not in the root of the repository.
     required: false
     default: .
   act-cache-warmup:
@@ -30,6 +14,37 @@ inputs:
       This should only be used when testing with `act`.
     required: false
     default: "false"
+  go-version:
+    description: |
+      Go version to use.
+      Either go-version or go-version-file should be provided.
+    required: false
+    default: ""
+  go-version-file:
+    description: |
+      File containing the Go version to use (usually `go.mod`).
+      Either go-version or go-version-file should be provided.
+    required: false
+    default: ""
+  go-setup-caching:
+    description: Defines if setup-go action should have caching enabled (https://github.com/actions/setup-go#caching-dependency-files-and-build-outputs)
+    required: false
+    default: "true"
+  node-version:
+    description: |
+      Node.js version to use.
+      Either node-version or node-version-file should be provided.
+    required: false
+    default: ""
+  node-version-file:
+    description: |
+      File containing the Node.js version file to use (usually `.nvmrc`).
+      Either node-version or node-version-file should be provided.
+    required: false
+    default: ""
+  golangci-lint-version:
+    description: golangci-lint version to use.
+    required: true
 
 runs:
   using: composite
@@ -72,7 +87,9 @@ runs:
       uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
       with:
         go-version: "${{ inputs.go-version }}"
+        go-version-file: "${{ inputs.go-version-file }}"
         cache: ${{ inputs.go-setup-caching == 'true' }}
+        cache-dependency-path: ${{ inputs.act-cache-warmup != 'true' && format('{0}/go.sum', inputs.plugin-directory) || '' }}
 
     - name: Cache Go tooling
       id: cache
