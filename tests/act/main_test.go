@@ -34,6 +34,12 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
+	// Read ci.yml to get the default tooling versions, so we can warm up the cache
+	ciWf, err := workflow.NewBaseWorkflowFromFile(filepath.Join(".github", "workflows", "ci.yml"))
+	if err != nil {
+		panic(err)
+	}
+
 	// Warm up act-toolcache volume, otherwise we get weird errors
 	// when running the "setup/*" actions in parallel tests since they
 	// all share the same act-toolcache volume.
@@ -59,9 +65,9 @@ func TestMain(m *testing.M) {
 						Name: "Warm up tooling",
 						Uses: "grafana/plugin-ci-workflows/actions/internal/plugins/setup@main",
 						With: map[string]any{
-							"go-version":            "1.24",
-							"node-version":          "22",
-							"golangci-lint-version": "1.64.8",
+							"go-version":            ciWf.Env["DEFAULT_GO_VERSION"],
+							"node-version":          ciWf.Env["DEFAULT_NODE_VERSION"],
+							"golangci-lint-version": ciWf.Env["DEFAULT_GOLANGCI_LINT_VERSION"],
 							"act-cache-warmup":      "true",
 						},
 					},
@@ -69,7 +75,7 @@ func TestMain(m *testing.M) {
 						Name: "Warm up Trufflehog",
 						Uses: "grafana/plugin-ci-workflows/actions/internal/plugins/trufflehog@main",
 						With: map[string]any{
-							"trufflehog-version": "3.91.0",
+							"trufflehog-version": ciWf.Env["DEFAULT_TRUFFLEHOG_VERSION"],
 							"setup-only":         "true",
 						},
 					},
