@@ -154,7 +154,9 @@ func WithAllowUnsignedInput(enabled bool) SimpleCIOption {
 // This can be used for tests that need to assert on side-effects of building the plugin,
 // without actually building it, which saves execution time.
 // The distFolder is relative to tests/act/mockdata (e.g.: `dist/simple-frontend`).
-// The specified mock folder is sanity-checked to ensure they contain valid data.
+// The distFolder should use slashes as path separators.
+// The function will convert it to the correct OS-specific separators when needed.
+// The distFolder is sanity-checked to ensure they contain valid data.
 func WithMockedDist(t *testing.T, distFolder string) SimpleCIOption {
 	return func(w *SimpleCI) {
 		testAndBuild := w.CIWorkflow().BaseWorkflow.Jobs["test-and-build"]
@@ -181,6 +183,8 @@ func WithMockedDist(t *testing.T, distFolder string) SimpleCIOption {
 // The distFolder parameter is the name of the plugin folder inside `mockdata` that contains the dist files (js + assets, etc), not the ZIP file.
 // The packagedFolder parameter is the name of the folder inside `mockdata` that contains the pre-packaged ZIP files.
 // Both folders are relative to tests/act/mockdata (e.g.: `dist/simple-frontend` and `dist-artifacts-unsigned/simple-frontend`).
+// Both folders should use slashes as path separators.
+// The function will convert them to the correct OS-specific separators when needed.
 // The specified mock folders are sanity-checked to ensure they contain valid data.
 func WithMockedPackagedDistArtifacts(t *testing.T, distFolder string, packagedFolder string) SimpleCIOption {
 	return func(w *SimpleCI) {
