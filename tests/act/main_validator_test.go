@@ -1,7 +1,6 @@
 package main
 
 import (
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -36,6 +35,7 @@ func TestValidator(t *testing.T) {
 	}
 	for _, tc := range []struct {
 		name               string
+		sourceFolder       string
 		distFolder         string
 		packagedDistFolder string
 
@@ -44,6 +44,7 @@ func TestValidator(t *testing.T) {
 	}{
 		{
 			name:               "simple-backend succeeds with warnings",
+			sourceFolder:       "simple-backend",
 			distFolder:         "dist/simple-backend",
 			packagedDistFolder: "dist-artifacts-unsigned/simple-backend",
 			expSuccess:         true,
@@ -51,6 +52,7 @@ func TestValidator(t *testing.T) {
 		},
 		{
 			name:               "simple-frontend-yarn succeeds with warnings",
+			sourceFolder:       "simple-frontend-yarn",
 			distFolder:         "dist/simple-frontend-yarn",
 			packagedDistFolder: "dist-artifacts-unsigned/simple-frontend-yarn",
 			expSuccess:         true,
@@ -59,6 +61,7 @@ func TestValidator(t *testing.T) {
 		// Special ZIP where the archive is malformed, used to test plugin-validator error handling
 		{
 			name:               "simple-frontend-validator-error fails",
+			sourceFolder:       "simple-frontend",
 			distFolder:         "dist/simple-frontend",
 			packagedDistFolder: "dist-artifacts-other/simple-frontend-validator-error",
 			expSuccess:         false,
@@ -81,8 +84,8 @@ func TestValidator(t *testing.T) {
 			require.NoError(t, err)
 
 			wf, err := workflow.NewSimpleCI(
-				workflow.WithPluginDirectoryInput(filepath.Join("tests", tc.distFolder)),
-				workflow.WithDistArtifactPrefixInput(tc.distFolder+"-"),
+				workflow.WithPluginDirectoryInput("tests/"+tc.sourceFolder),
+				workflow.WithDistArtifactPrefixInput(tc.sourceFolder+"-"),
 
 				// Disable some features to speed up the test
 				workflow.WithPlaywrightInput(false),
