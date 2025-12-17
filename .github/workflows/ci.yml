@@ -528,7 +528,7 @@ jobs:
             # User-provided configuration content
             echo "Using provided plugin-validator configuration content."
             PLUGIN_VALIDATOR_CONFIG_PATH=$(mktemp)
-            echo "${PLUGIN_VALIDATOR_CONFIG}" > ${PLUGIN_VALIDATOR_CONFIG_PATH}
+            echo "${PLUGIN_VALIDATOR_CONFIG}" > "${PLUGIN_VALIDATOR_CONFIG_PATH}"
           elif [ -n "${PLUGIN_VALIDATOR_CONFIG_PATH}" ]; then
             # User-provided configuration file path
             echo "Using plugin-validator configuration file at path: ${PLUGIN_VALIDATOR_CONFIG_PATH}"
@@ -561,7 +561,7 @@ jobs:
           UUID=$(cat /proc/sys/kernel/random/uuid)
 
           # Do not run clamav because it takes too long
-          docker run --name=plugin-validator-${UUID} --pull=always --platform=linux/amd64 \
+          docker run --name="plugin-validator-${UUID}" --pull=always --platform=linux/amd64 \
             -v "${PLUGIN_VALIDATOR_CONFIG_PATH}:/workspace/.plugin-validator.yaml:ro" \
             -v "${TEMP_WORKSPACE_DIR}/dist-artifacts:/workspace/dist-artifacts:ro" \
             -v "${TEMP_WORKSPACE_DIR}:/workspace" \
@@ -572,9 +572,9 @@ jobs:
             -config=/workspace/.plugin-validator.yaml \
             -sourceCodeUri=file:///workspace \
             "/workspace/dist-artifacts/${UNIVERSAL_ZIP}"
-          EXIT_CODE=$(docker inspect plugin-validator-${UUID} --format='{{.State.ExitCode}}')
+          EXIT_CODE=$(docker inspect "plugin-validator-${UUID}" --format='{{.State.ExitCode}}')
           docker rm "plugin-validator-${UUID}"
-          exit $EXIT_CODE
+          exit "$EXIT_CODE"
         env:
           UNIVERSAL_ZIP: ${{ steps.universal-zip.outputs.zip }}
           PLUGIN_VALIDATOR_CONFIG: ${{ inputs.plugin-validator-config }}
