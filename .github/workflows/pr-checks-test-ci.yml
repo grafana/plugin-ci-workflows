@@ -4,7 +4,6 @@ on:
   pull_request:
     branches:
       - main
-      - giuseppe/act-gcs
     paths:
       - "tests/**"
       - ".github/workflows/pr-checks-test-ci.yml"
