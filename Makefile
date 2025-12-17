@@ -1,4 +1,4 @@
-.PHONY: clean-mockdata clean-node-modules clean-act-tmp mockdata-dist mockdata-dist-artifacts mockdata
+.PHONY: reset-mockdata clean-node-modules clean-act-tmp mockdata-dist mockdata-dist-artifacts mockdata
 
 clean-node-modules:
 	find tests -name node_modules -type d -prune -exec rm -rf '{}' +
@@ -14,12 +14,13 @@ clean-act-tmp:
 clean-act-toolcache-volumes:
 	docker volume ls -q | grep "^act-toolcache-" | xargs docker volume rm
 
-clean-mockdata:
-	rm -rf tests/act/mockdata/*
-
 clean: clean-node-modules clean-dist clean-act-tmp clean-act-toolcache-volumes
 
-mockdata-dist: clean-mockdata
+reset-mockdata:
+	rm -rf tests/act/mockdata/dist/*
+	rm -rf tests/act/mockdata/dist-artifacts-unsigned/*
+
+mockdata-dist: reset-mockdata
 	for tc in $$(./scripts/find-tests.sh); do \
 		./scripts/mockdata-dist.sh $$tc; \
 	done
