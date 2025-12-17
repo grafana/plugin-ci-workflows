@@ -36,7 +36,6 @@ func TestValidator(t *testing.T) {
 	for _, tc := range []struct {
 		name               string
 		sourceFolder       string
-		distFolder         string
 		packagedDistFolder string
 
 		expSuccess bool
@@ -45,7 +44,6 @@ func TestValidator(t *testing.T) {
 		{
 			name:               "simple-backend succeeds with warnings",
 			sourceFolder:       "simple-backend",
-			distFolder:         "dist/simple-backend",
 			packagedDistFolder: "dist-artifacts-unsigned/simple-backend",
 			expSuccess:         true,
 			expSummary:         baseValidatorSummary,
@@ -53,7 +51,6 @@ func TestValidator(t *testing.T) {
 		{
 			name:               "simple-frontend-yarn succeeds with warnings",
 			sourceFolder:       "simple-frontend-yarn",
-			distFolder:         "dist/simple-frontend-yarn",
 			packagedDistFolder: "dist-artifacts-unsigned/simple-frontend-yarn",
 			expSuccess:         true,
 			expSummary:         baseValidatorSummary,
@@ -62,7 +59,6 @@ func TestValidator(t *testing.T) {
 		{
 			name:               "simple-frontend-validator-error fails",
 			sourceFolder:       "simple-frontend",
-			distFolder:         "dist/simple-frontend",
 			packagedDistFolder: "dist-artifacts-other/simple-frontend-validator-error",
 			expSuccess:         false,
 			expSummary: []act.SummaryEntry{
@@ -95,7 +91,7 @@ func TestValidator(t *testing.T) {
 				workflow.WithRunPluginValidatorInput(true),
 
 				// Mock dist so we don't spend time building the plugin
-				workflow.WithMockedPackagedDistArtifacts(t, tc.distFolder, tc.packagedDistFolder),
+				workflow.WithMockedPackagedDistArtifacts(t, "dist/"+tc.sourceFolder, tc.packagedDistFolder),
 			)
 			require.NoError(t, err)
 
