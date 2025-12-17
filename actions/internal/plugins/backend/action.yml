@@ -62,15 +62,3 @@ runs:
       working-directory: ${{ inputs.plugin-directory }}
       shell: bash
 
-    # The action should end up with a dist/ folder, but if the working directory is not the root of the repo,
-    # we need to copy the dist/ folder to the root of the repo.
-    - name: Copy dist if needed
-      run: |
-        if [ "$PLUGIN_DIRECTORY" != "." ]; then
-          mkdir -p dist
-          cp -r $PLUGIN_DIRECTORY/dist/* dist/
-        fi
-      shell: bash
-      env:
-        PLUGIN_DIRECTORY: ${{ inputs.plugin-directory }}
-      if: inputs.plugin-directory != '.'

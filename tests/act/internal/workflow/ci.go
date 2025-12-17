@@ -295,7 +295,7 @@ func WithMockedGCS(t *testing.T) SimpleCIOption {
 					srcPath, ok1 := step.With["path"].(string)
 					destPath, ok2 := step.With["destination"].(string)
 					if srcPath == "" || destPath == "" || !ok1 || !ok2 {
-						require.Fail(t, "could not mock gcs in job %q step %q (index: %d) because inputs are not valid", jk, step.ID, i)
+						require.FailNow(t, "could not mock gcs in job %q step %q (index: %d) because inputs are not valid", jk, step.ID, i)
 					}
 
 					// Replace the step

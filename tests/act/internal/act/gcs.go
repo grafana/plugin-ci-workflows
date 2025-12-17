@@ -31,5 +31,3 @@ func newGCS(r *Runner) (GCS, error) {
 		Fs: afero.NewReadOnlyFs(afero.NewBasePathFs(afero.NewOsFs(), path)),
 	}, nil
 }
-
-// TODO: GCS.Close() ?
