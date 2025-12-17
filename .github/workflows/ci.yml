@@ -572,7 +572,9 @@ jobs:
             -config=/workspace/.plugin-validator.yaml \
             -sourceCodeUri=file:///workspace \
             "/workspace/dist-artifacts/${UNIVERSAL_ZIP}"
-          exit "$(docker inspect plugin-validator-${UUID} --format='{{.State.ExitCode}}')"
+          EXIT_CODE=$(docker inspect plugin-validator-${UUID} --format='{{.State.ExitCode}}')
+          docker rm "plugin-validator-${UUID}"
+          exit $EXIT_CODE
         env:
           UNIVERSAL_ZIP: ${{ steps.universal-zip.outputs.zip }}
           PLUGIN_VALIDATOR_CONFIG: ${{ inputs.plugin-validator-config }}
