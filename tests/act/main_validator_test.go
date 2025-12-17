@@ -44,23 +44,23 @@ func TestValidator(t *testing.T) {
 	}{
 		{
 			name:               "simple-backend succeeds with warnings",
-			distFolder:         "simple-backend",
-			packagedDistFolder: filepath.Join("dist-artifacts-unsigned", "simple-backend"),
+			distFolder:         "dist/simple-backend",
+			packagedDistFolder: "dist-artifacts-unsigned/simple-backend",
 			expSuccess:         true,
 			expSummary:         baseValidatorSummary,
 		},
 		{
 			name:               "simple-frontend-yarn succeeds with warnings",
-			distFolder:         "simple-frontend-yarn",
-			packagedDistFolder: filepath.Join("dist-artifacts-unsigned", "simple-frontend-yarn"),
+			distFolder:         "dist/simple-frontend-yarn",
+			packagedDistFolder: "dist-artifacts-unsigned/simple-frontend-yarn",
 			expSuccess:         true,
 			expSummary:         baseValidatorSummary,
 		},
 		// Special ZIP where the archive is malformed, used to test plugin-validator error handling
 		{
 			name:               "simple-frontend-validator-error fails",
-			distFolder:         "simple-frontend",
-			packagedDistFolder: filepath.Join("dist-artifacts-other", "simple-frontend-validator-error"),
+			distFolder:         "dist/simple-frontend",
+			packagedDistFolder: "dist-artifacts-other/simple-frontend-validator-error",
 			expSuccess:         false,
 			expSummary: []act.SummaryEntry{
 				{
