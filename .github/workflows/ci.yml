@@ -420,7 +420,7 @@ jobs:
             let goVersionFile = '';
             if (GO_VERSION) {
               goVersion = GO_VERSION;
-            } else if (fs.existsSync(`${PLUGIN_DIRECTORY}/go.mod`))  {
+            } else if (fs.existsSync(`${PLUGIN_DIRECTORY}/go.mod`)) {
               goVersionFile = `${PLUGIN_DIRECTORY}/go.mod`;
             } else {
               goVersion = DEFAULT_GO_VERSION;
