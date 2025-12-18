@@ -10,73 +10,93 @@ import (
 	"github.com/grafana/plugin-ci-workflows/tests/act/internal/workflow"
 )
 
-// EventPayload represents the event payload to pass to act.
-// It is a map of string keys to arbitrary values.
-// It should mimic a GitHub event payload. By default, it includes an "act": true key-value pair
-// which makes it possible to detect when the workflow is running under act in the workflow itself.
-type EventPayload map[string]any
+// EventKind represents the kind of GitHub event, e.g., "push" or "pull_request".
+type EventKind string
 
-// Name returns the name of the event payload, e.g. "push" or "pull_request".
-// If the name is not set, it returns an empty string.
-func (e EventPayload) Name() string {
-	if name, ok := e["event_name"].(string); ok {
-		return name
-	}
-	return ""
-}
+// EventKind enum values
 
-// IsPush returns true if the event payload represents a `push` event.
-func (e EventPayload) IsPush() bool {
-	return e.Name() == "push"
-}
+const (
+	EventKindPush        EventKind = "push"
+	EventKindPullRequest EventKind = "pull_request"
+)
 
-// IsPullRequest returns true if the event payload represents a `pull_request` event.
-func (e EventPayload) IsPullRequest() bool {
-	return e.Name() == "pull_request"
+// Event represents the event with a name and payload to pass to act.
+// It should mimic a GitHub event payload. For example, a pull_request
+// event payload should follow the GitHub pull_request webhook event structure:
+// https://docs.github.com/en/webhooks/webhook-events-and-payloads#pull_request
+//
+// By default, the payload includes an additional `{ "act": true }` key-value pair in the payload,
+// which makes it possible to detect when the workflow is running under act in the workflow itself:
+//
+// ```yaml
+//
+//	if: ${{ github.event.act == true }}
+//
+// ```
+type Event struct {
+	// Kind is the type of the event, e.g., "push" or "pull_request".
+	Kind EventKind
+
+	// Payload is the event payload data (JSON serializable).
+	// See the GitHub "webhooks and events payload" documentation
+	// for the schema of different event payloads:
+	// https://docs.github.com/en/webhooks/webhook-events-and-payloads
+	Payload map[string]any
 }
 
 // NewEventPayload creates a new EventPayload with the given data.
 // It always includes an "act": true key-value pair.
-func NewEventPayload(data map[string]any) EventPayload {
+func NewEventPayload(kind EventKind, data map[string]any) Event {
+	e := Event{
+		Kind:    kind,
+		Payload: data,
+	}
 	// Default data that should always be present in the payload
-	data["act"] = true
-	return EventPayload(data)
+	e.Payload["act"] = true
+	return e
 }
 
-// NewEmptyEventPayload creates a new EventPayload with only the default "act": true key-value pair.
-func NewEmptyEventPayload() EventPayload {
-	return NewEventPayload(map[string]any{})
+// NewEmptyEventPayload creates a new default "push" EventPayload with only the default "act": true key-value pair.
+//
+// Deprecated: use NewEventPayload instead.
+func NewEmptyEventPayload() Event {
+	return NewEventPayload(EventKindPush, map[string]any{})
 }
 
 // NewPushEventPayload creates a new EventPayload for a push event on the given branch.
-func NewPushEventPayload(branch string) EventPayload {
-	return NewEventPayload(map[string]any{
-		"event_name": "push",
-		"ref":        "refs/heads/" + branch,
+func NewPushEventPayload(branch string) Event {
+	return NewEventPayload(EventKindPush, map[string]any{
+		"ref": "refs/heads/" + branch,
 	})
 }
 
 // NewPullRequestEventPayload creates a new EventPayload for a pull request event
 // from a branch with the given name.
-func NewPullRequestEventPayload(prBranch string) EventPayload {
-	return NewEventPayload(map[string]any{
-		"event_name": "pull_request",
-		"head_ref":   prBranch,
-		// "ref":        "refs/pull/1/merge",
+func NewPullRequestEventPayload(prBranch string) Event {
+	return NewEventPayload(EventKindPullRequest, map[string]any{
+		"action": "opened",
+		"pull_request": map[string]any{
+			"head": map[string]any{
+				"ref": prBranch,
+			},
+			"base": map[string]any{
+				"ref": "main",
+			},
+		},
 	})
 }
 
 // CreateTempEventFile creates a temporary file in a temporary folder
-// containing the given event payload in JSON format.
+// containing the payload from the given event in JSON format.
 // The function returns the path to the created file.
 // The caller is responsible for deleting the file when no longer needed.
-func CreateTempEventFile(payload EventPayload) (string, error) {
+func CreateTempEventFile(event Event) (string, error) {
 	f, err := os.CreateTemp("", "act-*-event.json")
 	if err != nil {
 		return "", fmt.Errorf("create temp event file: %w", err)
 	}
 	defer f.Close()
-	if err := json.NewEncoder(f).Encode(payload); err != nil {
+	if err := json.NewEncoder(f).Encode(event.Payload); err != nil {
 		return "", fmt.Errorf("encode event to temp file: %w", err)
 	}
 	return f.Name(), nil
