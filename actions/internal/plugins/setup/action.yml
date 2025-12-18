@@ -85,23 +85,12 @@ runs:
         cache: ${{ inputs.go-setup-caching == 'true' }}
         cache-dependency-path: ${{ format('{0}/go.sum', inputs.plugin-directory) || '' }}
 
-    - name: Cache Go tooling
-      id: cache
-      uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
-      with:
-        path: |
-          /root/go/bin/golangci-lint
-          /root/go/bin/mage
-        key: go-tools-${{ inputs.go-version }}-${{ inputs.golangci-lint-version }}
-
     - name: Mage
-      if: ${{ steps.cache.outputs.cache-hit != 'true' }}
       shell: bash
       run: |
         go install github.com/magefile/mage@latest
 
     - name: golangci-lint
-      if: ${{ steps.cache.outputs.cache-hit != 'true' }}
       shell: bash
       run: |
         curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v${GOLANGCI_LINT_VERSION}
