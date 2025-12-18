@@ -90,7 +90,7 @@ func NewRunner(t *testing.T) (*Runner, error) {
 }
 
 // args returns the CLI arguments to pass to act for the given workflow and event payload files.
-func (r *Runner) args(eventKind EventKind, workflowFile string, payloadFile string) ([]string, error) {
+func (r *Runner) args(eventKind EventKind, actor string, workflowFile string, payloadFile string) ([]string, error) {
 	// Get a unique free port for the act artifact server, so multiple act instances can run in parallel
 	artifactServerPort, err := getFreePort()
 	if err != nil {
@@ -123,7 +123,9 @@ func (r *Runner) args(eventKind EventKind, workflowFile string, payloadFile stri
 		return nil, err
 	}
 	args = append(args, localRepoArgs...)
-
+	if actor != "" {
+		args = append(args, "--actor", actor)
+	}
 	if r.ConcurrentJobs > 0 {
 		args = append(args, "--concurrent-jobs", fmt.Sprint(r.ConcurrentJobs))
 	}
@@ -205,7 +207,7 @@ func (r *Runner) Run(workflow workflow.Workflow, event Event) (*RunResult, error
 	}
 	defer os.Remove(payloadFile)
 
-	args, err := r.args(event.Kind, workflowFile, payloadFile)
+	args, err := r.args(event.Kind, event.Actor, workflowFile, payloadFile)
 	if err != nil {
 		return nil, fmt.Errorf("get act args: %w", err)
 	}
