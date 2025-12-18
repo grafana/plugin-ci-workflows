@@ -53,6 +53,10 @@ runs:
       if: ${{ inputs.setup-only != 'true' }}
       shell: bash
       run: |
+        if [[ -z "${FOLDER}" ]]; then
+          echo "Error: 'folder' input is required when 'setup-only' is false." >&2
+          exit 1
+        fi
         /usr/local/bin/trufflehog filesystem "${FOLDER}" \
         --no-update --fail --github-actions \
         --results=verified,unknown \
