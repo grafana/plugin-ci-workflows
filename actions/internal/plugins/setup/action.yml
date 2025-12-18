@@ -38,12 +38,15 @@ inputs:
     default: ""
   node-version-file:
     description: |
-      File containing the Node.js version file to use (usually `.nvmrc`).
+      File containing the Node.js version to use (usually `.nvmrc`).
       Either node-version or node-version-file should be provided.
     required: false
     default: ""
   golangci-lint-version:
     description: golangci-lint version to use.
+    required: true
+  mage-version:
+    description: mage version to use.
     required: true
 
 runs:
@@ -91,20 +94,27 @@ runs:
         cache: ${{ inputs.go-setup-caching == 'true' }}
         cache-dependency-path: ${{ inputs.act-cache-warmup != 'true' && format('{0}/go.sum', inputs.plugin-directory) || '' }}
 
+    - name: Determine Go bin directory
+      id: go-bin
+      shell: bash
+      run: echo "gobin=$(go env GOPATH)/bin" >> "$GITHUB_OUTPUT"
+
     - name: Cache Go tooling
       id: cache
       uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
       with:
         path: |
-          /root/go/bin/golangci-lint
-          /root/go/bin/mage
-        key: go-tools-${{ inputs.go-version }}-${{ inputs.golangci-lint-version }}
+          ${{ steps.go-bin.outputs.gobin }}/golangci-lint
+          ${{ steps.go-bin.outputs.gobin }}/mage
+        key: go-tools-go=${{ inputs.go-version }}-mage=${{ inputs.mage-version }}-golangci-lint=${{ inputs.golangci-lint-version }}
 
     - name: Mage
       if: ${{ steps.cache.outputs.cache-hit != 'true' }}
       shell: bash
       run: |
-        go install github.com/magefile/mage@latest
+        go install github.com/magefile/mage@${MAGE_VERSION}
+      env:
+        MAGE_VERSION: ${{ inputs.mage-version }}
 
     - name: golangci-lint
       if: ${{ steps.cache.outputs.cache-hit != 'true' }}

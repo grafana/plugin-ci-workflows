@@ -290,6 +290,7 @@ env:
   DEFAULT_GO_VERSION: "1.25"
   DEFAULT_GOLANGCI_LINT_VERSION: "2.7.2"
   DEFAULT_TRUFFLEHOG_VERSION: "3.91.0"
+  DEFAULT_MAGE_VERSION: "v1.15.0"
 
   GCS_ARTIFACTS_BUCKET: integration-artifacts
   VAULT_INSTANCE: ops
@@ -415,12 +416,11 @@ jobs:
             // 1. If explicitly provided as input, use that
             // 2. If a version file (.nvmrc/go.mod) exists in the plugin directory, use that
             // 3. Otherwise, use the workflow-level default version
-            
             let goVersion = '';
             let goVersionFile = '';
             if (GO_VERSION) {
               goVersion = GO_VERSION;
-            } else if (fs.existsSync(`${PLUGIN_DIRECTORY}/go.mod`))  {
+            } else if (fs.existsSync(`${PLUGIN_DIRECTORY}/go.mod`)) {
               goVersionFile = `${PLUGIN_DIRECTORY}/go.mod`;
             } else {
               goVersion = DEFAULT_GO_VERSION;
@@ -430,7 +430,7 @@ jobs:
             let nodeVersionFile = '';
             if (NODE_VERSION) {
               nodeVersion = NODE_VERSION;
-            } else if (fs.existsSync(`${PLUGIN_DIRECTORY}/.nvmrc`))  {
+            } else if (fs.existsSync(`${PLUGIN_DIRECTORY}/.nvmrc`)) {
               nodeVersionFile = `${PLUGIN_DIRECTORY}/.nvmrc`;
             } else {
               nodeVersion = DEFAULT_NODE_VERSION;
@@ -457,6 +457,7 @@ jobs:
           go-version-file: ${{ fromJson(steps.tooling-versions.outputs.result).goVersionFile }}
           go-setup-caching: ${{ inputs.go-setup-caching }}
           golangci-lint-version: ${{ inputs.golangci-lint-version || env.DEFAULT_GOLANGCI_LINT_VERSION }}
+          mage-version: ${{ inputs.mage-version || env.DEFAULT_MAGE_VERSION }}
 
       - name: Get secrets from Vault
         id: get-secrets
