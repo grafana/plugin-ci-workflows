@@ -300,9 +300,14 @@ on:
         required: false
         type: boolean
 
-      # Options for deploying PRs. Those values should come from the PR event and should not be set manually.
       branch:
-        description: Branch or tag to publish from. Can be used to deploy PRs to dev.
+        description: |
+          Branch or tag to publish from.
+          Can be used to deploy PRs to dev.
+          Can also be used to deploy specific branches (e.g.: release branches) or tags (e.g.: release tags) to any target environment.
+          In order to deploy to `prod` or `prod-canary`, where PRs or unreleased changes should not be deployed, 
+          the branch or tag must match the `release-reference-regex`, otherwise the workflow will fail.
+          Defaults to `main`.
         default: main
         type: string
 
