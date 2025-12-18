@@ -108,7 +108,7 @@ for file in $(find "$backend_folder" -type f -name "${exe_basename}_*"); do
     pushd $tmp > /dev/null
     mkdir -p "$plugin_id"
 
-    # Copy all files but the executables, preserving permissions and mod times (simialr to rsync)
+    # Copy all files but the executables, preserving permissions and mod times (similar to rsync)
     pushd "$dist" > /dev/null
     # -name "${exe_basename}*" -prune: Ignore (prune) all executables
     # -o -type f -print: OR, print file name
