@@ -83,7 +83,6 @@ runs:
         go-version: "${{ inputs.go-version }}"
         go-version-file: "${{ inputs.go-version-file }}"
         cache: ${{ inputs.go-setup-caching == 'true' }}
-        cache-dependency-path: ${{ format('{0}/go.sum', inputs.plugin-directory) || '' }}
 
     - name: Mage
       shell: bash
