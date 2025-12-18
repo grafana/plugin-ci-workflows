@@ -60,13 +60,17 @@ on:
         description: golangci-lint version to use
         type: string
         required: false
-      go-setup-caching:
-        description: Defines if setup-go action should have caching enabled (https://github.com/actions/setup-go#caching-dependency-files-and-build-outputs)
-        type: "boolean"
+      mage-version:
+        description: Mage version to use
+        type: string
         required: false
       trufflehog-version:
         description: Trufflehog version to use
         type: string
+        required: false
+      go-setup-caching:
+        description: Defines if setup-go action should have caching enabled (https://github.com/actions/setup-go#caching-dependency-files-and-build-outputs)
+        type: "boolean"
         required: false
 
       # Build options.
@@ -421,6 +425,7 @@ jobs:
       go-setup-caching: ${{ inputs.go-setup-caching }}
       node-version: ${{ inputs.node-version }}
       golangci-lint-version: ${{ inputs.golangci-lint-version }}
+      mage-version: ${{ inputs.mage-version }}
 
       run-plugin-validator: ${{ inputs.run-plugin-validator }}
       plugin-validator-config: ${{ inputs.plugin-validator-config }}
