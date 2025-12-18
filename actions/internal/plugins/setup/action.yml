@@ -31,7 +31,7 @@ inputs:
     default: ""
   node-version-file:
     description: |
-      File containing the Node.js version file to use (usually `.nvmrc`).
+      File containing the Node.js version to use (usually `.nvmrc`).
       Either node-version or node-version-file should be provided.
     required: false
     default: ""
