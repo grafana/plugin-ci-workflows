@@ -430,7 +430,7 @@ jobs:
             let nodeVersionFile = '';
             if (NODE_VERSION) {
               nodeVersion = NODE_VERSION;
-            } else if (fs.existsSync(`${PLUGIN_DIRECTORY}/.nvmrc`))  {
+            } else if (fs.existsSync(`${PLUGIN_DIRECTORY}/.nvmrc`)) {
               nodeVersionFile = `${PLUGIN_DIRECTORY}/.nvmrc`;
             } else {
               nodeVersion = DEFAULT_NODE_VERSION;
