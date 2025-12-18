@@ -49,8 +49,11 @@ type Event struct {
 	Payload map[string]any
 }
 
+// EventOption is a function that configures an Event.
 type EventOption func(e *Event)
 
+// WithEventActor sets the actor of the Event, in order to impersonate
+// different users triggering the event when running the workflow with act.
 func WithEventActor(actor string) EventOption {
 	return func(e *Event) {
 		e.Actor = actor

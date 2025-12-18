@@ -148,6 +148,7 @@ func WithAllowUnsignedInput(enabled bool) SimpleCIOption {
 	}
 }
 
+// WithTestingInput sets the testing input for the CI job in the SimpleCI workflow.
 func WithTestingInput(testing bool) SimpleCIOption {
 	return func(w *SimpleCI) {
 		w.BaseWorkflow.Jobs["ci"].With["testing"] = testing
@@ -172,6 +173,9 @@ func WithMockedDist(t *testing.T, pluginFolder string) SimpleCIOption {
 	}
 }
 
+// WithRemoveAllStepsAfter removes all steps after the given step ID
+// in the given job ID in the SimpleCI workflow.
+// This can be used to stop the workflow at a certain point for testing purposes.
 func WithRemoveAllStepsAfter(t *testing.T, jobID, stepID string) SimpleCIOption {
 	return func(w *SimpleCI) {
 		job, ok := w.CIWorkflow().BaseWorkflow.Jobs[jobID]
@@ -180,6 +184,9 @@ func WithRemoveAllStepsAfter(t *testing.T, jobID, stepID string) SimpleCIOption 
 	}
 }
 
+// WithOnlyOneJob keeps only the given job ID and its dependencies
+// in the SimpleCI workflow, removing all other jobs.
+// This can be used to run only a specific job for testing purposes.
 func WithOnlyOneJob(t *testing.T, jobID string) SimpleCIOption {
 	return func(w *SimpleCI) {
 		onlyJob, ok := w.CIWorkflow().BaseWorkflow.Jobs[jobID]
