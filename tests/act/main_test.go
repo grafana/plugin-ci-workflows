@@ -59,8 +59,6 @@ func TestMain(m *testing.M) {
 			"warmup": {
 				Name:   "Warm up tool cache",
 				RunsOn: "ubuntu-arm64-small",
-				// TODO: we should read the go-version and node-version from ci.yml:
-				//	DEFAULT_GO_VERSION and DEFAULT_NODE_VERSION
 				Steps: []workflow.Step{
 					{
 						Name: "Warm up tooling",
@@ -69,6 +67,7 @@ func TestMain(m *testing.M) {
 							"go-version":            ciWf.Env["DEFAULT_GO_VERSION"],
 							"node-version":          ciWf.Env["DEFAULT_NODE_VERSION"],
 							"golangci-lint-version": ciWf.Env["DEFAULT_GOLANGCI_LINT_VERSION"],
+							"mage-version":          ciWf.Env["DEFAULT_MAGE_VERSION"],
 							"act-cache-warmup":      "true",
 						},
 					},
