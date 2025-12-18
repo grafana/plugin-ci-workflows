@@ -357,6 +357,7 @@ jobs:
     runs-on: ubuntu-arm64-small
 
     outputs:
+      commit-sha: ${{ steps.checkout-specified-branch.outputs.commit }}
       # JSON list of target environments, based on the `environment` input.
       # It returns a JSON array even if only one environment is targeted (e.g.: `dev` -> `["dev"]`)
       # This output can be used to determine target catalogs.
