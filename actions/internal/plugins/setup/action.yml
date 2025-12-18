@@ -38,6 +38,9 @@ inputs:
   golangci-lint-version:
     description: golangci-lint version to use.
     required: true
+  mage-version:
+    description: mage version to use.
+    required: true
 
 runs:
   using: composite
@@ -97,13 +100,15 @@ runs:
         path: |
           ${{ steps.go-bin.outputs.gobin }}/golangci-lint
           ${{ steps.go-bin.outputs.gobin }}/mage
-        key: go-tools-${{ inputs.go-version }}-${{ inputs.golangci-lint-version }}
+        key: go-tools-go=${{ inputs.go-version }}-mage=${{ inputs.mage-version }}-golangci-lint=${{ inputs.golangci-lint-version }}
 
     - name: Mage
       if: ${{ steps.cache.outputs.cache-hit != 'true' }}
       shell: bash
       run: |
-        go install github.com/magefile/mage@latest
+        go install github.com/magefile/mage@${MAGE_VERSION}
+      env:
+        MAGE_VERSION: ${{ inputs.mage-version }}
 
     - name: golangci-lint
       if: ${{ steps.cache.outputs.cache-hit != 'true' }}
