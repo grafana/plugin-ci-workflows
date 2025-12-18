@@ -10,7 +10,7 @@ inputs:
     description: |
       Folder containing plugin zip files to scan.
       It will be scanned recursively.
-    required: true
+    required: false
   include-detectors:
     description: |
       Comma-separated list of detector types to include.
@@ -26,21 +26,34 @@ inputs:
       This value will be passed via the `--exclude-detectors` option to Trufflehog.
       If not provided, the flag is not passed.
     required: false
+  setup-only:
+    description: If true, only sets up Trufflehog without running it.
+    required: false
+    default: "false"
 
 runs:
   using: composite
   steps:
+    - name: Cache Trufflehog binary
+      id: cache
+      uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
+      with:
+        path: /usr/local/bin/trufflehog
+        key: trufflehog-${{ inputs.trufflehog-version }}
+
     - name: Install Trufflehog
+      if: ${{ steps.cache.outputs.cache-hit != 'true' }}
       shell: bash
       run: |
-        curl -sSfL https://raw.githubusercontent.com/trufflesecurity/trufflehog/v${TRUFFLEHOG_VERSION}/scripts/install.sh | bash -s -- "v${TRUFFLEHOG_VERSION}"
+        curl -sSfL https://raw.githubusercontent.com/trufflesecurity/trufflehog/v${TRUFFLEHOG_VERSION}/scripts/install.sh | bash -s -- -b /usr/local/bin "v${TRUFFLEHOG_VERSION}"
       env:
         TRUFFLEHOG_VERSION: ${{ inputs.trufflehog-version }}
 
     - name: Run Trufflehog
+      if: ${{ inputs.setup-only != 'true' }}
       shell: bash
       run: |
-        ./bin/trufflehog filesystem "${FOLDER}" \
+        /usr/local/bin/trufflehog filesystem "${FOLDER}" \
         --no-update --fail --github-actions \
         --results=verified,unknown \
         --include-detectors="${INCLUDE_DETECTORS}" \
