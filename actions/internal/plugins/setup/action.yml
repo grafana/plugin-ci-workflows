@@ -85,13 +85,18 @@ runs:
         cache: ${{ inputs.go-setup-caching == 'true' }}
         cache-dependency-path: ${{ format('{0}/go.sum', inputs.plugin-directory) || '' }}
 
+    - name: Determine Go bin directory
+      id: go-bin
+      shell: bash
+      run: echo "gobin=$(go env GOPATH)/bin" >> "$GITHUB_OUTPUT"
+
     - name: Cache Go tooling
       id: cache
       uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
       with:
         path: |
-          /root/go/bin/golangci-lint
-          /root/go/bin/mage
+          ${{ steps.go-bin.outputs.gobin }}/golangci-lint
+          ${{ steps.go-bin.outputs.gobin }}/mage
         key: go-tools-${{ inputs.go-version }}-${{ inputs.golangci-lint-version }}
 
     - name: Mage
