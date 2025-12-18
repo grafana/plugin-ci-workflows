@@ -81,6 +81,7 @@ runs:
         apt-get install -y rsync
 
     - name: Go
+      id: go
       uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
       with:
         go-version: "${{ inputs.go-version }}"
@@ -100,7 +101,7 @@ runs:
         path: |
           ${{ steps.go-bin.outputs.gobin }}/golangci-lint
           ${{ steps.go-bin.outputs.gobin }}/mage
-        key: go-tools-go=${{ inputs.go-version }}-mage=${{ inputs.mage-version }}-golangci-lint=${{ inputs.golangci-lint-version }}
+        key: go-tools-go=${{ steps.go.outputs.go-version }}-mage=${{ inputs.mage-version }}-golangci-lint=${{ inputs.golangci-lint-version }}
 
     - name: Mage
       if: ${{ steps.cache.outputs.cache-hit != 'true' }}
