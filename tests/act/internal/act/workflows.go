@@ -47,6 +47,9 @@ type Event struct {
 // NewEventPayload creates a new EventPayload with the given data.
 // It always includes an "act": true key-value pair.
 func NewEventPayload(kind EventKind, data map[string]any) Event {
+	if data == nil {
+		data = map[string]any{}
+	}
 	e := Event{
 		Kind:    kind,
 		Payload: data,
