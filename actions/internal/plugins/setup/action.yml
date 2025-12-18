@@ -107,7 +107,7 @@ runs:
         path: |
           ${{ steps.go-bin.outputs.gobin }}/golangci-lint
           ${{ steps.go-bin.outputs.gobin }}/mage
-        key: go-tools-go=${{ steps.go.outputs.go-version }}-mage=${{ inputs.mage-version }}-golangci-lint=${{ inputs.golangci-lint-version }}
+        key: go-tools-os=${{ runner.os }}-arch=${{ runner.arch }}-go=${{ steps.go.outputs.go-version }}-mage=${{ inputs.mage-version }}-golangci-lint=${{ inputs.golangci-lint-version }}
 
     - name: Mage
       if: ${{ steps.cache.outputs.cache-hit != 'true' }}

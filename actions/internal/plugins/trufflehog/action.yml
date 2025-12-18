@@ -42,7 +42,7 @@ runs:
       uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
       with:
         path: /usr/local/bin/trufflehog
-        key: trufflehog-${{ inputs.trufflehog-version }}
+        key: trufflehog-${{ runner.os }}-${{ runner.arch }}-${{ inputs.trufflehog-version }}
 
     - name: Install Trufflehog
       if: ${{ steps.cache.outputs.cache-hit != 'true' }}
