@@ -367,7 +367,8 @@ jobs:
         id: checkout-specified-branch
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
-          ref: ${{ inputs.branch }}
+          # Force main ref when running in act (it copies files locally, it breaks if we specify another ref)
+          ref: ${{ !github.event.act && inputs.branch || 'main' }}
           persist-credentials: false
 
       - name: Determine plugin version suffix
@@ -584,7 +585,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
-          ref: ${{ inputs.branch }}
+          # Force main ref when running in act (it copies files locally, it breaks if we specify another ref)
+          ref: ${{ !github.event.act && inputs.branch || 'main' }}
           persist-credentials: false
 
       - name: Determine if it should continue the pipeline if a publishing conflict was detected
@@ -954,7 +956,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
-          ref: ${{ inputs.branch }}
+          # Force main ref when running in act (it copies files locally, it breaks if we specify another ref)
+          ref: ${{ !github.event.act && inputs.branch || 'main' }}
           persist-credentials: false
 
       - name: Get secrets from Vault
@@ -1001,7 +1004,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
-          ref: ${{ inputs.branch }}
+          # Force main ref when running in act (it copies files locally, it breaks if we specify another ref)
+          ref: ${{ !github.event.act && inputs.branch || 'main' }}
           persist-credentials: false
 
       - name: Download GitHub artifact
