@@ -7,6 +7,13 @@ inputs:
       Directory of the plugin, if not in the root of the repository.
     required: false
     default: .
+  act-cache-warmup:
+    description: |
+      If true, run in a simplified mode for caching Node/Go tooling before running any tests with `act`.
+      This will not attempt to detect the package manager or cache the plugin's dependencies.
+      This should only be used when testing with `act`.
+    required: false
+    default: "false"
   go-version:
     description: |
       Go version to use.
@@ -43,13 +50,14 @@ runs:
   using: composite
   steps:
     - name: Detect package manager
+      if: ${{ inputs.act-cache-warmup != 'true' }}
       id: package-manager
       uses: grafana/plugin-actions/package-manager-detect@package-manager-detect/v1.0.1
       with:
         working-directory: ${{ inputs.plugin-directory }}
 
     - name: Install pnpm
-      if: ${{ steps.package-manager.outputs.name == 'pnpm' }}
+      if: ${{ inputs.act-cache-warmup != 'true' && steps.package-manager.outputs.name == 'pnpm' }}
       uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4.2.0
       with:
         version: ${{ steps.package-manager.outputs.version }}
@@ -59,8 +67,8 @@ runs:
       with:
         node-version: "${{ inputs.node-version }}"
         node-version-file: "${{ inputs.node-version-file }}"
-        cache: ${{ steps.package-manager.outputs.name }}
-        cache-dependency-path: ${{ steps.package-manager.outputs.lockFilePath }}
+        cache: ${{ inputs.act-cache-warmup != 'true' && steps.package-manager.outputs.name || '' }}
+        cache-dependency-path: ${{ inputs.act-cache-warmup != 'true' && steps.package-manager.outputs.lockFilePath }}
 
     # Install additional dependencies that are not built-in to the slim act image
     # but are included in the default GitHub Actions runner image and are needed for plugin-ci-workflows.
@@ -74,8 +82,6 @@ runs:
         if ! command -v yarn >/dev/null 2>&1; then
           npm install -g yarn
         fi
-        apt-get update
-        apt-get install -y rsync
 
     - name: Go
       uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
@@ -83,7 +89,7 @@ runs:
         go-version: "${{ inputs.go-version }}"
         go-version-file: "${{ inputs.go-version-file }}"
         cache: ${{ inputs.go-setup-caching == 'true' }}
-        cache-dependency-path: ${{ format('{0}/go.sum', inputs.plugin-directory) || '' }}
+        cache-dependency-path: ${{ inputs.act-cache-warmup != 'true' && format('{0}/go.sum', inputs.plugin-directory) || '' }}
 
     - name: Cache Go tooling
       id: cache
