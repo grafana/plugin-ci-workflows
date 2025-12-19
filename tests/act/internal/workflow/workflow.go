@@ -3,6 +3,7 @@
 package workflow
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -18,7 +19,10 @@ type Workflow interface {
 	// Marshal converts the Workflow instance to its YAML representation.
 	Marshal() ([]byte, error)
 
+	// Children returns the child workflows of this workflow.
 	Children() []Workflow
+
+	// Jobs returns the jobs defined in the workflow.
 	Jobs() map[string]*Job
 }
 
@@ -81,35 +85,76 @@ type Job struct {
 	Container ContainerJob `yaml:"container,omitempty"`
 }
 
-// ReplaceStep replaces (mocks) a step with the given id with the provided steps.
+// ReplaceStepAtIndex replaces (mocks) a step at the given index with the provided steps.
+// It's similar to ReplaceStep, but uses the step index instead of the step id.
+// This can be used for mocking steps in tests.
 // The target step is replaced in place by the new steps.
+// The original step's "If" condition is preserved and applied to all new steps.
+// The original step's ID is preserved and applied to the first new step.
 // If more than one step is provided, they will be injected at the same position as the original step
 // in place of the original step.
-// This can be used for mocking steps in tests.
-func (j *Job) ReplaceStep(id string, steps ...Step) error {
-	stepIndex := j.getStepIndex(id)
-	if stepIndex == -1 {
-		return fmt.Errorf("step with id %q not found", id)
+// In this case, only the first new step will keep the original step's ID, and the others will have no ID.
+// If the step index is out of range or no steps are provided, an error is returned.
+func (j *Job) ReplaceStepAtIndex(stepIndex int, steps ...Step) error {
+	if len(steps) == 0 {
+		return errors.New("no steps provided to replace")
 	}
+	if stepIndex < 0 || stepIndex >= len(j.Steps) {
+		return fmt.Errorf("step index %d out of range", stepIndex)
+	}
+	originalStep := j.Steps[stepIndex]
+
+	// Preserve original step "If" condition if present
+	if originalStep.If != "" {
+		for i := range steps {
+			steps[i].If = originalStep.If
+		}
+	}
+
+	// Preserve the original step ID, but only for the first step.
+	// If we replace multiple steps, only the first one should keep the original ID.
+	steps[0].ID = originalStep.ID
+
 	// Replace the step with the new steps, injecting them at the same position
 	j.Steps = append(j.Steps[:stepIndex], append(steps, j.Steps[stepIndex+1:]...)...)
 	return nil
 }
 
-// RemoveStep removes a step with the given id from the job's steps.
-// If the step is not found, an error is returned.
+// ReplaceStep replaces (mocks) a step with the given id with the provided steps.
+// It's similar to ReplaceStepAtIndex, but looks up the step by its id.
+// See the documentation of ReplaceStepAtIndex for more details.
+func (j *Job) ReplaceStep(id string, steps ...Step) error {
+	stepIndex := j.getStepIndex(id)
+	if stepIndex == -1 {
+		return fmt.Errorf("step with id %q not found", id)
+	}
+	return j.ReplaceStepAtIndex(stepIndex, steps...)
+}
+
+// RemoveStep removes a step at the given index from the job's steps.
+// This is similar to RemoveStep, but uses the step index instead of the step id.
 // This can be used for removing steps in tests, for example to skip certain actions
 // that are not relevant to the test in order to speed up execution.
 // Be careful when removing steps that are required by other steps (e.g.: steps that set outputs
 // used by later steps), as this may cause the workflow to fail.
+func (j *Job) RemoveStepAtIndex(stepIndex int) error {
+	if stepIndex < 0 || stepIndex >= len(j.Steps) {
+		return fmt.Errorf("step index %d out of range", stepIndex)
+	}
+	// Remove the step
+	j.Steps = append(j.Steps[:stepIndex], j.Steps[stepIndex+1:]...)
+	return nil
+}
+
+// RemoveStep is similar to RemoveStepAtIndex, but looks up the step by its id.
+// See the documentation of RemoveStepAtIndex for more details.
 func (j *Job) RemoveStep(id string) error {
 	stepIndex := j.getStepIndex(id)
 	if stepIndex == -1 {
 		return fmt.Errorf("step with id %q not found", id)
 	}
 	// Remove the step
-	j.Steps = append(j.Steps[:stepIndex], j.Steps[stepIndex+1:]...)
-	return nil
+	return j.RemoveStepAtIndex(stepIndex)
 }
 
 // getStepIndex returns the index of the step with the given id.

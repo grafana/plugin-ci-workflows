@@ -3,6 +3,7 @@ package workflow
 import (
 	"fmt"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -139,6 +140,13 @@ func WithRunTruffleHogInput(enabled bool) SimpleCIOption {
 	}
 }
 
+// WithAllowUnsignedInput sets the allow-unsigned input for the CI job in the SimpleCI workflow.
+func WithAllowUnsignedInput(enabled bool) SimpleCIOption {
+	return func(w *SimpleCI) {
+		w.BaseWorkflow.Jobs["ci"].With["allow-unsigned"] = enabled
+	}
+}
+
 // WithMockedDist modifies the SimpleCI workflow to mock the test-and-build job
 // to copy pre-built dist files (js + assets + backend executable, NOT the ZIP files)
 // from the tests/act/mockdata folder instead of building them.
@@ -154,6 +162,78 @@ func WithMockedDist(t *testing.T, pluginFolder string) SimpleCIOption {
 			CopyMockFilesStep("dist/"+pluginFolder, "${{ github.workspace }}/${{ inputs.plugin-directory }}/dist/"),
 		))
 		require.NoError(t, testAndBuild.RemoveStep("backend"))
+	}
+}
+
+// Context represents the mocked workflow context.
+// It is the JSON payload returned by the "workflow-context" step.
+type Context struct {
+	IsTrusted bool `json:"isTrusted"`
+	IsForkPR  bool `json:"isForkPR"`
+}
+
+// WithMockedWorkflowContext modifies the SimpleCI workflow to mock the "workflow-context" step
+// to return the given mocked Context.
+// This can be used to test behavior that depends on whether the workflow is running in a trusted context or not.
+func WithMockedWorkflowContext(t *testing.T, ctx Context) SimpleCIOption {
+	return func(w *SimpleCI) {
+		step, err := MockWorkflowContextStep(ctx)
+		require.NoError(t, err)
+
+		const stepID = "workflow-context"
+		err = w.CIWorkflow().BaseWorkflow.Jobs["test-and-build"].ReplaceStep(stepID, step)
+		require.NoError(t, err)
+	}
+}
+
+// WithMockedGCS modifies the SimpleCI workflow to mock all GCS upload steps
+// (which use the google-github-actions/upload-cloud-storage action)
+// to instead copy files to a local folder mounted into the act container at /gcs.
+// It also takes all google-github-actions/auth steps and removes them,
+// as authentication is not needed for local file copy.
+// This allows testing GCS upload functionality without actually accessing GCS.
+// Since GCS is only used in trusted contexts, callers should most likely also use WithMockedWorkflowContext.
+func WithMockedGCS(t *testing.T) SimpleCIOption {
+	const (
+		gcsLoginAction  = "google-github-actions/auth"
+		gcsUploadAction = "google-github-actions/upload-cloud-storage"
+	)
+
+	return func(w *SimpleCI) {
+		jobs := w.CIWorkflow().BaseWorkflow.Jobs
+		for jk, job := range jobs {
+			for i, step := range job.Steps {
+				switch {
+				case strings.HasPrefix(step.Uses, gcsLoginAction):
+					// Remove the login step entirely
+					err := job.RemoveStepAtIndex(i)
+					require.NoError(t, err)
+
+				case strings.HasPrefix(step.Uses, gcsUploadAction):
+					// Extract the existing inputs and use them in the mocked bash step.
+					// Make sure they are strings and not empty
+					srcPath, ok1 := step.With["path"].(string)
+					destPath, ok2 := step.With["destination"].(string)
+					if srcPath == "" || destPath == "" || !ok1 || !ok2 {
+						require.FailNow(t, "could not mock gcs in job %q step %q (index: %d) because inputs are not valid", jk, step.ID, i)
+					}
+
+					// Replace the step
+					err := job.ReplaceStepAtIndex(i, MockGCSUploadStep(srcPath, destPath))
+					require.NoError(t, err)
+				}
+			}
+		}
+	}
+}
+
+// WithNoOpStep modifies the SimpleCI workflow to replace the step with the given ID
+// in the job with the given name with a no-op step.
+// This can be used to skip steps that are not relevant for the test or that would fail otherwise.
+func WithNoOpStep(t *testing.T, jobID, stepID string) SimpleCIOption {
+	return func(w *SimpleCI) {
+		err := w.CIWorkflow().BaseWorkflow.Jobs[jobID].ReplaceStep(stepID, NoOpStep(stepID))
+		require.NoError(t, err)
 	}
 }
 
