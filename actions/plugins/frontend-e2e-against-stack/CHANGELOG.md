@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.2](https://github.com/grafana/plugin-ci-workflows/compare/plugins-frontend-e2e-against-stack/v1.0.1...plugins-frontend-e2e-against-stack/v1.0.2) (2025-12-19)
+
+
+### 🔧 Chores
+
+* **deps:** update actions/setup-node action to v6 ([#362](https://github.com/grafana/plugin-ci-workflows/issues/362)) ([69022ab](https://github.com/grafana/plugin-ci-workflows/commit/69022ab90ecdfe03890fa825bb3337d9625aac4f))
+
 ## [1.0.1](https://github.com/grafana/plugin-ci-workflows/compare/plugins-frontend-e2e-against-stack/v1.0.0...plugins-frontend-e2e-against-stack/v1.0.1) (2025-12-19)
 
 
