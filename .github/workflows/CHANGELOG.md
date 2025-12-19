@@ -1,5 +1,13 @@
 # Changelog
 
+## [5.0.1](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v5.0.0...ci-cd-workflows/v5.0.1) (2025-12-19)
+
+
+### 🔧 Chores
+
+* **deps:** update actions/setup-node action to v6 ([#362](https://github.com/grafana/plugin-ci-workflows/issues/362)) ([69022ab](https://github.com/grafana/plugin-ci-workflows/commit/69022ab90ecdfe03890fa825bb3337d9625aac4f))
+* **main:** release plugins-frontend-e2e-against-stack 1.0.1 ([#432](https://github.com/grafana/plugin-ci-workflows/issues/432)) ([d3ca365](https://github.com/grafana/plugin-ci-workflows/commit/d3ca3655e308cd68c085f42910760aa01e726b44))
+
 ## [5.0.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v4.3.0...ci-cd-workflows/v5.0.0) (2025-12-17)
 
 
