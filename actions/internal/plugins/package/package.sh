@@ -101,7 +101,7 @@ fi
 exe_basename=$(basename $exe)
 for file in $(find "$backend_folder" -type f -name "${exe_basename}_*"); do
     # Extract os+arch from the file name
-    os_arch=$(echo $(basename $file) | sed -E "s|${exe_basename}_(\w+)(.exe)?|\1|")
+    os_arch=$(echo $(basename $file) | sed -E "s|${exe_basename}_([a-zA-Z0-9_]+)(.exe)?|\1|")
 
     # Temporary folder for the zip file
     tmp=$(mktemp -d)

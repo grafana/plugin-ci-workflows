@@ -50,7 +50,7 @@ func TestPackage(t *testing.T) {
 				workflow.WithRunTruffleHogInput(false),
 
 				// Mock the test-and-build job to copy pre-built dist files
-				workflow.WithMockedDist(t, tc.folder),
+				workflow.WithMockedDist(t, "dist/"+tc.folder),
 			)
 			require.NoError(t, err)
 

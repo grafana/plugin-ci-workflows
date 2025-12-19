@@ -58,10 +58,38 @@ type Runner struct {
 
 	// Verbose enables logging of JSON output from act back to stdout.
 	Verbose bool
+
+	// ContainerArchitecture is the architecture to use for act containers.
+	// By default, act uses the architecture of the host machine.
+	// This can be useful to force a specific platform when running on ARM Macs.
+	ContainerArchitecture string
+}
+
+// RunnerOption is a function that configures a Runner.
+type RunnerOption func(r *Runner)
+
+// WithVerbose enables or disables verbose logging of act output.
+func WithVerbose(verbose bool) RunnerOption {
+	return func(r *Runner) {
+		r.Verbose = verbose
+	}
+}
+
+// WithContainerArchitecture sets the container architecture to use for act.
+func WithContainerArchitecture(architecture string) RunnerOption {
+	return func(r *Runner) {
+		r.ContainerArchitecture = architecture
+	}
+}
+
+// WithLinuxAMD64ContainerArchitecture sets the container architecture to linux/amd64.
+// This is useful when running on ARM Macs to ensure compatibility with x64 images.
+func WithLinuxAMD64ContainerArchitecture() RunnerOption {
+	return WithContainerArchitecture("linux/amd64")
 }
 
 // NewRunner creates a new Runner instance.
-func NewRunner(t *testing.T) (*Runner, error) {
+func NewRunner(t *testing.T, opts ...RunnerOption) (*Runner, error) {
 	// Get GitHub token from environment (GHA) or gh CLI (local)
 	ghToken, ok := os.LookupEnv("GITHUB_TOKEN")
 	if !ok || ghToken == "" {
@@ -86,6 +114,12 @@ func NewRunner(t *testing.T) (*Runner, error) {
 	if err != nil {
 		return nil, fmt.Errorf("new gcs: %w", err)
 	}
+
+	// Apply options
+	for _, opt := range opts {
+		opt(r)
+	}
+
 	return r, nil
 }
 
@@ -109,8 +143,11 @@ func (r *Runner) args(workflowFile string, payloadFile string) ([]string, error)
 		// Required for cloning private repos
 		"--secret", "GITHUB_TOKEN=" + r.gitHubToken,
 
-		// Mount mockdata (for mocked testdata, dist artifacts) and GCS (for mocked GCS)
-		"--container-options", `"-v $PWD/tests/act/mockdata:/mockdata -v ` + r.GCS.basePath + `:/gcs"`,
+		// Mounts:
+		// - mockdata: for mocked testdata, dist artifacts
+		// - GCS: for mocked GCS
+		// - /tmp: for temporary files, so the host's /tmp is used
+		"--container-options", `"-v $PWD/tests/act/mockdata:/mockdata -v ` + r.GCS.basePath + `:/gcs -v /tmp:/tmp"`,
 	}
 
 	// Map local all possible references of plugin-ci-workflows to the local repository
@@ -122,6 +159,9 @@ func (r *Runner) args(workflowFile string, payloadFile string) ([]string, error)
 
 	if r.ConcurrentJobs > 0 {
 		args = append(args, "--concurrent-jobs", fmt.Sprint(r.ConcurrentJobs))
+	}
+	if r.ContainerArchitecture != "" {
+		args = append(args, "--container-architecture", r.ContainerArchitecture)
 	}
 	// Map all self-hosted runners otherwise they don't run in act.
 	for _, label := range selfHostedRunnerLabels {
@@ -292,9 +332,18 @@ func (r *Runner) parseGHACommand(data logLine, runResult *RunResult) {
 		// Store the output value. StepID can be an array in case of composite actions,
 		// group all composite action outputs under the first step ID for simplicity.
 		runResult.Outputs.Set(data.JobID, data.StepID[0], data.Name, data.Arg)
+	case "debug", "notice", "warning", "error":
+		// Summary
+		runResult.Summary = append(runResult.Summary, SummaryEntry{
+			Level:   SummaryLevel(data.Command),
+			Title:   data.KvPairs["title"],
+			Message: data.Arg,
+		})
 	default:
-		// Nothing special to do, ignore silently
-		break
+		// Nothing special to do
+		if r.Verbose && data.Command != "" {
+			fmt.Printf("%s: [%s]: unhandled GHA command %q, ignoring", r.t.Name(), data.Job, data.Command)
+		}
 	}
 }
 
@@ -362,6 +411,32 @@ type RunResult struct {
 
 	// Outputs contains the outputs for each job + step of the workflow run.
 	Outputs Outputs
+
+	// Summary contains the GitHub Actions summary entries generated during the workflow run.
+	Summary []SummaryEntry
+}
+
+// SummaryLevel represents the level of a GitHub Actions summary entry.
+type SummaryLevel string
+
+// Summary levels
+const (
+	SummaryLevelDebug   SummaryLevel = "debug"
+	SummaryLevelNotice  SummaryLevel = "notice"
+	SummaryLevelWarning SummaryLevel = "warning"
+	SummaryLevelError   SummaryLevel = "error"
+)
+
+// SummaryEntry represents a single GitHub Actions summary entry.
+type SummaryEntry struct {
+	// Level is the level of the summary entry.
+	Level SummaryLevel
+
+	// Title is the optional title of the summary entry.
+	Title string
+
+	// Message is the message of the summary entry itself.
+	Message string
 }
 
 // newRunResult creates a new empty RunResult instance.

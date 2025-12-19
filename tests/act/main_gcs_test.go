@@ -55,7 +55,7 @@ func TestGCS(t *testing.T) {
 						workflow.WithRunPluginValidatorInput(false),
 
 						// Mock dist so we don't spend time building the plugin
-						workflow.WithMockedDist(t, tc.folder),
+						workflow.WithMockedDist(t, "dist/"+tc.folder),
 						// Mock a trusted context to enable GCS upload
 						workflow.WithMockedWorkflowContext(t, workflow.Context{
 							IsTrusted: true,
