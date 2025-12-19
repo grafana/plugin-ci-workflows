@@ -366,7 +366,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
-          ref: ${{ inputs.branch }}
+          # Force exact ref when running in act (it copies files locally, it breaks if we specify another ref)
+          ref: ${{ !github.event.act && inputs.branch || github.sha }}
           persist-credentials: false
 
       - name: Determine workflow context
@@ -632,7 +633,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
-          ref: ${{ inputs.branch }}
+          # Force exact ref when running in act (it copies files locally, it breaks if we specify another ref)
+          ref: ${{ !github.event.act && inputs.branch || github.sha }}
           persist-credentials: false
 
       - name: Check docs exist
