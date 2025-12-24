@@ -1,6 +1,8 @@
 name: Generate changelog version bump changelog
 description: |
-  Bump npm version, create a git tag and optionally generate a changelog on main using the generate-changelog npm package.
+  Bump npm version, create a git tag and optionally generate a changelog.
+  Can be run from main branch or from a tag to lock version at specific commit.
+  When run from a tag, automatically rebases onto latest main if needed.
 
 inputs:
   version:
@@ -57,6 +59,72 @@ runs:
         git config user.name 'grafana-plugins-platform-bot[bot]'
         git config user.email '144369747+grafana-plugins-platform-bot[bot]@users.noreply.github.com'
 
+    - name: Prepare branch for version bump
+      shell: bash
+      run: |
+        set -e
+
+        # Detect execution context
+        if ! git symbolic-ref -q HEAD > /dev/null; then
+          echo "::notice::Detached HEAD detected - running from tag"
+          IS_TAG_TRIGGER=true
+          TAG_COMMIT=$(git rev-parse HEAD)
+          echo "tag-commit=${TAG_COMMIT}" >> $GITHUB_ENV
+        else
+          CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+          echo "::notice::Running from branch: ${CURRENT_BRANCH}"
+          IS_TAG_TRIGGER=false
+        fi
+        echo "is-tag-trigger=${IS_TAG_TRIGGER}" >> $GITHUB_ENV
+
+        # Fetch latest remote state
+        echo "Fetching latest main from remote..."
+        git fetch origin main:refs/remotes/origin/main
+        REMOTE_MAIN_SHA=$(git rev-parse origin/main)
+        echo "remote-main-sha=${REMOTE_MAIN_SHA}" >> $GITHUB_ENV
+
+        # Handle tag trigger
+        if [ "$IS_TAG_TRIGGER" = "true" ]; then
+          echo "::group::Tag-based workflow preparation"
+          echo "Tag points to: ${TAG_COMMIT}"
+          echo "Remote main at: ${REMOTE_MAIN_SHA}"
+
+          # Validate tag is in main history
+          if ! git merge-base --is-ancestor "${TAG_COMMIT}" "${REMOTE_MAIN_SHA}"; then
+            echo "::error::Tag commit ${TAG_COMMIT} is not in main branch history"
+            echo "::error::The tag must point to a commit that exists in the main branch"
+            exit 1
+          fi
+
+          # Create local main branch from tag commit
+          git checkout -B main "${TAG_COMMIT}"
+          echo "::notice::Created local main branch at tag commit"
+
+          # Check if rebase will be needed
+          if [ "${TAG_COMMIT}" != "${REMOTE_MAIN_SHA}" ]; then
+            echo "::warning::Main has moved ahead since tag was created"
+            echo "::warning::Version bump will be rebased onto latest main before pushing"
+            echo "needs-rebase=true" >> $GITHUB_ENV
+
+            # Calculate commits that will be rebased over
+            COMMITS_AHEAD=$(git rev-list --count ${TAG_COMMIT}..${REMOTE_MAIN_SHA})
+            echo "::notice::Main is ${COMMITS_AHEAD} commit(s) ahead"
+          else
+            echo "::notice::Tag is at main HEAD - fast-forward push"
+            echo "needs-rebase=false" >> $GITHUB_ENV
+          fi
+          echo "::endgroup::"
+        else
+          # Running from branch - validate
+          CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+          if [ "${CURRENT_BRANCH}" != "main" ]; then
+            echo "::error::Running from branch '${CURRENT_BRANCH}' but expected 'main'"
+            echo "::error::This action must be run from main branch or from a tag"
+            exit 1
+          fi
+          echo "needs-rebase=false" >> $GITHUB_ENV
+        fi
+
     - name: Get previous tag before bumping
       id: previous-tag
       if: ${{ inputs.generate-changelog == 'true' }}
@@ -111,10 +179,58 @@ runs:
         git add package-lock.json || true
         git add CHANGELOG.md || true  # No-op if changelog not generated
         git commit -m "chore(version): bump version to ${NEW_VERSION}"
-        git push origin main
       env:
         GITHUB_TOKEN: ${{ steps.generate-github-token.outputs.token }}
         NEW_VERSION: ${{ steps.bump.outputs.new-version }}
+
+    - name: Rebase on latest main (if needed)
+      if: env.needs-rebase == 'true'
+      shell: bash
+      run: |
+        set -e
+
+        echo "::group::Rebasing version bump onto latest main"
+        echo "Rebasing commit: $(git log -1 --oneline)"
+        echo "Onto: origin/main (${REMOTE_MAIN_SHA})"
+
+        # Perform rebase
+        if ! git rebase origin/main; then
+          echo "::error::Rebase failed with conflicts"
+          echo "::error::Files modified by version bump conflict with changes in main"
+          echo "::error::This typically means package.json, package-lock.json, or CHANGELOG.md"
+          echo "::error::were modified in commits merged to main since tag was created"
+          echo "::error::"
+          echo "::error::Resolution options:"
+          echo "::error::  1. Create a new tag at current main HEAD and re-run workflow"
+          echo "::error::  2. Manually resolve conflicts and push"
+
+          # Abort rebase to leave clean state
+          git rebase --abort
+          exit 1
+        fi
+
+        echo "::notice::Rebase successful"
+        echo "::notice::Version bump commit now on top of latest main"
+        echo "::notice::New commit: $(git log -1 --oneline)"
+        echo "::endgroup::"
+      env:
+        REMOTE_MAIN_SHA: ${{ env.remote-main-sha }}
+
+    - name: Push to main
+      shell: bash
+      run: |
+        echo "::group::Pushing to origin/main"
+        if git push origin main; then
+          echo "::notice::Successfully pushed version bump to main"
+        else
+          EXIT_CODE=$?
+          echo "::error::Failed to push to origin/main"
+          echo "::error::Check permissions and branch protection rules"
+          exit $EXIT_CODE
+        fi
+        echo "::endgroup::"
+      env:
+        GITHUB_TOKEN: ${{ steps.generate-github-token.outputs.token }}
 
     - name: Create git tag
       shell: bash
