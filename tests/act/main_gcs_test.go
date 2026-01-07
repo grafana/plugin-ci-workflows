@@ -37,11 +37,11 @@ func TestGCS(t *testing.T) {
 		t.Run(tc.folder, func(t *testing.T) {
 			t.Parallel()
 
-			for _, event := range []act.EventPayload{
+			for _, event := range []act.Event{
 				act.NewPushEventPayload("main"),
 				act.NewPullRequestEventPayload("feature-branch"),
 			} {
-				t.Run(event.Name(), func(t *testing.T) {
+				t.Run(string(event.Kind), func(t *testing.T) {
 					runner, err := act.NewRunner(t)
 					require.NoError(t, err)
 
@@ -82,7 +82,7 @@ func TestGCS(t *testing.T) {
 
 					// Expect commit hash any zip
 					expFiles := []string{filepath.Join(commitBasePath, anyZipFn)}
-					if event.IsPush() {
+					if event.Kind == act.EventKindPush {
 						// Also expect zips in the "latest" folder if the event is a push to main, rather than a PR
 						expFiles = append(expFiles, filepath.Join(latestBasePath, anyZipFn))
 					}
@@ -93,7 +93,7 @@ func TestGCS(t *testing.T) {
 							backendZipFn := osArchZipFileName(tc.id, tc.version, osArch)
 							expFiles = append(expFiles, filepath.Join(commitBasePath, backendZipFn))
 
-							if event.IsPush() {
+							if event.Kind == act.EventKindPush {
 								// Also latest os/arch zip
 								expFiles = append(expFiles, filepath.Join(latestBasePath, backendZipFn))
 							}
@@ -150,7 +150,7 @@ func TestGCS(t *testing.T) {
 						{outputName: "zip_urls_commit", expected: expCommitZIPURLs, shouldBePresentInPR: true},
 						{outputName: "zip_urls_latest", expected: expLatestZIPURLs, shouldBePresentInPR: false},
 					} {
-						if !exp.shouldBePresentInPR && !event.IsPush() {
+						if !exp.shouldBePresentInPR && event.Kind == act.EventKindPullRequest {
 							continue
 						}
 						jsonOutput, ok := r.Outputs.Get("upload-to-gcs", "outputs", exp.outputName)

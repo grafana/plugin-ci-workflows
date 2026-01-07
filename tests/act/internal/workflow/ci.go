@@ -274,14 +274,9 @@ func WithMockedWorkflowContext(t *testing.T, ctx Context) SimpleCIOption {
 // This allows testing GCS upload functionality without actually accessing GCS.
 // Since GCS is only used in trusted contexts, callers should most likely also use WithMockedWorkflowContext.
 func WithMockedGCS(t *testing.T) SimpleCIOption {
-	const (
-		gcsLoginAction  = "google-github-actions/auth"
-		gcsUploadAction = "google-github-actions/upload-cloud-storage"
-	)
-
 	return func(w *SimpleCI) {
 		jobs := w.CIWorkflow().BaseWorkflow.Jobs
-		for jk, job := range jobs {
+		for _, job := range jobs {
 			for i, step := range job.Steps {
 				switch {
 				case strings.HasPrefix(step.Uses, gcsLoginAction):
@@ -290,16 +285,10 @@ func WithMockedGCS(t *testing.T) SimpleCIOption {
 					require.NoError(t, err)
 
 				case strings.HasPrefix(step.Uses, gcsUploadAction):
-					// Extract the existing inputs and use them in the mocked bash step.
-					// Make sure they are strings and not empty
-					srcPath, ok1 := step.With["path"].(string)
-					destPath, ok2 := step.With["destination"].(string)
-					if srcPath == "" || destPath == "" || !ok1 || !ok2 {
-						require.FailNow(t, "could not mock gcs in job %q step %q (index: %d) because inputs are not valid", jk, step.ID, i)
-					}
-
 					// Replace the step
-					err := job.ReplaceStepAtIndex(i, MockGCSUploadStep(srcPath, destPath))
+					mockedStep, err := MockGCSUploadStep(step)
+					require.NoError(t, err)
+					err = job.ReplaceStepAtIndex(i, mockedStep)
 					require.NoError(t, err)
 				}
 			}

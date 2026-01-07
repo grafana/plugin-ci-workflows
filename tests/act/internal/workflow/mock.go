@@ -5,6 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"path/filepath"
+	"strings"
+)
+
+const (
+	gcsLoginAction  = "google-github-actions/auth"
+	gcsUploadAction = "google-github-actions/upload-cloud-storage"
 )
 
 // CopyMockFilesStep returns a Step that copies mock files from a source folder to a destination folder.
@@ -39,11 +45,26 @@ func NoOpStep(id string) Step {
 
 // MockGCSUploadStep returns a Step that mocks uploading files to Google Cloud Storage (GCS).
 // Instead of actually uploading to GCS, it copies files to a local folder mounted into the act container at /gcs.
-// The srcPath is the source path of the files to upload inside the GitHub Actions runner workspace.
-// The destPath is the destination path inside the mocked GCS bucket (i.e., inside /gcs).
-func MockGCSUploadStep(srcPath, destPath string) Step {
+// The originalStep parameter is the original GCS upload step to be mocked.
+// The original step must use the `google-github-actions/upload-cloud-storage` action
+// and have valid "path" and "destination" inputs.
+// If those conditions are not met, an error is returned.
+func MockGCSUploadStep(originalStep Step) (Step, error) {
+	// Make sure the original step is indeed a GCS upload step
+	if !strings.HasPrefix(originalStep.Uses, gcsUploadAction) {
+		return Step{}, fmt.Errorf("cannot mock gcs for a step that uses %q action, must be %q", originalStep.Uses, gcsUploadAction)
+	}
+
+	// Extract the existing inputs and use them in the mocked bash step.
+	// Make sure they are strings and not empty
+	srcPath, ok1 := originalStep.With["path"].(string)
+	destPath, ok2 := originalStep.With["destination"].(string)
+	if srcPath == "" || destPath == "" || !ok1 || !ok2 {
+		return Step{}, fmt.Errorf("could not mock gcs step %q (id: %q) because inputs are not valid", originalStep.Name, originalStep.ID)
+	}
+
 	return Step{
-		Name: "Upload to GCS (mocked)",
+		Name: originalStep.Name + " (mocked)",
 		Run: Commands{
 			"set -x",
 			`mkdir -p /gcs/` + destPath,
@@ -62,7 +83,7 @@ func MockGCSUploadStep(srcPath, destPath string) Step {
 			`echo "uploaded=$files" >> "$GITHUB_OUTPUT"`,
 		}.String(),
 		Shell: "bash",
-	}
+	}, nil
 }
 
 // MockWorkflowContextStep returns a Step that mocks the "workflow-context" step

@@ -124,7 +124,7 @@ func NewRunner(t *testing.T, opts ...RunnerOption) (*Runner, error) {
 }
 
 // args returns the CLI arguments to pass to act for the given workflow and event payload files.
-func (r *Runner) args(workflowFile string, payloadFile string) ([]string, error) {
+func (r *Runner) args(eventKind EventKind, workflowFile string, payloadFile string) ([]string, error) {
 	// Get a unique free port for the act artifact server, so multiple act instances can run in parallel
 	artifactServerPort, err := getFreePort()
 	if err != nil {
@@ -132,6 +132,10 @@ func (r *Runner) args(workflowFile string, payloadFile string) ([]string, error)
 	}
 
 	args := []string{
+		// Positional args: event kind
+		string(eventKind),
+
+		// Flags
 		"-W", workflowFile,
 		"-e", payloadFile,
 		"--rm",
@@ -222,7 +226,7 @@ func (r *Runner) localRepositoryArgs() ([]string, error) {
 }
 
 // Run runs the given workflow with the given event payload using act.
-func (r *Runner) Run(workflow workflow.Workflow, eventPayload EventPayload) (*RunResult, error) {
+func (r *Runner) Run(workflow workflow.Workflow, event Event) (*RunResult, error) {
 	runResult := newRunResult()
 
 	// Create temp workflow file inside .github/workflows or act won't
@@ -235,13 +239,13 @@ func (r *Runner) Run(workflow workflow.Workflow, eventPayload EventPayload) (*Ru
 	// defer os.Remove(workflowFile)
 
 	// Create temp event payload file to simulate a GitHub event
-	payloadFile, err := CreateTempEventFile(eventPayload)
+	payloadFile, err := CreateTempEventFile(event)
 	if err != nil {
 		return nil, fmt.Errorf("create temp event file: %w", err)
 	}
 	defer os.Remove(payloadFile)
 
-	args, err := r.args(workflowFile, payloadFile)
+	args, err := r.args(event.Kind, workflowFile, payloadFile)
 	if err != nil {
 		return nil, fmt.Errorf("get act args: %w", err)
 	}
