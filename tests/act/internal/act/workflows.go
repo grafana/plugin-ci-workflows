@@ -60,6 +60,34 @@ func WithEventActor(actor string) EventOption {
 	}
 }
 
+// WithForkPR marks a pull request event as coming from a fork.
+// This sets the pull_request.head.repo.full_name to a different value than
+// the repository.full_name, which makes the workflow detect it as a fork PR.
+// The fork repository name defaults to "fork-user/plugin-ci-workflows" but can be
+// customized by providing a forkRepo parameter.
+func WithForkPR(forkRepo ...string) EventOption {
+	return func(e *Event) {
+		if e.Kind != EventKindPullRequest {
+			return // Only applies to pull request events
+		}
+		forkRepoName := "fork-user/plugin-ci-workflows"
+		if len(forkRepo) > 0 && forkRepo[0] != "" {
+			forkRepoName = forkRepo[0]
+		}
+		if pr, ok := e.Payload["pull_request"].(map[string]any); ok {
+			if head, ok := pr["head"].(map[string]any); ok {
+				if repo, ok := head["repo"].(map[string]any); ok {
+					repo["full_name"] = forkRepoName
+				} else {
+					head["repo"] = map[string]any{
+						"full_name": forkRepoName,
+					}
+				}
+			}
+		}
+	}
+}
+
 // NewEventPayload creates a new EventPayload with the given data.
 // It always includes an "act": true key-value pair.
 func NewEventPayload(kind EventKind, data map[string]any, opts ...EventOption) Event {
@@ -88,12 +116,20 @@ func NewPushEventPayload(branch string, opts ...EventOption) Event {
 
 // NewPullRequestEventPayload creates a new EventPayload for a pull request event
 // from a branch with the given name.
+// By default, it creates a non-fork PR (head repo same as base repo).
+// To create a fork PR, use the WithForkPR option.
 func NewPullRequestEventPayload(prBranch string, opts ...EventOption) Event {
 	return NewEventPayload(EventKindPullRequest, map[string]any{
 		"action": "opened",
+		"repository": map[string]any{
+			"full_name": "grafana/plugin-ci-workflows",
+		},
 		"pull_request": map[string]any{
 			"head": map[string]any{
 				"ref": prBranch,
+				"repo": map[string]any{
+					"full_name": "grafana/plugin-ci-workflows",
+				},
 			},
 			"base": map[string]any{
 				"ref": "main",
