@@ -38,7 +38,7 @@ func TestValidator(t *testing.T) {
 		sourceFolder       string
 		packagedDistFolder string
 
-		expSuccess bool
+		expSuccess     bool
 		expAnnotations []act.Annotation
 	}{
 		{
@@ -79,6 +79,13 @@ func TestValidator(t *testing.T) {
 			runner, err := act.NewRunner(t, act.WithLinuxAMD64ContainerArchitecture())
 			require.NoError(t, err)
 
+			validatorConfig := `
+global:
+  enabled: true
+analyzers:
+  osv-scanner:
+    enabled: false
+`
 			wf, err := workflow.NewSimpleCI(
 				workflow.WithPluginDirectoryInput("tests/"+tc.sourceFolder),
 				workflow.WithDistArtifactPrefixInput(tc.sourceFolder+"-"),
@@ -89,6 +96,7 @@ func TestValidator(t *testing.T) {
 
 				// Enable the plugin validator (opt-in)
 				workflow.WithRunPluginValidatorInput(true),
+				workflow.WithPluginValidatorConfigInput(validatorConfig),
 
 				// Mock dist so we don't spend time building the plugin
 				workflow.WithMockedPackagedDistArtifacts(t, "dist/"+tc.sourceFolder, tc.packagedDistFolder),

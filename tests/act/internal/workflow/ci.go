@@ -134,6 +134,13 @@ func WithRunPluginValidatorInput(enabled bool) SimpleCIOption {
 	}
 }
 
+// WithPluginValidatorConfigInput sets the plugin-validator-config input for the CI job in the SimpleCI workflow.
+func WithPluginValidatorConfigInput(config string) SimpleCIOption {
+	return func(w *SimpleCI) {
+		w.BaseWorkflow.Jobs["ci"].With["plugin-validator-config"] = config
+	}
+}
+
 // WithRunTruffleHogInput sets the run-trufflehog input for the CI job in the SimpleCI workflow.
 func WithRunTruffleHogInput(enabled bool) SimpleCIOption {
 	return func(w *SimpleCI) {
