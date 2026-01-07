@@ -61,6 +61,7 @@ func WithEventActor(actor string) EventOption {
 }
 
 // WithForkPR marks a pull request event as coming from a fork.
+// The original event must be created with NewPullRequestEventPayload.
 // This sets the pull_request.head.repo.full_name to a different value than
 // the repository.full_name, which makes the workflow detect it as a fork PR.
 // The fork repository name defaults to "fork-user/plugin-ci-workflows" but can be
@@ -74,17 +75,10 @@ func WithForkPR(forkRepo ...string) EventOption {
 		if len(forkRepo) > 0 && forkRepo[0] != "" {
 			forkRepoName = forkRepo[0]
 		}
-		if pr, ok := e.Payload["pull_request"].(map[string]any); ok {
-			if head, ok := pr["head"].(map[string]any); ok {
-				if repo, ok := head["repo"].(map[string]any); ok {
-					repo["full_name"] = forkRepoName
-				} else {
-					head["repo"] = map[string]any{
-						"full_name": forkRepoName,
-					}
-				}
-			}
-		}
+		pr := e.Payload["pull_request"].(map[string]any)
+		head := pr["head"].(map[string]any)
+		repo := head["repo"].(map[string]any)
+		repo["full_name"] = forkRepoName
 	}
 }
 
