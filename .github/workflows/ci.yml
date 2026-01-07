@@ -30,15 +30,19 @@ on:
         description: golangci-lint version to use
         type: string
         required: false
-      go-setup-caching:
-        description: Defines if setup-go action should have caching enabled (https://github.com/actions/setup-go#caching-dependency-files-and-build-outputs)olangci-lint version to use
-        type: boolean
+      mage-version:
+        description: Mage version to use
+        type: string
         required: false
-        default: true
       trufflehog-version:
         description: Trufflehog version to use
         type: string
         required: false
+      go-setup-caching:
+        description: Defines if setup-go action should have caching enabled (https://github.com/actions/setup-go#caching-dependency-files-and-build-outputs)
+        type: boolean
+        required: false
+        default: true
 
       # Build options.
       plugin-directory:
@@ -290,6 +294,7 @@ env:
   DEFAULT_GO_VERSION: "1.25"
   DEFAULT_GOLANGCI_LINT_VERSION: "2.7.2"
   DEFAULT_TRUFFLEHOG_VERSION: "3.91.0"
+  DEFAULT_MAGE_VERSION: "v1.15.0"
 
   GCS_ARTIFACTS_BUCKET: integration-artifacts
   VAULT_INSTANCE: ops
@@ -457,6 +462,7 @@ jobs:
           go-version-file: ${{ fromJson(steps.tooling-versions.outputs.result).goVersionFile }}
           go-setup-caching: ${{ inputs.go-setup-caching }}
           golangci-lint-version: ${{ inputs.golangci-lint-version || env.DEFAULT_GOLANGCI_LINT_VERSION }}
+          mage-version: ${{ inputs.mage-version || env.DEFAULT_MAGE_VERSION }}
 
       - name: Get secrets from Vault
         id: get-secrets
