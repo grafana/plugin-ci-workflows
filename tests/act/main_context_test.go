@@ -173,4 +173,69 @@ func TestContext(t *testing.T) {
 			require.Equalf(t, tc.expIsForkPR, context.IsForkPR, "should be detected as fork PR")
 		})
 	}
+
+	// Test pull_request_target events - should never be trusted (not in trusted events list)
+	for _, tc := range []struct {
+		name         string
+		actor        string
+		testingInput bool
+		expIsTrusted bool
+		expIsForkPR  bool
+	}{
+		{name: "pull_request_target from regular user", actor: "regular-user", testingInput: false, expIsTrusted: false, expIsForkPR: false},
+		{name: "pull_request_target from regular user (testing)", actor: "regular-user", testingInput: true, expIsTrusted: false, expIsForkPR: false},
+		{name: "pull_request_target from trusted bot", actor: "dependabot[bot]", testingInput: false, expIsTrusted: false, expIsForkPR: false},
+		{name: "pull_request_target from trusted bot (testing)", actor: "dependabot[bot]", testingInput: true, expIsTrusted: false, expIsForkPR: false},
+		{name: "pull_request_target from untrusted bot", actor: "hacker[bot]", testingInput: false, expIsTrusted: false, expIsForkPR: false},
+		{name: "pull_request_target from untrusted bot (testing)", actor: "hacker[bot]", testingInput: true, expIsTrusted: false, expIsForkPR: false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			runner, err := act.NewRunner(t)
+			require.NoError(t, err)
+
+			wf, err := workflow.NewSimpleCI(
+				workflow.WithPluginDirectoryInput(filepath.Join("tests", "simple-frontend")),
+				workflow.WithDistArtifactPrefixInput("simple-frontend-"),
+				workflow.WithTestingInput(tc.testingInput),
+				workflow.WithOnlyOneJob(t, testAndBuild),
+				workflow.WithRemoveAllStepsAfter(t, testAndBuild, workflowContext),
+			)
+			require.NoError(t, err)
+
+			// Create a pull_request_target event (untrusted event type)
+			prTargetEvent := act.NewEventPayload(act.EventKindPullRequestTarget, map[string]any{
+				"action": "opened",
+				"repository": map[string]any{
+					"full_name": "grafana/plugin-ci-workflows",
+				},
+				"pull_request": map[string]any{
+					"head": map[string]any{
+						"ref": "feature-branch",
+						"repo": map[string]any{
+							"full_name": "grafana/plugin-ci-workflows",
+						},
+					},
+					"base": map[string]any{
+						"ref": "main",
+					},
+				},
+			}, act.WithEventActor(tc.actor))
+
+			r, err := runner.Run(wf, prTargetEvent)
+			require.NoError(t, err)
+			require.True(t, r.Success, "workflow should succeed")
+
+			contextPayload, ok := r.Outputs.Get(testAndBuild, workflowContext, "result")
+			require.True(t, ok, "output result should be present")
+			var context struct {
+				IsTrusted bool `json:"isTrusted"`
+				IsForkPR  bool `json:"isForkPR"`
+			}
+			require.NoError(t, json.Unmarshal([]byte(contextPayload), &context))
+			require.Equalf(t, tc.expIsTrusted, context.IsTrusted, "pull_request_target should never be trusted")
+			require.Equalf(t, tc.expIsForkPR, context.IsForkPR, "pull_request_target should not be detected as fork PR")
+		})
+	}
 }
