@@ -337,9 +337,9 @@ func (r *Runner) parseGHACommand(data logLine, runResult *RunResult) {
 		// group all composite action outputs under the first step ID for simplicity.
 		runResult.Outputs.Set(data.JobID, data.StepID[0], data.Name, data.Arg)
 	case "debug", "notice", "warning", "error":
-		// Summary
-		runResult.Summary = append(runResult.Summary, SummaryEntry{
-			Level:   SummaryLevel(data.Command),
+		// Annotations
+		runResult.Annotations = append(runResult.Annotations, Annotation{
+			Level:   AnnotationLevel(data.Command),
 			Title:   data.KvPairs["title"],
 			Message: data.Arg,
 		})
@@ -416,30 +416,30 @@ type RunResult struct {
 	// Outputs contains the outputs for each job + step of the workflow run.
 	Outputs Outputs
 
-	// Summary contains the GitHub Actions summary entries generated during the workflow run.
-	Summary []SummaryEntry
+	// Annotations contains the GitHub Actions annotations generated during the workflow run.
+	Annotations []Annotation
 }
 
-// SummaryLevel represents the level of a GitHub Actions summary entry.
-type SummaryLevel string
+// AnnotationLevel represents the level of a GitHub Actions annotation.
+type AnnotationLevel string
 
-// Summary levels
+// Annotation levels
 const (
-	SummaryLevelDebug   SummaryLevel = "debug"
-	SummaryLevelNotice  SummaryLevel = "notice"
-	SummaryLevelWarning SummaryLevel = "warning"
-	SummaryLevelError   SummaryLevel = "error"
+	AnnotationLevelDebug   AnnotationLevel = "debug"
+	AnnotationLevelNotice  AnnotationLevel = "notice"
+	AnnotationLevelWarning AnnotationLevel = "warning"
+	AnnotationLevelError   AnnotationLevel = "error"
 )
 
-// SummaryEntry represents a single GitHub Actions summary entry.
-type SummaryEntry struct {
-	// Level is the level of the summary entry.
-	Level SummaryLevel
+// Annotation represents a single GitHub Actions annotation.
+type Annotation struct {
+	// Level is the level of the annotation.
+	Level AnnotationLevel
 
-	// Title is the optional title of the summary entry.
+	// Title is the optional title of the annotation.
 	Title string
 
-	// Message is the message of the summary entry itself.
+	// Message is the message of the annotation itself.
 	Message string
 }
 

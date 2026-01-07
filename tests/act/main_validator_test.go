@@ -10,25 +10,25 @@ import (
 )
 
 func TestValidator(t *testing.T) {
-	baseValidatorSummary := []act.SummaryEntry{
+	baseValidatorAnnotations := []act.Annotation{
 		{
-			Level:   act.SummaryLevelWarning,
+			Level:   act.AnnotationLevelWarning,
 			Title:   "plugin-validator: Warning: unsigned plugin",
 			Message: `This is a new (unpublished) plugin. This is expected during the initial review process. Please allow the review to continue, and a member of our team will inform you when your plugin can be signed.`,
 		}, {
-			Level:   act.SummaryLevelWarning,
+			Level:   act.AnnotationLevelWarning,
 			Title:   "plugin-validator: Warning: plugin.json: should include screenshots for the Plugin catalog",
 			Message: `Screenshots are displayed in the Plugin catalog. Please add at least one screenshot to your plugin.json.`,
 		}, {
-			Level:   act.SummaryLevelNotice,
+			Level:   act.AnnotationLevelNotice,
 			Title:   "plugin-validator: Recommendation: You can include a sponsorship link if you want users to support your work",
 			Message: `Consider to add a sponsorship link in your plugin.json file (Info.Links section: with Name: 'sponsor' or Name: 'sponsorship'), which will be shown on the plugin details page to allow users to support your work if they wish.`,
 		}, {
-			Level:   act.SummaryLevelWarning,
+			Level:   act.AnnotationLevelWarning,
 			Title:   "plugin-validator: Warning: plugin.json: description is empty",
 			Message: `Consider providing a plugin description for better discoverability.`,
 		}, {
-			Level:   act.SummaryLevelWarning,
+			Level:   act.AnnotationLevelWarning,
 			Title:   "plugin-validator: Warning: License file contains generic text",
 			Message: `Your current license file contains generic text from the license template. Please make sure to replace {name of copyright owner} and {yyyy} with the correct values in your LICENSE file.`,
 		},
@@ -39,21 +39,21 @@ func TestValidator(t *testing.T) {
 		packagedDistFolder string
 
 		expSuccess bool
-		expSummary []act.SummaryEntry
+		expAnnotations []act.Annotation
 	}{
 		{
 			name:               "simple-backend succeeds with warnings",
 			sourceFolder:       "simple-backend",
 			packagedDistFolder: "dist-artifacts-unsigned/simple-backend",
 			expSuccess:         true,
-			expSummary:         baseValidatorSummary,
+			expAnnotations:     baseValidatorAnnotations,
 		},
 		{
 			name:               "simple-frontend-yarn succeeds with warnings",
 			sourceFolder:       "simple-frontend-yarn",
 			packagedDistFolder: "dist-artifacts-unsigned/simple-frontend-yarn",
 			expSuccess:         true,
-			expSummary:         baseValidatorSummary,
+			expAnnotations:     baseValidatorAnnotations,
 		},
 		// Special ZIP where the archive is malformed, used to test plugin-validator error handling
 		{
@@ -61,13 +61,13 @@ func TestValidator(t *testing.T) {
 			sourceFolder:       "simple-frontend",
 			packagedDistFolder: "dist-artifacts-other/simple-frontend-validator-error",
 			expSuccess:         false,
-			expSummary: []act.SummaryEntry{
+			expAnnotations: []act.Annotation{
 				{
-					Level:   act.SummaryLevelError,
+					Level:   act.AnnotationLevelError,
 					Title:   "plugin-validator: Error: Archive contains more than one directory",
 					Message: `Archive should contain only one directory named after plugin id. Found 2 directories. Please see https://grafana.com/developers/plugin-tools/publish-a-plugin/package-a-plugin for more information on how to package a plugin.`,
 				}, {
-					Level:   act.SummaryLevelError,
+					Level:   act.AnnotationLevelError,
 					Title:   "plugin-validator: Error: Plugin archive is improperly structured",
 					Message: `It is possible your plugin archive structure is incorrect. Please see https://grafana.com/developers/plugin-tools/publish-a-plugin/package-a-plugin for more information on how to package a plugin.`,
 				},
@@ -103,15 +103,15 @@ func TestValidator(t *testing.T) {
 				require.False(t, r.Success, "workflow should fail")
 			}
 
-			// Check summary entries
-			require.Subset(t, r.Summary, tc.expSummary)
-			var validatorSummaryCount int
-			for _, s := range r.Summary {
+			// Check annotation entries
+			require.Subset(t, r.Annotations, tc.expAnnotations)
+			var validatorAnnotationCount int
+			for _, s := range r.Annotations {
 				if strings.HasPrefix(s.Title, "plugin-validator:") {
-					validatorSummaryCount++
+					validatorAnnotationCount++
 				}
 			}
-			require.Equal(t, validatorSummaryCount, len(tc.expSummary), "found unexpected plugin-validator gha summary entries")
+			require.Equal(t, validatorAnnotationCount, len(tc.expAnnotations), "found unexpected plugin-validator gha annotation entries")
 		})
 	}
 }
