@@ -22,7 +22,7 @@ concurrency:
 
 env:
   ACT_VERSION: v0.2.82
-  GOLANGCI_LINT_VERSION: "2.7.2"
+  GOLANGCI_LINT_VERSION: "v2.7.2"
 
 permissions:
   contents: read
