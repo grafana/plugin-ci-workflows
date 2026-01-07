@@ -349,6 +349,16 @@ func WithNoOpStep(t *testing.T, jobID, stepID string) SimpleCIOption {
 	}
 }
 
+// WithPullRequestTargetTrigger adds a pull_request_target trigger to the SimpleCI workflow.
+// This can be used to test workflows that respond to pull_request_target events.
+func WithPullRequestTargetTrigger(branches []string) SimpleCIOption {
+	return func(w *SimpleCI) {
+		w.BaseWorkflow.On.PullRequestTarget = OnPullRequestTarget{
+			Branches: branches,
+		}
+	}
+}
+
 // Static checks
 
 var _ Workflow = SimpleCI{}

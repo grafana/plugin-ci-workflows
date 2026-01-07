@@ -199,6 +199,7 @@ func TestContext(t *testing.T) {
 				workflow.WithPluginDirectoryInput(filepath.Join("tests", "simple-frontend")),
 				workflow.WithDistArtifactPrefixInput("simple-frontend-"),
 				workflow.WithTestingInput(tc.testingInput),
+				workflow.WithPullRequestTargetTrigger([]string{"main"}),
 				workflow.WithOnlyOneJob(t, testAndBuild),
 				workflow.WithRemoveAllStepsAfter(t, testAndBuild, workflowContext),
 			)

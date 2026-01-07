@@ -216,9 +216,10 @@ type Step struct {
 
 // On is the YAML representation of GitHub Actions workflow triggers.
 type On struct {
-	Push         OnPush         `yaml:"push,omitempty"`
-	PullRequest  OnPullRequest  `yaml:"pull_request,omitempty"`
-	WorkflowCall OnWorkflowCall `yaml:"workflow_call,omitempty"`
+	Push              OnPush              `yaml:"push,omitempty"`
+	PullRequest       OnPullRequest       `yaml:"pull_request,omitempty"`
+	PullRequestTarget OnPullRequestTarget `yaml:"pull_request_target,omitempty"`
+	WorkflowCall      OnWorkflowCall      `yaml:"workflow_call,omitempty"`
 }
 
 // OnPush is the YAML representation of GitHub Actions push event trigger.
@@ -228,6 +229,11 @@ type OnPush struct {
 
 // OnPullRequest is the YAML representation of GitHub Actions pull_request event trigger.
 type OnPullRequest struct {
+	Branches []string `yaml:"branches,omitempty"`
+}
+
+// OnPullRequestTarget is the YAML representation of GitHub Actions pull_request_target event trigger.
+type OnPullRequestTarget struct {
 	Branches []string `yaml:"branches,omitempty"`
 }
 
