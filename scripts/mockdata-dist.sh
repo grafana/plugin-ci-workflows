@@ -22,7 +22,7 @@ if [ "$#" -ne 1 ]; then
     exit 1
 fi
 
-echo "[$1] Preparing mockdata"
+echo "[$1] Preparing mockdata (dist)"
 cd "$(dirname "$0")/.."
 cd tests/$1
 
