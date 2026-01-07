@@ -398,20 +398,65 @@ jobs:
         env:
           INPUT_TESTING: ${{ inputs.testing }}
 
+      - name: Determine Go and Node versions
+        id: tooling-versions
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          script: |
+            const fs = require('fs');
+
+            const PLUGIN_DIRECTORY = process.env['PLUGIN_DIRECTORY'] || '.';
+            const GO_VERSION = process.env['GO_VERSION'];
+            const NODE_VERSION = process.env['NODE_VERSION'];
+
+            const DEFAULT_GO_VERSION = process.env['DEFAULT_GO_VERSION'];
+            const DEFAULT_NODE_VERSION = process.env['DEFAULT_NODE_VERSION'];
+
+            // Both Go and Node versions are determined as follows:
+            // 1. If explicitly provided as input, use that
+            // 2. If a version file (.nvmrc/go.mod) exists in the plugin directory, use that
+            // 3. Otherwise, use the workflow-level default version
+            let goVersion = '';
+            let goVersionFile = '';
+            if (GO_VERSION) {
+              goVersion = GO_VERSION;
+            } else if (fs.existsSync(`${PLUGIN_DIRECTORY}/go.mod`)) {
+              goVersionFile = `${PLUGIN_DIRECTORY}/go.mod`;
+            } else {
+              goVersion = DEFAULT_GO_VERSION;
+            }
+
+            let nodeVersion = '';
+            let nodeVersionFile = '';
+            if (NODE_VERSION) {
+              nodeVersion = NODE_VERSION;
+            } else if (fs.existsSync(`${PLUGIN_DIRECTORY}/.nvmrc`)) {
+              nodeVersionFile = `${PLUGIN_DIRECTORY}/.nvmrc`;
+            } else {
+              nodeVersion = DEFAULT_NODE_VERSION;
+            }
+
+            const o = { goVersion, goVersionFile, nodeVersion, nodeVersionFile };
+            console.log("Tooling versions:", JSON.stringify(o));
+            return o;
+        env:
+          PLUGIN_DIRECTORY: ${{ inputs.plugin-directory }}
+          GO_VERSION: ${{ inputs.go-version }}
+          NODE_VERSION: ${{ inputs.node-version }}
+          DEFAULT_GO_VERSION: ${{ env.DEFAULT_GO_VERSION }}
+          DEFAULT_NODE_VERSION: ${{ env.DEFAULT_NODE_VERSION }}
+
       - name: Setup
         id: setup
         uses: grafana/plugin-ci-workflows/actions/internal/plugins/setup@main
         with:
-          # The priority to setup the node version is:
-          # 1. inputs.node-version
-          # 2. inputs.plugin-directory/.nvmrc
-          # 3. workflow-level DEFAULT_NODE_VERSION
-          node-version: ${{ inputs.node-version || (hashFiles(format('{0}/.nvmrc', inputs.plugin-directory)) == '' && env.DEFAULT_NODE_VERSION || '') }}
-          node-version-file: ${{ inputs.plugin-directory }}/.nvmrc
-          go-version: ${{ inputs.go-version || env.DEFAULT_GO_VERSION }}
-          golangci-lint-version: ${{ inputs.golangci-lint-version || env.DEFAULT_GOLANGCI_LINT_VERSION }}
-          go-setup-caching: ${{ inputs.go-setup-caching }}
           plugin-directory: ${{ inputs.plugin-directory }}
+          node-version: ${{ fromJson(steps.tooling-versions.outputs.result).nodeVersion }}
+          node-version-file: ${{ fromJson(steps.tooling-versions.outputs.result).nodeVersionFile }}
+          go-version: ${{ fromJson(steps.tooling-versions.outputs.result).goVersion }}
+          go-version-file: ${{ fromJson(steps.tooling-versions.outputs.result).goVersionFile }}
+          go-setup-caching: ${{ inputs.go-setup-caching }}
+          golangci-lint-version: ${{ inputs.golangci-lint-version || env.DEFAULT_GOLANGCI_LINT_VERSION }}
 
       - name: Get secrets from Vault
         id: get-secrets
