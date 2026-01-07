@@ -58,7 +58,7 @@ runs:
         version: ${{ steps.package-manager.outputs.version }}
 
     - name: Node
-      uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+      uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
       with:
         node-version: "${{ inputs.node-version }}"
         node-version-file: "${{ inputs.node-version-file }}"
@@ -88,20 +88,6 @@ runs:
         go-version-file: "${{ inputs.go-version-file }}"
         cache: ${{ inputs.go-setup-caching == 'true' }}
         cache-dependency-path: ${{ format('{0}/go.sum', inputs.plugin-directory) || '' }}
-
-    - name: Determine Go bin directory
-      id: go-bin
-      shell: bash
-      run: echo "gobin=$(go env GOPATH)/bin" >> "$GITHUB_OUTPUT"
-
-    - name: Cache Go tooling
-      id: cache
-      uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
-      with:
-        path: |
-          ${{ steps.go-bin.outputs.gobin }}/golangci-lint
-          ${{ steps.go-bin.outputs.gobin }}/mage
-        key: go-tools-os=${{ runner.os }}-arch=${{ runner.arch }}-go=${{ steps.go.outputs.go-version }}-mage=${{ inputs.mage-version }}-golangci-lint=${{ inputs.golangci-lint-version }}
 
     - name: Mage
       if: ${{ steps.cache.outputs.cache-hit != 'true' }}
