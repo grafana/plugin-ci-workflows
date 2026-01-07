@@ -16,8 +16,9 @@ type EventKind string
 // EventKind enum values
 
 const (
-	EventKindPush        EventKind = "push"
-	EventKindPullRequest EventKind = "pull_request"
+	EventKindPush              EventKind = "push"
+	EventKindPullRequest       EventKind = "pull_request"
+	EventKindPullRequestTarget EventKind = "pull_request_target"
 )
 
 // Event represents the event with a name and payload to pass to act.
