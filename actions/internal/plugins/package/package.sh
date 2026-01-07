@@ -111,7 +111,7 @@ for file in $(find "$backend_folder" -type f -name "${exe_basename}_*"); do
     # Copy all files but the executables, preserving permissions and mod times (similar to rsync)
     pushd "$dist" > /dev/null
     # -name "${exe_basename}*" -prune: Ignore (prune) all executables
-    # -o -type f -print: OR, print file name
+    # -o -type f -print0: OR, print file name (NUL-terminated) for use with xargs -0
     # Copy with cp, preserving permissions and create any required parent directories to the dest folder
     find . -name "${exe_basename}*" -prune -o -type f -print0 | xargs -0 cp -p --parents -t "$tmp/$plugin_id"
     popd > /dev/null
