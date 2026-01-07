@@ -30,15 +30,19 @@ on:
         description: golangci-lint version to use
         type: string
         required: false
-      go-setup-caching:
-        description: Defines if setup-go action should have caching enabled (https://github.com/actions/setup-go#caching-dependency-files-and-build-outputs)olangci-lint version to use
-        type: boolean
+      mage-version:
+        description: Mage version to use
+        type: string
         required: false
-        default: true
       trufflehog-version:
         description: Trufflehog version to use
         type: string
         required: false
+      go-setup-caching:
+        description: Defines if setup-go action should have caching enabled (https://github.com/actions/setup-go#caching-dependency-files-and-build-outputs)
+        type: boolean
+        required: false
+        default: true
 
       # Build options.
       plugin-directory:
@@ -290,6 +294,7 @@ env:
   DEFAULT_GO_VERSION: "1.25"
   DEFAULT_GOLANGCI_LINT_VERSION: "2.7.2"
   DEFAULT_TRUFFLEHOG_VERSION: "3.91.0"
+  DEFAULT_MAGE_VERSION: "v1.15.0"
 
   GCS_ARTIFACTS_BUCKET: integration-artifacts
   VAULT_INSTANCE: ops
@@ -398,20 +403,66 @@ jobs:
         env:
           INPUT_TESTING: ${{ inputs.testing }}
 
+      - name: Determine Go and Node versions
+        id: tooling-versions
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          script: |
+            const fs = require('fs');
+
+            const PLUGIN_DIRECTORY = process.env['PLUGIN_DIRECTORY'] || '.';
+            const GO_VERSION = process.env['GO_VERSION'];
+            const NODE_VERSION = process.env['NODE_VERSION'];
+
+            const DEFAULT_GO_VERSION = process.env['DEFAULT_GO_VERSION'];
+            const DEFAULT_NODE_VERSION = process.env['DEFAULT_NODE_VERSION'];
+
+            // Both Go and Node versions are determined as follows:
+            // 1. If explicitly provided as input, use that
+            // 2. If a version file (.nvmrc/go.mod) exists in the plugin directory, use that
+            // 3. Otherwise, use the workflow-level default version
+            let goVersion = '';
+            let goVersionFile = '';
+            if (GO_VERSION) {
+              goVersion = GO_VERSION;
+            } else if (fs.existsSync(`${PLUGIN_DIRECTORY}/go.mod`)) {
+              goVersionFile = `${PLUGIN_DIRECTORY}/go.mod`;
+            } else {
+              goVersion = DEFAULT_GO_VERSION;
+            }
+
+            let nodeVersion = '';
+            let nodeVersionFile = '';
+            if (NODE_VERSION) {
+              nodeVersion = NODE_VERSION;
+            } else if (fs.existsSync(`${PLUGIN_DIRECTORY}/.nvmrc`)) {
+              nodeVersionFile = `${PLUGIN_DIRECTORY}/.nvmrc`;
+            } else {
+              nodeVersion = DEFAULT_NODE_VERSION;
+            }
+
+            const o = { goVersion, goVersionFile, nodeVersion, nodeVersionFile };
+            console.log("Tooling versions:", JSON.stringify(o));
+            return o;
+        env:
+          PLUGIN_DIRECTORY: ${{ inputs.plugin-directory }}
+          GO_VERSION: ${{ inputs.go-version }}
+          NODE_VERSION: ${{ inputs.node-version }}
+          DEFAULT_GO_VERSION: ${{ env.DEFAULT_GO_VERSION }}
+          DEFAULT_NODE_VERSION: ${{ env.DEFAULT_NODE_VERSION }}
+
       - name: Setup
         id: setup
         uses: grafana/plugin-ci-workflows/actions/internal/plugins/setup@main
         with:
-          # The priority to setup the node version is:
-          # 1. inputs.node-version
-          # 2. inputs.plugin-directory/.nvmrc
-          # 3. workflow-level DEFAULT_NODE_VERSION
-          node-version: ${{ inputs.node-version || (hashFiles(format('{0}/.nvmrc', inputs.plugin-directory)) == '' && env.DEFAULT_NODE_VERSION || '') }}
-          node-version-file: ${{ inputs.plugin-directory }}/.nvmrc
-          go-version: ${{ inputs.go-version || env.DEFAULT_GO_VERSION }}
-          golangci-lint-version: ${{ inputs.golangci-lint-version || env.DEFAULT_GOLANGCI_LINT_VERSION }}
-          go-setup-caching: ${{ inputs.go-setup-caching }}
           plugin-directory: ${{ inputs.plugin-directory }}
+          node-version: ${{ fromJson(steps.tooling-versions.outputs.result).nodeVersion }}
+          node-version-file: ${{ fromJson(steps.tooling-versions.outputs.result).nodeVersionFile }}
+          go-version: ${{ fromJson(steps.tooling-versions.outputs.result).goVersion }}
+          go-version-file: ${{ fromJson(steps.tooling-versions.outputs.result).goVersionFile }}
+          go-setup-caching: ${{ inputs.go-setup-caching }}
+          golangci-lint-version: ${{ inputs.golangci-lint-version || env.DEFAULT_GOLANGCI_LINT_VERSION }}
+          mage-version: ${{ inputs.mage-version || env.DEFAULT_MAGE_VERSION }}
 
       - name: Get secrets from Vault
         id: get-secrets
@@ -427,7 +478,7 @@ jobs:
 
       - name: Generate GitHub token
         id: generate-github-token
-        uses: actions/create-github-app-token@7e473efe3cb98aa54f8d4bac15400b15fad77d94 # v2.2.0
+        uses: actions/create-github-app-token@29824e69f54612133e76f7eaac726eef6c875baf # v2.2.1
         if: ${{ fromJson(steps.workflow-context.outputs.result).isTrusted }}
         with:
           app-id: ${{ fromJSON(steps.get-secrets.outputs.secrets).GITHUB_APP_ID }}
@@ -444,6 +495,7 @@ jobs:
         shell: bash
 
       - name: Replace plugin version
+        id: replace-plugin-version
         if: ${{ inputs.plugin-version-suffix != '' }}
         run: |
           package_json_path="$PLUGIN_DIRECTORY/package.json"
@@ -527,8 +579,8 @@ jobs:
           if [ -n "${PLUGIN_VALIDATOR_CONFIG}" ]; then
             # User-provided configuration content
             echo "Using provided plugin-validator configuration content."
-            PLUGIN_VALIDATOR_CONFIG_PATH=".plugin-validator.yaml"
-            echo "${PLUGIN_VALIDATOR_CONFIG}" > ${PLUGIN_VALIDATOR_CONFIG_PATH}
+            PLUGIN_VALIDATOR_CONFIG_PATH=$(mktemp)
+            echo "${PLUGIN_VALIDATOR_CONFIG}" > "${PLUGIN_VALIDATOR_CONFIG_PATH}"
           elif [ -n "${PLUGIN_VALIDATOR_CONFIG_PATH}" ]; then
             # User-provided configuration file path
             echo "Using plugin-validator configuration file at path: ${PLUGIN_VALIDATOR_CONFIG_PATH}"
@@ -538,8 +590,8 @@ jobs:
             fi
           else
             # Default hardcoded configuration
-            PLUGIN_VALIDATOR_CONFIG_PATH=".plugin-validator.yaml"
             echo "${PLUGIN_VALIDATOR_CONFIG_PATH} configuration file is missing. Providing a default one as fallback."
+            PLUGIN_VALIDATOR_CONFIG_PATH=$(mktemp)
             cat <<EOF > "${PLUGIN_VALIDATOR_CONFIG_PATH}"
           global:
             enabled: true
@@ -553,11 +605,18 @@ jobs:
           # will recurse into the plugin's directory (including node_modules).
           mkdir -p /tmp/empty
 
+          # Copy workspace to a new tempdir to avoid issues when mounting the folder when running with act
+          TEMP_WORKSPACE_DIR=$(mktemp -d)
+          cp -r "${PLUGIN_DIRECTORY}"/* "$TEMP_WORKSPACE_DIR/"
+
+          # Give a UUID to each container so multiple can be run in parallel when running with act
+          UUID=$(cat /proc/sys/kernel/random/uuid)
+
           # Do not run clamav because it takes too long
-          docker run --name=plugin-validator --pull=always \
-            -v "$PWD/${PLUGIN_VALIDATOR_CONFIG_PATH}:/workspace/.plugin-validator.yaml:ro" \
-            -v "$PWD/${PLUGIN_DIRECTORY}/dist-artifacts:/workspace/dist-artifacts:ro" \
-            -v "$PWD/${PLUGIN_DIRECTORY}:/workspace" \
+          docker run --name="plugin-validator-${UUID}" --pull=always --platform=linux/amd64 \
+            -v "${PLUGIN_VALIDATOR_CONFIG_PATH}:/workspace/.plugin-validator.yaml:ro" \
+            -v "${TEMP_WORKSPACE_DIR}/dist-artifacts:/workspace/dist-artifacts:ro" \
+            -v "${TEMP_WORKSPACE_DIR}:/workspace" \
             -v "/tmp/empty:/workspace/node_modules" \
             -e SKIP_CLAMAV=1 \
             grafana/plugin-validator-cli \
@@ -565,7 +624,9 @@ jobs:
             -config=/workspace/.plugin-validator.yaml \
             -sourceCodeUri=file:///workspace \
             "/workspace/dist-artifacts/${UNIVERSAL_ZIP}"
-          exit "$(docker inspect plugin-validator --format='{{.State.ExitCode}}')"
+          EXIT_CODE=$(docker inspect "plugin-validator-${UUID}" --format='{{.State.ExitCode}}')
+          docker rm "plugin-validator-${UUID}"
+          exit "$EXIT_CODE"
         env:
           UNIVERSAL_ZIP: ${{ steps.universal-zip.outputs.zip }}
           PLUGIN_VALIDATOR_CONFIG: ${{ inputs.plugin-validator-config }}

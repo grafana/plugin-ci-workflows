@@ -2,27 +2,45 @@ name: Plugins - Setup
 description: Sets up the environment for building and testing the plugin.
 
 inputs:
+  plugin-directory:
+    description: |
+      Directory of the plugin, if not in the root of the repository.
+    required: false
+    default: .
   go-version:
-    description: Go version to use.
-    required: true
-  node-version:
-    description: Node.js version to use.
-    required: true
-  golangci-lint-version:
-    description: golangci-lint version to use.
-    required: true
+    description: |
+      Go version to use.
+      Either go-version or go-version-file should be provided.
+    required: false
+    default: ""
+  go-version-file:
+    description: |
+      File containing the Go version to use (usually `go.mod`).
+      Either go-version or go-version-file should be provided.
+    required: false
+    default: ""
   go-setup-caching:
     description: Defines if setup-go action should have caching enabled (https://github.com/actions/setup-go#caching-dependency-files-and-build-outputs)
     required: false
-    default: true
-  node-version-file:
-    description: Node.js version file to use.
+    default: "true"
+  node-version:
+    description: |
+      Node.js version to use.
+      Either node-version or node-version-file should be provided.
     required: false
     default: ""
-  plugin-directory:
-    description: Directory of the plugin, if not in the root of the repository.
+  node-version-file:
+    description: |
+      File containing the Node.js version to use (usually `.nvmrc`).
+      Either node-version or node-version-file should be provided.
     required: false
-    default: .
+    default: ""
+  golangci-lint-version:
+    description: golangci-lint version to use.
+    required: true
+  mage-version:
+    description: mage version to use.
+    required: true
 
 runs:
   using: composite
@@ -34,14 +52,13 @@ runs:
         working-directory: ${{ inputs.plugin-directory }}
 
     - name: Install pnpm
-      if: steps.package-manager.outputs.name == 'pnpm'
+      if: ${{ steps.package-manager.outputs.name == 'pnpm' }}
       uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4.2.0
       with:
         version: ${{ steps.package-manager.outputs.version }}
 
-
     - name: Node
-      uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+      uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
       with:
         node-version: "${{ inputs.node-version }}"
         node-version-file: "${{ inputs.node-version-file }}"
@@ -64,17 +81,24 @@ runs:
         apt-get install -y rsync
 
     - name: Go
+      id: go
       uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
       with:
         go-version: "${{ inputs.go-version }}"
-        cache: ${{ inputs.go-setup-caching }}
+        go-version-file: "${{ inputs.go-version-file }}"
+        cache: ${{ inputs.go-setup-caching == 'true' }}
+        cache-dependency-path: ${{ format('{0}/go.sum', inputs.plugin-directory) || '' }}
 
     - name: Mage
+      if: ${{ steps.cache.outputs.cache-hit != 'true' }}
       shell: bash
       run: |
-        go install github.com/magefile/mage@latest
+        go install github.com/magefile/mage@${MAGE_VERSION}
+      env:
+        MAGE_VERSION: ${{ inputs.mage-version }}
 
     - name: golangci-lint
+      if: ${{ steps.cache.outputs.cache-hit != 'true' }}
       shell: bash
       run: |
         curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v${GOLANGCI_LINT_VERSION}

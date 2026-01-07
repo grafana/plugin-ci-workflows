@@ -2,6 +2,7 @@ package workflow
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -134,6 +135,13 @@ func WithRunPluginValidatorInput(enabled bool) SimpleCIOption {
 	}
 }
 
+// WithPluginValidatorConfigInput sets the plugin-validator-config input for the CI job in the SimpleCI workflow.
+func WithPluginValidatorConfigInput(config string) SimpleCIOption {
+	return func(w *SimpleCI) {
+		w.BaseWorkflow.Jobs["ci"].With["plugin-validator-config"] = config
+	}
+}
+
 // WithRunTruffleHogInput sets the run-trufflehog input for the CI job in the SimpleCI workflow.
 func WithRunTruffleHogInput(enabled bool) SimpleCIOption {
 	return func(w *SimpleCI) {
@@ -157,17 +165,27 @@ func WithTestingInput(testing bool) SimpleCIOption {
 
 // WithMockedDist modifies the SimpleCI workflow to mock the test-and-build job
 // to copy pre-built dist files (js + assets + backend executable, NOT the ZIP files)
-// from the tests/act/mockdata folder instead of building them.
+// from a mockdata folder instead of building them.
 // This can be used for tests that need to assert on side-effects of building the plugin,
 // without actually building it, which saves execution time.
-// The pluginFolder parameter is the name of the plugin folder inside tests/act/mockdata/dist.
-func WithMockedDist(t *testing.T, pluginFolder string) SimpleCIOption {
+// The distFolder is relative to tests/act/mockdata (e.g.: `dist/simple-frontend`).
+// The distFolder should use slashes as path separators.
+// The function will convert it to the correct OS-specific separators when needed.
+// The distFolder is sanity-checked to ensure they contain valid data.
+func WithMockedDist(t *testing.T, distFolder string) SimpleCIOption {
 	return func(w *SimpleCI) {
 		testAndBuild := w.CIWorkflow().BaseWorkflow.Jobs["test-and-build"]
-		// require.NoError(t, testAndBuild.RemoveStep("setup"))
+		distFolder = filepath.FromSlash(distFolder)
+
+		// Sanity check that the folder contains dist files
+		_, err := os.Stat(filepath.Join(localMockdataPath(distFolder), "plugin.json"))
+		if err != nil && os.IsNotExist(err) {
+			require.FailNowf(t, "malformed dist folder", "the specified dist folder %q doesn't seem to contain dist artifacts (plugin.json is missing)", distFolder)
+		}
+
 		require.NoError(t, testAndBuild.ReplaceStep(
 			"frontend",
-			CopyMockFilesStep("dist/"+pluginFolder, "${{ github.workspace }}/${{ inputs.plugin-directory }}/dist/"),
+			CopyMockFilesStep(distFolder, "${{ github.workspace }}/${{ inputs.plugin-directory }}/dist/"),
 		))
 		require.NoError(t, testAndBuild.RemoveStep("backend"))
 	}
@@ -197,6 +215,75 @@ func WithOnlyOneJob(t *testing.T, jobID string) SimpleCIOption {
 				continue
 			}
 			delete(w.CIWorkflow().BaseWorkflow.Jobs, k)
+		}
+	}
+}
+
+// WithMockedPackagedDistArtifacts modifies the SimpleCI workflow to mock the steps that create
+// the packaged dist artifacts (ZIP files) in the test-and-build job to copy pre-packaged ZIP files.
+// It also modifies the workflow to mock the dist files using WithMockedDist.
+// This way if any further steps need the dist files (e.g. for extracting metadata from plugin.json), they are present.
+// The distFolder parameter is the name of the plugin folder inside `mockdata` that contains the dist files (js + assets, etc), not the ZIP file.
+// The packagedFolder parameter is the name of the folder inside `mockdata` that contains the pre-packaged ZIP files.
+// Both folders are relative to tests/act/mockdata (e.g.: `dist/simple-frontend` and `dist-artifacts-unsigned/simple-frontend`).
+// Both folders should use slashes as path separators.
+// The function will convert them to the correct OS-specific separators when needed.
+// The specified mock folders are sanity-checked to ensure they contain valid data.
+func WithMockedPackagedDistArtifacts(t *testing.T, distFolder string, packagedFolder string) SimpleCIOption {
+	return func(w *SimpleCI) {
+		// Sanity check that the packaged folder contains ZIP files
+		packagedFolder = filepath.FromSlash(packagedFolder)
+		entries, err := os.ReadDir(localMockdataPath(packagedFolder))
+		if err != nil {
+			require.FailNowf(t, "malformed packaged dist folder", "could not read the specified packaged dist folder %q", packagedFolder)
+		}
+		hasZip := false
+		for _, e := range entries {
+			if !e.IsDir() && strings.HasSuffix(e.Name(), ".zip") {
+				hasZip = true
+				break
+			}
+		}
+		if !hasZip {
+			require.FailNowf(t, "the specified packaged dist folder %q doesn't seem to contain any ZIP files", packagedFolder)
+		}
+
+		// Mock dist files as well (unpackaged plugin files), so if any steps require the dist files, they are present
+		WithMockedDist(t, distFolder)(w)
+
+		testAndBuild := w.CIWorkflow().BaseWorkflow.Jobs["test-and-build"]
+		// Remove unnecessary steps (those that build the plugin)
+		for _, id := range []string{
+			"setup",
+			"replace-plugin-version",
+		} {
+			require.NoError(t, testAndBuild.RemoveStep(id))
+		}
+
+		// Mock package steps
+		dest := "${{ github.workspace }}/${{ inputs.plugin-directory }}/dist-artifacts/"
+		for i, id := range []string{
+			"universal-zip",
+			"os-arch-zips",
+		} {
+			mockStep := CopyMockFilesStep(packagedFolder, dest)
+			// Set step output
+			if i == 0 {
+				// Universal
+				mockStep.Run += "\n" + Commands{
+					// Output ONE zip file, get the name by excluding file names that contain '_'
+					// (which is used as a separator in os/arch zips)
+					`echo zip=$(ls -1 ` + dest + `/*.zip | xargs -n 1 basename | grep -v '_') >> "${GITHUB_OUTPUT}"`,
+				}.String()
+			} else {
+				// os/arch
+				mockStep.Run += "\n" + Commands{
+					// Output ALL ZIP files that contains an '_' (separator for os/arch in zip file names)
+					// as a JSON array
+					`echo zip=$(ls -1 ` + dest + `/*.zip | xargs -n 1 basename | grep '_' | jq -RncM '[inputs]') >> "${GITHUB_OUTPUT}"`,
+				}.String()
+			}
+			require.NoError(t, testAndBuild.ReplaceStep(id, mockStep))
 		}
 	}
 }
