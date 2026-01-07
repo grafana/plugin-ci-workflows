@@ -43,6 +43,7 @@ jobs:
     name: Lint ${{ matrix.directory }}
     runs-on: ubuntu-arm64-small
     strategy:
+      fail-fast: false
       matrix:
         directory:
           - tests/act
