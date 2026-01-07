@@ -1,5 +1,35 @@
 # Changelog
 
+## [5.1.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v5.0.0...ci-cd-workflows/v5.1.0) (2026-01-07)
+
+
+### 🎉 Features
+
+* **ci:** setup Go version from go.mod if possible ([#465](https://github.com/grafana/plugin-ci-workflows/issues/465)) ([5d5ab0a](https://github.com/grafana/plugin-ci-workflows/commit/5d5ab0a5fddf3b9ab538e5207a996d1fee8f908a))
+
+
+### 🐛 Bug Fixes
+
+* **tests:** fix act checkout in pull_request events ([#463](https://github.com/grafana/plugin-ci-workflows/issues/463)) ([56388a7](https://github.com/grafana/plugin-ci-workflows/commit/56388a7772a3a4f35fe67f54b77598a38ad30d9c))
+
+
+### ⚡ Performance Improvements
+
+* **ci:** cache mage, Trufflehog and golangci-lint binaries ([#467](https://github.com/grafana/plugin-ci-workflows/issues/467)) ([b736834](https://github.com/grafana/plugin-ci-workflows/commit/b73683467666c8a40cf2f475bec1ccfa77142d3a))
+
+
+### ✅ Tests
+
+* **act:** add plugin-validator tests ([#457](https://github.com/grafana/plugin-ci-workflows/issues/457)) ([82db8bf](https://github.com/grafana/plugin-ci-workflows/commit/82db8bf61eeea38e68bad0d74262676f0cf6237d))
+
+
+### 🔧 Chores
+
+* **deps:** update actions/create-github-app-token action to v2.2.1 ([#475](https://github.com/grafana/plugin-ci-workflows/issues/475)) ([eeaa07a](https://github.com/grafana/plugin-ci-workflows/commit/eeaa07abac7139e34586f25eba499b819d6b09ea))
+* **deps:** update actions/setup-node action to v6 ([#362](https://github.com/grafana/plugin-ci-workflows/issues/362)) ([69022ab](https://github.com/grafana/plugin-ci-workflows/commit/69022ab90ecdfe03890fa825bb3337d9625aac4f))
+* **deps:** update peter-evans/create-pull-request action to v8 ([#478](https://github.com/grafana/plugin-ci-workflows/issues/478)) ([8f4d6ea](https://github.com/grafana/plugin-ci-workflows/commit/8f4d6ea8d1cf3dbe4c7fffd951765b3ec40a0f53))
+* **main:** release plugins-frontend-e2e-against-stack 1.0.1 ([#432](https://github.com/grafana/plugin-ci-workflows/issues/432)) ([d3ca365](https://github.com/grafana/plugin-ci-workflows/commit/d3ca3655e308cd68c085f42910760aa01e726b44))
+
 ## [5.0.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v4.3.0...ci-cd-workflows/v5.0.0) (2025-12-17)
 
 
