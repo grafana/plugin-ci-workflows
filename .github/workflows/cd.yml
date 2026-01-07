@@ -367,7 +367,8 @@ jobs:
         id: checkout-specified-branch
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
-          ref: ${{ inputs.branch }}
+          # Force exact ref when running in act (it copies files locally, it breaks if we specify another ref)
+          ref: ${{ !github.event.act && inputs.branch || github.sha }}
           persist-credentials: false
 
       - name: Determine plugin version suffix
@@ -584,7 +585,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
-          ref: ${{ inputs.branch }}
+          # Force exact ref when running in act (it copies files locally, it breaks if we specify another ref)
+          ref: ${{ !github.event.act && inputs.branch || github.sha }}
           persist-credentials: false
 
       - name: Determine if it should continue the pipeline if a publishing conflict was detected
@@ -954,7 +956,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
-          ref: ${{ inputs.branch }}
+          # Force exact ref when running in act (it copies files locally, it breaks if we specify another ref)
+          ref: ${{ !github.event.act && inputs.branch || github.sha }}
           persist-credentials: false
 
       - name: Get secrets from Vault
@@ -968,7 +971,7 @@ jobs:
 
       - name: Generate GitHub token
         id: generate-github-token
-        uses: actions/create-github-app-token@7e473efe3cb98aa54f8d4bac15400b15fad77d94 # v2.2.0
+        uses: actions/create-github-app-token@29824e69f54612133e76f7eaac726eef6c875baf # v2.2.1
         with:
           app-id: ${{ env.GITHUB_APP_ID }}
           private-key: ${{ env.GITHUB_APP_PRIVATE_KEY }}
@@ -1001,7 +1004,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
-          ref: ${{ inputs.branch }}
+          # Force exact ref when running in act (it copies files locally, it breaks if we specify another ref)
+          ref: ${{ !github.event.act && inputs.branch || github.sha }}
           persist-credentials: false
 
       - name: Download GitHub artifact

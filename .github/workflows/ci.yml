@@ -366,7 +366,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
-          ref: ${{ inputs.branch }}
+          # Force exact ref when running in act (it copies files locally, it breaks if we specify another ref)
+          ref: ${{ !github.event.act && inputs.branch || github.sha }}
           persist-credentials: false
 
       - name: Determine workflow context
@@ -471,7 +472,7 @@ jobs:
 
       - name: Generate GitHub token
         id: generate-github-token
-        uses: actions/create-github-app-token@7e473efe3cb98aa54f8d4bac15400b15fad77d94 # v2.2.0
+        uses: actions/create-github-app-token@29824e69f54612133e76f7eaac726eef6c875baf # v2.2.1
         if: ${{ fromJson(steps.workflow-context.outputs.result).isTrusted }}
         with:
           app-id: ${{ fromJSON(steps.get-secrets.outputs.secrets).GITHUB_APP_ID }}
@@ -677,7 +678,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
-          ref: ${{ inputs.branch }}
+          # Force exact ref when running in act (it copies files locally, it breaks if we specify another ref)
+          ref: ${{ !github.event.act && inputs.branch || github.sha }}
           persist-credentials: false
 
       - name: Check docs exist
