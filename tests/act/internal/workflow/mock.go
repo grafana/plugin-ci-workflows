@@ -4,6 +4,7 @@ package workflow
 import (
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 	"strings"
 )
 
@@ -19,7 +20,7 @@ const (
 // You can use GitHub Actions expressions in destFolder, e.g., "${{ github.workspace }}/plugins/my-plugin/dist".
 func CopyMockFilesStep(sourceFolder string, destFolder string) Step {
 	return Step{
-		Name: "Copy mock dist files",
+		Name: "Copy mock files",
 		Run: Commands{
 			"set -x",
 			"mkdir -p " + destFolder,
@@ -102,4 +103,10 @@ func MockWorkflowContextStep(ctx Context) (Step, error) {
 		},
 		Shell: "bash",
 	}, nil
+}
+
+// localMockdataPath returns the full path to a file or folder inside tests/act/mockdata
+// used for accessing mock data locally, outside of the act container.
+func localMockdataPath(parts ...string) string {
+	return filepath.Join("tests", "act", "mockdata", filepath.Join(parts...))
 }

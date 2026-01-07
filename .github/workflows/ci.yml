@@ -495,6 +495,7 @@ jobs:
         shell: bash
 
       - name: Replace plugin version
+        id: replace-plugin-version
         if: ${{ inputs.plugin-version-suffix != '' }}
         run: |
           package_json_path="$PLUGIN_DIRECTORY/package.json"
@@ -578,8 +579,8 @@ jobs:
           if [ -n "${PLUGIN_VALIDATOR_CONFIG}" ]; then
             # User-provided configuration content
             echo "Using provided plugin-validator configuration content."
-            PLUGIN_VALIDATOR_CONFIG_PATH=".plugin-validator.yaml"
-            echo "${PLUGIN_VALIDATOR_CONFIG}" > ${PLUGIN_VALIDATOR_CONFIG_PATH}
+            PLUGIN_VALIDATOR_CONFIG_PATH=$(mktemp)
+            echo "${PLUGIN_VALIDATOR_CONFIG}" > "${PLUGIN_VALIDATOR_CONFIG_PATH}"
           elif [ -n "${PLUGIN_VALIDATOR_CONFIG_PATH}" ]; then
             # User-provided configuration file path
             echo "Using plugin-validator configuration file at path: ${PLUGIN_VALIDATOR_CONFIG_PATH}"
@@ -589,8 +590,8 @@ jobs:
             fi
           else
             # Default hardcoded configuration
-            PLUGIN_VALIDATOR_CONFIG_PATH=".plugin-validator.yaml"
             echo "${PLUGIN_VALIDATOR_CONFIG_PATH} configuration file is missing. Providing a default one as fallback."
+            PLUGIN_VALIDATOR_CONFIG_PATH=$(mktemp)
             cat <<EOF > "${PLUGIN_VALIDATOR_CONFIG_PATH}"
           global:
             enabled: true
@@ -604,11 +605,18 @@ jobs:
           # will recurse into the plugin's directory (including node_modules).
           mkdir -p /tmp/empty
 
+          # Copy workspace to a new tempdir to avoid issues when mounting the folder when running with act
+          TEMP_WORKSPACE_DIR=$(mktemp -d)
+          cp -r "${PLUGIN_DIRECTORY}"/* "$TEMP_WORKSPACE_DIR/"
+
+          # Give a UUID to each container so multiple can be run in parallel when running with act
+          UUID=$(cat /proc/sys/kernel/random/uuid)
+
           # Do not run clamav because it takes too long
-          docker run --name=plugin-validator --pull=always \
-            -v "$PWD/${PLUGIN_VALIDATOR_CONFIG_PATH}:/workspace/.plugin-validator.yaml:ro" \
-            -v "$PWD/${PLUGIN_DIRECTORY}/dist-artifacts:/workspace/dist-artifacts:ro" \
-            -v "$PWD/${PLUGIN_DIRECTORY}:/workspace" \
+          docker run --name="plugin-validator-${UUID}" --pull=always --platform=linux/amd64 \
+            -v "${PLUGIN_VALIDATOR_CONFIG_PATH}:/workspace/.plugin-validator.yaml:ro" \
+            -v "${TEMP_WORKSPACE_DIR}/dist-artifacts:/workspace/dist-artifacts:ro" \
+            -v "${TEMP_WORKSPACE_DIR}:/workspace" \
             -v "/tmp/empty:/workspace/node_modules" \
             -e SKIP_CLAMAV=1 \
             grafana/plugin-validator-cli \
@@ -616,7 +624,9 @@ jobs:
             -config=/workspace/.plugin-validator.yaml \
             -sourceCodeUri=file:///workspace \
             "/workspace/dist-artifacts/${UNIVERSAL_ZIP}"
-          exit "$(docker inspect plugin-validator --format='{{.State.ExitCode}}')"
+          EXIT_CODE=$(docker inspect "plugin-validator-${UUID}" --format='{{.State.ExitCode}}')
+          docker rm "plugin-validator-${UUID}"
+          exit "$EXIT_CODE"
         env:
           UNIVERSAL_ZIP: ${{ steps.universal-zip.outputs.zip }}
           PLUGIN_VALIDATOR_CONFIG: ${{ inputs.plugin-validator-config }}
