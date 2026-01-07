@@ -75,7 +75,7 @@ func TestSmoke(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			r, err := runner.Run(wf, act.NewEmptyEventPayload())
+			r, err := runner.Run(wf, act.NewPushEventPayload("main"))
 			require.NoError(t, err)
 			require.True(t, r.Success, "workflow should succeed")
 

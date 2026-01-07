@@ -79,13 +79,6 @@ func NewEventPayload(kind EventKind, data map[string]any, opts ...EventOption) E
 	return e
 }
 
-// NewEmptyEventPayload creates a new default "push" EventPayload with only the default "act": true key-value pair.
-//
-// Deprecated: use NewEventPayload instead.
-func NewEmptyEventPayload(opts ...EventOption) Event {
-	return NewEventPayload(EventKindPush, map[string]any{}, opts...)
-}
-
 // NewPushEventPayload creates a new EventPayload for a push event on the given branch.
 func NewPushEventPayload(branch string, opts ...EventOption) Event {
 	return NewEventPayload(EventKindPush, map[string]any{

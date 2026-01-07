@@ -103,7 +103,7 @@ analyzers:
 			)
 			require.NoError(t, err)
 
-			r, err := runner.Run(wf, act.NewEmptyEventPayload())
+			r, err := runner.Run(wf, act.NewPushEventPayload("main"))
 			require.NoError(t, err)
 			if tc.expSuccess {
 				require.True(t, r.Success, "workflow should succeed")

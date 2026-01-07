@@ -56,7 +56,7 @@ func TestContext(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			r, err := runner.Run(wf, act.NewEmptyEventPayload(act.WithEventActor(tc.actor)))
+			r, err := runner.Run(wf, act.NewPushEventPayload("main", act.WithEventActor(tc.actor)))
 			require.NoError(t, err)
 			require.True(t, r.Success, "workflow should succeed")
 
