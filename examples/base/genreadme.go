@@ -94,8 +94,8 @@ func _main() error {
 		return fmt.Errorf("error creating %s: %w", outputFileName, err)
 	}
 	defer func() {
-		if cerr := file.Close(); cerr != nil {
-			log.Printf("Warning: error closing file %s: %v", outputPath, cerr)
+		if closeErr := file.Close(); closeErr != nil && err == nil {
+			err = closeErr
 		}
 	}()
 
@@ -108,24 +108,28 @@ func _main() error {
 	return nil
 }
 
-func extractContentAfterMarker(filePath string) (string, int, error) {
+func extractContentAfterMarker(filePath string) (content string, order int, err error) {
 	file, err := os.Open(filePath)
 	if err != nil {
 		return "", 0, err
 	}
-	defer file.Close()
+	defer func() {
+		if closeErr := file.Close(); closeErr != nil && err == nil {
+			err = closeErr
+		}
+	}()
 
 	scanner := bufio.NewScanner(file)
 	var lines []string
 	foundMarker := false
-	order := 999 // Default order for files without order comment
+	order = 999 // Default order for files without order comment
 
 	for scanner.Scan() {
 		line := scanner.Text()
 
 		// Check for order comment
 		if matches := orderRegex.FindStringSubmatch(line); matches != nil {
-			if orderNum, err := strconv.Atoi(matches[1]); err == nil {
+			if orderNum, parseErr := strconv.Atoi(matches[1]); parseErr == nil {
 				order = orderNum
 			}
 			continue // Don't include the order comment in the output
@@ -150,7 +154,7 @@ func extractContentAfterMarker(filePath string) (string, int, error) {
 	}
 
 	// Join lines and trim trailing whitespace
-	content := strings.Join(lines, "\n")
+	content = strings.Join(lines, "\n")
 	content = strings.TrimSpace(content)
 
 	return content, order, nil
