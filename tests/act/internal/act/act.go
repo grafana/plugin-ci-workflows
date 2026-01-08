@@ -32,6 +32,7 @@ var (
 		"ubuntu-arm64-xlarge",
 		"ubuntu-arm64-2xlarge",
 	}
+	globalLogMutex sync.Mutex
 )
 
 const nektosActRunnerImage = "ghcr.io/catthehacker/ubuntu:act-latest"
@@ -376,9 +377,11 @@ func (r *Runner) processStream(reader io.Reader, runResult *RunResult) error {
 
 	// Print all buffered logs in a GitHub Actions log group
 	if r.inGitHubActions {
+		globalLogMutex.Lock()
 		fmt.Printf("::group::%s\n", r.name)
 		fmt.Print(logBuffer.String())
 		fmt.Println("::endgroup::")
+		globalLogMutex.Unlock()
 	}
 
 	return nil
