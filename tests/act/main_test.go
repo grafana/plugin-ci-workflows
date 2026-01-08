@@ -83,7 +83,7 @@ func TestMain(m *testing.M) {
 	}
 	r, err := runner.Run(
 		workflow.NewTestingWorkflow("toolcache-warmup", cacheWarmupWf),
-		act.NewEmptyEventPayload(),
+		act.NewPushEventPayload("main"),
 	)
 	if err != nil {
 		panic(fmt.Errorf("warm up act toolcache: %w", err))

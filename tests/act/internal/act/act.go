@@ -196,9 +196,7 @@ func (r *Runner) args(eventKind EventKind, workflowFile string, payloadFile stri
 // localRepositoryArgs returns act CLI arguments to map local references of plugin-ci-workflows
 // to the local repository based on release-please configuration and manifest.
 // It adds a CLI flag for each release-please component and the main branch.
-func (r *Runner) localRepositoryArgs() ([]string, error) {
-	var args []string
-
+func (r *Runner) localRepositoryArgs() (args []string, err error) {
 	// Get local repository path
 	pciwfRoot, err := os.Getwd()
 	if err != nil {
@@ -215,7 +213,11 @@ func (r *Runner) localRepositoryArgs() ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("open release-please-config.json: %w", err)
 	}
-	defer cfgF.Close()
+	defer func() {
+		if closeErr := cfgF.Close(); closeErr != nil && err == nil {
+			err = closeErr
+		}
+	}()
 	if err := json.NewDecoder(cfgF).Decode(&releasePleaseConfig); err != nil {
 		return nil, fmt.Errorf("decode release-please-config.json: %w", err)
 	}
@@ -225,7 +227,11 @@ func (r *Runner) localRepositoryArgs() ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("open .release-please-manifest.json: %w", err)
 	}
-	defer manifestF.Close()
+	defer func() {
+		if closeErr := manifestF.Close(); closeErr != nil && err == nil {
+			err = closeErr
+		}
+	}()
 	var releasePleaseManifest map[string]string
 	if err := json.NewDecoder(manifestF).Decode(&releasePleaseManifest); err != nil {
 		return nil, fmt.Errorf("decode release-please-config.json: %w", err)
@@ -245,8 +251,9 @@ func (r *Runner) localRepositoryArgs() ([]string, error) {
 }
 
 // Run runs the given workflow with the given event payload using act.
-func (r *Runner) Run(workflow workflow.Workflow, event Event) (*RunResult, error) {
-	runResult := newRunResult()
+func (r *Runner) Run(workflow workflow.Workflow, event Event) (runResult *RunResult, err error) {
+	result := newRunResult()
+	runResult = &result
 
 	// Create temp workflow file inside .github/workflows or act won't
 	// map the repo to the workflow correctly.
@@ -262,7 +269,11 @@ func (r *Runner) Run(workflow workflow.Workflow, event Event) (*RunResult, error
 	if err != nil {
 		return nil, fmt.Errorf("create temp event file: %w", err)
 	}
-	defer os.Remove(payloadFile)
+	defer func() {
+		if removeErr := os.Remove(payloadFile); removeErr != nil && err == nil {
+			err = removeErr
+		}
+	}()
 
 	args, err := r.args(event.Kind, workflowFile, payloadFile)
 	if err != nil {
@@ -322,7 +333,7 @@ func (r *Runner) Run(workflow workflow.Workflow, event Event) (*RunResult, error
 	if err := cmd.Wait(); err != nil {
 		if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() != 0 {
 			runResult.Success = false
-			return &runResult, nil
+			return runResult, nil
 		}
 		return nil, fmt.Errorf("act exit: %w", err)
 	}
@@ -528,7 +539,11 @@ func getFreePort() (port int, err error) {
 	if a, err = net.ResolveTCPAddr("tcp", "localhost:0"); err == nil {
 		var l *net.TCPListener
 		if l, err = net.ListenTCP("tcp", a); err == nil {
-			defer l.Close()
+			defer func() {
+				if closeErr := l.Close(); closeErr != nil && err == nil {
+					err = closeErr
+				}
+			}()
 			return l.Addr().(*net.TCPAddr).Port, nil
 		}
 	}
