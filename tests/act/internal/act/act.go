@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"regexp"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/google/uuid"
@@ -277,25 +278,43 @@ func (r *Runner) Run(workflow workflow.Workflow, event Event) (*RunResult, error
 	cmd := exec.Command("sh", "-c", actCmd)
 	cmd.Env = os.Environ()
 
-	// Get stdout pipe to parse act output
+	// Get stdout and stderr pipes to parse act output
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		return nil, fmt.Errorf("get act stdout pipe: %w", err)
 	}
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		return nil, fmt.Errorf("get act stderr pipe: %w", err)
+	}
 
-	// Just pipe stderr as nothing to parse there
-	cmd.Stderr = os.Stderr
+	// Merge stdout and stderr into a single reader so both are grouped in GHA logs
+	mergedR, mergedW := io.Pipe()
+	go func() {
+		var wg sync.WaitGroup
+		wg.Add(2)
+		go func() {
+			defer wg.Done()
+			io.Copy(mergedW, stdout)
+		}()
+		go func() {
+			defer wg.Done()
+			io.Copy(mergedW, stderr)
+		}()
+		wg.Wait()
+		mergedW.Close()
+	}()
 
 	// Run act in the background
 	if err := cmd.Start(); err != nil {
 		return nil, fmt.Errorf("start act: %w", err)
 	}
 
-	// Process json logs in stdout stream
+	// Process json logs in merged stdout/stderr stream
 	errs := make(chan error, 1)
 	go func() {
-		if err := r.processStream(stdout, &runResult); err != nil {
-			errs <- fmt.Errorf("process act stdout: %w", err)
+		if err := r.processStream(mergedR, &runResult); err != nil {
+			errs <- fmt.Errorf("process act output: %w", err)
 		}
 		errs <- nil
 	}()
@@ -310,7 +329,7 @@ func (r *Runner) Run(workflow workflow.Workflow, event Event) (*RunResult, error
 	}
 	runResult.Success = true
 
-	// Wait for stdout processing to complete
+	// Wait for output processing to complete
 	return &runResult, <-errs
 }
 
