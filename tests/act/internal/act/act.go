@@ -40,6 +40,10 @@ type Runner struct {
 	// t is the testing.T instance for the current test.
 	t *testing.T
 
+	// name is the name of this Runner, used for logging.
+	// By default, this is t.Name(), but can be overridden with WithName().
+	name string
+
 	// uuid is a unique identifier for this Runner instance.
 	uuid uuid.UUID
 
@@ -91,6 +95,14 @@ func WithLinuxAMD64ContainerArchitecture() RunnerOption {
 	return WithContainerArchitecture("linux/amd64")
 }
 
+// WithName sets the name of the Runner, used for logging.
+// By default, the Runner uses t.Name() as its name.
+func WithName(name string) RunnerOption {
+	return func(r *Runner) {
+		r.name = name
+	}
+}
+
 // NewRunner creates a new Runner instance.
 func NewRunner(t *testing.T, opts ...RunnerOption) (*Runner, error) {
 	// Get GitHub token from environment (GHA) or gh CLI (local)
@@ -105,6 +117,7 @@ func NewRunner(t *testing.T, opts ...RunnerOption) (*Runner, error) {
 	}
 	r := &Runner{
 		t:               t,
+		name:            t.Name(),
 		uuid:            uuid.New(),
 		gitHubToken:     ghToken,
 		inGitHubActions: os.Getenv("GITHUB_ACTIONS") == "true",
@@ -332,7 +345,7 @@ func (r *Runner) processStream(reader io.Reader, runResult *RunResult) error {
 
 		// Clean up uuids from data.Job for cleaner output
 		data.Job = logUUIDRegex.ReplaceAllString(data.Job, "")
-		formattedLog := fmt.Sprintf("%s: [%s] %s", r.t.Name(), data.Job, strings.TrimSpace(data.Message))
+		formattedLog := fmt.Sprintf("%s: [%s] %s", r.name, data.Job, strings.TrimSpace(data.Message))
 		r.logOrBuffer(formattedLog, &logBuffer)
 
 		// Parse GHA commands (outputs, annotations, etc.)
@@ -344,7 +357,7 @@ func (r *Runner) processStream(reader io.Reader, runResult *RunResult) error {
 
 	// Print all buffered logs in a GitHub Actions log group
 	if r.inGitHubActions {
-		fmt.Printf("::group::%s\n", r.t.Name())
+		fmt.Printf("::group::%s\n", r.name)
 		fmt.Print(logBuffer.String())
 		fmt.Println("::endgroup::")
 	}
@@ -360,7 +373,7 @@ func (r *Runner) parseGHACommand(data logLine, runResult *RunResult) {
 	switch data.Command {
 	case "set-output":
 		if data.Name == "" {
-			fmt.Printf("%s: [%s]: WARNING: received GHA set-output command without name, ignoring output\n", r.t.Name(), data.Job)
+			fmt.Printf("%s: [%s]: WARNING: received GHA set-output command without name, ignoring output\n", r.name, data.Job)
 			break
 		}
 		// Store the output value. StepID can be an array in case of composite actions,
@@ -376,7 +389,7 @@ func (r *Runner) parseGHACommand(data logLine, runResult *RunResult) {
 	default:
 		// Nothing special to do
 		if r.Verbose && data.Command != "" {
-			fmt.Printf("%s: [%s]: unhandled GHA command %q, ignoring\n", r.t.Name(), data.Job, data.Command)
+			fmt.Printf("%s: [%s]: unhandled GHA command %q, ignoring\n", r.name, data.Job, data.Command)
 		}
 	}
 }

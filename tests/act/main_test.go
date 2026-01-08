@@ -44,7 +44,7 @@ func TestMain(m *testing.M) {
 	// Warm up act-toolcache volume, otherwise we get weird errors
 	// when running the "setup/*" actions in parallel tests since they
 	// all share the same act-toolcache volume.
-	runner, err := act.NewRunner(&testing.T{})
+	runner, err := act.NewRunner(&testing.T{}, act.WithName("toolcache-warmup"))
 	if err != nil {
 		panic(err)
 	}
