@@ -36,13 +36,16 @@ type BaseWorkflow struct {
 }
 
 // NewBaseWorkflowFromFile creates a BaseWorkflow instance by reading and parsing a YAML file at the given path.
-func NewBaseWorkflowFromFile(path string) (BaseWorkflow, error) {
+func NewBaseWorkflowFromFile(path string) (bw BaseWorkflow, err error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return BaseWorkflow{}, fmt.Errorf("open workflow file: %w", err)
 	}
-	defer f.Close()
-	var bw BaseWorkflow
+	defer func() {
+		if closeErr := f.Close(); closeErr != nil && err == nil {
+			err = closeErr
+		}
+	}()
 	if err := yaml.NewDecoder(f).Decode(&bw); err != nil {
 		return BaseWorkflow{}, fmt.Errorf("decode workflow file: %w", err)
 	}
