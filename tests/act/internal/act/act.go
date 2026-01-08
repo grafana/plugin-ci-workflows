@@ -305,14 +305,14 @@ func (r *Runner) Run(workflow workflow.Workflow, event Event) (runResult *RunRes
 		wg.Add(2)
 		go func() {
 			defer wg.Done()
-			io.Copy(mergedW, stdout)
+			_, _ = io.Copy(mergedW, stdout)
 		}()
 		go func() {
 			defer wg.Done()
-			io.Copy(mergedW, stderr)
+			_, _ = io.Copy(mergedW, stderr)
 		}()
 		wg.Wait()
-		mergedW.Close()
+		_ = mergedW.Close()
 	}()
 
 	// Run act in the background
