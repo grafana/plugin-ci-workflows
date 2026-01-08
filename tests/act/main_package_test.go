@@ -176,8 +176,6 @@ func TestPackage(t *testing.T) {
 				expBasePluginZipFiles = append(expBasePluginZipFiles, filepath.Join(tc.expPluginID, "go_plugin_build_manifest"))
 
 				for _, osArch := range osArchCombos {
-					t.Logf("checking plugin ZIP for %s", osArch)
-
 					// Create a copy of the expected base files for each zip file we check
 					expPluginZipFiles := make([]string, len(expBasePluginZipFiles))
 					copy(expPluginZipFiles, expBasePluginZipFiles[:])
