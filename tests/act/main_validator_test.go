@@ -79,7 +79,6 @@ func TestValidator(t *testing.T) {
 			runner, err := act.NewRunner(t, act.WithLinuxAMD64ContainerArchitecture())
 			require.NoError(t, err)
 
-			// Copy plugin to temp directory to avoid leftover files
 			tempDir, err := act.CopyPluginToTemp(t, tc.sourceFolder)
 			require.NoError(t, err)
 

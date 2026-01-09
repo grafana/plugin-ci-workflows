@@ -45,7 +45,6 @@ func TestGCS(t *testing.T) {
 					runner, err := act.NewRunner(t)
 					require.NoError(t, err)
 
-					// Copy plugin to temp directory to avoid leftover files
 					tempDir, err := act.CopyPluginToTemp(t, tc.folder)
 					require.NoError(t, err)
 

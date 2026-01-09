@@ -39,7 +39,6 @@ func TestContext(t *testing.T) {
 			runner, err := act.NewRunner(t)
 			require.NoError(t, err)
 
-			// Copy plugin to temp directory to avoid leftover files
 			tempDir, err := act.CopyPluginToTemp(t, "simple-frontend")
 			require.NoError(t, err)
 
@@ -99,7 +98,6 @@ func TestContext(t *testing.T) {
 			runner, err := act.NewRunner(t)
 			require.NoError(t, err)
 
-			// Copy plugin to temp directory to avoid leftover files
 			tempDir, err := act.CopyPluginToTemp(t, "simple-frontend")
 			require.NoError(t, err)
 
@@ -153,7 +151,6 @@ func TestContext(t *testing.T) {
 			runner, err := act.NewRunner(t)
 			require.NoError(t, err)
 
-			// Copy plugin to temp directory to avoid leftover files
 			tempDir, err := act.CopyPluginToTemp(t, "simple-frontend")
 			require.NoError(t, err)
 
@@ -206,7 +203,6 @@ func TestContext(t *testing.T) {
 			runner, err := act.NewRunner(t)
 			require.NoError(t, err)
 
-			// Copy plugin to temp directory to avoid leftover files
 			tempDir, err := act.CopyPluginToTemp(t, "simple-frontend")
 			require.NoError(t, err)
 
