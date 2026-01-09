@@ -42,6 +42,8 @@ func TestGCS(t *testing.T) {
 				act.NewPullRequestEventPayload("feature-branch"),
 			} {
 				t.Run(string(event.Kind), func(t *testing.T) {
+					t.Parallel()
+
 					runner, err := act.NewRunner(t)
 					require.NoError(t, err)
 
