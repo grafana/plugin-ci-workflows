@@ -90,7 +90,7 @@ jobs:
 
           if [ "$version_count" -gt 1 ]; then
             echo ""
-            echo "⚠️ Found inconsistent workflow references with different versions!"
+            echo "Found inconsistent workflow references with different versions!"
             echo ""
 
             # Build a markdown list showing each version and which files use it
@@ -111,7 +111,7 @@ jobs:
             echo "::warning title=$title::$message"
           else
             echo ""
-            echo "✅ All workflow references use the same version: $versions"
+            echo "All workflow references use the same version: $versions"
           fi
         shell: bash
 
