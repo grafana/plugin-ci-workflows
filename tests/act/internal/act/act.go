@@ -11,7 +11,6 @@ import (
 	"os/exec"
 	"regexp"
 	"strings"
-	"sync"
 	"testing"
 
 	"github.com/google/uuid"
@@ -32,7 +31,6 @@ var (
 		"ubuntu-arm64-xlarge",
 		"ubuntu-arm64-2xlarge",
 	}
-	globalLogMutex sync.Mutex
 )
 
 const nektosActRunnerImage = "ghcr.io/catthehacker/ubuntu:act-latest"
@@ -290,43 +288,25 @@ func (r *Runner) Run(workflow workflow.Workflow, event Event) (runResult *RunRes
 	cmd := exec.Command("sh", "-c", actCmd)
 	cmd.Env = os.Environ()
 
-	// Get stdout and stderr pipes to parse act output
+	// Get stdout pipe to parse act output
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		return nil, fmt.Errorf("get act stdout pipe: %w", err)
 	}
-	stderr, err := cmd.StderrPipe()
-	if err != nil {
-		return nil, fmt.Errorf("get act stderr pipe: %w", err)
-	}
 
-	// Merge stdout and stderr into a single reader so both are grouped in GHA logs
-	mergedR, mergedW := io.Pipe()
-	go func() {
-		var wg sync.WaitGroup
-		wg.Add(2)
-		go func() {
-			defer wg.Done()
-			io.Copy(mergedW, stdout)
-		}()
-		go func() {
-			defer wg.Done()
-			io.Copy(mergedW, stderr)
-		}()
-		wg.Wait()
-		mergedW.Close()
-	}()
+	// Just pipe stderr as nothing to parse there
+	cmd.Stderr = os.Stderr
 
 	// Run act in the background
 	if err := cmd.Start(); err != nil {
 		return nil, fmt.Errorf("start act: %w", err)
 	}
 
-	// Process json logs in merged stdout/stderr stream
+	// Process json logs in stdout stream
 	errs := make(chan error, 1)
 	go func() {
-		if err := r.processStream(mergedR, runResult); err != nil {
-			errs <- fmt.Errorf("process act output: %w", err)
+		if err := r.processStream(stdout, &runResult); err != nil {
+			errs <- fmt.Errorf("process act stdout: %w", err)
 		}
 		errs <- nil
 	}()
@@ -341,8 +321,8 @@ func (r *Runner) Run(workflow workflow.Workflow, event Event) (runResult *RunRes
 	}
 	runResult.Success = true
 
-	// Wait for output processing to complete
-	return runResult, <-errs
+	// Wait for stdout processing to complete
+	return &runResult, <-errs
 }
 
 // logOrBuffer writes a message to the buffer if running in GitHub Actions,
@@ -388,11 +368,9 @@ func (r *Runner) processStream(reader io.Reader, runResult *RunResult) error {
 
 	// Print all buffered logs in a GitHub Actions log group
 	if r.inGitHubActions {
-		globalLogMutex.Lock()
 		fmt.Printf("::group::%s\n", r.name)
 		fmt.Print(logBuffer.String())
 		fmt.Println("::endgroup::")
-		globalLogMutex.Unlock()
 	}
 
 	return nil

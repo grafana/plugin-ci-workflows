@@ -19,6 +19,8 @@ import (
 
 // TestMain sets up the test environment before running the tests.
 func TestMain(m *testing.M) {
+	fmt.Println("preparing test environment")
+
 	// Go to the root of the repo
 	root, err := getRepoRootAbsPath()
 	if err != nil {
