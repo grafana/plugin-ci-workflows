@@ -35,6 +35,7 @@ jobs:
             .github/workflows/cd.yml
             .github/workflows/playwright.yml
             .github/workflows/playwright-docker.yml
+            .github/workflows/check-release-channel.yml
             actions/plugins/**
 
       - name: Check drift
