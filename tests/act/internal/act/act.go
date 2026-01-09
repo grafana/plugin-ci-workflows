@@ -305,7 +305,7 @@ func (r *Runner) Run(workflow workflow.Workflow, event Event) (runResult *RunRes
 	// Process json logs in stdout stream
 	errs := make(chan error, 1)
 	go func() {
-		if err := r.processStream(stdout, &runResult); err != nil {
+		if err := r.processStream(stdout, runResult); err != nil {
 			errs <- fmt.Errorf("process act stdout: %w", err)
 		}
 		errs <- nil
@@ -322,7 +322,7 @@ func (r *Runner) Run(workflow workflow.Workflow, event Event) (runResult *RunRes
 	runResult.Success = true
 
 	// Wait for stdout processing to complete
-	return &runResult, <-errs
+	return runResult, <-errs
 }
 
 // logOrBuffer writes a message to the buffer if running in GitHub Actions,
