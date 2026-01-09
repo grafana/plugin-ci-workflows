@@ -114,4 +114,3 @@ jobs:
             echo "All workflow references use the same version: $versions"
           fi
         shell: bash
-
