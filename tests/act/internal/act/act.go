@@ -9,6 +9,7 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"testing"
@@ -131,6 +132,13 @@ func (r *Runner) args(eventKind EventKind, actor string, workflowFile string, pa
 		return nil, fmt.Errorf("get free port for artifact server: %w", err)
 	}
 
+	// Get the repository root so tests can run from any subdirectory
+	repoRoot, err := getRepoRoot()
+	if err != nil {
+		return nil, fmt.Errorf("get repo root: %w", err)
+	}
+	mockdataPath := filepath.Join(repoRoot, "tests", "act", "mockdata")
+
 	args := []string{
 		// Positional args: event kind
 		string(eventKind),
@@ -140,6 +148,8 @@ func (r *Runner) args(eventKind EventKind, actor string, workflowFile string, pa
 		"-e", payloadFile,
 		"--rm",
 		"--json",
+		// Bind mount the working directory instead of copying, so working-directory paths work
+		"--bind",
 		// Unique artifact server port and path per act runner instance
 		fmt.Sprintf("--artifact-server-port=%d", artifactServerPort),
 		"--artifact-server-path=/tmp/act-artifacts/" + r.uuid.String() + "/",
@@ -154,7 +164,8 @@ func (r *Runner) args(eventKind EventKind, actor string, workflowFile string, pa
 		// - mockdata: for mocked testdata, dist artifacts
 		// - GCS: for mocked GCS
 		// - /tmp: for temporary files, so the host's /tmp is used
-		"--container-options", `"-v $PWD/tests/act/mockdata:/mockdata -v ` + r.GCS.basePath + `:/gcs -v /tmp:/tmp"`,
+		// Note: act automatically mounts the repo root at the same absolute path
+		"--container-options", `"-v ` + mockdataPath + `:/mockdata -v ` + r.GCS.basePath + `:/gcs -v /tmp:/tmp"`,
 	}
 
 	// Map local all possible references of plugin-ci-workflows to the local repository
@@ -184,9 +195,9 @@ func (r *Runner) args(eventKind EventKind, actor string, workflowFile string, pa
 // It adds a CLI flag for each release-please component and the main branch.
 func (r *Runner) localRepositoryArgs() (args []string, err error) {
 	// Get local repository path
-	pciwfRoot, err := os.Getwd()
+	pciwfRoot, err := getRepoRoot()
 	if err != nil {
-		return nil, fmt.Errorf("get working directory: %w", err)
+		return nil, fmt.Errorf("get repo root: %w", err)
 	}
 
 	// Read release-please config: this contains the tags's prefixes
@@ -195,7 +206,7 @@ func (r *Runner) localRepositoryArgs() (args []string, err error) {
 			PackageName string `json:"package-name"`
 		} `json:"packages"`
 	}
-	cfgF, err := os.Open("release-please-config.json")
+	cfgF, err := os.Open(filepath.Join(pciwfRoot, "release-please-config.json"))
 	if err != nil {
 		return nil, fmt.Errorf("open release-please-config.json: %w", err)
 	}
@@ -209,7 +220,7 @@ func (r *Runner) localRepositoryArgs() (args []string, err error) {
 	}
 
 	// Read release-please manifest: this contains the actual semver versions (suffixes)
-	manifestF, err := os.Open(".release-please-manifest.json")
+	manifestF, err := os.Open(filepath.Join(pciwfRoot, ".release-please-manifest.json"))
 	if err != nil {
 		return nil, fmt.Errorf("open .release-please-manifest.json: %w", err)
 	}
@@ -266,12 +277,21 @@ func (r *Runner) Run(workflow workflow.Workflow, event Event) (runResult *RunRes
 		return nil, fmt.Errorf("get act args: %w", err)
 	}
 
+	// Get the repository root so act runs from the correct directory.
+	// This ensures the entire repository is mounted as the workspace,
+	// allowing working-directory specifications like "tests/simple-backend" to work.
+	repoRoot, err := getRepoRoot()
+	if err != nil {
+		return nil, fmt.Errorf("get repo root: %w", err)
+	}
+
 	// TODO: escape args to avoid shell injection
 	actCmd := "act " + strings.Join(args, " ")
 
 	// Use a shell otherwise git will not be able to clone anything,
 	// not even publis repositories like actions/checkout for some reason.
 	cmd := exec.Command("sh", "-c", actCmd)
+	cmd.Dir = repoRoot
 	cmd.Env = os.Environ()
 
 	// Get stdout pipe to parse act output
@@ -490,4 +510,30 @@ func getFreePort() (port int, err error) {
 		}
 	}
 	return
+}
+
+// getRepoRoot returns the absolute path of the root of the git repository.
+// This allows tests to run from any subdirectory of the repository.
+func getRepoRoot() (string, error) {
+	dir, err := os.Getwd()
+	if err != nil {
+		return "", fmt.Errorf("get current working directory: %w", err)
+	}
+	for {
+		gitPath := filepath.Join(dir, ".git")
+		info, err := os.Stat(gitPath)
+		if err == nil && info.IsDir() {
+			return dir, nil
+		}
+		if os.IsNotExist(err) {
+			parentDir := filepath.Dir(dir)
+			if parentDir == dir {
+				break // Reached the root directory
+			}
+			dir = parentDir
+			continue
+		}
+		return "", fmt.Errorf("stat .git directory: %w", err)
+	}
+	return "", errors.New(".git directory not found in any parent directories")
 }
