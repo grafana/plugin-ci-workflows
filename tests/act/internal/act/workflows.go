@@ -16,8 +16,9 @@ type EventKind string
 // EventKind enum values
 
 const (
-	EventKindPush        EventKind = "push"
-	EventKindPullRequest EventKind = "pull_request"
+	EventKindPush              EventKind = "push"
+	EventKindPullRequest       EventKind = "pull_request"
+	EventKindPullRequestTarget EventKind = "pull_request_target"
 )
 
 // Event represents the event with a name and payload to pass to act.
@@ -37,6 +38,11 @@ type Event struct {
 	// Kind is the type of the event, e.g., "push" or "pull_request".
 	Kind EventKind
 
+	// Actor is the GitHub username of the actor that triggered the event.
+	// It is optional and can be used to simulate different users triggering the event.
+	// The default (empty) will use `nektos/act`.
+	Actor string
+
 	// Payload is the event payload data (JSON serializable).
 	// See the GitHub "webhooks and events payload" documentation
 	// for the schema of different event payloads:
@@ -44,9 +50,42 @@ type Event struct {
 	Payload map[string]any
 }
 
+// EventOption is a function that configures an Event.
+type EventOption func(e *Event)
+
+// WithEventActor sets the actor of the Event, in order to impersonate
+// different users triggering the event when running the workflow with act.
+func WithEventActor(actor string) EventOption {
+	return func(e *Event) {
+		e.Actor = actor
+	}
+}
+
+// WithForkPR marks a pull request event as coming from a fork.
+// The original event must be created with NewPullRequestEventPayload.
+// This sets the pull_request.head.repo.full_name to a different value than
+// the repository.full_name, which makes the workflow detect it as a fork PR.
+// The fork repository name defaults to "fork-user/plugin-ci-workflows" but can be
+// customized by providing a forkRepo parameter.
+func WithForkPR(forkRepo ...string) EventOption {
+	return func(e *Event) {
+		if e.Kind != EventKindPullRequest {
+			return // Only applies to pull request events
+		}
+		forkRepoName := "fork-user/plugin-ci-workflows"
+		if len(forkRepo) > 0 && forkRepo[0] != "" {
+			forkRepoName = forkRepo[0]
+		}
+		pr := e.Payload["pull_request"].(map[string]any)
+		head := pr["head"].(map[string]any)
+		repo := head["repo"].(map[string]any)
+		repo["full_name"] = forkRepoName
+	}
+}
+
 // NewEventPayload creates a new EventPayload with the given data.
 // It always includes an "act": true key-value pair.
-func NewEventPayload(kind EventKind, data map[string]any) Event {
+func NewEventPayload(kind EventKind, data map[string]any, opts ...EventOption) Event {
 	if data == nil {
 		data = map[string]any{}
 	}
@@ -56,30 +95,42 @@ func NewEventPayload(kind EventKind, data map[string]any) Event {
 	}
 	// Default data that should always be present in the payload
 	e.Payload["act"] = true
+	// Apply options
+	for _, opt := range opts {
+		opt(&e)
+	}
 	return e
 }
 
 // NewPushEventPayload creates a new EventPayload for a push event on the given branch.
-func NewPushEventPayload(branch string) Event {
+func NewPushEventPayload(branch string, opts ...EventOption) Event {
 	return NewEventPayload(EventKindPush, map[string]any{
 		"ref": "refs/heads/" + branch,
-	})
+	}, opts...)
 }
 
 // NewPullRequestEventPayload creates a new EventPayload for a pull request event
 // from a branch with the given name.
-func NewPullRequestEventPayload(prBranch string) Event {
+// By default, it creates a non-fork PR (head repo same as base repo).
+// To create a fork PR, use the WithForkPR option.
+func NewPullRequestEventPayload(prBranch string, opts ...EventOption) Event {
 	return NewEventPayload(EventKindPullRequest, map[string]any{
 		"action": "opened",
+		"repository": map[string]any{
+			"full_name": "grafana/plugin-ci-workflows",
+		},
 		"pull_request": map[string]any{
 			"head": map[string]any{
 				"ref": prBranch,
+				"repo": map[string]any{
+					"full_name": "grafana/plugin-ci-workflows",
+				},
 			},
 			"base": map[string]any{
 				"ref": "main",
 			},
 		},
-	})
+	}, opts...)
 }
 
 // CreateTempEventFile creates a temporary file in a temporary folder

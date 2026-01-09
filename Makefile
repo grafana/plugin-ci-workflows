@@ -8,6 +8,7 @@ clean-dist:
 
 clean-act-tmp:
 	rm -rf /tmp/act-artifacts
+	rm -rf /tmp/act-action-cache
 	rm -rf /tmp/act-cache
 	rm -rf /tmp/act-gcs
 
@@ -44,7 +45,7 @@ act-lint:
 	cd tests/act && golangci-lint run
 
 act-test:
-	cd tests/act && go test -v -timeout 1h ./...
+	cd tests/act && go test -v -timeout 1h
 
 actionlint:
 	actionlint

@@ -182,6 +182,18 @@ func (j *Job) GetStep(id string) *Step {
 	return nil
 }
 
+// RemoveAllStepsAfter removes all steps after the step with the given id (exclusive).
+// The step with the given id is preserved.
+// If the step with the given id is not found, an error is returned.
+func (j *Job) RemoveAllStepsAfter(id string) error {
+	stepIndex := j.getStepIndex(id)
+	if stepIndex == -1 {
+		return fmt.Errorf("step with id %q not found", id)
+	}
+	j.Steps = j.Steps[:stepIndex+1]
+	return nil
+}
+
 // ContainerJob is the YAML representation of a GitHub Actions job running in a container.
 type ContainerJob struct {
 	Image   string   `yaml:"image,omitempty"`
@@ -207,9 +219,10 @@ type Step struct {
 
 // On is the YAML representation of GitHub Actions workflow triggers.
 type On struct {
-	Push         OnPush         `yaml:"push,omitempty"`
-	PullRequest  OnPullRequest  `yaml:"pull_request,omitempty"`
-	WorkflowCall OnWorkflowCall `yaml:"workflow_call,omitempty"`
+	Push              OnPush              `yaml:"push,omitempty"`
+	PullRequest       OnPullRequest       `yaml:"pull_request,omitempty"`
+	PullRequestTarget OnPullRequestTarget `yaml:"pull_request_target,omitempty"`
+	WorkflowCall      OnWorkflowCall      `yaml:"workflow_call,omitempty"`
 }
 
 // OnPush is the YAML representation of GitHub Actions push event trigger.
@@ -219,6 +232,11 @@ type OnPush struct {
 
 // OnPullRequest is the YAML representation of GitHub Actions pull_request event trigger.
 type OnPullRequest struct {
+	Branches []string `yaml:"branches,omitempty"`
+}
+
+// OnPullRequestTarget is the YAML representation of GitHub Actions pull_request_target event trigger.
+type OnPullRequestTarget struct {
 	Branches []string `yaml:"branches,omitempty"`
 }
 

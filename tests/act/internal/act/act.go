@@ -124,7 +124,7 @@ func NewRunner(t *testing.T, opts ...RunnerOption) (*Runner, error) {
 }
 
 // args returns the CLI arguments to pass to act for the given workflow and event payload files.
-func (r *Runner) args(eventKind EventKind, workflowFile string, payloadFile string) ([]string, error) {
+func (r *Runner) args(eventKind EventKind, actor string, workflowFile string, payloadFile string) ([]string, error) {
 	// Get a unique free port for the act artifact server, so multiple act instances can run in parallel
 	artifactServerPort, err := getFreePort()
 	if err != nil {
@@ -143,6 +143,9 @@ func (r *Runner) args(eventKind EventKind, workflowFile string, payloadFile stri
 		// Unique artifact server port and path per act runner instance
 		fmt.Sprintf("--artifact-server-port=%d", artifactServerPort),
 		"--artifact-server-path=/tmp/act-artifacts/" + r.uuid.String() + "/",
+		// Unique action cache path per act runner instance to prevent cache corruption
+		// when running multiple tests in parallel or reusing runners with stale cache
+		"--action-cache-path=/tmp/act-action-cache/" + r.uuid.String() + "/",
 
 		// Required for cloning private repos
 		"--secret", "GITHUB_TOKEN=" + r.gitHubToken,
@@ -160,7 +163,9 @@ func (r *Runner) args(eventKind EventKind, workflowFile string, payloadFile stri
 		return nil, err
 	}
 	args = append(args, localRepoArgs...)
-
+	if actor != "" {
+		args = append(args, "--actor", actor)
+	}
 	if r.ConcurrentJobs > 0 {
 		args = append(args, "--concurrent-jobs", fmt.Sprint(r.ConcurrentJobs))
 	}
@@ -256,7 +261,7 @@ func (r *Runner) Run(workflow workflow.Workflow, event Event) (runResult *RunRes
 		}
 	}()
 
-	args, err := r.args(event.Kind, workflowFile, payloadFile)
+	args, err := r.args(event.Kind, event.Actor, workflowFile, payloadFile)
 	if err != nil {
 		return nil, fmt.Errorf("get act args: %w", err)
 	}
