@@ -137,12 +137,16 @@ func NewPullRequestEventPayload(prBranch string, opts ...EventOption) Event {
 // containing the payload from the given event in JSON format.
 // The function returns the path to the created file.
 // The caller is responsible for deleting the file when no longer needed.
-func CreateTempEventFile(event Event) (string, error) {
+func CreateTempEventFile(event Event) (filename string, err error) {
 	f, err := os.CreateTemp("", "act-*-event.json")
 	if err != nil {
 		return "", fmt.Errorf("create temp event file: %w", err)
 	}
-	defer f.Close()
+	defer func() {
+		if closeErr := f.Close(); closeErr != nil && err == nil {
+			err = closeErr
+		}
+	}()
 	if err := json.NewEncoder(f).Encode(event.Payload); err != nil {
 		return "", fmt.Errorf("encode event to temp file: %w", err)
 	}
