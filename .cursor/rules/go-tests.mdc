@@ -239,10 +239,10 @@ wf, err := workflow.NewSimpleCI(
 ```
 
 The `CopyPluginToTemp` function:
-- Copies the plugin from `tests/{sourceDir}` to a unique temp folder in `.act-test-plugins/` (inside the repo root)
+- Copies the plugin from `tests/{sourceDir}` to a unique temp folder in `/tmp/act-test-plugins/`
 - Automatically skips `node_modules/`, `dist/`, and `dist-artifacts/` directories
 - Registers `t.Cleanup()` to remove the temp folder after the test
-- Returns a **relative** path (from repo root) for use with `workflow.WithPluginDirectoryInput()`
+- Returns the absolute path to use with `workflow.WithPluginDirectoryInput()`
 
 To manually clean up all temp plugin directories:
 
