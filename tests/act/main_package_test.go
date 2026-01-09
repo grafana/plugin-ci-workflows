@@ -42,9 +42,14 @@ func TestPackage(t *testing.T) {
 
 			runner, err := act.NewRunner(t)
 			require.NoError(t, err)
+
+			// Copy plugin to temp directory to avoid leftover files
+			tempDir, err := act.CopyPluginToTemp(t, tc.folder)
+			require.NoError(t, err)
+
 			wf, err := workflow.NewSimpleCI(
 				// CI workflow options
-				workflow.WithPluginDirectoryInput(filepath.Join("tests", tc.folder)),
+				workflow.WithPluginDirectoryInput(tempDir),
 				workflow.WithDistArtifactPrefixInput(tc.folder+"-"),
 				workflow.WithPlaywrightInput(false),
 				workflow.WithRunTruffleHogInput(false),

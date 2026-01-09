@@ -1,4 +1,6 @@
-.PHONY: reset-mockdata clean-node-modules clean-act-tmp clean-lfs mockdata-dist mockdata-dist-artifacts mockdata
+.PHONY: clean-node-modules clean-dist clean-act-tmp clean-act-test-plugins clean-act-toolcache-volumes clean-lfs clean
+.PHONY: reset-mockdata mockdata-dist mockdata-dist-artifacts mockdata
+.PHONY: genreadme act-lint act-test actionlint
 
 clean-node-modules:
 	find tests -name node_modules -type d -prune -exec rm -rf '{}' +
@@ -12,13 +14,16 @@ clean-act-tmp:
 	rm -rf /tmp/act-cache
 	rm -rf /tmp/act-gcs
 
+clean-act-test-plugins:
+	rm -rf /tmp/act-test-plugins
+
 clean-act-toolcache-volumes:
 	docker volume ls -q | grep "^act-toolcache-" | xargs docker volume rm
 
 clean-lfs:
 	git lfs prune
 
-clean: clean-node-modules clean-dist clean-act-tmp clean-act-toolcache-volumes clean-lfs
+clean: clean-node-modules clean-dist clean-act-tmp clean-act-test-plugins clean-act-toolcache-volumes clean-lfs
 
 reset-mockdata:
 	rm -rf tests/act/mockdata/dist/*
