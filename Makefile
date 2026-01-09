@@ -8,6 +8,7 @@ clean-dist:
 
 clean-act-tmp:
 	rm -rf /tmp/act-artifacts
+	rm -rf /tmp/act-action-cache
 	rm -rf /tmp/act-cache
 	rm -rf /tmp/act-gcs
 
