@@ -143,9 +143,6 @@ func (r *Runner) args(eventKind EventKind, actor string, workflowFile string, pa
 		// Unique artifact server port and path per act runner instance
 		fmt.Sprintf("--artifact-server-port=%d", artifactServerPort),
 		"--artifact-server-path=/tmp/act-artifacts/" + r.uuid.String() + "/",
-		// Unique action cache path per act runner instance to prevent cache corruption
-		// when running multiple tests in parallel or reusing runners with stale cache
-		"--action-cache-path=/tmp/act-action-cache/" + r.uuid.String() + "/",
 
 		// Required for cloning private repos
 		"--secret", "GITHUB_TOKEN=" + r.gitHubToken,
