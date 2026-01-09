@@ -538,7 +538,7 @@ jobs:
 
   ci:
     name: CI
-    uses: grafana/plugin-ci-workflows/.github/workflows/ci.yml@main
+    uses: grafana/plugin-ci-workflows/.github/workflows/ci.yml@giuseppe/warn-on-ci-cd-mismatch
     needs:
       - setup
     with:
