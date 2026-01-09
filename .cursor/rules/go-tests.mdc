@@ -217,48 +217,11 @@ Workflow definition types:
 
 ## Workflow Testing Patterns
 
-### Using Temporary Plugin Directories
-
-**Always** use `act.CopyPluginToTemp` to copy plugin source directories to a temporary folder before running tests. This prevents the `--bind` mount from leaving leftover files (`dist/`, `node_modules/`, etc.) in the repository after tests run.
-
-```go
-// ✅ Correct - copy plugin to temp directory first
-tempDir, err := act.CopyPluginToTemp(t, "simple-frontend")
-require.NoError(t, err)
-
-wf, err := workflow.NewSimpleCI(
-    workflow.WithPluginDirectoryInput(tempDir),
-    workflow.WithDistArtifactPrefixInput("simple-frontend-"),
-)
-
-// ❌ Wrong - using source directory directly leaves leftover files
-wf, err := workflow.NewSimpleCI(
-    workflow.WithPluginDirectoryInput(filepath.Join("tests", "simple-frontend")),
-    workflow.WithDistArtifactPrefixInput("simple-frontend-"),
-)
-```
-
-The `CopyPluginToTemp` function:
-- Copies the plugin from `tests/{sourceDir}` to a unique temp folder in `/tmp/act-test-plugins/`
-- Automatically skips `node_modules/`, `dist/`, and `dist-artifacts/` directories
-- Registers `t.Cleanup()` to remove the temp folder after the test
-- Returns the absolute path to use with `workflow.WithPluginDirectoryInput()`
-
-To manually clean up all temp plugin directories:
-
-```bash
-make clean-act-test-plugins
-```
-
 ### Creating a Test Workflow
 
 ```go
-// First copy the plugin to a temp directory
-tempDir, err := act.CopyPluginToTemp(t, "simple-frontend")
-require.NoError(t, err)
-
 wf, err := workflow.NewSimpleCI(
-    workflow.WithPluginDirectoryInput(tempDir),
+    workflow.WithPluginDirectoryInput(filepath.Join("tests", "simple-frontend")),
     workflow.WithDistArtifactPrefixInput("simple-frontend-"),
     workflow.WithPlaywrightInput(false),
 )

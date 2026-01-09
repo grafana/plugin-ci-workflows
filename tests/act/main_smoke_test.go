@@ -68,11 +68,8 @@ func TestSmoke(t *testing.T) {
 			runner, err := act.NewRunner(t)
 			require.NoError(t, err)
 
-			tempDir, err := act.CopyPluginToTemp(t, tc.folder)
-			require.NoError(t, err)
-
 			wf, err := workflow.NewSimpleCI(
-				workflow.WithPluginDirectoryInput(tempDir),
+				workflow.WithPluginDirectoryInput(filepath.Join("tests", tc.folder)),
 				workflow.WithDistArtifactPrefixInput(tc.folder+"-"),
 				workflow.WithPlaywrightInput(false),
 			)

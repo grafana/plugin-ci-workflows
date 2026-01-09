@@ -79,9 +79,6 @@ func TestValidator(t *testing.T) {
 			runner, err := act.NewRunner(t, act.WithLinuxAMD64ContainerArchitecture())
 			require.NoError(t, err)
 
-			tempDir, err := act.CopyPluginToTemp(t, tc.sourceFolder)
-			require.NoError(t, err)
-
 			validatorConfig := `
 global:
   enabled: true
@@ -90,7 +87,7 @@ analyzers:
     enabled: false
 `
 			wf, err := workflow.NewSimpleCI(
-				workflow.WithPluginDirectoryInput(tempDir),
+				workflow.WithPluginDirectoryInput("tests/"+tc.sourceFolder),
 				workflow.WithDistArtifactPrefixInput(tc.sourceFolder+"-"),
 
 				// Disable some features to speed up the test

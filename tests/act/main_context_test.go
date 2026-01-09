@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 	"testing"
 
 	"github.com/grafana/plugin-ci-workflows/tests/act/internal/act"
@@ -39,11 +40,8 @@ func TestContext(t *testing.T) {
 			runner, err := act.NewRunner(t)
 			require.NoError(t, err)
 
-			tempDir, err := act.CopyPluginToTemp(t, "simple-frontend")
-			require.NoError(t, err)
-
 			wf, err := workflow.NewSimpleCI(
-				workflow.WithPluginDirectoryInput(tempDir),
+				workflow.WithPluginDirectoryInput(filepath.Join("tests", "simple-frontend")),
 				workflow.WithDistArtifactPrefixInput("simple-frontend-"),
 
 				// Eventually disable testing mode, otherwise context is never trusted
@@ -98,11 +96,8 @@ func TestContext(t *testing.T) {
 			runner, err := act.NewRunner(t)
 			require.NoError(t, err)
 
-			tempDir, err := act.CopyPluginToTemp(t, "simple-frontend")
-			require.NoError(t, err)
-
 			wf, err := workflow.NewSimpleCI(
-				workflow.WithPluginDirectoryInput(tempDir),
+				workflow.WithPluginDirectoryInput(filepath.Join("tests", "simple-frontend")),
 				workflow.WithDistArtifactPrefixInput("simple-frontend-"),
 				workflow.WithTestingInput(tc.testingInput),
 				workflow.WithOnlyOneJob(t, testAndBuild),
@@ -151,11 +146,8 @@ func TestContext(t *testing.T) {
 			runner, err := act.NewRunner(t)
 			require.NoError(t, err)
 
-			tempDir, err := act.CopyPluginToTemp(t, "simple-frontend")
-			require.NoError(t, err)
-
 			wf, err := workflow.NewSimpleCI(
-				workflow.WithPluginDirectoryInput(tempDir),
+				workflow.WithPluginDirectoryInput(filepath.Join("tests", "simple-frontend")),
 				workflow.WithDistArtifactPrefixInput("simple-frontend-"),
 				workflow.WithTestingInput(tc.testingInput),
 				workflow.WithOnlyOneJob(t, testAndBuild),
@@ -203,11 +195,8 @@ func TestContext(t *testing.T) {
 			runner, err := act.NewRunner(t)
 			require.NoError(t, err)
 
-			tempDir, err := act.CopyPluginToTemp(t, "simple-frontend")
-			require.NoError(t, err)
-
 			wf, err := workflow.NewSimpleCI(
-				workflow.WithPluginDirectoryInput(tempDir),
+				workflow.WithPluginDirectoryInput(filepath.Join("tests", "simple-frontend")),
 				workflow.WithDistArtifactPrefixInput("simple-frontend-"),
 				workflow.WithTestingInput(tc.testingInput),
 				workflow.WithPullRequestTargetTrigger([]string{"main"}),
