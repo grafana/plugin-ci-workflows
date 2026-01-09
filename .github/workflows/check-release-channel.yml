@@ -93,22 +93,28 @@ jobs:
             echo "Found inconsistent workflow references with different versions!"
             echo ""
 
-            # Build a markdown list showing each version and which files use it
-            details=""
-            while IFS= read -r version; do
-              details+=$'\n'"- \`@${version}\` is used in:"
-              # Find files using this version
-              while IFS=: read -r file line match; do
-                if [[ "$match" == *"@${version}" ]]; then
-                  details+=$'\n'"  - \`${file}\` (line ${line})"
-                fi
-              done <<< "$refs_with_files"
-            done <<< "$versions"
-
             title="Inconsistent plugin-ci-workflows references"
-            message="Found multiple versions of plugin-ci-workflows being referenced in workflow files. All references to ci.yml and cd.yml should use the same version.${details}"
+            short_message="Found multiple versions of plugin-ci-workflows being referenced in workflow files. All references to ci.yml and cd.yml should use the same version. See job summary for details."
 
-            echo "::warning title=$title::$message"
+            # Write simple warning annotation (doesn't support multi-line)
+            echo "::warning title=$title::$short_message"
+
+            # Write detailed markdown to job summary
+            {
+              echo "## :warning: $title"
+              echo ""
+              echo "Found multiple versions of plugin-ci-workflows being referenced in workflow files."
+              echo "All references to ci.yml and cd.yml should use the same version."
+              echo ""
+              while IFS= read -r version; do
+                echo "- \`@${version}\` is used in:"
+                while IFS=: read -r file line match; do
+                  if [[ "$match" == *"@${version}" ]]; then
+                    echo "  - \`${file}\` (line ${line})"
+                  fi
+                done <<< "$refs_with_files"
+              done <<< "$versions"
+            } >> "$GITHUB_STEP_SUMMARY"
           else
             echo ""
             echo "All workflow references use the same version: $versions"
