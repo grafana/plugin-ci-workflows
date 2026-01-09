@@ -9,7 +9,6 @@ import (
 	"net"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"regexp"
 	"strings"
 	"testing"
@@ -36,9 +35,9 @@ var (
 
 const nektosActRunnerImage = "ghcr.io/catthehacker/ubuntu:act-latest"
 
-// ActionCacheTemplatePath is the path where the action cache template is stored.
-// This cache is pre-populated during TestMain warmup and copied to each runner's unique path.
-const ActionCacheTemplatePath = "/tmp/act-action-cache/template/"
+// ActionCachePath is the shared path where GitHub Actions are cached.
+// This cache is pre-populated during TestMain warmup and shared among all runners.
+const ActionCachePath = "/tmp/act-action-cache/"
 
 // Runner is a test runner that can execute GitHub Actions workflows using act.
 type Runner struct {
@@ -68,10 +67,6 @@ type Runner struct {
 	// By default, act uses the architecture of the host machine.
 	// This can be useful to force a specific platform when running on ARM Macs.
 	ContainerArchitecture string
-
-	// useTemplateCache indicates whether this runner should use the shared template
-	// cache path instead of a unique per-runner path. This is used during cache warmup.
-	useTemplateCache bool
 }
 
 // RunnerOption is a function that configures a Runner.
@@ -95,15 +90,6 @@ func WithContainerArchitecture(architecture string) RunnerOption {
 // This is useful when running on ARM Macs to ensure compatibility with x64 images.
 func WithLinuxAMD64ContainerArchitecture() RunnerOption {
 	return WithContainerArchitecture("linux/amd64")
-}
-
-// WithTemplateCache configures the runner to use the shared template cache path
-// instead of a unique per-runner path. This should only be used during cache warmup
-// in TestMain to populate the template cache that will be copied to each test runner.
-func WithTemplateCache() RunnerOption {
-	return func(r *Runner) {
-		r.useTemplateCache = true
-	}
 }
 
 // NewRunner creates a new Runner instance.
@@ -138,82 +124,7 @@ func NewRunner(t *testing.T, opts ...RunnerOption) (*Runner, error) {
 		opt(r)
 	}
 
-	// Copy template action cache to runner-specific path if template exists
-	// and this runner is not in template cache mode (i.e., not during warmup)
-	if !r.useTemplateCache {
-		runnerCachePath := "/tmp/act-action-cache/" + r.uuid.String() + "/"
-		if err := copyActionCache(ActionCacheTemplatePath, runnerCachePath); err != nil {
-			// Template may not exist yet (during first run or warmup), log and continue
-			fmt.Printf("note: could not copy action cache template: %v\n", err)
-		}
-	}
-
 	return r, nil
-}
-
-// copyActionCache copies the action cache from src to dst directory.
-// It preserves the directory structure and file contents.
-// If src does not exist, it returns an error.
-func copyActionCache(src, dst string) error {
-	// Check if source exists
-	if _, err := os.Stat(src); os.IsNotExist(err) {
-		return fmt.Errorf("source directory does not exist: %s", src)
-	}
-
-	return filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-
-		// Compute destination path
-		relPath, err := filepath.Rel(src, path)
-		if err != nil {
-			return fmt.Errorf("compute relative path: %w", err)
-		}
-		dstPath := filepath.Join(dst, relPath)
-
-		if info.IsDir() {
-			// Create directory
-			return os.MkdirAll(dstPath, info.Mode())
-		}
-
-		// Copy file
-		return copyFile(path, dstPath, info.Mode())
-	})
-}
-
-// copyFile copies a single file from src to dst with the given permissions.
-func copyFile(src, dst string, mode os.FileMode) (err error) {
-	srcFile, err := os.Open(src)
-	if err != nil {
-		return fmt.Errorf("open source file: %w", err)
-	}
-	defer func() {
-		if closeErr := srcFile.Close(); closeErr != nil && err == nil {
-			err = closeErr
-		}
-	}()
-
-	// Ensure destination directory exists
-	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
-		return fmt.Errorf("create destination directory: %w", err)
-	}
-
-	dstFile, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, mode)
-	if err != nil {
-		return fmt.Errorf("create destination file: %w", err)
-	}
-	defer func() {
-		if closeErr := dstFile.Close(); closeErr != nil && err == nil {
-			err = closeErr
-		}
-	}()
-
-	if _, err := io.Copy(dstFile, srcFile); err != nil {
-		return fmt.Errorf("copy file contents: %w", err)
-	}
-
-	return nil
 }
 
 // args returns the CLI arguments to pass to act for the given workflow and event payload files.
@@ -222,12 +133,6 @@ func (r *Runner) args(eventKind EventKind, actor string, workflowFile string, pa
 	artifactServerPort, err := getFreePort()
 	if err != nil {
 		return nil, fmt.Errorf("get free port for artifact server: %w", err)
-	}
-
-	// Determine action cache path: use template path during warmup, unique per-runner path otherwise
-	actionCachePath := "/tmp/act-action-cache/" + r.uuid.String() + "/"
-	if r.useTemplateCache {
-		actionCachePath = ActionCacheTemplatePath
 	}
 
 	args := []string{
@@ -242,8 +147,8 @@ func (r *Runner) args(eventKind EventKind, actor string, workflowFile string, pa
 		// Unique artifact server port and path per act runner instance
 		fmt.Sprintf("--artifact-server-port=%d", artifactServerPort),
 		"--artifact-server-path=/tmp/act-artifacts/" + r.uuid.String() + "/",
-		// Action cache path: template path during warmup, unique per-runner path otherwise
-		"--action-cache-path=" + actionCachePath,
+		// Shared action cache path - pre-populated during TestMain warmup
+		"--action-cache-path=" + ActionCachePath,
 
 		// Required for cloning private repos
 		"--secret", "GITHUB_TOKEN=" + r.gitHubToken,

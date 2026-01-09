@@ -51,11 +51,11 @@ func TestMain(m *testing.M) {
 		panic(fmt.Errorf("warm up caches: %w", err))
 	}
 
-	// Verify that the action cache template was populated
-	if empty, err := isDirEmpty(act.ActionCacheTemplatePath); err != nil {
-		panic(fmt.Errorf("check action cache template: %w", err))
+	// Verify that the action cache was populated
+	if empty, err := isDirEmpty(act.ActionCachePath); err != nil {
+		panic(fmt.Errorf("check action cache: %w", err))
 	} else if empty {
-		panic(fmt.Errorf("action cache template directory is empty: %s", act.ActionCacheTemplatePath))
+		panic(fmt.Errorf("action cache directory is empty: %s", act.ActionCachePath))
 	}
 
 	fmt.Println("test environment ready")
@@ -133,8 +133,8 @@ func warmUpCaches(ciWf workflow.BaseWorkflow) error {
 		},
 	}
 
-	// Run the warmup workflow with the template cache option to populate the action cache template
-	warmupRunner, err := act.NewRunner(&testing.T{}, act.WithTemplateCache())
+	// Run the warmup workflow to populate the shared action cache
+	warmupRunner, err := act.NewRunner(&testing.T{})
 	if err != nil {
 		return fmt.Errorf("create warmup runner: %w", err)
 	}
