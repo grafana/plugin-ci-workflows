@@ -593,7 +593,7 @@ func copyDir(src, dst string) error {
 		}
 
 		// Skip certain directories entirely
-		if info.IsDir() && skipDirs[info.Name()] {
+		if _, skip := skipDirs[info.Name()]; info.IsDir() && skip {
 			return filepath.SkipDir
 		}
 
