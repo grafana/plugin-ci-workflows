@@ -32,7 +32,16 @@ func TestMain(m *testing.M) {
 
 	// Clean up old temp workflow files
 	if err := act.CleanupTempWorkflowFiles(); err != nil {
-		panic(err)
+		panic(fmt.Errorf("clean up temp workflow files: %w", err))
+	}
+
+	// Clean up temporary folders used to build plugins as well as .pnpm-store used by pnpm when running act tests.
+	// This speeds up tests execution significantly on Mac OS.
+	if err := os.RemoveAll(".act-test-plugins"); err != nil {
+		panic(fmt.Errorf("clean up .act-test-plugins: %w", err))
+	}
+	if err := os.RemoveAll(".pnpm-store"); err != nil {
+		panic(fmt.Errorf("clean up .pnpm-store: %w", err))
 	}
 
 	// Read ci.yml to get the default tooling versions, so we can warm up the cache
