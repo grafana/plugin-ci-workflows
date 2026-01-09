@@ -302,7 +302,7 @@ env:
 jobs:
   check-for-release-channel:
     name: Check for release channel
-    uses: grafana/plugin-ci-workflows/.github/workflows/check-release-channel.yml@giuseppe/warn-on-ci-cd-mismatch
+    uses: grafana/plugin-ci-workflows/.github/workflows/check-release-channel.yml@main
     with:
       DO-NOT-USE-allow-pinned-commit-hashes: ${{ inputs.DO-NOT-USE-allow-pinned-commit-hashes }}
 
