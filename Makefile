@@ -36,3 +36,15 @@ mockdata-dist-artifacts: mockdata-dist
 	@echo All done!
 
 mockdata: mockdata-dist-artifacts
+
+genreadme:
+	cd examples/base && go run genreadme.go
+
+act-lint:
+	cd tests/act && golangci-lint run
+
+act-test:
+	cd tests/act && go test -v -timeout 1h ./...
+
+actionlint:
+	actionlint
