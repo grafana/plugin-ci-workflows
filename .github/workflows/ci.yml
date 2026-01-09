@@ -305,6 +305,8 @@ jobs:
     runs-on: ubuntu-arm64-small
     steps:
       - name: Checkout
+        # Skip checkout when running in act (it copies files locally)
+        if: ${{ !github.event.act }}
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
 
       - name: Check for rolling releases channel
@@ -369,10 +371,11 @@ jobs:
 
     steps:
       - name: Checkout
+        # Skip checkout when running in act (it copies files locally)
+        if: ${{ !github.event.act }}
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
-          # Force exact ref when running in act (it copies files locally, it breaks if we specify another ref)
-          ref: ${{ !github.event.act && inputs.branch || github.sha }}
+          ref: ${{ inputs.branch || github.sha }}
           persist-credentials: false
 
       - name: Determine workflow context
@@ -692,10 +695,11 @@ jobs:
 
     steps:
       - name: Checkout
+        # Skip checkout when running in act (it copies files locally)
+        if: ${{ !github.event.act }}
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
-          # Force exact ref when running in act (it copies files locally, it breaks if we specify another ref)
-          ref: ${{ !github.event.act && inputs.branch || github.sha }}
+          ref: ${{ inputs.branch || github.sha }}
           persist-credentials: false
 
       - name: Check docs exist
