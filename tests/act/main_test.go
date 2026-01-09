@@ -156,7 +156,7 @@ func warmUpCaches(ciWf workflow.BaseWorkflow) error {
 
 // isDirEmpty checks if a directory is empty or doesn't exist.
 // Returns true if the directory is empty or doesn't exist, false otherwise.
-func isDirEmpty(path string) (bool, error) {
+func isDirEmpty(path string) (empty bool, err error) {
 	f, err := os.Open(path)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -164,7 +164,11 @@ func isDirEmpty(path string) (bool, error) {
 		}
 		return false, err
 	}
-	defer f.Close()
+	defer func() {
+		if closeErr := f.Close(); closeErr != nil && err == nil {
+			err = closeErr
+		}
+	}()
 
 	// Try to read one entry - io.EOF means directory is empty
 	_, err = f.Readdirnames(1)
