@@ -15,7 +15,7 @@ clean-act-tmp:
 	rm -rf /tmp/act-gcs
 
 clean-act-test-plugins:
-	rm -rf /tmp/act-test-plugins
+	rm -rf .act-test-plugins
 
 clean-act-toolcache-volumes:
 	docker volume ls -q | grep "^act-toolcache-" | xargs docker volume rm

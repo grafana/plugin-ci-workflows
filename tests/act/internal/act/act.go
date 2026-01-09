@@ -538,12 +538,14 @@ func getRepoRoot() (string, error) {
 	return "", errors.New(".git directory not found in any parent directories")
 }
 
-// actTestPluginsDir is the base directory for temporary plugin copies used during tests.
-const actTestPluginsDir = "/tmp/act-test-plugins"
+// actTestPluginsDir is the base directory name (relative to repo root) for temporary plugin copies used during tests.
+// This directory is inside the repo root so that paths work correctly with GitHub Actions workflow expressions
+// like ${{ github.workspace }}/${{ inputs.plugin-directory }}.
+const actTestPluginsDir = ".act-test-plugins"
 
 // CopyPluginToTemp copies a plugin source directory to a temporary folder.
 // The sourceDir should be the name of a plugin folder inside tests/ (e.g., "simple-frontend").
-// It returns the absolute path to the temp folder for use with workflow.WithPluginDirectoryInput().
+// It returns the path to the temp folder RELATIVE to the repo root, for use with workflow.WithPluginDirectoryInput().
 // The temp folder is automatically cleaned up when the test finishes via t.Cleanup().
 func CopyPluginToTemp(t *testing.T, sourceDir string) (string, error) {
 	repoRoot, err := getRepoRoot()
@@ -554,26 +556,29 @@ func CopyPluginToTemp(t *testing.T, sourceDir string) (string, error) {
 	// Source directory: tests/{sourceDir}
 	srcPath := filepath.Join(repoRoot, "tests", sourceDir)
 
-	// Create unique temp directory: /tmp/act-test-plugins/{test-name}-{uuid}/
+	// Create unique temp directory: {repoRoot}/.act-test-plugins/{test-name}-{uuid}/
+	// The relative path from repo root is: .act-test-plugins/{test-name}-{uuid}/
 	testName := strings.ReplaceAll(t.Name(), "/", "_")
-	tempDir := filepath.Join(actTestPluginsDir, testName+"-"+uuid.New().String())
-	if err := os.MkdirAll(tempDir, 0755); err != nil {
+	relTempDir := filepath.Join(actTestPluginsDir, testName+"-"+uuid.New().String())
+	absTempDir := filepath.Join(repoRoot, relTempDir)
+	if err := os.MkdirAll(absTempDir, 0755); err != nil {
 		return "", fmt.Errorf("create temp dir: %w", err)
 	}
 
 	// Register cleanup to remove the temp directory after the test
 	t.Cleanup(func() {
-		if err := os.RemoveAll(tempDir); err != nil {
-			t.Logf("warning: failed to remove temp dir %s: %v", tempDir, err)
+		if err := os.RemoveAll(absTempDir); err != nil {
+			t.Logf("warning: failed to remove temp dir %s: %v", absTempDir, err)
 		}
 	})
 
 	// Copy all files from source to temp directory
-	if err := copyDir(srcPath, tempDir); err != nil {
+	if err := copyDir(srcPath, absTempDir); err != nil {
 		return "", fmt.Errorf("copy plugin to temp: %w", err)
 	}
 
-	return tempDir, nil
+	// Return relative path so it works with ${{ github.workspace }}/${{ inputs.plugin-directory }}
+	return relTempDir, nil
 }
 
 // skipDirs contains directory names to skip when copying plugin directories.
