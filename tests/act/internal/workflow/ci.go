@@ -353,7 +353,7 @@ func WithNoOpStep(t *testing.T, jobID, stepID string) SimpleCIOption {
 // This can be used to test workflows that respond to pull_request_target events.
 func WithPullRequestTargetTrigger(branches []string) SimpleCIOption {
 	return func(w *SimpleCI) {
-		w.BaseWorkflow.On.PullRequestTarget = OnPullRequestTarget{
+		w.On.PullRequestTarget = OnPullRequestTarget{
 			Branches: branches,
 		}
 	}
