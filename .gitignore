@@ -1,6 +1,3 @@
 .github/workflows/act-*
-.DS_Store
-
 .act-test-plugins
-# used by pnpm when running act tests
-.pnpm-store
+.DS_Store
