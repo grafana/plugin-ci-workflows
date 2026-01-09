@@ -1,0 +1,111 @@
+# Description:
+# Checks for release channel usage in workflow files.
+# This reusable workflow verifies that:
+# - The rolling releases channel (@main) is not being used (warning)
+# - Commit hashes are not used for pinning (error)
+# - All workflow references to ci.yml and cd.yml use the same version (warning)
+
+name: Plugins - Check release channel
+
+on:
+  workflow_call:
+    inputs:
+      DO-NOT-USE-allow-pinned-commit-hashes:
+        description: |
+          FOR INTERNAL TESTING ONLY, DO NOT USE.
+          If `true`, skip hard fail in case the workflow is pinned to a commit hash.
+          Vault access may still fail in such cases, depending on the WIF policies in place.
+        type: boolean
+        required: false
+        default: false
+
+jobs:
+  check-for-release-channel:
+    name: Check for release channel
+    runs-on: ubuntu-arm64-small
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+
+      - name: Check for rolling releases channel
+        run: |
+          diff=$(grep -E 'grafana/plugin-ci-workflows.+@main' -rn .github/workflows/ || true)
+          if [[ -n "$diff" ]]; then
+            echo "Found usage of rolling releases channel in the following files:"
+            echo "$diff"
+
+            title="Detected plugin-ci-workflows rolling release channel"
+            message="You are using workflows from plugin-ci-workflows rolling releases channel (\`@main\`). \
+          This is discouraged as it may lead to unexpected breaking changes. \
+          Please pin to a specific tagged release to ensure better stability. \
+          For more information, refer to the docs: https://enghub.grafana-ops.net/docs/default/component/grafana-plugins-platform/plugins-ci-github-actions/010-plugins-ci-github-actions/#versions-and-release-channels"
+
+            echo "::warning title=$title::$message"
+            exit 0
+          fi
+        shell: bash
+
+      - name: Check for plugin-ci-workflows pinned to commit hash
+        run: |
+          diff=$(grep -E 'grafana/plugin-ci-workflows.+@[0-9a-f]{6,40}' -rn .github/workflows/ || true)
+          if [[ -n "$diff" ]]; then
+            echo "Found plugin-ci-workflows pinned to a commit hash in the following files:"
+            echo "$diff"
+
+            title="Detected plugin-ci-workflows pinned to a commit hash"
+            message="You are pinning plugin-ci-workflows to a commit hash. \
+          To limit the amount of exposure (security reasons), this is not allowed and the workflow will fail. \
+          Please pin to a specific tagged release instead. \
+          For more information, refer to the docs: https://enghub.grafana-ops.net/docs/default/component/grafana-plugins-platform/plugins-ci-github-actions/010-plugins-ci-github-actions/#versions-and-release-channels"
+
+            echo "::error title=$title::$message"
+            if [ "${ALLOW_PINNED_COMMIT_HASHES}" != "true" ]; then
+              # Hard fail by default
+              exit 1
+            else
+              exit 0
+            fi
+          fi
+        env:
+          ALLOW_PINNED_COMMIT_HASHES: ${{ inputs.DO-NOT-USE-allow-pinned-commit-hashes }}
+        shell: bash
+
+      - name: Check for inconsistent workflow references
+        run: |
+          # Extract all workflow references to ci.yml and cd.yml from plugin-ci-workflows
+          refs=$(grep -roEh 'grafana/plugin-ci-workflows/\.github/workflows/(ci|cd)\.yml@[^[:space:]"'"'"']+' .github/workflows/ | sort -u || true)
+
+          if [[ -z "$refs" ]]; then
+            echo "No workflow references to ci.yml or cd.yml found."
+            exit 0
+          fi
+
+          echo "Found workflow references:"
+          echo "$refs"
+
+          # Get unique versions (the part after @)
+          versions=$(echo "$refs" | sed 's/.*@//' | sort -u)
+          version_count=$(echo "$versions" | wc -l | tr -d ' ')
+
+          if [ "$version_count" -gt 1 ]; then
+            echo ""
+            echo "Found inconsistent workflow references with different versions:"
+            echo "$versions"
+
+            # Show which files have which references
+            echo ""
+            echo "Details:"
+            grep -rn 'grafana/plugin-ci-workflows/\.github/workflows/\(ci\|cd\)\.yml@' .github/workflows/ || true
+
+            title="Inconsistent plugin-ci-workflows references"
+            message="Found multiple versions of plugin-ci-workflows being referenced in workflow files. \
+          All references to ci.yml and cd.yml should use the same version. \
+          Found versions: $(echo $versions | tr '\n' ' ')"
+
+            echo "::warning title=$title::$message"
+          else
+            echo ""
+            echo "All workflow references use the same version: $versions"
+          fi
+        shell: bash
+
