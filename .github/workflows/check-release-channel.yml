@@ -73,39 +73,45 @@ jobs:
       - name: Check for inconsistent workflow references
         run: |
           # Extract all workflow references to ci.yml and cd.yml from plugin-ci-workflows
-          refs=$(grep -roEh 'grafana/plugin-ci-workflows/\.github/workflows/(ci|cd)\.yml@[^[:space:]"'"'"']+' .github/workflows/ | sort -u || true)
+          # Output format: filename:line:match
+          refs_with_files=$(grep -rnoE 'grafana/plugin-ci-workflows/\.github/workflows/(ci|cd)\.yml@[^[:space:]"'"'"']+' .github/workflows/ || true)
 
-          if [[ -z "$refs" ]]; then
+          if [[ -z "$refs_with_files" ]]; then
             echo "No workflow references to ci.yml or cd.yml found."
             exit 0
           fi
 
           echo "Found workflow references:"
-          echo "$refs"
+          echo "$refs_with_files"
 
           # Get unique versions (the part after @)
-          versions=$(echo "$refs" | sed 's/.*@//' | sort -u)
+          versions=$(echo "$refs_with_files" | sed 's/.*@//' | sort -u)
           version_count=$(echo "$versions" | wc -l | tr -d ' ')
 
           if [ "$version_count" -gt 1 ]; then
             echo ""
-            echo "Found inconsistent workflow references with different versions:"
-            echo "$versions"
-
-            # Show which files have which references
+            echo "⚠️ Found inconsistent workflow references with different versions!"
             echo ""
-            echo "Details:"
-            grep -rn 'grafana/plugin-ci-workflows/\.github/workflows/\(ci\|cd\)\.yml@' .github/workflows/ || true
+
+            # Build a markdown list showing each version and which files use it
+            details=""
+            while IFS= read -r version; do
+              details="${details}%0A- \`@${version}\` is used in:"
+              # Find files using this version
+              while IFS=: read -r file line match; do
+                if [[ "$match" == *"@${version}" ]]; then
+                  details="${details}%0A  - \`${file}\` (line ${line})"
+                fi
+              done <<< "$refs_with_files"
+            done <<< "$versions"
 
             title="Inconsistent plugin-ci-workflows references"
-            message="Found multiple versions of plugin-ci-workflows being referenced in workflow files. \
-          All references to ci.yml and cd.yml should use the same version. \
-          Found versions: $(echo $versions | tr '\n' ' ')"
+            message="Found multiple versions of plugin-ci-workflows being referenced in workflow files. All references to ci.yml and cd.yml should use the same version.${details}"
 
             echo "::warning title=$title::$message"
           else
             echo ""
-            echo "All workflow references use the same version: $versions"
+            echo "✅ All workflow references use the same version: $versions"
           fi
         shell: bash
 
