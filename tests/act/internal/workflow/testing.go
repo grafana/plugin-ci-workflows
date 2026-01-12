@@ -81,13 +81,16 @@ func (t *TestingWorkflow) UUID() uuid.UUID {
 // container names created by act don't clash
 func (t *TestingWorkflow) AddUUIDToAllJobsRecursive() {
 	uid := t.UUID().String()
-	for _, wf := range t.ChildrenRecursive() {
+	allWorkflows := t.ChildrenRecursive()
+	// Add the main workflow as well
+	allWorkflows = append(allWorkflows, t)
+	// Add UUID to all jobs to avoid container name clashes
+	for _, wf := range allWorkflows {
 		for _, j := range wf.Jobs() {
 			if j.Name != "" {
-				j.Name = j.Name + "-" + uid
-			} else {
-				j.Name = uid
+				j.Name += "-"
 			}
+			j.Name += uid
 		}
 	}
 }
