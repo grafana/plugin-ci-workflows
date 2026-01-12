@@ -37,10 +37,6 @@ var (
 
 const nektosActRunnerImage = "ghcr.io/catthehacker/ubuntu:act-latest"
 
-// ActionCachePath is the shared path where GitHub Actions are cached.
-// This cache is pre-populated during TestMain warmup and shared among all runners.
-const ActionCachePath = "/tmp/act-action-cache/"
-
 // Runner is a test runner that can execute GitHub Actions workflows using act.
 type Runner struct {
 	// t is the testing.T instance for the current test.
@@ -48,6 +44,10 @@ type Runner struct {
 
 	// uuid is a unique identifier for this Runner instance.
 	uuid uuid.UUID
+
+	// actionsCachePath is the absolute path where GitHub Actions are cached.
+	// If empty, a new temporary directory is created for each runner.
+	actionsCachePath string
 
 	// ArtifactsStorage is the storage for artifacts uploaded during the workflow run.
 	ArtifactsStorage ArtifactsStorage
@@ -71,6 +71,14 @@ type Runner struct {
 	ContainerArchitecture string
 }
 
+// actionsCachePathBase is the shared path where GitHub Actions are cached.
+// This cache is pre-populated during TestMain warmup and shared among all runners.
+var actionsCachePathBase = filepath.Join("/tmp", "act-action-cache")
+
+// TemplateActionsCachePath is the path where GitHub Actions are pre-cached for the warmup workflow.
+// This cache is then copied to the actions cache path of each runner for the actual workflow runs.
+var TemplateActionsCachePath = filepath.Join(actionsCachePathBase, "template")
+
 // RunnerOption is a function that configures a Runner.
 type RunnerOption func(r *Runner)
 
@@ -92,6 +100,13 @@ func WithContainerArchitecture(architecture string) RunnerOption {
 // This is useful when running on ARM Macs to ensure compatibility with x64 images.
 func WithLinuxAMD64ContainerArchitecture() RunnerOption {
 	return WithContainerArchitecture("linux/amd64")
+}
+
+// WithActionsCachePath sets the actions cache path for the runner (absolute path).
+func WithActionsCachePath(cachePath string) RunnerOption {
+	return func(r *Runner) {
+		r.actionsCachePath = cachePath
+	}
 }
 
 // NewRunner creates a new Runner instance.
@@ -125,7 +140,10 @@ func NewRunner(t *testing.T, opts ...RunnerOption) (*Runner, error) {
 	for _, opt := range opts {
 		opt(r)
 	}
-
+	// Default to a new temporary directory for the actions cache if not set.
+	if r.actionsCachePath == "" {
+		WithActionsCachePath(filepath.Join(actionsCachePathBase, r.uuid.String()))(r)
+	}
 	return r, nil
 }
 
@@ -135,12 +153,6 @@ func (r *Runner) args(eventKind EventKind, actor string, workflowFile string, pa
 	artifactServerPort, err := getFreePort()
 	if err != nil {
 		return nil, fmt.Errorf("get free port for artifact server: %w", err)
-	}
-
-	// Create a unique action cache path for this runner by copying the shared cache
-	actionCachePath := "/tmp/act-action-cache-" + r.uuid.String() + "/"
-	if err := copyDir(ActionCachePath, actionCachePath); err != nil {
-		return nil, fmt.Errorf("copy action cache: %w", err)
 	}
 
 	args := []string{
@@ -155,8 +167,6 @@ func (r *Runner) args(eventKind EventKind, actor string, workflowFile string, pa
 		// Unique artifact server port and path per act runner instance
 		fmt.Sprintf("--artifact-server-port=%d", artifactServerPort),
 		"--artifact-server-path=/tmp/act-artifacts/" + r.uuid.String() + "/",
-		// Unique action cache path per runner - copied from shared ActionCachePath
-		"--action-cache-path=" + actionCachePath,
 
 		// Required for cloning private repos
 		"--secret", "GITHUB_TOKEN=" + r.gitHubToken,
@@ -166,6 +176,19 @@ func (r *Runner) args(eventKind EventKind, actor string, workflowFile string, pa
 		// - GCS: for mocked GCS
 		// - /tmp: for temporary files, so the host's /tmp is used
 		"--container-options", `"-v $PWD/tests/act/mockdata:/mockdata -v ` + r.GCS.basePath + `:/gcs -v /tmp:/tmp"`,
+	}
+	if r.actionsCachePath != "" {
+		// Create and use per-runner cache.
+		// Do not pre-populate the cache if we are using the shared cache (cache warmup).
+		if r.actionsCachePath != TemplateActionsCachePath {
+			if err := copyDir(TemplateActionsCachePath, r.actionsCachePath); err != nil {
+				return nil, fmt.Errorf("copy action cache: %w", err)
+			}
+		}
+		args = append(args, "--action-cache-path", r.actionsCachePath)
+	} else {
+		// Use shared cache
+		args = append(args, "--action-cache-path", TemplateActionsCachePath)
 	}
 
 	// Map local all possible references of plugin-ci-workflows to the local repository
