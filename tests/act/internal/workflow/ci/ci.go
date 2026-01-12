@@ -72,25 +72,12 @@ func NewWorkflow(opts ...WorkflowOption) (Workflow, error) {
 	// Change the parent workflow so it calls the mocked child workflow
 	testingWf.BaseWorkflow.Jobs["ci"].Uses = workflow.PCIWFBaseRef + "/" + testingWf.GetChild("ci").FileName() + "@main"
 
-	// Add uuid to each job in the workflow and all its children in order to
-	// make unique contianer names and allow tests to run in parallel, so that
-	// container names created by act don't clash
-	// TODO: move to TestingWorkflow instead?
-	for _, wf := range append([]workflow.Workflow{testingWf.TestingWorkflow}, testingWf.Children()...) {
-		for _, j := range wf.Jobs() {
-			if j.Name != "" {
-				j.Name = j.Name + "-" + testingWf.UUID().String()
-			} else {
-				j.Name = testingWf.UUID().String()
-			}
-		}
-	}
-
 	// Apply options to customize the Workflow instance.
 	// These opts can also modify the child testing workflow.
 	for _, opt := range opts {
 		opt(&testingWf)
 	}
+	testingWf.AddUUIDToAllJobsRecursive()
 	return testingWf, nil
 }
 
@@ -124,19 +111,14 @@ type WorkflowInputs struct {
 func WithWorkflowInputs(inputs WorkflowInputs) WorkflowOption {
 	return func(w *Workflow) {
 		job := w.BaseWorkflow.Jobs["ci"]
-		set := func(key string, value any) {
-			if value != nil {
-				job.With[key] = value
-			}
-		}
-		set("plugin-directory", inputs.PluginDirectory)
-		set("dist-artifacts-prefix", inputs.DistArtifactsPrefix)
-		set("run-playwright", inputs.RunPlaywright)
-		set("run-plugin-validator", inputs.RunPluginValidator)
-		set("plugin-validator-config", inputs.PluginValidatorConfig)
-		set("run-trufflehog", inputs.RunTruffleHog)
-		set("allow-unsigned", inputs.AllowUnsigned)
-		set("testing", inputs.Testing)
+		workflow.SetJobInput(job, "plugin-directory", inputs.PluginDirectory)
+		workflow.SetJobInput(job, "dist-artifacts-prefix", inputs.DistArtifactsPrefix)
+		workflow.SetJobInput(job, "run-playwright", inputs.RunPlaywright)
+		workflow.SetJobInput(job, "run-plugin-validator", inputs.RunPluginValidator)
+		workflow.SetJobInput(job, "plugin-validator-config", inputs.PluginValidatorConfig)
+		workflow.SetJobInput(job, "run-trufflehog", inputs.RunTruffleHog)
+		workflow.SetJobInput(job, "allow-unsigned", inputs.AllowUnsigned)
+		workflow.SetJobInput(job, "testing", inputs.Testing)
 	}
 }
 

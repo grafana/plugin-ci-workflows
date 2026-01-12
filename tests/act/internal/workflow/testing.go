@@ -37,11 +37,21 @@ func (t *TestingWorkflow) FileName() string {
 	return "act-" + t.baseWorkflowName + "-" + t.uuid.String() + ".yml"
 }
 
-// Children returns the child workflows of this testing workflow.
-func (t *TestingWorkflow) Children() []Workflow {
-	children := make([]Workflow, 0, len(t.children))
+// Children returns the child workflows of this testing workflow as a slice.
+func (t *TestingWorkflow) Children() []*TestingWorkflow {
+	children := make([]*TestingWorkflow, 0, len(t.children))
 	for _, child := range t.children {
 		children = append(children, child)
+	}
+	return children
+}
+
+// ChildrenRecursive returns all child workflows of this testing workflow, recursively, as a slice.
+func (t *TestingWorkflow) ChildrenRecursive() []*TestingWorkflow {
+	children := make([]*TestingWorkflow, 0, len(t.children))
+	for _, child := range t.children {
+		children = append(children, child)
+		children = append(children, child.ChildrenRecursive()...)
 	}
 	return children
 }
@@ -66,8 +76,27 @@ func (t *TestingWorkflow) UUID() uuid.UUID {
 	return t.uuid
 }
 
+// AddUUIDToAllJobsRecursive adds a UUID to each job in the workflow and all its children (recursively) in order to
+// make unique container names and allow tests to run in parallel, so that
+// container names created by act don't clash
+func (t *TestingWorkflow) AddUUIDToAllJobsRecursive() {
+	uid := t.UUID().String()
+	for _, wf := range t.ChildrenRecursive() {
+		for _, j := range wf.Jobs() {
+			if j.Name != "" {
+				j.Name = j.Name + "-" + uid
+			} else {
+				j.Name = uid
+			}
+		}
+	}
+}
+
+// MockStepFactory is a function that creates a mocked step from an original step.
 type MockStepFactory func(originalStep Step) (Step, error)
 
+// MockAllStepsUsingAction modifies all steps in the workflow that use the given action prefix
+// by replacing them with the mocked step created by the given mockStepFactory function.
 func (t *TestingWorkflow) MockAllStepsUsingAction(actionPrefix string, mockStepFactory MockStepFactory) error {
 	for _, job := range t.Jobs() {
 		for i, step := range job.Steps {

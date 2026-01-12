@@ -85,31 +85,12 @@ func NewWorkflow(opts ...WorkflowOption) (Workflow, error) {
 		ciJob.Uses = workflow.PCIWFBaseRef + "/" + ciGrandchildTestingWf.FileName() + "@main"
 	}
 
-	// Add uuid to each job in the workflow and all its children in order to
-	// make unique container names and allow tests to run in parallel, so that
-	// container names created by act don't clash
-	// TODO: move to TestingWorkflow instead?
-	allWorkflows := []workflow.Workflow{testingWf.TestingWorkflow}
-	allWorkflows = append(allWorkflows, testingWf.Children()...)
-	// Also include grandchildren (CI workflow)
-	for _, child := range testingWf.Children() {
-		allWorkflows = append(allWorkflows, child.Children()...)
-	}
-	for _, wf := range allWorkflows {
-		for _, j := range wf.Jobs() {
-			if j.Name != "" {
-				j.Name = j.Name + "-" + testingWf.UUID().String()
-			} else {
-				j.Name = testingWf.UUID().String()
-			}
-		}
-	}
-
 	// Apply options to customize the SimpleCD instance.
 	// These opts can also modify the child and grandchild workflows.
 	for _, opt := range opts {
 		opt(&testingWf)
 	}
+	testingWf.AddUUIDToAllJobsRecursive()
 	return testingWf, nil
 }
 
@@ -144,17 +125,12 @@ type WorkflowInputs struct {
 func WithWorkflowInputs(inputs WorkflowInputs) WorkflowOption {
 	return func(w *Workflow) {
 		job := w.BaseWorkflow.Jobs["cd"]
-		set := func(key string, value any) {
-			if value != nil {
-				job.With[key] = value
-			}
-		}
-		set("environment", inputs.Environment)
-		set("branch", inputs.Branch)
-		set("plugin-directory", inputs.PluginDirectory)
-		set("scopes", inputs.Scopes)
-		set("grafana-cloud-deployment-type", inputs.GrafanaCloudDeploymentType)
-		set("trigger-argo", inputs.TriggerArgo)
+		workflow.SetJobInput(job, "environment", inputs.Environment)
+		workflow.SetJobInput(job, "branch", inputs.Branch)
+		workflow.SetJobInput(job, "plugin-directory", inputs.PluginDirectory)
+		workflow.SetJobInput(job, "scopes", inputs.Scopes)
+		workflow.SetJobInput(job, "grafana-cloud-deployment-type", inputs.GrafanaCloudDeploymentType)
+		workflow.SetJobInput(job, "trigger-argo", inputs.TriggerArgo)
 	}
 }
 
