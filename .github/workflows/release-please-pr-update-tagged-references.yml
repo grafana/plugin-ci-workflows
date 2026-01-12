@@ -132,6 +132,7 @@ jobs:
             .github/workflows/cd.yml
             .github/workflows/playwright.yml
             .github/workflows/playwright-docker.yml
+            .github/workflows/check-release-channel.yml
             actions/plugins/**
 
       # For "examples", update references by filtering for an additional prefix.
