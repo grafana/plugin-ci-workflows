@@ -72,7 +72,7 @@ type Runner struct {
 }
 
 // actionsCachePathBase is the base path for the action cache.
-var actionsCachePathBase = filepath.Join("/tmp", "act-action-cache")
+var actionsCachePathBase = filepath.Join("/tmp", "act-actions-cache")
 
 // TemplateActionsCachePath is the path where GitHub Actions are pre-cached during the warmup workflow.
 // This cache is then copied to each runner's actions cache path for the actual workflow runs.
