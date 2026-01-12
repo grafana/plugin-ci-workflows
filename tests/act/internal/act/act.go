@@ -6,9 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"net"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"testing"
@@ -135,6 +137,12 @@ func (r *Runner) args(eventKind EventKind, actor string, workflowFile string, pa
 		return nil, fmt.Errorf("get free port for artifact server: %w", err)
 	}
 
+	// Create a unique action cache path for this runner by copying the shared cache
+	actionCachePath := "/tmp/act-action-cache-" + r.uuid.String() + "/"
+	if err := copyDir(ActionCachePath, actionCachePath); err != nil {
+		return nil, fmt.Errorf("copy action cache: %w", err)
+	}
+
 	args := []string{
 		// Positional args: event kind
 		string(eventKind),
@@ -147,8 +155,8 @@ func (r *Runner) args(eventKind EventKind, actor string, workflowFile string, pa
 		// Unique artifact server port and path per act runner instance
 		fmt.Sprintf("--artifact-server-port=%d", artifactServerPort),
 		"--artifact-server-path=/tmp/act-artifacts/" + r.uuid.String() + "/",
-		// Shared action cache path - pre-populated during TestMain warmup
-		"--action-cache-path=" + ActionCachePath,
+		// Unique action cache path per runner - copied from shared ActionCachePath
+		"--action-cache-path=" + actionCachePath,
 
 		// Required for cloning private repos
 		"--secret", "GITHUB_TOKEN=" + r.gitHubToken,
@@ -493,4 +501,85 @@ func getFreePort() (port int, err error) {
 		}
 	}
 	return
+}
+
+// copyDir recursively copies a directory tree from src to dst.
+// If src does not exist, it creates an empty dst directory.
+func copyDir(src, dst string) error {
+	// Check if source exists
+	srcInfo, err := os.Stat(src)
+	if os.IsNotExist(err) {
+		// Source doesn't exist, just create an empty destination directory
+		return os.MkdirAll(dst, 0755)
+	}
+	if err != nil {
+		return fmt.Errorf("stat source: %w", err)
+	}
+	if !srcInfo.IsDir() {
+		return fmt.Errorf("source is not a directory: %s", src)
+	}
+
+	// Create destination directory
+	if err := os.MkdirAll(dst, srcInfo.Mode()); err != nil {
+		return fmt.Errorf("create destination directory: %w", err)
+	}
+
+	// Walk through source directory and copy all files
+	return filepath.WalkDir(src, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// Calculate relative path and destination path
+		relPath, err := filepath.Rel(src, path)
+		if err != nil {
+			return fmt.Errorf("get relative path: %w", err)
+		}
+		dstPath := filepath.Join(dst, relPath)
+
+		if d.IsDir() {
+			info, err := d.Info()
+			if err != nil {
+				return fmt.Errorf("get dir info: %w", err)
+			}
+			return os.MkdirAll(dstPath, info.Mode())
+		}
+
+		// Copy file
+		return copyFile(path, dstPath)
+	})
+}
+
+// copyFile copies a single file from src to dst, preserving permissions.
+func copyFile(src, dst string) (err error) {
+	srcFile, err := os.Open(src)
+	if err != nil {
+		return fmt.Errorf("open source file: %w", err)
+	}
+	defer func() {
+		if closeErr := srcFile.Close(); closeErr != nil && err == nil {
+			err = closeErr
+		}
+	}()
+
+	srcInfo, err := srcFile.Stat()
+	if err != nil {
+		return fmt.Errorf("stat source file: %w", err)
+	}
+
+	dstFile, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, srcInfo.Mode())
+	if err != nil {
+		return fmt.Errorf("create destination file: %w", err)
+	}
+	defer func() {
+		if closeErr := dstFile.Close(); closeErr != nil && err == nil {
+			err = closeErr
+		}
+	}()
+
+	if _, err := io.Copy(dstFile, srcFile); err != nil {
+		return fmt.Errorf("copy file contents: %w", err)
+	}
+
+	return nil
 }
