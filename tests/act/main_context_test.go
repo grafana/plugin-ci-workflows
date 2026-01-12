@@ -49,8 +49,10 @@ func TestContext(t *testing.T) {
 
 				// Only run test-and-build job and stop after workflow-context step
 				// (no need to build the plugin, etc, for this test)
-				workflow.WithOnlyOneJob(t, testAndBuild),
-				workflow.WithRemoveAllStepsAfter(t, testAndBuild, workflowContext),
+				workflow.MutateCIWorkflow().With(
+					workflow.WithOnlyOneJob(t, testAndBuild),
+					workflow.WithRemoveAllStepsAfter(t, testAndBuild, workflowContext),
+				),
 			)
 			require.NoError(t, err)
 
@@ -100,8 +102,10 @@ func TestContext(t *testing.T) {
 				workflow.WithPluginDirectoryInput(filepath.Join("tests", "simple-frontend")),
 				workflow.WithDistArtifactPrefixInput("simple-frontend-"),
 				workflow.WithTestingInput(tc.testingInput),
-				workflow.WithOnlyOneJob(t, testAndBuild),
-				workflow.WithRemoveAllStepsAfter(t, testAndBuild, workflowContext),
+				workflow.MutateCIWorkflow().With(
+					workflow.WithOnlyOneJob(t, testAndBuild),
+					workflow.WithRemoveAllStepsAfter(t, testAndBuild, workflowContext),
+				),
 			)
 			require.NoError(t, err)
 
@@ -150,8 +154,10 @@ func TestContext(t *testing.T) {
 				workflow.WithPluginDirectoryInput(filepath.Join("tests", "simple-frontend")),
 				workflow.WithDistArtifactPrefixInput("simple-frontend-"),
 				workflow.WithTestingInput(tc.testingInput),
-				workflow.WithOnlyOneJob(t, testAndBuild),
-				workflow.WithRemoveAllStepsAfter(t, testAndBuild, workflowContext),
+				workflow.MutateCIWorkflow().With(
+					workflow.WithOnlyOneJob(t, testAndBuild),
+					workflow.WithRemoveAllStepsAfter(t, testAndBuild, workflowContext),
+				),
 			)
 			require.NoError(t, err)
 
@@ -199,9 +205,15 @@ func TestContext(t *testing.T) {
 				workflow.WithPluginDirectoryInput(filepath.Join("tests", "simple-frontend")),
 				workflow.WithDistArtifactPrefixInput("simple-frontend-"),
 				workflow.WithTestingInput(tc.testingInput),
-				workflow.WithPullRequestTargetTrigger([]string{"main"}),
-				workflow.WithOnlyOneJob(t, testAndBuild),
-				workflow.WithRemoveAllStepsAfter(t, testAndBuild, workflowContext),
+
+				workflow.MutateCIWorkflow().With(
+					workflow.WithOnlyOneJob(t, testAndBuild),
+					workflow.WithRemoveAllStepsAfter(t, testAndBuild, workflowContext),
+				),
+
+				workflow.MutateTestingWorkflow().With(
+					workflow.WithPullRequestTargetTrigger([]string{"main"}),
+				),
 			)
 			require.NoError(t, err)
 

@@ -9,8 +9,10 @@ import (
 )
 
 const (
-	gcsLoginAction  = "google-github-actions/auth"
-	gcsUploadAction = "google-github-actions/upload-cloud-storage"
+	gcsLoginAction       = "google-github-actions/auth"
+	gcsUploadAction      = "google-github-actions/upload-cloud-storage"
+	vaultSecretsAction   = "grafana/shared-workflows/actions/get-vault-secrets"
+	argoWorkflowAction   = "grafana/shared-workflows/actions/trigger-argo-workflow"
 )
 
 // CopyMockFilesStep returns a Step that copies mock files from a source folder to a destination folder.
@@ -109,4 +111,65 @@ func MockWorkflowContextStep(ctx Context) (Step, error) {
 // used for accessing mock data locally, outside of the act container.
 func localMockdataPath(parts ...string) string {
 	return filepath.Join("tests", "act", "mockdata", filepath.Join(parts...))
+}
+
+// VaultSecrets represents a map of secret names to their values for mocking Vault responses.
+// The keys should match the secret names expected by the workflow (e.g., "GCOM_PUBLISH_TOKEN_DEV").
+type VaultSecrets map[string]string
+
+// MockVaultSecretsStep returns a Step that mocks the grafana/shared-workflows/actions/get-vault-secrets action.
+// Instead of actually fetching secrets from Vault, it outputs the provided secrets in the expected JSON format.
+// The originalStep parameter is the original Vault secrets step to be mocked.
+// The original step must use the `grafana/shared-workflows/actions/get-vault-secrets` action.
+// If those conditions are not met, an error is returned.
+//
+// The mocked step outputs secrets in the format expected by `fromJSON(steps.get-secrets.outputs.secrets)`:
+//
+//	secrets={"KEY1":"value1","KEY2":"value2"}
+func MockVaultSecretsStep(originalStep Step, secrets VaultSecrets) (Step, error) {
+	// Make sure the original step is indeed a Vault secrets step
+	if !strings.HasPrefix(originalStep.Uses, vaultSecretsAction) {
+		return Step{}, fmt.Errorf("cannot mock vault secrets for a step that uses %q action, must be %q", originalStep.Uses, vaultSecretsAction)
+	}
+
+	// Marshal secrets to JSON
+	secretsJSON, err := json.Marshal(secrets)
+	if err != nil {
+		return Step{}, fmt.Errorf("marshal vault secrets to json: %w", err)
+	}
+
+	return Step{
+		Name: originalStep.Name + " (mocked)",
+		Run: Commands{
+			`echo "Mocking Vault secrets step"`,
+			`echo "secrets=$SECRETS_JSON" >> "$GITHUB_OUTPUT"`,
+		}.String(),
+		Env: map[string]string{
+			"SECRETS_JSON": string(secretsJSON),
+		},
+		Shell: "bash",
+	}, nil
+}
+
+// MockArgoWorkflowStep returns a Step that mocks the grafana/shared-workflows/actions/trigger-argo-workflow action.
+// Instead of actually triggering an Argo Workflow, it outputs a mock URI for the workflow.
+// The originalStep parameter is the original Argo Workflow trigger step to be mocked.
+// The original step must use the `grafana/shared-workflows/actions/trigger-argo-workflow` action.
+// If those conditions are not met, an error is returned.
+//
+// The mocked step outputs the `uri` output expected by subsequent steps.
+func MockArgoWorkflowStep(originalStep Step) (Step, error) {
+	// Make sure the original step is indeed an Argo Workflow trigger step
+	if !strings.HasPrefix(originalStep.Uses, argoWorkflowAction) {
+		return Step{}, fmt.Errorf("cannot mock argo workflow for a step that uses %q action, must be %q", originalStep.Uses, argoWorkflowAction)
+	}
+
+	return Step{
+		Name: originalStep.Name + " (mocked)",
+		Run: Commands{
+			`echo "Mocking Argo Workflow trigger step"`,
+			`echo "uri=https://mock-argo-workflows.example.com/workflows/grafana-plugins-cd/mock-workflow-id" >> "$GITHUB_OUTPUT"`,
+		}.String(),
+		Shell: "bash",
+	}, nil
 }

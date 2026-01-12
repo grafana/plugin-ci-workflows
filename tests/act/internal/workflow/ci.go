@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"slices"
 	"strings"
 	"testing"
 
@@ -70,7 +69,7 @@ func NewSimpleCI(opts ...SimpleCIOption) (SimpleCI, error) {
 	// Add the child workflow (ci) now, so further customization can be done on it via opts.
 	// Use the same UUID as the parent, so they have the same uuid in the file name
 	// and it is easier to correlate them.
-	childTestingWf := NewTestingWorkflow("ci", childBaseWf, withUUID(testingWf.uuid))
+	childTestingWf := NewTestingWorkflow("ci", childBaseWf, WithUUID(testingWf.UUID()))
 	testingWf.AddChild("ci", childTestingWf)
 
 	// Change the parent workflow so it calls the mocked child workflow
@@ -191,34 +190,6 @@ func WithMockedDist(t *testing.T, distFolder string) SimpleCIOption {
 	}
 }
 
-// WithRemoveAllStepsAfter removes all steps after the given step ID
-// in the given job ID in the SimpleCI workflow.
-// This can be used to stop the workflow at a certain point for testing purposes.
-func WithRemoveAllStepsAfter(t *testing.T, jobID, stepID string) SimpleCIOption {
-	return func(w *SimpleCI) {
-		job, ok := w.CIWorkflow().BaseWorkflow.Jobs[jobID]
-		require.True(t, ok, "job %q should exist", jobID)
-		require.NoError(t, job.RemoveAllStepsAfter(stepID), "remove all steps after %q in job %q", stepID, jobID)
-	}
-}
-
-// WithOnlyOneJob keeps only the given job ID and its dependencies
-// in the SimpleCI workflow, removing all other jobs.
-// This can be used to run only a specific job for testing purposes.
-func WithOnlyOneJob(t *testing.T, jobID string) SimpleCIOption {
-	return func(w *SimpleCI) {
-		onlyJob, ok := w.CIWorkflow().BaseWorkflow.Jobs[jobID]
-		require.True(t, ok, "job %q should exist", jobID)
-		// Remve all jobs except the given one and its dependencies
-		for k := range w.CIWorkflow().BaseWorkflow.Jobs {
-			if k == jobID || slices.Contains(onlyJob.Needs, k) {
-				continue
-			}
-			delete(w.CIWorkflow().BaseWorkflow.Jobs, k)
-		}
-	}
-}
-
 // WithMockedPackagedDistArtifacts modifies the SimpleCI workflow to mock the steps that create
 // the packaged dist artifacts (ZIP files) in the test-and-build job to copy pre-packaged ZIP files.
 // It also modifies the workflow to mock the dist files using WithMockedDist.
@@ -288,6 +259,41 @@ func WithMockedPackagedDistArtifacts(t *testing.T, distFolder string, packagedFo
 	}
 }
 
+// simpleCIWorkflowMutator is a helper to mutate the SimpleCI workflow or its children workflows
+// with options that are not specific to the SimpleCI workflow itself, but rather to the testing workflow in general.
+type simpleCIWorkflowMutator struct {
+	workflowGetter func(*SimpleCI) *TestingWorkflow
+}
+
+// MutateTestingWorkflow returns a simpleCIWorkflowMutator that can be used to mutate the testing workflow.
+func MutateTestingWorkflow() simpleCIWorkflowMutator {
+	return simpleCIWorkflowMutator{
+		workflowGetter: func(w *SimpleCI) *TestingWorkflow {
+			return w.TestingWorkflow
+		},
+	}
+}
+
+// MutateCIWorkflow returns a simpleCIWorkflowMutator that can be used to mutate the CI workflow
+// (child of the testing workflow).
+func MutateCIWorkflow() simpleCIWorkflowMutator {
+	return simpleCIWorkflowMutator{
+		workflowGetter: func(w *SimpleCI) *TestingWorkflow {
+			return w.CIWorkflow()
+		},
+	}
+}
+
+// With applies the given options to the workflow returned by the workflowGetter function.
+func (m simpleCIWorkflowMutator) With(opts ...TestingWorkflowOption) SimpleCIOption {
+	return func(w *SimpleCI) {
+		wf := m.workflowGetter(w)
+		for _, opt := range opts {
+			opt(wf)
+		}
+	}
+}
+
 // Context represents the mocked workflow context.
 // It is the JSON payload returned by the "workflow-context" step.
 type Context struct {
@@ -335,26 +341,6 @@ func WithMockedGCS(t *testing.T) SimpleCIOption {
 					require.NoError(t, err)
 				}
 			}
-		}
-	}
-}
-
-// WithNoOpStep modifies the SimpleCI workflow to replace the step with the given ID
-// in the job with the given name with a no-op step.
-// This can be used to skip steps that are not relevant for the test or that would fail otherwise.
-func WithNoOpStep(t *testing.T, jobID, stepID string) SimpleCIOption {
-	return func(w *SimpleCI) {
-		err := w.CIWorkflow().BaseWorkflow.Jobs[jobID].ReplaceStep(stepID, NoOpStep(stepID))
-		require.NoError(t, err)
-	}
-}
-
-// WithPullRequestTargetTrigger adds a pull_request_target trigger to the SimpleCI workflow.
-// This can be used to test workflows that respond to pull_request_target events.
-func WithPullRequestTargetTrigger(branches []string) SimpleCIOption {
-	return func(w *SimpleCI) {
-		w.On.PullRequestTarget = OnPullRequestTarget{
-			Branches: branches,
 		}
 	}
 }

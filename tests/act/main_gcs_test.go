@@ -62,14 +62,16 @@ func TestGCS(t *testing.T) {
 						workflow.WithMockedWorkflowContext(t, workflow.Context{
 							IsTrusted: true,
 						}),
+						workflow.WithAllowUnsignedInput(true),
 						// Mock all GCS access
 						workflow.WithMockedGCS(t),
 
 						// No-op steps that are normally executed in a trusted context
 						// but are not relevant for this test and would error out otherwise.
-						workflow.WithNoOpStep(t, "test-and-build", "get-secrets"),
-						workflow.WithNoOpStep(t, "test-and-build", "generate-github-token"),
-						workflow.WithAllowUnsignedInput(true),
+						workflow.MutateCIWorkflow().With(
+							workflow.WithNoOpStep(t, "test-and-build", "get-secrets"),
+							workflow.WithNoOpStep(t, "test-and-build", "generate-github-token"),
+						),
 					)
 					require.NoError(t, err)
 
