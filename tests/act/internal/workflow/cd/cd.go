@@ -129,49 +129,36 @@ func (w *Workflow) CIWorkflow() *workflow.TestingWorkflow {
 // WorkflowOption is a function that modifies a Workflow instance during its construction.
 type WorkflowOption func(*Workflow)
 
-// WithCDEnvironmentInput sets the environment input for the CD job in the workflow.
-func WithCDEnvironmentInput(env string) WorkflowOption {
+// WorkflowInputs are the inputs for the CD workflow.
+// They are used to customize the CD workflow.
+type WorkflowInputs struct {
+	Environment                *string
+	Branch                     *string
+	PluginDirectory            *string
+	Scopes                     *string
+	GrafanaCloudDeploymentType *string
+	TriggerArgo                *bool
+}
+
+// WithWorkflowInputs sets the inputs for the CD workflow.
+func WithWorkflowInputs(inputs WorkflowInputs) WorkflowOption {
 	return func(w *Workflow) {
-		w.BaseWorkflow.Jobs["cd"].With["environment"] = env
+		job := w.BaseWorkflow.Jobs["cd"]
+		set := func(key string, value any) {
+			if value != nil {
+				job.With[key] = value
+			}
+		}
+		set("environment", inputs.Environment)
+		set("branch", inputs.Branch)
+		set("plugin-directory", inputs.PluginDirectory)
+		set("scopes", inputs.Scopes)
+		set("grafana-cloud-deployment-type", inputs.GrafanaCloudDeploymentType)
+		set("trigger-argo", inputs.TriggerArgo)
 	}
 }
 
-// WithCDBranchInput sets the branch input for the CD job in the workflow.
-func WithCDBranchInput(branch string) WorkflowOption {
-	return func(w *Workflow) {
-		w.BaseWorkflow.Jobs["cd"].With["branch"] = branch
-	}
-}
-
-// WithCDPluginDirectoryInput sets the plugin-directory input for the CD job in the workflow.
-func WithCDPluginDirectoryInput(dir string) WorkflowOption {
-	return func(w *Workflow) {
-		w.BaseWorkflow.Jobs["cd"].With["plugin-directory"] = dir
-	}
-}
-
-// WithCDScopesInput sets the scopes input for the CD job in the workflow.
-func WithCDScopesInput(scopes string) WorkflowOption {
-	return func(w *Workflow) {
-		w.BaseWorkflow.Jobs["cd"].With["scopes"] = scopes
-	}
-}
-
-// WithCDGrafanaCloudDeploymentTypeInput sets the grafana-cloud-deployment-type input for the CD job in the workflow.
-func WithCDGrafanaCloudDeploymentTypeInput(deploymentType string) WorkflowOption {
-	return func(w *Workflow) {
-		w.BaseWorkflow.Jobs["cd"].With["grafana-cloud-deployment-type"] = deploymentType
-	}
-}
-
-// WithCDTriggerArgoInput sets the trigger-argo input for the CD job in the workflow.
-func WithCDTriggerArgoInput(triggerArgo bool) WorkflowOption {
-	return func(w *Workflow) {
-		w.BaseWorkflow.Jobs["cd"].With["trigger-argo"] = triggerArgo
-	}
-}
-
-// WithCDMockedVault modifies the SimpleCD workflow to mock all Vault secrets steps
+// WithMockedVault modifies the SimpleCD workflow to mock all Vault secrets steps
 // (which use the grafana/shared-workflows/actions/get-vault-secrets action)
 // to instead return the provided mock secrets.
 // This allows testing CD workflows without actually accessing Vault.
@@ -184,7 +171,7 @@ func WithCDTriggerArgoInput(triggerArgo bool) WorkflowOption {
 //	    "GCOM_PUBLISH_TOKEN_OPS": "mock-ops-token",
 //	    "GCOM_PUBLISH_TOKEN_PROD": "mock-prod-token",
 //	}
-func WithCDMockedVault(t *testing.T, secrets workflow.VaultSecrets) WorkflowOption {
+func WithMockedVault(t *testing.T, secrets workflow.VaultSecrets) WorkflowOption {
 	return func(w *Workflow) {
 		err := w.CDWorkflow().MockAllStepsUsingAction(workflow.VaultSecretsAction, func(step workflow.Step) (workflow.Step, error) {
 			return workflow.MockVaultSecretsStep(step, secrets)
@@ -193,11 +180,11 @@ func WithCDMockedVault(t *testing.T, secrets workflow.VaultSecrets) WorkflowOpti
 	}
 }
 
-// WithCDMockedArgoWorkflow modifies the SimpleCD workflow to mock the Argo Workflow trigger step
+// WithMockedArgoWorkflows modifies the SimpleCD workflow to mock the Argo Workflow trigger step
 // (which uses the grafana/shared-workflows/actions/trigger-argo-workflow action)
 // to instead return a mock URI.
 // This allows testing CD workflows without actually triggering Argo Workflows.
-func WithCDMockedArgoWorkflow(t *testing.T) WorkflowOption {
+func WithMockedArgoWorkflows(t *testing.T) WorkflowOption {
 	return func(w *Workflow) {
 		err := w.CDWorkflow().MockAllStepsUsingAction(workflow.ArgoWorkflowAction, func(step workflow.Step) (workflow.Step, error) {
 			return workflow.MockArgoWorkflowStep(step)
