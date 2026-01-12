@@ -71,12 +71,11 @@ type Runner struct {
 	ContainerArchitecture string
 }
 
-// actionsCachePathBase is the shared path where GitHub Actions are cached.
-// This cache is pre-populated during TestMain warmup and shared among all runners.
+// actionsCachePathBase is the base path for the action cache.
 var actionsCachePathBase = filepath.Join("/tmp", "act-action-cache")
 
-// TemplateActionsCachePath is the path where GitHub Actions are pre-cached for the warmup workflow.
-// This cache is then copied to the actions cache path of each runner for the actual workflow runs.
+// TemplateActionsCachePath is the path where GitHub Actions are pre-cached during the warmup workflow.
+// This cache is then copied to each runner's actions cache path for the actual workflow runs.
 var TemplateActionsCachePath = filepath.Join(actionsCachePathBase, "template")
 
 // RunnerOption is a function that configures a Runner.
