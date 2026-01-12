@@ -49,27 +49,30 @@ func TestGCS(t *testing.T) {
 					require.NoError(t, err)
 
 					wf, err := ci.NewWorkflow(
-						ci.WithPluginDirectoryInput(filepath.Join("tests", tc.folder)),
-						ci.WithDistArtifactPrefixInput(tc.folder+"-"),
-
-						// Disable some features to speed up the test
-						ci.WithPlaywrightInput(false),
-						ci.WithRunTruffleHogInput(false),
-						ci.WithRunPluginValidatorInput(false),
+						ci.WithWorkflowInputs(ci.WorkflowInputs{
+							PluginDirectory:     workflow.Input(filepath.Join("tests", tc.folder)),
+							DistArtifactsPrefix: workflow.Input(tc.folder + "-"),
+							AllowUnsigned:       workflow.Input(true),
+							// Disable some features to speed up the test
+							RunPlaywright:      workflow.Input(false),
+							RunTruffleHog:      workflow.Input(false),
+							RunPluginValidator: workflow.Input(false),
+						}),
 
 						// Mock dist so we don't spend time building the plugin
 						ci.WithMockedDist(t, "dist/"+tc.folder),
+
 						// Mock a trusted context to enable GCS upload
 						ci.WithMockedWorkflowContext(t, ci.Context{
 							IsTrusted: true,
 						}),
-						ci.WithAllowUnsignedInput(true),
-						// Mock all GCS access
-						ci.WithMockedGCS(t),
 
-						// No-op steps that are normally executed in a trusted context
-						// but are not relevant for this test and would error out otherwise.
 						ci.MutateCIWorkflow().With(
+							// Mock all GCS access
+							workflow.WithMockedGCS(t),
+
+							// No-op steps that are normally executed in a trusted context
+							// but are not relevant for this test and would error out otherwise.
 							workflow.WithNoOpStep(t, "test-and-build", "get-secrets"),
 							workflow.WithNoOpStep(t, "test-and-build", "generate-github-token"),
 						),

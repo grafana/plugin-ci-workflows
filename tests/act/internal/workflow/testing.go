@@ -187,3 +187,21 @@ func WithNoOpStep(t *testing.T, jobID, stepID string) TestingWorkflowOption {
 		require.NoError(t, err)
 	}
 }
+
+// WithMockedGCS modifies the workflow to mock all GCS upload steps
+// (which use the google-github-actions/upload-cloud-storage action)
+// to instead copy files to a local folder mounted into the act container at /gcs.
+// It also takes all google-github-actions/auth steps and no-ops them,
+// as authentication is not needed for local file copy.
+// This allows testing GCS upload functionality without actually accessing GCS.
+// Since GCS is only used in trusted contexts, callers should most likely also use WithMockedWorkflowContext.
+func WithMockedGCS(t *testing.T) TestingWorkflowOption {
+	return func(twf *TestingWorkflow) {
+		require.NoError(t, twf.MockAllStepsUsingAction(GCSLoginAction, func(step Step) (Step, error) {
+			return NoOpStep(step.ID), nil
+		}))
+		require.NoError(t, twf.MockAllStepsUsingAction(GCSUploadAction, func(step Step) (Step, error) {
+			return MockGCSUploadStep(step)
+		}))
+	}
+}

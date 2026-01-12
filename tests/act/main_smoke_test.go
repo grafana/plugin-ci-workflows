@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/grafana/plugin-ci-workflows/tests/act/internal/act"
+	"github.com/grafana/plugin-ci-workflows/tests/act/internal/workflow"
 	"github.com/grafana/plugin-ci-workflows/tests/act/internal/workflow/ci"
 	"github.com/stretchr/testify/require"
 )
@@ -69,9 +70,11 @@ func TestSmoke(t *testing.T) {
 			require.NoError(t, err)
 
 			wf, err := ci.NewWorkflow(
-				ci.WithPluginDirectoryInput(filepath.Join("tests", tc.folder)),
-				ci.WithDistArtifactPrefixInput(tc.folder+"-"),
-				ci.WithPlaywrightInput(false),
+				ci.WithWorkflowInputs(ci.WorkflowInputs{
+					PluginDirectory:     workflow.Input(filepath.Join("tests", tc.folder)),
+					DistArtifactsPrefix: workflow.Input(tc.folder + "-"),
+					RunPlaywright:       workflow.Input(false),
+				}),
 			)
 			require.NoError(t, err)
 

@@ -42,12 +42,12 @@ func TestContext(t *testing.T) {
 			require.NoError(t, err)
 
 			wf, err := ci.NewWorkflow(
-				ci.WithPluginDirectoryInput(filepath.Join("tests", "simple-frontend")),
-				ci.WithDistArtifactPrefixInput("simple-frontend-"),
-
-				// Eventually disable testing mode, otherwise context is never trusted
-				ci.WithTestingInput(tc.testingInput),
-
+				ci.WithWorkflowInputs(ci.WorkflowInputs{
+					PluginDirectory:     workflow.Input(filepath.Join("tests", "simple-frontend")),
+					DistArtifactsPrefix: workflow.Input("simple-frontend-"),
+					// Eventually disable testing mode, otherwise context is never trusted
+					Testing: workflow.Input(tc.testingInput),
+				}),
 				// Only run test-and-build job and stop after workflow-context step
 				// (no need to build the plugin, etc, for this test)
 				ci.MutateCIWorkflow().With(
@@ -100,9 +100,11 @@ func TestContext(t *testing.T) {
 			require.NoError(t, err)
 
 			wf, err := ci.NewWorkflow(
-				ci.WithPluginDirectoryInput(filepath.Join("tests", "simple-frontend")),
-				ci.WithDistArtifactPrefixInput("simple-frontend-"),
-				ci.WithTestingInput(tc.testingInput),
+				ci.WithWorkflowInputs(ci.WorkflowInputs{
+					PluginDirectory:     workflow.Input(filepath.Join("tests", "simple-frontend")),
+					DistArtifactsPrefix: workflow.Input("simple-frontend-"),
+					Testing:             workflow.Input(tc.testingInput),
+				}),
 				ci.MutateCIWorkflow().With(
 					workflow.WithOnlyOneJob(t, testAndBuild),
 					workflow.WithRemoveAllStepsAfter(t, testAndBuild, workflowContext),
@@ -152,9 +154,11 @@ func TestContext(t *testing.T) {
 			require.NoError(t, err)
 
 			wf, err := ci.NewWorkflow(
-				ci.WithPluginDirectoryInput(filepath.Join("tests", "simple-frontend")),
-				ci.WithDistArtifactPrefixInput("simple-frontend-"),
-				ci.WithTestingInput(tc.testingInput),
+				ci.WithWorkflowInputs(ci.WorkflowInputs{
+					PluginDirectory:     workflow.Input(filepath.Join("tests", "simple-frontend")),
+					DistArtifactsPrefix: workflow.Input("simple-frontend-"),
+					Testing:             workflow.Input(tc.testingInput),
+				}),
 				ci.MutateCIWorkflow().With(
 					workflow.WithOnlyOneJob(t, testAndBuild),
 					workflow.WithRemoveAllStepsAfter(t, testAndBuild, workflowContext),
@@ -203,15 +207,15 @@ func TestContext(t *testing.T) {
 			require.NoError(t, err)
 
 			wf, err := ci.NewWorkflow(
-				ci.WithPluginDirectoryInput(filepath.Join("tests", "simple-frontend")),
-				ci.WithDistArtifactPrefixInput("simple-frontend-"),
-				ci.WithTestingInput(tc.testingInput),
-
+				ci.WithWorkflowInputs(ci.WorkflowInputs{
+					PluginDirectory:     workflow.Input(filepath.Join("tests", "simple-frontend")),
+					DistArtifactsPrefix: workflow.Input("simple-frontend-"),
+					Testing:             workflow.Input(tc.testingInput),
+				}),
 				ci.MutateCIWorkflow().With(
 					workflow.WithOnlyOneJob(t, testAndBuild),
 					workflow.WithRemoveAllStepsAfter(t, testAndBuild, workflowContext),
 				),
-
 				ci.MutateTestingWorkflow().With(
 					workflow.WithPullRequestTargetTrigger([]string{"main"}),
 				),

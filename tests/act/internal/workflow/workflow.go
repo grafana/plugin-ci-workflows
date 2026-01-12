@@ -288,3 +288,9 @@ type Commands []string
 func (c Commands) String() string {
 	return strings.Join(c, "\n")
 }
+
+// Input is a helper function to create a pointer to a value.
+// It is useful to avoid having to write `&value` everywhere.
+func Input[T any](value T) *T {
+	return &value
+}

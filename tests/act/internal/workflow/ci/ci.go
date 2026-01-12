@@ -103,59 +103,40 @@ func (w *Workflow) CIWorkflow() *workflow.TestingWorkflow {
 // WorkflowOption is a function that modifies a Workflow instance during its construction.
 type WorkflowOption func(*Workflow)
 
-// WithPluginDirectoryInput sets the plugin-directory input for the CI job in the workflow.
-func WithPluginDirectoryInput(dir string) WorkflowOption {
-	return func(w *Workflow) {
-		w.BaseWorkflow.Jobs["ci"].With["plugin-directory"] = dir
-	}
+// WorkflowInputs are the inputs for the CI workflow.
+// They are used to customize the CI workflow.
+type WorkflowInputs struct {
+	PluginDirectory     *string
+	DistArtifactsPrefix *string
+
+	RunPlaywright *bool
+
+	RunPluginValidator    *bool
+	PluginValidatorConfig *string
+
+	RunTruffleHog *bool
+
+	AllowUnsigned *bool
+	Testing       *bool
 }
 
-// WithDistArtifactPrefixInput sets the dist-artifacts-prefix input for the CI job in the workflow.
-func WithDistArtifactPrefixInput(prefix string) WorkflowOption {
+// WithWorkflowInputs sets the inputs for the CI workflow.
+func WithWorkflowInputs(inputs WorkflowInputs) WorkflowOption {
 	return func(w *Workflow) {
-		w.BaseWorkflow.Jobs["ci"].With["dist-artifacts-prefix"] = prefix
-	}
-}
-
-// WithPlaywrightInput sets the run-playwright input for the CI job in the workflow.
-func WithPlaywrightInput(enabled bool) WorkflowOption {
-	return func(w *Workflow) {
-		w.BaseWorkflow.Jobs["ci"].With["run-playwright"] = enabled
-	}
-}
-
-// WithRunPluginValidatorInput sets the run-plugin-validator input for the CI job in the workflow.
-func WithRunPluginValidatorInput(enabled bool) WorkflowOption {
-	return func(w *Workflow) {
-		w.BaseWorkflow.Jobs["ci"].With["run-plugin-validator"] = enabled
-	}
-}
-
-// WithPluginValidatorConfigInput sets the plugin-validator-config input for the CI job in the workflow.
-func WithPluginValidatorConfigInput(config string) WorkflowOption {
-	return func(w *Workflow) {
-		w.BaseWorkflow.Jobs["ci"].With["plugin-validator-config"] = config
-	}
-}
-
-// WithRunTruffleHogInput sets the run-trufflehog input for the CI job in the workflow.
-func WithRunTruffleHogInput(enabled bool) WorkflowOption {
-	return func(w *Workflow) {
-		w.BaseWorkflow.Jobs["ci"].With["run-trufflehog"] = enabled
-	}
-}
-
-// WithAllowUnsignedInput sets the allow-unsigned input for the CI job in the workflow.
-func WithAllowUnsignedInput(enabled bool) WorkflowOption {
-	return func(w *Workflow) {
-		w.BaseWorkflow.Jobs["ci"].With["allow-unsigned"] = enabled
-	}
-}
-
-// WithTestingInput sets the testing input for the CI job in the workflow.
-func WithTestingInput(testing bool) WorkflowOption {
-	return func(w *Workflow) {
-		w.BaseWorkflow.Jobs["ci"].With["testing"] = testing
+		job := w.BaseWorkflow.Jobs["ci"]
+		set := func(key string, value any) {
+			if value != nil {
+				job.With[key] = value
+			}
+		}
+		set("plugin-directory", inputs.PluginDirectory)
+		set("dist-artifacts-prefix", inputs.DistArtifactsPrefix)
+		set("run-playwright", inputs.RunPlaywright)
+		set("run-plugin-validator", inputs.RunPluginValidator)
+		set("plugin-validator-config", inputs.PluginValidatorConfig)
+		set("run-trufflehog", inputs.RunTruffleHog)
+		set("allow-unsigned", inputs.AllowUnsigned)
+		set("testing", inputs.Testing)
 	}
 }
 
@@ -309,24 +290,6 @@ func WithMockedWorkflowContext(t *testing.T, ctx Context) WorkflowOption {
 		const stepID = "workflow-context"
 		err = w.CIWorkflow().BaseWorkflow.Jobs["test-and-build"].ReplaceStep(stepID, step)
 		require.NoError(t, err)
-	}
-}
-
-// WithMockedGCS modifies the workflow to mock all GCS upload steps
-// (which use the google-github-actions/upload-cloud-storage action)
-// to instead copy files to a local folder mounted into the act container at /gcs.
-// It also takes all google-github-actions/auth steps and removes them,
-// as authentication is not needed for local file copy.
-// This allows testing GCS upload functionality without actually accessing GCS.
-// Since GCS is only used in trusted contexts, callers should most likely also use WithMockedWorkflowContext.
-func WithMockedGCS(t *testing.T) WorkflowOption {
-	return func(w *Workflow) {
-		require.NoError(t, w.CIWorkflow().MockAllStepsUsingAction(workflow.GCSLoginAction, func(step workflow.Step) (workflow.Step, error) {
-			return workflow.NoOpStep(step.ID), nil
-		}))
-		require.NoError(t, w.CIWorkflow().MockAllStepsUsingAction(workflow.GCSUploadAction, func(step workflow.Step) (workflow.Step, error) {
-			return workflow.MockGCSUploadStep(step)
-		}))
 	}
 }
 

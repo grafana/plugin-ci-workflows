@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/grafana/plugin-ci-workflows/tests/act/internal/act"
+	"github.com/grafana/plugin-ci-workflows/tests/act/internal/workflow"
 	"github.com/grafana/plugin-ci-workflows/tests/act/internal/workflow/ci"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/require"
@@ -43,12 +44,12 @@ func TestPackage(t *testing.T) {
 			runner, err := act.NewRunner(t)
 			require.NoError(t, err)
 			wf, err := ci.NewWorkflow(
-				// CI workflow options
-				ci.WithPluginDirectoryInput(filepath.Join("tests", tc.folder)),
-				ci.WithDistArtifactPrefixInput(tc.folder+"-"),
-				ci.WithPlaywrightInput(false),
-				ci.WithRunTruffleHogInput(false),
-
+				ci.WithWorkflowInputs(ci.WorkflowInputs{
+					PluginDirectory:     workflow.Input(filepath.Join("tests", tc.folder)),
+					DistArtifactsPrefix: workflow.Input(tc.folder + "-"),
+					RunPlaywright:       workflow.Input(false),
+					RunTruffleHog:       workflow.Input(false),
+				}),
 				// Mock the test-and-build job to copy pre-built dist files
 				ci.WithMockedDist(t, "dist/"+tc.folder),
 			)
