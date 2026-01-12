@@ -19,8 +19,6 @@ import (
 
 // TestMain sets up the test environment before running the tests.
 func TestMain(m *testing.M) {
-	fmt.Println("preparing test environment")
-
 	// Go to the root of the repo
 	root, err := getRepoRootAbsPath()
 	if err != nil {
@@ -44,7 +42,7 @@ func TestMain(m *testing.M) {
 	// Warm up act-toolcache volume, otherwise we get weird errors
 	// when running the "setup/*" actions in parallel tests since they
 	// all share the same act-toolcache volume.
-	runner, err := act.NewRunner(&testing.T{})
+	runner, err := act.NewRunner(&testing.T{}, act.WithName("toolcache-warmup"))
 	if err != nil {
 		panic(err)
 	}
