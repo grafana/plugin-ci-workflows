@@ -23,7 +23,7 @@ on:
         required: false
         type: boolean
       skip-grafana-react-19-preview-image:
-        default: true
+        default: false
         required: false
         type: boolean
       version-resolver-type:

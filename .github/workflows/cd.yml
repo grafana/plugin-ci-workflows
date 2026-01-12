@@ -123,7 +123,7 @@ on:
         description: "Optionally, you can skip the Grafana React 19 preview image"
         type: boolean
         required: false
-        default: true
+        default: false
       run-playwright-with-version-resolver-type:
         description: Define which version resolver type to use for Playwright E2E tests.
         type: string
