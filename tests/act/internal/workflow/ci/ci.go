@@ -1,4 +1,4 @@
-package workflow
+package ci
 
 import (
 	"fmt"
@@ -7,41 +7,38 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/grafana/plugin-ci-workflows/tests/act/internal/workflow"
 	"github.com/stretchr/testify/require"
 )
 
-const (
-	pciwfBaseRef = "grafana/plugin-ci-workflows/.github/workflows"
-)
-
-// SimpleCI is a predefined GitHub Actions workflow for testing plugins using act.
+// Workflow is a predefined GitHub Actions workflow for testing plugins using act.
 // It uses the plugin-ci-workflows CI workflow as a base, with sane default values
 // and allows customization through options.
 // It implements the Marshalable interface to allow conversion to YAML format.
-// Instances must be created using NewSimpleCI.
-type SimpleCI struct {
-	*TestingWorkflow
+// Instances must be created using NewWorkflow.
+type Workflow struct {
+	*workflow.TestingWorkflow
 }
 
-// NewSimpleCI creates a new SimpleCI workflow instance with default settings.
+// NewWorkflow creates a new Workflow instance with default settings.
 // The caller can provide options to customize the workflow.
-func NewSimpleCI(opts ...SimpleCIOption) (SimpleCI, error) {
-	ciBaseWf := BaseWorkflow{
+func NewWorkflow(opts ...WorkflowOption) (Workflow, error) {
+	ciBaseWf := workflow.BaseWorkflow{
 		Name: "CI",
-		On: On{
-			Push: OnPush{
+		On: workflow.On{
+			Push: workflow.OnPush{
 				Branches: []string{"main"},
 			},
-			PullRequest: OnPullRequest{
+			PullRequest: workflow.OnPullRequest{
 				Branches: []string{"main"},
 			},
 		},
-		Jobs: map[string]*Job{
+		Jobs: map[string]*workflow.Job{
 			"ci": {
 				Name: "CI",
 				// This will be populated later with the child testing workflow reference
 				// Uses: "..."
-				Permissions: Permissions{
+				Permissions: workflow.Permissions{
 					"contents": "read",
 					"id-token": "write",
 				},
@@ -49,7 +46,7 @@ func NewSimpleCI(opts ...SimpleCIOption) (SimpleCI, error) {
 					"plugin-version-suffix": "${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || '' }}",
 					"testing":               true,
 				},
-				Secrets: Secrets{
+				Secrets: workflow.Secrets{
 					"GITHUB_TOKEN": "${{ secrets.GITHUB_TOKEN }}",
 				},
 			},
@@ -58,38 +55,38 @@ func NewSimpleCI(opts ...SimpleCIOption) (SimpleCI, error) {
 
 	// We need to create a child testing workflow for the called "ci.yml" workflow, in order to mock jobs/steps in it
 	// Read the base workflow from file to create the child BaseWorkflow
-	childBaseWf, err := NewBaseWorkflowFromFile(filepath.Join(".github", "workflows", "ci.yml"))
+	childBaseWf, err := workflow.NewBaseWorkflowFromFile(filepath.Join(".github", "workflows", "ci.yml"))
 	if err != nil {
-		return SimpleCI{}, fmt.Errorf("new base workflow from file for child ci workflow: %w", err)
+		return Workflow{}, fmt.Errorf("new base workflow from file for child ci workflow: %w", err)
 	}
 
 	// Workflow to be returned
-	testingWf := SimpleCI{NewTestingWorkflow("simple-ci", ciBaseWf)}
+	testingWf := Workflow{workflow.NewTestingWorkflow("simple-ci", ciBaseWf)}
 
 	// Add the child workflow (ci) now, so further customization can be done on it via opts.
 	// Use the same UUID as the parent, so they have the same uuid in the file name
 	// and it is easier to correlate them.
-	childTestingWf := NewTestingWorkflow("ci", childBaseWf, WithUUID(testingWf.UUID()))
+	childTestingWf := workflow.NewTestingWorkflow("ci", childBaseWf, workflow.WithUUID(testingWf.UUID()))
 	testingWf.AddChild("ci", childTestingWf)
 
 	// Change the parent workflow so it calls the mocked child workflow
-	testingWf.BaseWorkflow.Jobs["ci"].Uses = pciwfBaseRef + "/" + testingWf.GetChild("ci").FileName() + "@main"
+	testingWf.BaseWorkflow.Jobs["ci"].Uses = workflow.PCIWFBaseRef + "/" + testingWf.GetChild("ci").FileName() + "@main"
 
 	// Add uuid to each job in the workflow and all its children in order to
 	// make unique contianer names and allow tests to run in parallel, so that
 	// container names created by act don't clash
 	// TODO: move to TestingWorkflow instead?
-	for _, wf := range append([]Workflow{testingWf.TestingWorkflow}, testingWf.Children()...) {
+	for _, wf := range append([]workflow.Workflow{testingWf.TestingWorkflow}, testingWf.Children()...) {
 		for _, j := range wf.Jobs() {
 			if j.Name != "" {
-				j.Name = j.Name + "-" + testingWf.uuid.String()
+				j.Name = j.Name + "-" + testingWf.UUID().String()
 			} else {
-				j.Name = testingWf.uuid.String()
+				j.Name = testingWf.UUID().String()
 			}
 		}
 	}
 
-	// Apply options to customize the SimpleCI instance.
+	// Apply options to customize the Workflow instance.
 	// These opts can also modify the child testing workflow.
 	for _, opt := range opts {
 		opt(&testingWf)
@@ -99,70 +96,70 @@ func NewSimpleCI(opts ...SimpleCIOption) (SimpleCI, error) {
 
 // CIWorkflow returns the TestingWorkflow instance representing the "ci" child workflow.
 // This can be used to further customize/mock steps and jobs in the child workflow.
-func (w *SimpleCI) CIWorkflow() *TestingWorkflow {
+func (w *Workflow) CIWorkflow() *workflow.TestingWorkflow {
 	return w.GetChild("ci")
 }
 
-// SimpleCIOption is a function that modifies a SimpleCI instance during its construction.
-type SimpleCIOption func(*SimpleCI)
+// WorkflowOption is a function that modifies a Workflow instance during its construction.
+type WorkflowOption func(*Workflow)
 
-// WithPluginDirectoryInput sets the plugin-directory input for the CI job in the SimpleCI workflow.
-func WithPluginDirectoryInput(dir string) SimpleCIOption {
-	return func(w *SimpleCI) {
+// WithPluginDirectoryInput sets the plugin-directory input for the CI job in the workflow.
+func WithPluginDirectoryInput(dir string) WorkflowOption {
+	return func(w *Workflow) {
 		w.BaseWorkflow.Jobs["ci"].With["plugin-directory"] = dir
 	}
 }
 
-// WithDistArtifactPrefixInput sets the dist-artifacts-prefix input for the CI job in the SimpleCI workflow.
-func WithDistArtifactPrefixInput(prefix string) SimpleCIOption {
-	return func(w *SimpleCI) {
+// WithDistArtifactPrefixInput sets the dist-artifacts-prefix input for the CI job in the workflow.
+func WithDistArtifactPrefixInput(prefix string) WorkflowOption {
+	return func(w *Workflow) {
 		w.BaseWorkflow.Jobs["ci"].With["dist-artifacts-prefix"] = prefix
 	}
 }
 
-// WithPlaywrightInput sets the run-playwright input for the CI job in the SimpleCI workflow.
-func WithPlaywrightInput(enabled bool) SimpleCIOption {
-	return func(w *SimpleCI) {
+// WithPlaywrightInput sets the run-playwright input for the CI job in the workflow.
+func WithPlaywrightInput(enabled bool) WorkflowOption {
+	return func(w *Workflow) {
 		w.BaseWorkflow.Jobs["ci"].With["run-playwright"] = enabled
 	}
 }
 
-// WithRunPluginValidatorInput sets the run-plugin-validator input for the CI job in the SimpleCI workflow.
-func WithRunPluginValidatorInput(enabled bool) SimpleCIOption {
-	return func(w *SimpleCI) {
+// WithRunPluginValidatorInput sets the run-plugin-validator input for the CI job in the workflow.
+func WithRunPluginValidatorInput(enabled bool) WorkflowOption {
+	return func(w *Workflow) {
 		w.BaseWorkflow.Jobs["ci"].With["run-plugin-validator"] = enabled
 	}
 }
 
-// WithPluginValidatorConfigInput sets the plugin-validator-config input for the CI job in the SimpleCI workflow.
-func WithPluginValidatorConfigInput(config string) SimpleCIOption {
-	return func(w *SimpleCI) {
+// WithPluginValidatorConfigInput sets the plugin-validator-config input for the CI job in the workflow.
+func WithPluginValidatorConfigInput(config string) WorkflowOption {
+	return func(w *Workflow) {
 		w.BaseWorkflow.Jobs["ci"].With["plugin-validator-config"] = config
 	}
 }
 
-// WithRunTruffleHogInput sets the run-trufflehog input for the CI job in the SimpleCI workflow.
-func WithRunTruffleHogInput(enabled bool) SimpleCIOption {
-	return func(w *SimpleCI) {
+// WithRunTruffleHogInput sets the run-trufflehog input for the CI job in the workflow.
+func WithRunTruffleHogInput(enabled bool) WorkflowOption {
+	return func(w *Workflow) {
 		w.BaseWorkflow.Jobs["ci"].With["run-trufflehog"] = enabled
 	}
 }
 
-// WithAllowUnsignedInput sets the allow-unsigned input for the CI job in the SimpleCI workflow.
-func WithAllowUnsignedInput(enabled bool) SimpleCIOption {
-	return func(w *SimpleCI) {
+// WithAllowUnsignedInput sets the allow-unsigned input for the CI job in the workflow.
+func WithAllowUnsignedInput(enabled bool) WorkflowOption {
+	return func(w *Workflow) {
 		w.BaseWorkflow.Jobs["ci"].With["allow-unsigned"] = enabled
 	}
 }
 
-// WithTestingInput sets the testing input for the CI job in the SimpleCI workflow.
-func WithTestingInput(testing bool) SimpleCIOption {
-	return func(w *SimpleCI) {
+// WithTestingInput sets the testing input for the CI job in the workflow.
+func WithTestingInput(testing bool) WorkflowOption {
+	return func(w *Workflow) {
 		w.BaseWorkflow.Jobs["ci"].With["testing"] = testing
 	}
 }
 
-// WithMockedDist modifies the SimpleCI workflow to mock the test-and-build job
+// WithMockedDist modifies the workflow to mock the test-and-build job
 // to copy pre-built dist files (js + assets + backend executable, NOT the ZIP files)
 // from a mockdata folder instead of building them.
 // This can be used for tests that need to assert on side-effects of building the plugin,
@@ -171,26 +168,26 @@ func WithTestingInput(testing bool) SimpleCIOption {
 // The distFolder should use slashes as path separators.
 // The function will convert it to the correct OS-specific separators when needed.
 // The distFolder is sanity-checked to ensure they contain valid data.
-func WithMockedDist(t *testing.T, distFolder string) SimpleCIOption {
-	return func(w *SimpleCI) {
+func WithMockedDist(t *testing.T, distFolder string) WorkflowOption {
+	return func(w *Workflow) {
 		testAndBuild := w.CIWorkflow().BaseWorkflow.Jobs["test-and-build"]
 		distFolder = filepath.FromSlash(distFolder)
 
 		// Sanity check that the folder contains dist files
-		_, err := os.Stat(filepath.Join(localMockdataPath(distFolder), "plugin.json"))
+		_, err := os.Stat(filepath.Join(workflow.LocalMockdataPath(distFolder), "plugin.json"))
 		if err != nil && os.IsNotExist(err) {
 			require.FailNowf(t, "malformed dist folder", "the specified dist folder %q doesn't seem to contain dist artifacts (plugin.json is missing)", distFolder)
 		}
 
 		require.NoError(t, testAndBuild.ReplaceStep(
 			"frontend",
-			CopyMockFilesStep(distFolder, "${{ github.workspace }}/${{ inputs.plugin-directory }}/dist/"),
+			workflow.CopyMockFilesStep(distFolder, "${{ github.workspace }}/${{ inputs.plugin-directory }}/dist/"),
 		))
 		require.NoError(t, testAndBuild.RemoveStep("backend"))
 	}
 }
 
-// WithMockedPackagedDistArtifacts modifies the SimpleCI workflow to mock the steps that create
+// WithMockedPackagedDistArtifacts modifies the workflow to mock the steps that create
 // the packaged dist artifacts (ZIP files) in the test-and-build job to copy pre-packaged ZIP files.
 // It also modifies the workflow to mock the dist files using WithMockedDist.
 // This way if any further steps need the dist files (e.g. for extracting metadata from plugin.json), they are present.
@@ -200,11 +197,11 @@ func WithMockedDist(t *testing.T, distFolder string) SimpleCIOption {
 // Both folders should use slashes as path separators.
 // The function will convert them to the correct OS-specific separators when needed.
 // The specified mock folders are sanity-checked to ensure they contain valid data.
-func WithMockedPackagedDistArtifacts(t *testing.T, distFolder string, packagedFolder string) SimpleCIOption {
-	return func(w *SimpleCI) {
+func WithMockedPackagedDistArtifacts(t *testing.T, distFolder string, packagedFolder string) WorkflowOption {
+	return func(w *Workflow) {
 		// Sanity check that the packaged folder contains ZIP files
 		packagedFolder = filepath.FromSlash(packagedFolder)
-		entries, err := os.ReadDir(localMockdataPath(packagedFolder))
+		entries, err := os.ReadDir(workflow.LocalMockdataPath(packagedFolder))
 		if err != nil {
 			require.FailNowf(t, "malformed packaged dist folder", "could not read the specified packaged dist folder %q", packagedFolder)
 		}
@@ -237,18 +234,18 @@ func WithMockedPackagedDistArtifacts(t *testing.T, distFolder string, packagedFo
 			"universal-zip",
 			"os-arch-zips",
 		} {
-			mockStep := CopyMockFilesStep(packagedFolder, dest)
+			mockStep := workflow.CopyMockFilesStep(packagedFolder, dest)
 			// Set step output
 			if i == 0 {
 				// Universal
-				mockStep.Run += "\n" + Commands{
+				mockStep.Run += "\n" + workflow.Commands{
 					// Output ONE zip file, get the name by excluding file names that contain '_'
 					// (which is used as a separator in os/arch zips)
 					`echo zip=$(ls -1 ` + dest + `/*.zip | xargs -n 1 basename | grep -v '_') >> "${GITHUB_OUTPUT}"`,
 				}.String()
 			} else {
 				// os/arch
-				mockStep.Run += "\n" + Commands{
+				mockStep.Run += "\n" + workflow.Commands{
 					// Output ALL ZIP files that contains an '_' (separator for os/arch in zip file names)
 					// as a JSON array
 					`echo zip=$(ls -1 ` + dest + `/*.zip | xargs -n 1 basename | grep '_' | jq -RncM '[inputs]') >> "${GITHUB_OUTPUT}"`,
@@ -259,34 +256,34 @@ func WithMockedPackagedDistArtifacts(t *testing.T, distFolder string, packagedFo
 	}
 }
 
-// simpleCIWorkflowMutator is a helper to mutate the SimpleCI workflow or its children workflows
-// with options that are not specific to the SimpleCI workflow itself, but rather to the testing workflow in general.
-type simpleCIWorkflowMutator struct {
-	workflowGetter func(*SimpleCI) *TestingWorkflow
+// workflowMutator is a helper to mutate the Workflow or its children workflows
+// with options that are not specific to the Workflow itself, but rather to the testing workflow in general.
+type workflowMutator struct {
+	workflowGetter func(*Workflow) *workflow.TestingWorkflow
 }
 
-// MutateTestingWorkflow returns a simpleCIWorkflowMutator that can be used to mutate the testing workflow.
-func MutateTestingWorkflow() simpleCIWorkflowMutator {
-	return simpleCIWorkflowMutator{
-		workflowGetter: func(w *SimpleCI) *TestingWorkflow {
+// MutateTestingWorkflow returns a workflowMutator that can be used to mutate the testing workflow.
+func MutateTestingWorkflow() workflowMutator {
+	return workflowMutator{
+		workflowGetter: func(w *Workflow) *workflow.TestingWorkflow {
 			return w.TestingWorkflow
 		},
 	}
 }
 
-// MutateCIWorkflow returns a simpleCIWorkflowMutator that can be used to mutate the CI workflow
+// MutateCIWorkflow returns a workflowMutator that can be used to mutate the CI workflow
 // (child of the testing workflow).
-func MutateCIWorkflow() simpleCIWorkflowMutator {
-	return simpleCIWorkflowMutator{
-		workflowGetter: func(w *SimpleCI) *TestingWorkflow {
+func MutateCIWorkflow() workflowMutator {
+	return workflowMutator{
+		workflowGetter: func(w *Workflow) *workflow.TestingWorkflow {
 			return w.CIWorkflow()
 		},
 	}
 }
 
 // With applies the given options to the workflow returned by the workflowGetter function.
-func (m simpleCIWorkflowMutator) With(opts ...TestingWorkflowOption) SimpleCIOption {
-	return func(w *SimpleCI) {
+func (m workflowMutator) With(opts ...workflow.TestingWorkflowOption) WorkflowOption {
+	return func(w *Workflow) {
 		wf := m.workflowGetter(w)
 		for _, opt := range opts {
 			opt(wf)
@@ -301,12 +298,12 @@ type Context struct {
 	IsForkPR  bool `json:"isForkPR"`
 }
 
-// WithMockedWorkflowContext modifies the SimpleCI workflow to mock the "workflow-context" step
+// WithMockedWorkflowContext modifies the workflow to mock the "workflow-context" step
 // to return the given mocked Context.
 // This can be used to test behavior that depends on whether the workflow is running in a trusted context or not.
-func WithMockedWorkflowContext(t *testing.T, ctx Context) SimpleCIOption {
-	return func(w *SimpleCI) {
-		step, err := MockWorkflowContextStep(ctx)
+func WithMockedWorkflowContext(t *testing.T, ctx Context) WorkflowOption {
+	return func(w *Workflow) {
+		step, err := mockWorkflowContextStep(ctx)
 		require.NoError(t, err)
 
 		const stepID = "workflow-context"
@@ -315,36 +312,24 @@ func WithMockedWorkflowContext(t *testing.T, ctx Context) SimpleCIOption {
 	}
 }
 
-// WithMockedGCS modifies the SimpleCI workflow to mock all GCS upload steps
+// WithMockedGCS modifies the workflow to mock all GCS upload steps
 // (which use the google-github-actions/upload-cloud-storage action)
 // to instead copy files to a local folder mounted into the act container at /gcs.
 // It also takes all google-github-actions/auth steps and removes them,
 // as authentication is not needed for local file copy.
 // This allows testing GCS upload functionality without actually accessing GCS.
 // Since GCS is only used in trusted contexts, callers should most likely also use WithMockedWorkflowContext.
-func WithMockedGCS(t *testing.T) SimpleCIOption {
-	return func(w *SimpleCI) {
-		jobs := w.CIWorkflow().BaseWorkflow.Jobs
-		for _, job := range jobs {
-			for i, step := range job.Steps {
-				switch {
-				case strings.HasPrefix(step.Uses, gcsLoginAction):
-					// Remove the login step entirely
-					err := job.RemoveStepAtIndex(i)
-					require.NoError(t, err)
-
-				case strings.HasPrefix(step.Uses, gcsUploadAction):
-					// Replace the step
-					mockedStep, err := MockGCSUploadStep(step)
-					require.NoError(t, err)
-					err = job.ReplaceStepAtIndex(i, mockedStep)
-					require.NoError(t, err)
-				}
-			}
-		}
+func WithMockedGCS(t *testing.T) WorkflowOption {
+	return func(w *Workflow) {
+		require.NoError(t, w.CIWorkflow().MockAllStepsUsingAction(workflow.GCSLoginAction, func(step workflow.Step) (workflow.Step, error) {
+			return workflow.NoOpStep(step.ID), nil
+		}))
+		require.NoError(t, w.CIWorkflow().MockAllStepsUsingAction(workflow.GCSUploadAction, func(step workflow.Step) (workflow.Step, error) {
+			return workflow.MockGCSUploadStep(step)
+		}))
 	}
 }
 
 // Static checks
 
-var _ Workflow = SimpleCI{}
+var _ workflow.Workflow = Workflow{}

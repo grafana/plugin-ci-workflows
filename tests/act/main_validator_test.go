@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/grafana/plugin-ci-workflows/tests/act/internal/act"
-	"github.com/grafana/plugin-ci-workflows/tests/act/internal/workflow"
+	"github.com/grafana/plugin-ci-workflows/tests/act/internal/workflow/ci"
 	"github.com/stretchr/testify/require"
 )
 
@@ -86,20 +86,20 @@ analyzers:
   osv-scanner:
     enabled: false
 `
-			wf, err := workflow.NewSimpleCI(
-				workflow.WithPluginDirectoryInput("tests/"+tc.sourceFolder),
-				workflow.WithDistArtifactPrefixInput(tc.sourceFolder+"-"),
+			wf, err := ci.NewWorkflow(
+				ci.WithPluginDirectoryInput("tests/"+tc.sourceFolder),
+				ci.WithDistArtifactPrefixInput(tc.sourceFolder+"-"),
 
 				// Disable some features to speed up the test
-				workflow.WithPlaywrightInput(false),
-				workflow.WithRunTruffleHogInput(false),
+				ci.WithPlaywrightInput(false),
+				ci.WithRunTruffleHogInput(false),
 
 				// Enable the plugin validator (opt-in)
-				workflow.WithRunPluginValidatorInput(true),
-				workflow.WithPluginValidatorConfigInput(validatorConfig),
+				ci.WithRunPluginValidatorInput(true),
+				ci.WithPluginValidatorConfigInput(validatorConfig),
 
 				// Mock dist so we don't spend time building the plugin
-				workflow.WithMockedPackagedDistArtifacts(t, "dist/"+tc.sourceFolder, tc.packagedDistFolder),
+				ci.WithMockedPackagedDistArtifacts(t, "dist/"+tc.sourceFolder, tc.packagedDistFolder),
 			)
 			require.NoError(t, err)
 

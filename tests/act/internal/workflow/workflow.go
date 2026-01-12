@@ -11,6 +11,10 @@ import (
 	"github.com/goccy/go-yaml"
 )
 
+const (
+	PCIWFBaseRef = "grafana/plugin-ci-workflows/.github/workflows"
+)
+
 // Workflow is an interface for workflows that can be marshaled to YAML format.
 type Workflow interface {
 	// FileName returns the file name for the workflow.

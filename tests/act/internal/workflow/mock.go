@@ -9,10 +9,11 @@ import (
 )
 
 const (
-	gcsLoginAction       = "google-github-actions/auth"
-	gcsUploadAction      = "google-github-actions/upload-cloud-storage"
-	vaultSecretsAction   = "grafana/shared-workflows/actions/get-vault-secrets"
-	argoWorkflowAction   = "grafana/shared-workflows/actions/trigger-argo-workflow"
+	GCSLoginAction  = "google-github-actions/auth"
+	GCSUploadAction = "google-github-actions/upload-cloud-storage"
+
+	VaultSecretsAction = "grafana/shared-workflows/actions/get-vault-secrets"
+	ArgoWorkflowAction = "grafana/shared-workflows/actions/trigger-argo-workflow"
 )
 
 // CopyMockFilesStep returns a Step that copies mock files from a source folder to a destination folder.
@@ -53,8 +54,8 @@ func NoOpStep(id string) Step {
 // If those conditions are not met, an error is returned.
 func MockGCSUploadStep(originalStep Step) (Step, error) {
 	// Make sure the original step is indeed a GCS upload step
-	if !strings.HasPrefix(originalStep.Uses, gcsUploadAction) {
-		return Step{}, fmt.Errorf("cannot mock gcs for a step that uses %q action, must be %q", originalStep.Uses, gcsUploadAction)
+	if !strings.HasPrefix(originalStep.Uses, GCSUploadAction) {
+		return Step{}, fmt.Errorf("cannot mock gcs for a step that uses %q action, must be %q", originalStep.Uses, GCSUploadAction)
 	}
 
 	// Extract the existing inputs and use them in the mocked bash step.
@@ -88,28 +89,9 @@ func MockGCSUploadStep(originalStep Step) (Step, error) {
 	}, nil
 }
 
-// MockWorkflowContextStep returns a Step that mocks the "workflow-context" step
-// to return the given mocked Context.
-func MockWorkflowContextStep(ctx Context) (Step, error) {
-	ctxJSON, err := json.Marshal(ctx)
-	if err != nil {
-		return Step{}, fmt.Errorf("marshal workflow context to json: %w", err)
-	}
-	return Step{
-		Name: "Determine workflow context (mocked)",
-		Run: Commands{
-			`echo "result=$RESULT" >> "$GITHUB_OUTPUT"`,
-		}.String(),
-		Env: map[string]string{
-			"RESULT": string(ctxJSON),
-		},
-		Shell: "bash",
-	}, nil
-}
-
-// localMockdataPath returns the full path to a file or folder inside tests/act/mockdata
+// LocalMockdataPath returns the full path to a file or folder inside tests/act/mockdata
 // used for accessing mock data locally, outside of the act container.
-func localMockdataPath(parts ...string) string {
+func LocalMockdataPath(parts ...string) string {
 	return filepath.Join("tests", "act", "mockdata", filepath.Join(parts...))
 }
 
@@ -128,8 +110,8 @@ type VaultSecrets map[string]string
 //	secrets={"KEY1":"value1","KEY2":"value2"}
 func MockVaultSecretsStep(originalStep Step, secrets VaultSecrets) (Step, error) {
 	// Make sure the original step is indeed a Vault secrets step
-	if !strings.HasPrefix(originalStep.Uses, vaultSecretsAction) {
-		return Step{}, fmt.Errorf("cannot mock vault secrets for a step that uses %q action, must be %q", originalStep.Uses, vaultSecretsAction)
+	if !strings.HasPrefix(originalStep.Uses, VaultSecretsAction) {
+		return Step{}, fmt.Errorf("cannot mock vault secrets for a step that uses %q action, must be %q", originalStep.Uses, VaultSecretsAction)
 	}
 
 	// Marshal secrets to JSON
@@ -160,8 +142,8 @@ func MockVaultSecretsStep(originalStep Step, secrets VaultSecrets) (Step, error)
 // The mocked step outputs the `uri` output expected by subsequent steps.
 func MockArgoWorkflowStep(originalStep Step) (Step, error) {
 	// Make sure the original step is indeed an Argo Workflow trigger step
-	if !strings.HasPrefix(originalStep.Uses, argoWorkflowAction) {
-		return Step{}, fmt.Errorf("cannot mock argo workflow for a step that uses %q action, must be %q", originalStep.Uses, argoWorkflowAction)
+	if !strings.HasPrefix(originalStep.Uses, ArgoWorkflowAction) {
+		return Step{}, fmt.Errorf("cannot mock argo workflow for a step that uses %q action, must be %q", originalStep.Uses, ArgoWorkflowAction)
 	}
 
 	return Step{

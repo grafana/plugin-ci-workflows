@@ -66,9 +66,9 @@ func (t *TestingWorkflow) UUID() uuid.UUID {
 	return t.uuid
 }
 
-type mockStepFactory func(step Step) (Step, error)
+type MockStepFactory func(originalStep Step) (Step, error)
 
-func (t *TestingWorkflow) mockStep(actionPrefix string, mockStepFactory mockStepFactory) error {
+func (t *TestingWorkflow) MockAllStepsUsingAction(actionPrefix string, mockStepFactory MockStepFactory) error {
 	for _, job := range t.Jobs() {
 		for i, step := range job.Steps {
 			if strings.HasPrefix(step.Uses, actionPrefix) {

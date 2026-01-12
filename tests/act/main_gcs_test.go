@@ -8,6 +8,7 @@ import (
 
 	"github.com/grafana/plugin-ci-workflows/tests/act/internal/act"
 	"github.com/grafana/plugin-ci-workflows/tests/act/internal/workflow"
+	"github.com/grafana/plugin-ci-workflows/tests/act/internal/workflow/ci"
 	"github.com/stretchr/testify/require"
 )
 
@@ -47,28 +48,28 @@ func TestGCS(t *testing.T) {
 					runner, err := act.NewRunner(t)
 					require.NoError(t, err)
 
-					wf, err := workflow.NewSimpleCI(
-						workflow.WithPluginDirectoryInput(filepath.Join("tests", tc.folder)),
-						workflow.WithDistArtifactPrefixInput(tc.folder+"-"),
+					wf, err := ci.NewWorkflow(
+						ci.WithPluginDirectoryInput(filepath.Join("tests", tc.folder)),
+						ci.WithDistArtifactPrefixInput(tc.folder+"-"),
 
 						// Disable some features to speed up the test
-						workflow.WithPlaywrightInput(false),
-						workflow.WithRunTruffleHogInput(false),
-						workflow.WithRunPluginValidatorInput(false),
+						ci.WithPlaywrightInput(false),
+						ci.WithRunTruffleHogInput(false),
+						ci.WithRunPluginValidatorInput(false),
 
 						// Mock dist so we don't spend time building the plugin
-						workflow.WithMockedDist(t, "dist/"+tc.folder),
+						ci.WithMockedDist(t, "dist/"+tc.folder),
 						// Mock a trusted context to enable GCS upload
-						workflow.WithMockedWorkflowContext(t, workflow.Context{
+						ci.WithMockedWorkflowContext(t, ci.Context{
 							IsTrusted: true,
 						}),
-						workflow.WithAllowUnsignedInput(true),
+						ci.WithAllowUnsignedInput(true),
 						// Mock all GCS access
-						workflow.WithMockedGCS(t),
+						ci.WithMockedGCS(t),
 
 						// No-op steps that are normally executed in a trusted context
 						// but are not relevant for this test and would error out otherwise.
-						workflow.MutateCIWorkflow().With(
+						ci.MutateCIWorkflow().With(
 							workflow.WithNoOpStep(t, "test-and-build", "get-secrets"),
 							workflow.WithNoOpStep(t, "test-and-build", "generate-github-token"),
 						),
