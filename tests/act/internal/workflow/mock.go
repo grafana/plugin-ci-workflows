@@ -76,7 +76,7 @@ func MockGCSUploadStep(originalStep Step) (Step, error) {
 		Name: originalStep.Name + " (mocked)",
 		Run: Commands{
 			"set -x",
-			`mkdir -p /gcs/` + destPath,
+			`mkdir -p /gcs/${DEST_PATH}`,
 
 			// Handle both file and directory srcPath
 			`if [ -f "${SRC_PATH}" ]; then`,
@@ -87,7 +87,7 @@ func MockGCSUploadStep(originalStep Step) (Step, error) {
 			`  files=$(echo "$files" | cut -d'/' -f2-)`,
 			`else`,
 			// srcPath is a directory: copy recursively
-			`  cp -r "${SRC_PATH}" /gcs/` + destPath,
+			`  cp -r "${SRC_PATH}" /gcs/${DEST_PATH}`,
 			`  cd "${SRC_PATH}"`,
 			// Get a list of all uploaded files, separated by commas.
 			// Find all files, prepend destPath, remove leading ./, get relative path (remove bucket name after `/gcs`), join with commas

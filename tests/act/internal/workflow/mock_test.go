@@ -19,9 +19,13 @@ func TestMockGCSUploadStep(t *testing.T) {
 	mockedStep, err := MockGCSUploadStep(step)
 	require.NoError(t, err)
 	require.Equal(t, "Upload GCS (mocked)", mockedStep.Name)
-	require.Contains(t, mockedStep.Run, `echo "uploaded=$files" >> "$GITHUB_OUTPUT"`)
-	require.Contains(t, mockedStep.Run, `mkdir -p /gcs/integration-artifacts/grafana-foo-plugin/folder`)
-	require.Contains(t, mockedStep.Run, `cp -r /tmp/dist-artifacts /gcs/integration-artifacts/grafana-foo-plugin/folder`)
+	require.Contains(t, mockedStep.Run, `echo "uploaded=$files" >> "$GITHUB_OUTPUT"`, "should contain echo to output")
+	require.Contains(t, mockedStep.Run, `mkdir -p /gcs/${DEST_PATH}`, "should contain bucket folder creation")
+	require.Contains(t, mockedStep.Run, `  cp -r "${SRC_PATH}" /gcs/${DEST_PATH}`, "should contain cp command")
+	require.Equal(t, map[string]string{
+		"DEST_PATH": "integration-artifacts/grafana-foo-plugin/folder",
+		"SRC_PATH":  "/tmp/dist-artifacts",
+	}, mockedStep.Env, "should have correct env vars")
 }
 
 func TestMockVaultSecretsStep(t *testing.T) {
