@@ -115,9 +115,26 @@ func LocalMockdataPath(parts ...string) string {
 	return filepath.Join("tests", "act", "mockdata", filepath.Join(parts...))
 }
 
-// VaultSecrets represents a map of secret names to their values for mocking Vault responses.
-// The keys should match the secret names expected by the workflow (e.g., "GCOM_PUBLISH_TOKEN_DEV").
-type VaultSecrets map[string]string
+// VaultSecrets allows defining the secret values that the mocked get-vault-secrets step should return.
+// The keys in the maps must match the secret reference used in the workflow step inputs
+// (the value on the right side of the equals sign).
+//
+// Example:
+//
+//	If the workflow has:
+//	  common_secrets: |
+//	    MY_SECRET=secret/path:key
+//
+//	Then the VaultSecrets should have:
+//	  CommonSecrets: map[string]string{
+//	    "secret/path:key": "mock-value",
+//	  }
+type VaultSecrets struct {
+	// CommonSecrets contains secrets that are referenced in the 'common_secrets' input.
+	CommonSecrets map[string]string
+	// RepoSecrets contains secrets that are referenced in the 'repo_secrets' input.
+	RepoSecrets map[string]string
+}
 
 // MockVaultSecretsStep returns a Step that mocks the grafana/shared-workflows/actions/get-vault-secrets action.
 // Instead of actually fetching secrets from Vault, it outputs the provided secrets in the expected JSON format.
@@ -134,23 +151,68 @@ func MockVaultSecretsStep(originalStep Step, secrets VaultSecrets) (Step, error)
 		return Step{}, fmt.Errorf("cannot mock vault secrets for a step that uses %q action, must be %q", originalStep.Uses, VaultSecretsAction)
 	}
 
-	// Marshal secrets to JSON
-	secretsJSON, err := json.Marshal(secrets)
-	if err != nil {
-		return Step{}, fmt.Errorf("marshal vault secrets to json: %w", err)
+	// Extract original inputs with safe type assertions and defaults
+	var commonSecretsInput, repoSecretsInput string
+	if v, ok := originalStep.With["common_secrets"].(string); ok {
+		commonSecretsInput = v
+	}
+	if v, ok := originalStep.With["repo_secrets"].(string); ok {
+		repoSecretsInput = v
+	}
+	exportEnvInput := true
+	if v, ok := originalStep.With["export_env"].(bool); ok {
+		exportEnvInput = v
+	}
+	output := map[string]string{}
+	for _, s := range []struct {
+		input   string
+		secrets map[string]string
+	}{
+		{commonSecretsInput, secrets.CommonSecrets},
+		{repoSecretsInput, secrets.RepoSecrets},
+	} {
+		for i, line := range strings.Split(s.input, "\n") {
+			line = strings.TrimSpace(line)
+			if line == "" {
+				continue
+			}
+			parts := strings.Split(line, "=")
+			if len(parts) != 2 {
+				return Step{}, fmt.Errorf("invalid input, not enough parts on line %d: %s", i, line)
+			}
+			outputName := strings.TrimSpace(parts[0])
+			secretReference := strings.TrimSpace(parts[1])
+			secretValue, ok := s.secrets[secretReference]
+			if !ok {
+				return Step{}, fmt.Errorf("secret reference %q not found in provided fake secrets %+v", secretReference, secrets)
+			}
+			output[outputName] = secretValue
+		}
 	}
 
-	return Step{
-		Name: originalStep.Name + " (mocked)",
-		Run: Commands{
-			`echo "Mocking Vault secrets step"`,
-			`echo "secrets=$SECRETS_JSON" >> "$GITHUB_OUTPUT"`,
-		}.String(),
-		Env: map[string]string{
-			"SECRETS_JSON": string(secretsJSON),
-		},
+	step := Step{
+		ID:    originalStep.ID,
+		Name:  originalStep.Name + " (mocked)",
+		Env:   map[string]string{},
 		Shell: "bash",
-	}, nil
+	}
+	var stepCommands Commands
+	if exportEnvInput {
+		// Workflow-level env vars output
+		for k, v := range output {
+			stepCommands = append(stepCommands, fmt.Sprintf(`echo "%s=%s" >> "$GITHUB_ENV"`, k, v))
+		}
+	} else {
+		// JSON output
+		secretsJSON, err := json.Marshal(output)
+		if err != nil {
+			return Step{}, fmt.Errorf("marshal vault secrets to json: %w", err)
+		}
+		stepCommands = append(stepCommands, `echo "secrets=${SECRETS_JSON}" >> "$GITHUB_OUTPUT"`)
+		step.Env = map[string]string{"SECRETS_JSON": string(secretsJSON)}
+	}
+	step.Run = stepCommands.String()
+	return step, nil
 }
 
 // MockArgoWorkflowStep returns a Step that mocks the grafana/shared-workflows/actions/trigger-argo-workflow action.
