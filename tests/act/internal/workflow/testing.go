@@ -212,7 +212,9 @@ func WithoutJob(jobID string) TestingWorkflowOption {
 // This can be used to skip steps that are not relevant for the test or that would fail otherwise.
 func WithNoOpStep(t *testing.T, jobID, stepID string) TestingWorkflowOption {
 	return func(twf *TestingWorkflow) {
-		err := twf.BaseWorkflow.Jobs[jobID].ReplaceStep(stepID, NoOpStep(stepID))
+		step := twf.BaseWorkflow.Jobs[jobID].GetStep(stepID)
+		require.NotNilf(t, step, "step with id %q not found in job %q", stepID, jobID)
+		err := twf.BaseWorkflow.Jobs[jobID].ReplaceStep(stepID, NoOpStep(*step))
 		require.NoError(t, err)
 	}
 }
@@ -227,7 +229,7 @@ func WithNoOpStep(t *testing.T, jobID, stepID string) TestingWorkflowOption {
 func WithMockedGCS(t *testing.T) TestingWorkflowOption {
 	return func(twf *TestingWorkflow) {
 		require.NoError(t, twf.MockAllStepsUsingAction(GCSLoginAction, func(step Step) (Step, error) {
-			return NoOpStep(step.ID), nil
+			return NoOpStep(step), nil
 		}))
 		require.NoError(t, twf.MockAllStepsUsingAction(GCSUploadAction, func(step Step) (Step, error) {
 			return MockGCSUploadStep(step)
