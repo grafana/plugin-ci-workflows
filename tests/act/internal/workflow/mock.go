@@ -134,17 +134,27 @@ type VaultSecrets struct {
 	CommonSecrets map[string]string
 	// RepoSecrets contains secrets that are referenced in the 'repo_secrets' input.
 	RepoSecrets map[string]string
+
+	// DefaultValue is the default value to use for secrets that are not defined in CommonSecrets or RepoSecrets.
+	// If nil, the step will fail to be constructed if a secret is not defined.
+	// If not nil, this value will be used for secrets that are not defined.
+	DefaultValue *string
 }
 
 // MockVaultSecretsStep returns a Step that mocks the grafana/shared-workflows/actions/get-vault-secrets action.
-// Instead of actually fetching secrets from Vault, it outputs the provided secrets in the expected JSON format.
+// Instead of actually fetching secrets from Vault, it outputs the provided secrets in the expected format.
 // The originalStep parameter is the original Vault secrets step to be mocked.
 // The original step must use the `grafana/shared-workflows/actions/get-vault-secrets` action.
 // If those conditions are not met, an error is returned.
 //
-// The mocked step outputs secrets in the format expected by `fromJSON(steps.get-secrets.outputs.secrets)`:
+// The mocked step mimics the behavior of the original step, but instead of fetching secrets from Vault,
+// it outputs the provided secrets in the expected format.
+// If export_env is true, the secrets are exported as environment variables.
+// If export_env is false, the secrets are exported as a JSON object.
 //
-//	secrets={"KEY1":"value1","KEY2":"value2"}
+// If a secret is not found in the provided VaultSecrets:
+//   - If DefaultValue is nil, an error is returned.
+//   - If DefaultValue is not nil, the DefaultValue is used.
 func MockVaultSecretsStep(originalStep Step, secrets VaultSecrets) (Step, error) {
 	// Make sure the original step is indeed a Vault secrets step
 	if !strings.HasPrefix(originalStep.Uses, VaultSecretsAction) {
@@ -183,8 +193,11 @@ func MockVaultSecretsStep(originalStep Step, secrets VaultSecrets) (Step, error)
 			outputName := strings.TrimSpace(parts[0])
 			secretReference := strings.TrimSpace(parts[1])
 			secretValue, ok := s.secrets[secretReference]
-			if !ok {
+			if !ok && secrets.DefaultValue == nil {
 				return Step{}, fmt.Errorf("secret reference %q not found in provided fake secrets %+v", secretReference, secrets)
+			}
+			if !ok {
+				secretValue = *secrets.DefaultValue
 			}
 			output[outputName] = secretValue
 		}
