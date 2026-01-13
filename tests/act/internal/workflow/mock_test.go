@@ -119,6 +119,29 @@ func TestMockVaultSecretsStep(t *testing.T) {
 		require.ErrorContains(t, err, "this_secret_does_not_exist")
 		require.ErrorContains(t, err, "not found in provided fake secrets")
 	})
+
+	t.Run("unexisting secret with default value", func(t *testing.T) {
+		step := Step{
+			Name: "Get Vault Secrets",
+			Uses: vaultAction,
+			With: map[string]any{
+				"common_secrets": strings.Join([]string{
+					"SECRET1=a:b",
+					"SECRET2=this_secret_does_not_exist:a",
+				}, "\n"),
+				"export_env": false,
+			},
+		}
+		defaultValue := "foo"
+		mockedStep, err := MockVaultSecretsStep(step, VaultSecrets{
+			CommonSecrets: map[string]string{
+				"a:b": "c",
+			},
+			DefaultValue: &defaultValue,
+		})
+		require.NoError(t, err)
+		require.Equal(t, `{"SECRET1":"c","SECRET2":"foo"}`, mockedStep.Env["SECRETS_JSON"])
+	})
 }
 
 func TestMockArgoWorkflowStep(t *testing.T) {
