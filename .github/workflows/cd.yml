@@ -700,6 +700,7 @@ jobs:
           ENVIRONMENT: ${{ matrix.environment }}
 
       - name: Check and create stub
+        id: check-and-create-stub
         uses: grafana/plugin-ci-workflows/actions/internal/plugins/publish/check-and-create-stub@main
         if: ${{ matrix.environment != 'prod' && matrix.environment != 'prod-canary' }}
         with:
@@ -847,6 +848,7 @@ jobs:
           service_account: github-plugin-ci-workflows@grafanalabs-workload-identity.iam.gserviceaccount.com
 
       - name: "Set up Cloud SDK"
+        id: gcloud-sdk
         uses: "google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db" # v3.0.1
         with:
           version: ">= 363.0.0"
