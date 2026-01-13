@@ -74,11 +74,20 @@ func NewWorkflow(opts ...WorkflowOption) (Workflow, error) {
 	// Add the CD child workflow
 	// Use the same UUID as the parent for correlation
 	cdChildTestingWf := workflow.NewTestingWorkflow("cd", cdChildBaseWf)
+	// HACK: act doesn't support dynamic matrices (e.g.: `${{ fromJson(needs.setup.outputs.environments) }}`),
+	// so hardcoding it to be "dev" and "any" for now
+	cdChildTestingWf.BaseWorkflow.Jobs["publish-to-catalog"].Strategy.Matrix = map[string]any{
+		"environment": []string{"dev"},
+	}
+	cdChildTestingWf.BaseWorkflow.Jobs["upload-to-gcs-release"].Strategy.Matrix = map[string]any{
+		"platform": []string{"any"},
+	}
 	testingWf.AddChild("cd", cdChildTestingWf)
 
 	// Add the CI grandchild workflow as a child of the CD workflow
 	// ciGrandchildTestingWf := workflow.NewTestingWorkflow("ci", ciGrandchildBaseWf, workflow.WithUUID(testingWf.UUID()))
 	// cdChildTestingWf.AddChild("ci", ciGrandchildTestingWf)
+	// TODO: do not create simple-ci yaml file
 	ciGrandchildWf, err := ci.NewWorkflow()
 	if err != nil {
 		return Workflow{}, fmt.Errorf("new ci grandchild workflow: %w", err)
@@ -88,12 +97,8 @@ func NewWorkflow(opts ...WorkflowOption) (Workflow, error) {
 
 	// Update the parent workflow to call the mocked CD workflow
 	testingWf.BaseWorkflow.Jobs["cd"].Uses = workflow.PCIWFBaseRef + "/" + testingWf.GetChild("cd").FileName() + "@main"
-
-	// Update the CD workflow to call the mocked CI workflow
-	// The CD workflow has a "ci" job that calls ci.yml (line 541 in cd.yml)
-	if ciJob, ok := cdChildTestingWf.BaseWorkflow.Jobs["ci"]; ok {
-		ciJob.Uses = workflow.PCIWFBaseRef + "/" + ciGrandchildWf.FileName() + "@main"
-	}
+	// Update the CD workflow to call the mocked CI (non-testing) workflow
+	cdChildTestingWf.BaseWorkflow.Jobs["ci"].Uses = workflow.PCIWFBaseRef + "/" + ciGrandchildWf.CIWorkflow().FileName() + "@main"
 
 	// Apply options to customize the SimpleCD instance.
 	// These opts can also modify the child and grandchild workflows.
@@ -186,20 +191,20 @@ func WithMockedGCOM(mock *act.GCOM) WorkflowOption {
 	}
 }
 
-type workflowGetter func(*Workflow) *workflow.TestingWorkflow
+type workflowsGetter func(*Workflow) []*workflow.TestingWorkflow
 
 // simpleCDWorkflowMutator is a helper to mutate the SimpleCD workflow or its children workflows
 // with options that are not specific to the SimpleCI workflow itself, but rather to the testing workflow in general.
 type workflowMutator struct {
-	workflowGetters []workflowGetter
+	workflowsGetter workflowsGetter
 }
 
 // MutateTestingWorkflow returns a simpleCDWorkflowMutator that can be used to mutate the testing workflow.
 func MutateTestingWorkflow() workflowMutator {
 	return workflowMutator{
-		workflowGetters: []workflowGetter{func(w *Workflow) *workflow.TestingWorkflow {
-			return w.TestingWorkflow
-		}},
+		workflowsGetter: func(w *Workflow) []*workflow.TestingWorkflow {
+			return []*workflow.TestingWorkflow{w.TestingWorkflow}
+		},
 	}
 }
 
@@ -207,9 +212,9 @@ func MutateTestingWorkflow() workflowMutator {
 // (child of the testing workflow).
 func MutateCDWorkflow() workflowMutator {
 	return workflowMutator{
-		workflowGetters: []workflowGetter{func(w *Workflow) *workflow.TestingWorkflow {
-			return w.CDWorkflow()
-		}},
+		workflowsGetter: func(w *Workflow) []*workflow.TestingWorkflow {
+			return []*workflow.TestingWorkflow{w.CDWorkflow()}
+		},
 	}
 }
 
@@ -217,24 +222,19 @@ func MutateCDWorkflow() workflowMutator {
 // (grandchild of the CD workflow).
 func MutateCIWorkflow() workflowMutator {
 	return workflowMutator{
-		workflowGetters: []workflowGetter{func(w *Workflow) *workflow.TestingWorkflow {
-			return w.CIWorkflow()
-		}},
+		workflowsGetter: func(w *Workflow) []*workflow.TestingWorkflow {
+			return []*workflow.TestingWorkflow{w.CIWorkflow()}
+		},
 	}
 }
 
+// MutateAllWorkflows returns a simpleCDWorkflowMutator that can be used to mutate all workflows:
+// the current one, and all the children ones (recursively), so it will apply the mutation to the
+// testing, cd and ci workflows.
 func MutateAllWorkflows() workflowMutator {
 	return workflowMutator{
-		workflowGetters: []workflowGetter{
-			func(w *Workflow) *workflow.TestingWorkflow {
-				return w.TestingWorkflow
-			},
-			func(w *Workflow) *workflow.TestingWorkflow {
-				return w.CDWorkflow()
-			},
-			func(w *Workflow) *workflow.TestingWorkflow {
-				return w.CIWorkflow()
-			},
+		workflowsGetter: func(w *Workflow) []*workflow.TestingWorkflow {
+			return append([]*workflow.TestingWorkflow{w.TestingWorkflow}, w.ChildrenRecursive()...)
 		},
 	}
 }
@@ -242,11 +242,8 @@ func MutateAllWorkflows() workflowMutator {
 // With applies the given options to the workflow returned by the workflowGetter function.
 func (m workflowMutator) With(opts ...workflow.TestingWorkflowOption) WorkflowOption {
 	return func(w *Workflow) {
-		for i, getter := range m.workflowGetters {
-			wf := getter(w)
-			if wf == nil {
-				fmt.Println("PANIC!!", i)
-			}
+		workflows := m.workflowsGetter(w)
+		for _, wf := range workflows {
 			for _, opt := range opts {
 				opt(wf)
 			}

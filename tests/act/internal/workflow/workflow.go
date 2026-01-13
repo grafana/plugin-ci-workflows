@@ -70,15 +70,21 @@ type Secrets map[string]string
 // Steps is the YAML representation of a list of GitHub Actions steps.
 type Steps []Step
 
+type Strategy struct {
+	FailFast *bool          `yaml:"fail-fast,omitempty"`
+	Matrix   map[string]any `yaml:"matrix,omitempty"`
+}
+
 // Job is the YAML representation of a GitHub Actions job.
 type Job struct {
 	Name string `yaml:"name,omitempty"`
 
 	If string `yaml:"if,omitempty"`
 
-	RunsOn  string            `yaml:"runs-on,omitempty"`
-	Needs   []string          `yaml:"needs,omitempty"`
-	Outputs map[string]string `yaml:"outputs,omitempty"`
+	RunsOn   string            `yaml:"runs-on,omitempty"`
+	Needs    []string          `yaml:"needs,omitempty"`
+	Outputs  map[string]string `yaml:"outputs,omitempty"`
+	Strategy Strategy          `yaml:"strategy,omitempty"`
 
 	Permissions Permissions `yaml:"permissions,omitempty"`
 
