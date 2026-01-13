@@ -77,21 +77,35 @@ func MockGCSUploadStep(originalStep Step) (Step, error) {
 		Run: Commands{
 			"set -x",
 			`mkdir -p /gcs/` + destPath,
-			"cp -r " + srcPath + " /gcs/" + destPath,
+
+			// Handle both file and directory srcPath
+			`if [ -f "${SRC_PATH}" ]; then`,
+			// srcPath is a file: copy directly
+			`  cp "${SRC_PATH}" /gcs/${DEST_PATH}/`,
+			`  filename=$(basename "${SRC_PATH}")`,
+			`  files="${DEST_PATH}/${filename}"`,
+			`  files=$(echo "$files" | cut -d'/' -f2-)`,
+			`else`,
+			// srcPath is a directory: copy recursively
+			`  cp -r "${SRC_PATH}" /gcs/` + destPath,
+			`  cd "${SRC_PATH}"`,
+			// Get a list of all uploaded files, separated by commas.
+			// Find all files, prepend destPath, remove leading ./, get relative path (remove bucket name after `/gcs`), join with commas
+			`  files=$(find . -type f | sed 's|^\./|${DEST_PATH}/|' | cut -d'/' -f2- | tr '\n' ',' | sed 's/,$//')`,
+			`fi`,
 
 			// For debugging
 			"echo 'Mock GCS upload complete. Mock GCS bucket content:'",
 			"find /gcs -type f",
-			"cd " + srcPath,
-
-			// Get a list of all uploaded files, separated by commas.
-			// Find all files, prepend destPath, remove leading ./, get relative path (remove bucket name after `/gcs`), join with commas
-			`files=$(find . -type f | sed 's|^\./|` + destPath + `/|' | cut -d'/' -f2- | tr '\n' ',' | sed 's/,$//')`,
 
 			// Set output (simplified)
 			`echo "uploaded=$files" >> "$GITHUB_OUTPUT"`,
 		}.String(),
 		Shell: "bash",
+		Env: map[string]string{
+			"SRC_PATH":  srcPath,
+			"DEST_PATH": destPath,
+		},
 	}, nil
 }
 
