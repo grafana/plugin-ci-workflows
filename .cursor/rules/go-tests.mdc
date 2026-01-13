@@ -204,10 +204,18 @@ Core act runner functionality:
 
 ### `internal/workflow/`
 Workflow definition types:
-- `workflow.go` — Base workflow types (Job, Step, etc.)
-- `testing.go` — TestingWorkflow for test-specific workflows
-- `ci.go` — CI workflow helpers
-- `mock.go` — Mocking utilities
+- `workflow.go` — Base workflow types (Job, Step, etc.) and helper functions (`Input`, `SetJobInput`, `PCIWFBaseRef` constant)
+- `testing.go` — TestingWorkflow for test-specific workflows and TestingWorkflowOption functions
+- `mock.go` — Mocking utilities (GCS, Vault, Argo Workflows)
+
+### `internal/workflow/ci/`
+CI workflow testing helpers:
+- `ci.go` — `ci.Workflow` type and `ci.NewWorkflow()` constructor for testing CI workflows
+- `mock.go` — CI-specific mocking utilities (workflow context)
+
+### `internal/workflow/cd/`
+CD workflow testing helpers:
+- `cd.go` — `cd.Workflow` type and `cd.NewWorkflow()` constructor for testing CD workflows
 
 ### Main Package (`tests/act/`)
 - `main_test.go` — Test utilities and TestMain setup
@@ -217,16 +225,48 @@ Workflow definition types:
 
 ## Workflow Testing Patterns
 
-### Creating a Test Workflow
+### Creating a CI Test Workflow
+
+Use `ci.NewWorkflow()` with `ci.WorkflowInputs` struct to configure the workflow:
 
 ```go
-wf, err := workflow.NewSimpleCI(
-    workflow.WithPluginDirectoryInput(filepath.Join("tests", "simple-frontend")),
-    workflow.WithDistArtifactPrefixInput("simple-frontend-"),
-    workflow.WithPlaywrightInput(false),
+wf, err := ci.NewWorkflow(
+    ci.WithWorkflowInputs(ci.WorkflowInputs{
+        PluginDirectory:     workflow.Input(filepath.Join("tests", "simple-frontend")),
+        DistArtifactsPrefix: workflow.Input("simple-frontend-"),
+        RunPlaywright:       workflow.Input(false),
+    }),
 )
 require.NoError(t, err)
 ```
+
+The `workflow.Input()` helper creates a pointer to a value, avoiding the need to write `&value` everywhere.
+
+### Creating a CD Test Workflow
+
+Use `cd.NewWorkflow()` with `cd.WorkflowInputs` struct:
+
+```go
+wf, err := cd.NewWorkflow(
+    cd.WithWorkflowInputs(cd.WorkflowInputs{
+        Environment:     workflow.Input("dev"),
+        Branch:          workflow.Input("main"),
+        PluginDirectory: workflow.Input("plugins/my-plugin"),
+    }),
+)
+require.NoError(t, err)
+```
+
+### Workflow Structure
+
+CI and CD workflows have a nested structure:
+- **CI Workflow**: Parent workflow calls a child CI workflow (from `ci.yml`)
+- **CD Workflow**: Parent workflow calls a CD child workflow (from `cd.yml`), which in turn calls a CI grandchild workflow
+
+Access nested workflows using:
+- `wf.CIWorkflow()` — Get the CI child workflow
+- `wf.CDWorkflow()` — Get the CD child workflow (CD workflows only)
+- `wf.CIWorkflow()` on CD workflows — Get the CI grandchild workflow
 
 ### Running a Workflow
 
@@ -261,6 +301,76 @@ err = checkFilesExist(artifacts.Fs, []string{"expected-file.txt"})
 require.NoError(t, err)
 ```
 
+### Mutating Workflows
+
+Use workflow mutators to apply `TestingWorkflowOption` functions to nested workflows:
+
+```go
+wf, err := ci.NewWorkflow(
+    ci.WithWorkflowInputs(ci.WorkflowInputs{
+        PluginDirectory: workflow.Input("tests/simple-frontend"),
+    }),
+    // Mutate the testing workflow (parent)
+    ci.MutateTestingWorkflow().With(
+        workflow.WithPullRequestTargetTrigger([]string{"main"}),
+    ),
+    // Mutate the CI child workflow
+    ci.MutateCIWorkflow().With(
+        workflow.WithOnlyOneJob(t, "test-and-build"),
+        workflow.WithRemoveAllStepsAfter(t, "test-and-build", "workflow-context"),
+    ),
+)
+```
+
+### Mocking Steps and Actions
+
+In tests, you can mock services such as GCS, Vault, Argo, etc.
+
+For example, use a mock GCS in a CI workflow, use `ci.MutateCIWorkflow().With(workflow.WithMockedGCS(t))`:
+
+```go
+wf, err := ci.NewWorkflow(
+    // CI workflow custom inputs here
+    ci.WithWorkflowInputs(ci.WorkflowInputs{
+        // ...
+    }),
+
+    // Mock a trusted context to enable GCS upload
+    ci.WithMockedWorkflowContext(t, ci.Context{
+        IsTrusted: true,
+    }),
+
+    ci.MutateCIWorkflow().With(
+        // Mock all GCS access
+        workflow.WithMockedGCS(t),
+
+        // No-op steps that are normally executed in a trusted context
+        // but are not relevant for this test and would error out otherwise.
+        workflow.WithNoOpStep(t, "test-and-build", "get-secrets"),
+        workflow.WithNoOpStep(t, "test-and-build", "generate-github-token"),
+    ),
+)
+```
+
+When creating new mocks, you often have to use `MockAllStepsUsingAction` to mock
+specific actions across all steps in a workflow:
+
+```go
+// Mock all GCS upload steps
+err := wf.CIWorkflow().MockAllStepsUsingAction(workflow.GCSUploadAction, func(step workflow.Step) (workflow.Step, error) {
+    return workflow.MockGCSUploadStep(step)
+})
+require.NoError(t, err)
+
+// Mock all Vault secrets steps
+err := wf.CDWorkflow().MockAllStepsUsingAction(workflow.VaultSecretsAction, func(step workflow.Step) (workflow.Step, error) {
+    return workflow.MockVaultSecretsStep(step, workflow.VaultSecrets{
+        "GCOM_PUBLISH_TOKEN_DEV": "mock-token",
+    })
+})
+require.NoError(t, err)
+```
+
 ---
 
 ## Type Definitions
@@ -285,6 +395,75 @@ step := workflow.Step{
     }.String(),
     Shell: "bash",
 }
+```
+
+### Helper Functions
+
+Use `workflow.Input()` to create pointers for optional values:
+
+```go
+// ✅ Correct - using Input helper
+wf, err := ci.NewWorkflow(
+    ci.WithWorkflowInputs(ci.WorkflowInputs{
+        PluginDirectory: workflow.Input("plugins/my-plugin"),
+        RunPlaywright:    workflow.Input(false),
+        // Optional fields can be nil
+        PluginValidatorConfig: nil,
+    }),
+)
+
+// ❌ Wrong - manual pointer creation
+wf, err := ci.NewWorkflow(
+    ci.WithWorkflowInputs(ci.WorkflowInputs{
+        PluginDirectory: &[]string{"plugins/my-plugin"}[0], // awkward
+    }),
+)
+```
+
+Use `workflow.SetJobInput()` to safely set job inputs (handles nil pointers correctly):
+
+```go
+job := wf.BaseWorkflow.Jobs["ci"]
+workflow.SetJobInput(job, "plugin-directory", inputs.PluginDirectory)
+```
+
+When adding new inputs to any of the testing workflows (`tests/act/internal/workflow/ci/ci.go` and `tests/act/internal/workflow/ci/cd.go`):
+
+1. Add a pointer field (e.g.: `*string`, `*int`, etc) to the `WorkflowInputs` struct. The pointer is needed to handle nil (empty) values
+2. Add a call to `workflow.SetJobInput` in `WithWorkflowInputs`
+3. When constructing `WorkflowInputs` in tests, use `workflow.Input` to retrieve a pointer to the input value: `workflow.Input("bar")`
+
+```go
+// WorkflowInputs are the inputs for the CI workflow.
+// They are used to customize the CI workflow.
+type WorkflowInputs struct {
+	// existing inputs...
+    ExistingInput *string
+
+    // 1. add a new pointer field to the struct
+	MyInput       *string
+}
+
+// WithWorkflowInputs sets the inputs for the CI workflow.
+func WithWorkflowInputs(inputs WorkflowInputs) WorkflowOption {
+	return func(w *Workflow) {
+		job := w.BaseWorkflow.Jobs["ci"]
+        // existing inputs...
+        workflow.SetJobInput(job, "existing-input", inputs.ExistingInput)
+
+        // 2. add a call to workflow.SetJobInput
+		workflow.SetJobInput(job, "my-input", inputs.MyInput)
+	}
+}
+```
+
+```go
+ci.WithWorkflowInputs(ci.WorkflowInputs{
+    ExistingInput: workflow.Input("foo"),
+    
+    // 3. In the test file, use it like this
+    MyInput:       workflow.Input("bar"),
+}),
 ```
 
 ### Maps and Slices
