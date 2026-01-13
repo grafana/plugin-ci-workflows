@@ -18,18 +18,24 @@ func TestCD(t *testing.T) {
 	gitSha, err := getGitCommitSHA()
 	require.NoError(t, err)
 
-	assertAuth := func(t *testing.T, r *http.Request) {
-		require.Subset(t, r.Header, http.Header{
+	assertHeadersAndAuth := func(t *testing.T, r *http.Request) {
+		expHeaders := http.Header{
 			"Accept":        []string{"application/json"},
 			"User-Agent":    []string{"github-actions-shared-workflows:/plugins/publish"},
 			"Authorization": []string{"Bearer dummy-gcom-api-key-dev"},
-			// "X-Api-Key":     []string{"dummy-gcom-api-key-dev"},
-		})
+		}
+		if r.Header.Get("X-Api-Key") != "" {
+			expHeaders.Set("Authorization", "Bearer dummy-iap-token")
+			expHeaders.Set("X-Api-Key", "dummy-gcom-api-key-dev")
+		} else {
+			expHeaders.Set("Authorization", "Bearer dummy-gcom-api-key-dev")
+		}
+		require.Subset(t, r.Header, expHeaders)
 	}
 
 	runner, err := act.NewRunner(t)
 	runner.GCOM.HandleFunc("GET /api/plugins/{pluginID}", func(w http.ResponseWriter, r *http.Request) {
-		assertAuth(t, r)
+		assertHeadersAndAuth(t, r)
 
 		w.WriteHeader(http.StatusOK)
 		require.NoError(t, json.NewEncoder(w).Encode(map[string]any{
@@ -40,7 +46,7 @@ func TestCD(t *testing.T) {
 	})
 
 	runner.GCOM.HandleFunc("POST /api/plugins", func(w http.ResponseWriter, r *http.Request) {
-		assertAuth(t, r)
+		assertHeadersAndAuth(t, r)
 
 		var body map[string]any
 		require.NoError(t, json.NewDecoder(r.Body).Decode(&body), "should be able to decode json body")
@@ -117,7 +123,10 @@ func TestCD(t *testing.T) {
 			}),
 
 			// TODO: done for simplicity now, remove later
-			workflow.WithNoOpStep(t, "publish-to-catalog", "check-and-create-stub"),
+			// workflow.WithNoOpStep(t, "publish-to-catalog", "check-and-create-stub"),
+
+			// TODO: implement
+			workflow.WithNoOpStep(t, "publish-to-catalog", "check-artifact-zips"),
 		),
 	)
 	require.NoError(t, err)

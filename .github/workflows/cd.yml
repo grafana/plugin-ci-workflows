@@ -711,6 +711,7 @@ jobs:
           gcom-api-url: ${{ inputs.DO-NOT-USE-gcom-api-url }}
 
       - name: Check artifact ZIP(s)
+        id: check-artifact-zips
         uses: grafana/plugin-ci-workflows/actions/internal/plugins/publish/check-artifacts@main
         with:
           zips: ${{ needs.upload-to-gcs-release.outputs.gcs-zip-urls }}
