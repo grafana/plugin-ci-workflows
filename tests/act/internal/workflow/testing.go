@@ -207,6 +207,15 @@ func WithoutJob(jobID string) TestingWorkflowOption {
 	}
 }
 
+func WithReplacedStep(t *testing.T, jobID string, stepID string, step Step) TestingWorkflowOption {
+	return func(twf *TestingWorkflow) {
+		job, ok := twf.BaseWorkflow.Jobs[jobID]
+		require.True(t, ok, fmt.Errorf("job %q not found", jobID))
+		err := job.ReplaceStep(stepID, step)
+		require.NoError(t, err, "replace step %q in job %q", stepID, jobID)
+	}
+}
+
 // WithNoOpStep modifies the TestingWorkflow to replace the step with the given ID
 // in the job with the given name with a no-op step.
 // This can be used to skip steps that are not relevant for the test or that would fail otherwise.

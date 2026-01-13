@@ -359,6 +359,10 @@ func getGitCommitSHA() (string, error) {
 	return strings.TrimSpace(string(output)), nil
 }
 
+func newPointer[T any](v T) *T {
+	return &v
+}
+
 // osArchCombos defines the supported OS/Arch combinations for plugin packaging.
 var osArchCombos = [...]string{
 	"darwin_amd64",
