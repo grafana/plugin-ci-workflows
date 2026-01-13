@@ -460,7 +460,6 @@ func WithWorkflowInputs(inputs WorkflowInputs) WorkflowOption {
 ```go
 ci.WithWorkflowInputs(ci.WorkflowInputs{
     ExistingInput: workflow.Input("foo"),
-    
     // 3. In the test file, use it like this
     MyInput:       workflow.Input("bar"),
 }),
