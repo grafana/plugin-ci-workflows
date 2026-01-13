@@ -14,6 +14,8 @@ const (
 
 	VaultSecretsAction = "grafana/shared-workflows/actions/get-vault-secrets"
 	ArgoWorkflowAction = "grafana/shared-workflows/actions/trigger-argo-workflow"
+
+	GitHubAppTokenAction = "actions/create-github-app-token"
 )
 
 // CopyMockFilesStep returns a Step that copies mock files from a source folder to a destination folder.
@@ -153,5 +155,22 @@ func MockArgoWorkflowStep(originalStep Step) (Step, error) {
 			`echo "uri=https://mock-argo-workflows.example.com/workflows/grafana-plugins-cd/mock-workflow-id" >> "$GITHUB_OUTPUT"`,
 		}.String(),
 		Shell: "bash",
+	}, nil
+}
+
+func MockGitHubAppTokenStep(originalStep Step, token string) (Step, error) {
+	if !strings.HasPrefix(originalStep.Uses, GitHubAppTokenAction) {
+		return Step{}, fmt.Errorf("cannot mock github app token for a step that uses %q action, must be %q", originalStep.Uses, GitHubAppTokenAction)
+	}
+	return Step{
+		Name: originalStep.Name + " (mocked)",
+		Run: Commands{
+			`echo "Mocking GitHub app token step"`,
+			`echo "token=${MOCK_TOKEN}" >> "$GITHUB_OUTPUT"`,
+		}.String(),
+		Shell: "bash",
+		Env: map[string]string{
+			"MOCK_TOKEN": token,
+		},
 	}, nil
 }

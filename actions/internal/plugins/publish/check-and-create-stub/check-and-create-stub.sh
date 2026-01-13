@@ -33,20 +33,26 @@ if [ -z $gcom_env ]; then
     exit 1
 fi
 
-# Can only be 'dev' or 'ops'. The prod stub is created manually.
-case $gcom_env in
-    dev)
-        gcom_api_url=https://grafana-dev.com/api
-        ;;
-    ops|staging)
-        gcom_api_url=https://grafana-ops.com/api
-        ;;
-    *)
-        echo "Invalid environment: $gcom_env (supported values: 'dev', 'ops')"
-        usage
-        exit 1
-        ;;
-esac
+# Allow URL override for testing (GCOM_API_URL takes precedence)
+if [ -n "$GCOM_API_URL" ]; then
+    gcom_api_url=$GCOM_API_URL
+    echo "Using GCOM_API_URL override: $gcom_api_url"
+else
+    # Can only be 'dev' or 'ops'. The prod stub is created manually.
+    case $gcom_env in
+        dev)
+            gcom_api_url=https://grafana-dev.com/api
+            ;;
+        ops|staging)
+            gcom_api_url=https://grafana-ops.com/api
+            ;;
+        *)
+            echo "Invalid environment: $gcom_env (supported values: 'dev', 'ops')"
+            usage
+            exit 1
+            ;;
+    esac
+fi
 
 # Build args for curl to GCOM (auth headers)
 curl_args=(

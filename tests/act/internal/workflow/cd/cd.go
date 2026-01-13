@@ -5,7 +5,9 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/grafana/plugin-ci-workflows/tests/act/internal/act"
 	"github.com/grafana/plugin-ci-workflows/tests/act/internal/workflow"
+	"github.com/grafana/plugin-ci-workflows/tests/act/internal/workflow/ci"
 	"github.com/stretchr/testify/require"
 )
 
@@ -21,6 +23,8 @@ import (
 //   - CI grandchild workflow (ci): the mocked ci.yml
 type Workflow struct {
 	*workflow.TestingWorkflow
+
+	ciWorkflow *ci.Workflow
 }
 
 // NewWorkflow creates a new SimpleCD workflow instance with default settings.
@@ -46,7 +50,7 @@ func NewWorkflow(opts ...WorkflowOption) (Workflow, error) {
 				},
 				With: map[string]any{
 					"environment": "dev",
-					"branch":      "main",
+					"branch":      "${{ github.event_name == 'push' && github.ref_name || github.ref }}",
 				},
 			},
 		},
@@ -59,22 +63,28 @@ func NewWorkflow(opts ...WorkflowOption) (Workflow, error) {
 	}
 
 	// Read ci.yml to create the CI grandchild workflow (cd.yml calls ci.yml)
-	ciGrandchildBaseWf, err := workflow.NewBaseWorkflowFromFile(filepath.Join(".github", "workflows", "ci.yml"))
+	/* ciGrandchildBaseWf, err := workflow.NewBaseWorkflowFromFile(filepath.Join(".github", "workflows", "ci.yml"))
 	if err != nil {
 		return Workflow{}, fmt.Errorf("new base workflow from file for grandchild ci workflow: %w", err)
-	}
+	} */
 
 	// Create the parent workflow
-	testingWf := Workflow{workflow.NewTestingWorkflow("simple-cd", cdBaseWf)}
+	testingWf := Workflow{TestingWorkflow: workflow.NewTestingWorkflow("simple-cd", cdBaseWf)}
 
 	// Add the CD child workflow
 	// Use the same UUID as the parent for correlation
-	cdChildTestingWf := workflow.NewTestingWorkflow("cd", cdChildBaseWf, workflow.WithUUID(testingWf.UUID()))
+	cdChildTestingWf := workflow.NewTestingWorkflow("cd", cdChildBaseWf)
 	testingWf.AddChild("cd", cdChildTestingWf)
 
 	// Add the CI grandchild workflow as a child of the CD workflow
-	ciGrandchildTestingWf := workflow.NewTestingWorkflow("ci", ciGrandchildBaseWf, workflow.WithUUID(testingWf.UUID()))
-	cdChildTestingWf.AddChild("ci", ciGrandchildTestingWf)
+	// ciGrandchildTestingWf := workflow.NewTestingWorkflow("ci", ciGrandchildBaseWf, workflow.WithUUID(testingWf.UUID()))
+	// cdChildTestingWf.AddChild("ci", ciGrandchildTestingWf)
+	ciGrandchildWf, err := ci.NewWorkflow()
+	if err != nil {
+		return Workflow{}, fmt.Errorf("new ci grandchild workflow: %w", err)
+	}
+	cdChildTestingWf.AddChild("ci", ciGrandchildWf.TestingWorkflow)
+	testingWf.ciWorkflow = &ciGrandchildWf
 
 	// Update the parent workflow to call the mocked CD workflow
 	testingWf.BaseWorkflow.Jobs["cd"].Uses = workflow.PCIWFBaseRef + "/" + testingWf.GetChild("cd").FileName() + "@main"
@@ -82,7 +92,7 @@ func NewWorkflow(opts ...WorkflowOption) (Workflow, error) {
 	// Update the CD workflow to call the mocked CI workflow
 	// The CD workflow has a "ci" job that calls ci.yml (line 541 in cd.yml)
 	if ciJob, ok := cdChildTestingWf.BaseWorkflow.Jobs["ci"]; ok {
-		ciJob.Uses = workflow.PCIWFBaseRef + "/" + ciGrandchildTestingWf.FileName() + "@main"
+		ciJob.Uses = workflow.PCIWFBaseRef + "/" + ciGrandchildWf.FileName() + "@main"
 	}
 
 	// Apply options to customize the SimpleCD instance.
@@ -113,46 +123,43 @@ type WorkflowOption func(*Workflow)
 // WorkflowInputs are the inputs for the CD workflow.
 // They are used to customize the CD workflow.
 type WorkflowInputs struct {
+	// CI options (shared between CI and CD)
+	CI ci.WorkflowInputs
+
 	Environment                *string
 	Branch                     *string
-	PluginDirectory            *string
 	Scopes                     *string
 	GrafanaCloudDeploymentType *string
+	DisableDocsPublishing      *bool
+	DisableGitHubRelease       *bool
 	TriggerArgo                *bool
+
+	// GCOMApiURL overrides the GCOM API URL for testing with mock servers.
+	// Use GCOMMock.DockerAccessibleURL() to get a Docker-accessible URL.
+	GCOMApiURL *string
 }
 
 // WithWorkflowInputs sets the inputs for the CD workflow.
 func WithWorkflowInputs(inputs WorkflowInputs) WorkflowOption {
 	return func(w *Workflow) {
 		job := w.BaseWorkflow.Jobs["cd"]
+		ci.SetCIInputs(job, inputs.CI)
 		workflow.SetJobInput(job, "environment", inputs.Environment)
 		workflow.SetJobInput(job, "branch", inputs.Branch)
-		workflow.SetJobInput(job, "plugin-directory", inputs.PluginDirectory)
 		workflow.SetJobInput(job, "scopes", inputs.Scopes)
 		workflow.SetJobInput(job, "grafana-cloud-deployment-type", inputs.GrafanaCloudDeploymentType)
+		workflow.SetJobInput(job, "disable-docs-publishing", inputs.DisableDocsPublishing)
+		workflow.SetJobInput(job, "disable-github-release", inputs.DisableGitHubRelease)
 		workflow.SetJobInput(job, "trigger-argo", inputs.TriggerArgo)
+		workflow.SetJobInput(job, "DO-NOT-USE-gcom-api-url", inputs.GCOMApiURL)
 	}
 }
 
-// WithMockedVault modifies the SimpleCD workflow to mock all Vault secrets steps
-// (which use the grafana/shared-workflows/actions/get-vault-secrets action)
-// to instead return the provided mock secrets.
-// This allows testing CD workflows without actually accessing Vault.
-//
-// The secrets map should contain the secret names as keys and their mock values.
-// For example:
-//
-//	secrets := VaultSecrets{
-//	    "GCOM_PUBLISH_TOKEN_DEV": "mock-dev-token",
-//	    "GCOM_PUBLISH_TOKEN_OPS": "mock-ops-token",
-//	    "GCOM_PUBLISH_TOKEN_PROD": "mock-prod-token",
-//	}
-func WithMockedVault(t *testing.T, secrets workflow.VaultSecrets) WorkflowOption {
+func WithCIOptions(opts ...ci.WorkflowOption) WorkflowOption {
 	return func(w *Workflow) {
-		err := w.CDWorkflow().MockAllStepsUsingAction(workflow.VaultSecretsAction, func(step workflow.Step) (workflow.Step, error) {
-			return workflow.MockVaultSecretsStep(step, secrets)
-		})
-		require.NoError(t, fmt.Errorf("mock vault secrets step: %w", err))
+		for _, opt := range opts {
+			opt(w.ciWorkflow)
+		}
 	}
 }
 
@@ -169,18 +176,30 @@ func WithMockedArgoWorkflows(t *testing.T) WorkflowOption {
 	}
 }
 
+// WithMockedGCOM configures the workflow to use the provided GCOM mock server.
+// This sets the GCOM API URL to the mock server's Docker-accessible URL.
+func WithMockedGCOM(mock *act.GCOM) WorkflowOption {
+	return func(w *Workflow) {
+		url := mock.DockerAccessibleURL()
+		job := w.BaseWorkflow.Jobs["cd"]
+		workflow.SetJobInput(job, "DO-NOT-USE-gcom-api-url", &url)
+	}
+}
+
+type workflowGetter func(*Workflow) *workflow.TestingWorkflow
+
 // simpleCDWorkflowMutator is a helper to mutate the SimpleCD workflow or its children workflows
 // with options that are not specific to the SimpleCI workflow itself, but rather to the testing workflow in general.
 type workflowMutator struct {
-	workflowGetter func(*Workflow) *workflow.TestingWorkflow
+	workflowGetters []workflowGetter
 }
 
 // MutateTestingWorkflow returns a simpleCDWorkflowMutator that can be used to mutate the testing workflow.
 func MutateTestingWorkflow() workflowMutator {
 	return workflowMutator{
-		workflowGetter: func(w *Workflow) *workflow.TestingWorkflow {
+		workflowGetters: []workflowGetter{func(w *Workflow) *workflow.TestingWorkflow {
 			return w.TestingWorkflow
-		},
+		}},
 	}
 }
 
@@ -188,9 +207,9 @@ func MutateTestingWorkflow() workflowMutator {
 // (child of the testing workflow).
 func MutateCDWorkflow() workflowMutator {
 	return workflowMutator{
-		workflowGetter: func(w *Workflow) *workflow.TestingWorkflow {
+		workflowGetters: []workflowGetter{func(w *Workflow) *workflow.TestingWorkflow {
 			return w.CDWorkflow()
-		},
+		}},
 	}
 }
 
@@ -198,8 +217,24 @@ func MutateCDWorkflow() workflowMutator {
 // (grandchild of the CD workflow).
 func MutateCIWorkflow() workflowMutator {
 	return workflowMutator{
-		workflowGetter: func(w *Workflow) *workflow.TestingWorkflow {
+		workflowGetters: []workflowGetter{func(w *Workflow) *workflow.TestingWorkflow {
 			return w.CIWorkflow()
+		}},
+	}
+}
+
+func MutateAllWorkflows() workflowMutator {
+	return workflowMutator{
+		workflowGetters: []workflowGetter{
+			func(w *Workflow) *workflow.TestingWorkflow {
+				return w.TestingWorkflow
+			},
+			func(w *Workflow) *workflow.TestingWorkflow {
+				return w.CDWorkflow()
+			},
+			func(w *Workflow) *workflow.TestingWorkflow {
+				return w.CIWorkflow()
+			},
 		},
 	}
 }
@@ -207,9 +242,14 @@ func MutateCIWorkflow() workflowMutator {
 // With applies the given options to the workflow returned by the workflowGetter function.
 func (m workflowMutator) With(opts ...workflow.TestingWorkflowOption) WorkflowOption {
 	return func(w *Workflow) {
-		wf := m.workflowGetter(w)
-		for _, opt := range opts {
-			opt(wf)
+		for i, getter := range m.workflowGetters {
+			wf := getter(w)
+			if wf == nil {
+				fmt.Println("PANIC!!", i)
+			}
+			for _, opt := range opts {
+				opt(wf)
+			}
 		}
 	}
 }

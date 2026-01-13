@@ -55,6 +55,9 @@ type Runner struct {
 	// GCS is the GCS mock storage used during the workflow run.
 	GCS GCS
 
+	// GCOM is the GCOM API mock used during the workflow run.
+	GCOM *GCOM
+
 	// gitHubToken is the token used to authenticate with GitHub.
 	gitHubToken string
 
@@ -124,6 +127,7 @@ func NewRunner(t *testing.T, opts ...RunnerOption) (*Runner, error) {
 		t:           t,
 		uuid:        uuid.New(),
 		gitHubToken: ghToken,
+		GCOM:        newGCOM(t),
 	}
 	if err := r.checkExecutables(); err != nil {
 		return nil, err
@@ -170,11 +174,13 @@ func (r *Runner) args(eventKind EventKind, actor string, workflowFile string, pa
 		// Required for cloning private repos
 		"--secret", "GITHUB_TOKEN=" + r.gitHubToken,
 
+		// Addidional Docker flags
+		// --add-host: enables host.docker.internal on Linux (already works on Docker Desktop) for mock HTTP servers
 		// Mounts:
 		// - mockdata: for mocked testdata, dist artifacts
 		// - GCS: for mocked GCS
 		// - /tmp: for temporary files, so the host's /tmp is used
-		"--container-options", `"-v $PWD/tests/act/mockdata:/mockdata -v ` + r.GCS.basePath + `:/gcs -v /tmp:/tmp"`,
+		"--container-options", `"--add-host=host.docker.internal:host-gateway -v $PWD/tests/act/mockdata:/mockdata -v ` + r.GCS.basePath + `:/gcs -v /tmp:/tmp"`,
 	}
 	if r.actionsCachePath != "" {
 		// Create and use per-runner cache.

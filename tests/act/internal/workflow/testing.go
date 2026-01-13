@@ -80,17 +80,17 @@ func (t *TestingWorkflow) UUID() uuid.UUID {
 // make unique container names and allow tests to run in parallel, so that
 // container names created by act don't clash
 func (t *TestingWorkflow) AddUUIDToAllJobsRecursive() {
-	uid := t.UUID().String()
 	allWorkflows := t.ChildrenRecursive()
 	// Add the main workflow as well
 	allWorkflows = append(allWorkflows, t)
 	// Add UUID to all jobs to avoid container name clashes
 	for _, wf := range allWorkflows {
+		// wf.uuid = t.UUID()
 		for _, j := range wf.Jobs() {
 			if j.Name != "" {
 				j.Name += "-"
 			}
-			j.Name += uid
+			j.Name += t.UUID().String()
 		}
 	}
 }
@@ -161,15 +161,6 @@ func NewTestingWorkflow(baseName string, workflow BaseWorkflow, opts ...TestingW
 // TestingWorkflowOption defines a function type for configuring TestingWorkflow instances.
 type TestingWorkflowOption func(*TestingWorkflow)
 
-// WithUUID is a TestingWorkflowOption that sets a specific UUID for the TestingWorkflow.
-// This is useful for linking child workflows to their parents in tests.
-// If both have the same UUID, they will have predictable file names.
-func WithUUID(id uuid.UUID) TestingWorkflowOption {
-	return func(t *TestingWorkflow) {
-		t.uuid = id
-	}
-}
-
 // WithPullRequestTargetTrigger is a TestingWorkflowOption that sets a pull_request_target trigger to the workflow.
 // This can be used to test workflows that respond to pull_request_target events.
 func WithPullRequestTargetTrigger(branches []string) TestingWorkflowOption {
@@ -210,6 +201,12 @@ func WithOnlyOneJob(t *testing.T, jobID string) TestingWorkflowOption {
 	}
 }
 
+func WithoutJob(jobID string) TestingWorkflowOption {
+	return func(twf *TestingWorkflow) {
+		delete(twf.BaseWorkflow.Jobs, jobID)
+	}
+}
+
 // WithNoOpStep modifies the TestingWorkflow to replace the step with the given ID
 // in the job with the given name with a no-op step.
 // This can be used to skip steps that are not relevant for the test or that would fail otherwise.
@@ -235,5 +232,39 @@ func WithMockedGCS(t *testing.T) TestingWorkflowOption {
 		require.NoError(t, twf.MockAllStepsUsingAction(GCSUploadAction, func(step Step) (Step, error) {
 			return MockGCSUploadStep(step)
 		}))
+	}
+}
+
+// WithMockedVault modifies the SimpleCD workflow to mock all Vault secrets steps
+// (which use the grafana/shared-workflows/actions/get-vault-secrets action)
+// to instead return the provided mock secrets.
+// This allows testing CD workflows without actually accessing Vault.
+//
+// The secrets map should contain the secret names as keys and their mock values.
+// For example:
+//
+//	secrets := VaultSecrets{
+//	    "GCOM_PUBLISH_TOKEN_DEV": "mock-dev-token",
+//	    "GCOM_PUBLISH_TOKEN_OPS": "mock-ops-token",
+//	    "GCOM_PUBLISH_TOKEN_PROD": "mock-prod-token",
+//	}
+func WithMockedVault(t *testing.T, secrets VaultSecrets) TestingWorkflowOption {
+	return func(twf *TestingWorkflow) {
+		err := twf.MockAllStepsUsingAction(VaultSecretsAction, func(step Step) (Step, error) {
+			return MockVaultSecretsStep(step, secrets)
+		})
+		require.NoError(t, err)
+	}
+}
+
+func WithMockedGitHubAppToken(t *testing.T, token ...string) TestingWorkflowOption {
+	if len(token) == 0 {
+		token = []string{"MOCK_GITHUB_APP_TOKEN"}
+	}
+	return func(twf *TestingWorkflow) {
+		err := twf.MockAllStepsUsingAction(GitHubAppTokenAction, func(originalStep Step) (Step, error) {
+			return MockGitHubAppTokenStep(originalStep, token[0])
+		})
+		require.NoError(t, err)
 	}
 }

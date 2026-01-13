@@ -345,6 +345,14 @@ on:
         type: boolean
         required: false
         default: false
+      DO-NOT-USE-gcom-api-url:
+        description: |
+          FOR INTERNAL TESTING ONLY, DO NOT USE.
+          If set, overrides the GCOM API URL for all publish operations.
+          Used for testing with mock GCOM servers.
+        type: string
+        required: false
+        default: ""
 
 concurrency:
   group: cd-${{ github.head_ref || github.run_id }}
@@ -699,6 +707,7 @@ jobs:
           environment: ${{ matrix.environment }}
           gcom-publish-token: ${{ env.GCOM_PUBLISH_TOKEN }}
           gcloud-auth-token: ${{ steps.gcloud.outputs.id_token }}
+          gcom-api-url: ${{ inputs.DO-NOT-USE-gcom-api-url }}
 
       - name: Check artifact ZIP(s)
         uses: grafana/plugin-ci-workflows/actions/internal/plugins/publish/check-artifacts@main
@@ -716,6 +725,7 @@ jobs:
           gcloud-auth-token: ${{ steps.gcloud.outputs.id_token }}
           ignore-conflicts: ${{ steps.determine-continue.outputs.ignore_conflicts }}
           publish-as-pending: ${{ matrix.environment == 'prod-canary' || inputs.publish-to-catalog-as-pending }}
+          gcom-api-url: ${{ inputs.DO-NOT-USE-gcom-api-url }}
 
       - name: Print publish summary
         run: |

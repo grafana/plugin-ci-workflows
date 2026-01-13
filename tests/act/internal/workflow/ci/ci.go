@@ -66,7 +66,7 @@ func NewWorkflow(opts ...WorkflowOption) (Workflow, error) {
 	// Add the child workflow (ci) now, so further customization can be done on it via opts.
 	// Use the same UUID as the parent, so they have the same uuid in the file name
 	// and it is easier to correlate them.
-	childTestingWf := workflow.NewTestingWorkflow("ci", childBaseWf, workflow.WithUUID(testingWf.UUID()))
+	childTestingWf := workflow.NewTestingWorkflow("ci", childBaseWf)
 	testingWf.AddChild("ci", childTestingWf)
 
 	// Change the parent workflow so it calls the mocked child workflow
@@ -107,18 +107,21 @@ type WorkflowInputs struct {
 	Testing       *bool
 }
 
+func SetCIInputs(dst *workflow.Job, inputs WorkflowInputs) {
+	workflow.SetJobInput(dst, "plugin-directory", inputs.PluginDirectory)
+	workflow.SetJobInput(dst, "dist-artifacts-prefix", inputs.DistArtifactsPrefix)
+	workflow.SetJobInput(dst, "run-playwright", inputs.RunPlaywright)
+	workflow.SetJobInput(dst, "run-plugin-validator", inputs.RunPluginValidator)
+	workflow.SetJobInput(dst, "plugin-validator-config", inputs.PluginValidatorConfig)
+	workflow.SetJobInput(dst, "run-trufflehog", inputs.RunTruffleHog)
+	workflow.SetJobInput(dst, "allow-unsigned", inputs.AllowUnsigned)
+	workflow.SetJobInput(dst, "testing", inputs.Testing)
+}
+
 // WithWorkflowInputs sets the inputs for the CI workflow.
 func WithWorkflowInputs(inputs WorkflowInputs) WorkflowOption {
 	return func(w *Workflow) {
-		job := w.BaseWorkflow.Jobs["ci"]
-		workflow.SetJobInput(job, "plugin-directory", inputs.PluginDirectory)
-		workflow.SetJobInput(job, "dist-artifacts-prefix", inputs.DistArtifactsPrefix)
-		workflow.SetJobInput(job, "run-playwright", inputs.RunPlaywright)
-		workflow.SetJobInput(job, "run-plugin-validator", inputs.RunPluginValidator)
-		workflow.SetJobInput(job, "plugin-validator-config", inputs.PluginValidatorConfig)
-		workflow.SetJobInput(job, "run-trufflehog", inputs.RunTruffleHog)
-		workflow.SetJobInput(job, "allow-unsigned", inputs.AllowUnsigned)
-		workflow.SetJobInput(job, "testing", inputs.Testing)
+		SetCIInputs(w.BaseWorkflow.Jobs["ci"], inputs)
 	}
 }
 
