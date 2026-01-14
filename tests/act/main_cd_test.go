@@ -18,7 +18,6 @@ func TestCDSetup(t *testing.T) {
 }
 
 func TestCD(t *testing.T) {
-	const pluginSlug = "grafana-simplefrontend-panel"
 	gitSha, err := getGitCommitSHA()
 	require.NoError(t, err)
 
@@ -87,7 +86,7 @@ func TestCD(t *testing.T) {
 				require.NoError(t, json.NewEncoder(w).Encode(map[string]any{
 					"id":     1,
 					"status": "active",
-					"slug":   pluginSlug,
+					"slug":   tc.pluginSlug,
 				}))
 			})
 
@@ -109,7 +108,7 @@ func TestCD(t *testing.T) {
 				} else {
 					expDownloadURLs = map[string]any{
 						"any": map[string]any{
-							"url": gcsPublishURL(pluginSlug, "1.0.0", "any"),
+							"url": gcsPublishURL(tc.pluginSlug, "1.0.0", "any"),
 						},
 					}
 				}
@@ -180,17 +179,19 @@ func TestCD(t *testing.T) {
 						t, "publish-to-catalog", "gcloud",
 						workflow.MockOutputsStep(map[string]string{
 							"id_token": fakeIapToken,
-						})),
+						}),
+					),
 				),
 			)
 			require.NoError(t, err)
 
-			r, err := runner.Run(wf, act.NewPushEventPayload("main", act.WithEventActor("dependabot[bot]")))
+			r, err := runner.Run(wf, act.NewPushEventPayload("main"))
 			require.NoError(t, err)
 
 			require.True(t, r.Success, "workflow should succeed")
 
 			// Check setup outputs which define the deployment target(s)
+			// TODO: separate test case that tests for the setup outputs because the logic is quite complex.
 			for k, v := range map[string]string{
 				"platforms":             `["any"]`,
 				"plugin-version-suffix": "",
@@ -208,18 +209,18 @@ func TestCD(t *testing.T) {
 			// Assert summary content
 			require.Len(t, r.Summary, 1, "should have exactly one summary")
 			require.Contains(t, r.Summary[0], "## 📦 Published to Catalog (dev)")
-			require.Contains(t, r.Summary[0], "- **Plugin ID**: `"+pluginSlug+"`")
+			require.Contains(t, r.Summary[0], "- **Plugin ID**: `"+tc.pluginSlug+"`")
 			require.Contains(t, r.Summary[0], "- **Version**: `1.0.0`")
 
 			// Check GCS release upload
 			expGCSFiles := []string{
 				// CI artifacts
-				filepath.Join("integration-artifacts", pluginSlug, "1.0.0", "main", "latest", pluginSlug+"-1.0.0.zip"),
-				filepath.Join("integration-artifacts", pluginSlug, "1.0.0", "main", gitSha, pluginSlug+"-1.0.0.zip"),
+				filepath.Join("integration-artifacts", tc.pluginSlug, "1.0.0", "main", "latest", tc.pluginSlug+"-1.0.0.zip"),
+				filepath.Join("integration-artifacts", tc.pluginSlug, "1.0.0", "main", gitSha, tc.pluginSlug+"-1.0.0.zip"),
 
 				// Release artifacts
-				filepath.Join("integration-artifacts", pluginSlug, "release", "1.0.0", "any", pluginSlug+"-1.0.0.zip"),
-				filepath.Join("integration-artifacts", pluginSlug, "release", "latest", "any", pluginSlug+"-latest.zip"),
+				filepath.Join("integration-artifacts", tc.pluginSlug, "release", "1.0.0", "any", tc.pluginSlug+"-1.0.0.zip"),
+				filepath.Join("integration-artifacts", tc.pluginSlug, "release", "latest", "any", tc.pluginSlug+"-latest.zip"),
 			}
 			// Also expect the checksums
 			for _, fn := range expGCSFiles {
@@ -227,7 +228,8 @@ func TestCD(t *testing.T) {
 			}
 			// This artifact for some reason doesn't have the corresponding checksum files,
 			// so we add it manually after adding the checksums for all other files.
-			expGCSFiles = append(expGCSFiles, filepath.Join("integration-artifacts", pluginSlug, "release", "latest", pluginSlug+"-latest.zip"))
+			expGCSFiles = append(expGCSFiles, filepath.Join("integration-artifacts", tc.pluginSlug, "release", "latest", tc.pluginSlug+"-latest.zip"))
+			// Assert files exist in mocked GCS
 			require.NoError(t, checkFilesExist(runner.GCS.Fs, expGCSFiles, checkFilesExistOptions{strict: true}), "GCS files should be present")
 		})
 	}
