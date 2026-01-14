@@ -50,12 +50,12 @@ func TestCD(t *testing.T) {
 			pluginSlug:   "grafana-simplefrontend-panel",
 			hasBackend:   false,
 		},
-		/* {
+		{
 			name:         "simple-backend",
 			pluginFolder: "simple-backend",
 			pluginSlug:   "grafana-simplebackend-datasource",
 			hasBackend:   true,
-		}, */
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
@@ -101,17 +101,14 @@ func TestCD(t *testing.T) {
 				require.Equal(t, "https://github.com/grafana/plugin-ci-workflows", body["url"], "should have correct url")
 				require.Equal(t, gitSha, body["commit"], "should have correct commit sha")
 
-				// Different URLS depending on backend (os/arch zips) or not (just "any" zip)
-				var expDownloadURLs map[string]any
+				// Different URLs depending on backend (os/arch zips) or not (just "any" zip)
+				expDownloadURLs := map[string]any{}
 				if tc.hasBackend {
-					// TODO: implement
-				} else {
-					expDownloadURLs = map[string]any{
-						"any": map[string]any{
-							"url": gcsPublishURL(tc.pluginSlug, "1.0.0", "any"),
-						},
+					for _, osArch := range osArchCombosSplit() {
+						expDownloadURLs[osArch.os+"-"+osArch.arch] = map[string]any{"url": gcsPublishURLBackend(tc.pluginSlug, "1.0.0", osArch.os, osArch.arch)}
 					}
 				}
+				expDownloadURLs["any"] = map[string]any{"url": gcsPublishURL(tc.pluginSlug, "1.0.0", "any")}
 				require.Equal(t, expDownloadURLs, body["download"], "should have correct download URLs")
 
 				w.WriteHeader(http.StatusOK)
@@ -119,6 +116,15 @@ func TestCD(t *testing.T) {
 					"plugin": map[string]any{"id": 1337},
 				}))
 			})
+
+			// HACK: act doesn't support dynamic matrices (e.g.: `${{ fromJson(needs.setup.outputs.environments) }}`),
+			// so hardcoding it for now.
+			// TODO: add sanity check: make workflow fail if there's a dynamic matrix, otherwise it fails silently.
+			environmentMatrixValue := []string{"dev"}
+			platformMatrixValue := []string{"any"}
+			if tc.hasBackend {
+				platformMatrixValue = append(platformMatrixValue, []string{"linux", "darwin", "windows"}...)
+			}
 
 			wf, err := cd.NewWorkflow(
 				cd.WithWorkflowInputs(cd.WorkflowInputs{
@@ -181,6 +187,14 @@ func TestCD(t *testing.T) {
 							"id_token": fakeIapToken,
 						}),
 					),
+
+					// Hack for act dynamix matrix
+					workflow.WithMatrix("publish-to-catalog", map[string][]string{
+						"environment": environmentMatrixValue,
+					}),
+					workflow.WithMatrix("upload-to-gcs-release", map[string][]string{
+						"platform": platformMatrixValue,
+					}),
 				),
 			)
 			require.NoError(t, err)
@@ -237,4 +251,8 @@ func TestCD(t *testing.T) {
 
 func gcsPublishURL(pluginSlug string, version string, platform string) string {
 	return "https://storage.googleapis.com/integration-artifacts/" + pluginSlug + "/release/" + version + "/" + platform + "/" + pluginSlug + "-" + version + ".zip"
+}
+
+func gcsPublishURLBackend(pluginSlug string, version string, os string, arch string) string {
+	return "https://storage.googleapis.com/integration-artifacts/" + pluginSlug + "/release/" + version + "/" + os + "/" + pluginSlug + "-" + version + "." + os + "_" + arch + ".zip"
 }

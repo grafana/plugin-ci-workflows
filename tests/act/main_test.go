@@ -372,3 +372,20 @@ var osArchCombos = [...]string{
 	"linux_arm64",
 	"windows_amd64",
 }
+
+type osArchCombo struct {
+	os   string
+	arch string
+}
+
+func osArchCombosSplit() []osArchCombo {
+	r := make([]osArchCombo, len(osArchCombos))
+	for i, osArch := range osArchCombos {
+		parts := strings.Split(osArch, "_")
+		r[i] = osArchCombo{
+			os:   parts[0],
+			arch: parts[1],
+		}
+	}
+	return r
+}

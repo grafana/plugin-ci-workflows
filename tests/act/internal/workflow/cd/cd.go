@@ -74,14 +74,6 @@ func NewWorkflow(opts ...WorkflowOption) (Workflow, error) {
 	// Add the CD child workflow
 	// Use the same UUID as the parent for correlation
 	cdChildTestingWf := workflow.NewTestingWorkflow("cd", cdChildBaseWf)
-	// HACK: act doesn't support dynamic matrices (e.g.: `${{ fromJson(needs.setup.outputs.environments) }}`),
-	// so hardcoding it to be "dev" and "any" for now
-	cdChildTestingWf.BaseWorkflow.Jobs["publish-to-catalog"].Strategy.Matrix = map[string]any{
-		"environment": []string{"dev"},
-	}
-	cdChildTestingWf.BaseWorkflow.Jobs["upload-to-gcs-release"].Strategy.Matrix = map[string]any{
-		"platform": []string{"any"},
-	}
 	testingWf.AddChild("cd", cdChildTestingWf)
 
 	// Add the CI grandchild workflow as a child of the CD workflow

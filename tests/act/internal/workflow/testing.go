@@ -279,3 +279,13 @@ func WithMockedGitHubAppToken(t *testing.T, token ...string) TestingWorkflowOpti
 		require.NoError(t, err)
 	}
 }
+
+func WithMatrix(job string, matrix map[string][]string) TestingWorkflowOption {
+	return func(twf *TestingWorkflow) {
+		matrixMap := make(map[string]any)
+		for k, v := range matrix {
+			matrixMap[k] = v
+		}
+		twf.BaseWorkflow.Jobs[job].Strategy.Matrix = matrixMap
+	}
+}
