@@ -117,10 +117,14 @@ func (j *Job) ReplaceStepAtIndex(stepIndex int, steps ...Step) error {
 	}
 	originalStep := j.Steps[stepIndex]
 
-	// Preserve original step "If" condition if present
-	if originalStep.If != "" {
-		for i := range steps {
+	for i := range steps {
+		// Preserve original step "If" condition if present
+		if originalStep.If != "" {
 			steps[i].If = originalStep.If
+		}
+		// Preserve the original step name, if not provided in the new step
+		if steps[i].Name == "" {
+			steps[i].Name = originalStep.mockedName()
 		}
 	}
 
@@ -225,6 +229,17 @@ type Step struct {
 	WorkingDirectory string `yaml:"working-directory,omitempty"`
 
 	Env map[string]string `yaml:"env,omitempty"`
+}
+
+func (s *Step) nameOrID() string {
+	if s.Name != "" {
+		return s.Name
+	}
+	return s.ID
+}
+
+func (s *Step) mockedName() string {
+	return s.nameOrID() + " (mocked)"
 }
 
 // On is the YAML representation of GitHub Actions workflow triggers.

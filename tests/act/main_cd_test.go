@@ -13,128 +13,226 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestCDSetup(t *testing.T) {
+
+}
+
 func TestCD(t *testing.T) {
-	const pluginID = "simple-frontend"
+	const pluginSlug = "grafana-simplefrontend-panel"
 	gitSha, err := getGitCommitSHA()
 	require.NoError(t, err)
 
-	assertHeadersAndAuth := func(t *testing.T, r *http.Request) {
-		expHeaders := http.Header{
-			"Accept":        []string{"application/json"},
-			"User-Agent":    []string{"github-actions-shared-workflows:/plugins/publish"},
-			"Authorization": []string{"Bearer dummy-gcom-api-key-dev"},
-		}
-		if r.Header.Get("X-Api-Key") != "" {
-			expHeaders.Set("Authorization", "Bearer dummy-iap-token")
-			expHeaders.Set("X-Api-Key", "dummy-gcom-api-key-dev")
-		} else {
-			expHeaders.Set("Authorization", "Bearer dummy-gcom-api-key-dev")
-		}
-		require.Subset(t, r.Header, expHeaders)
+	const (
+		fakeGcomTokenDev  = "dummy-gcom-api-key-dev"
+		fakeGcomTokenOps  = "dummy-gcom-api-key-ops"
+		fakeGcomTokenProd = "dummy-gcom-api-key-prod"
+
+		fakeIapToken = "dummy-iap-token"
+	)
+
+	mockVault := workflow.VaultSecrets{
+		DefaultValue: newPointer(""),
+		CommonSecrets: map[string]string{
+			"plugins/gcom-publish-token:dev":  fakeGcomTokenDev,
+			"plugins/gcom-publish-token:ops":  fakeGcomTokenOps,
+			"plugins/gcom-publish-token:prod": fakeGcomTokenProd,
+		},
 	}
 
-	runner, err := act.NewRunner(t)
-	runner.GCOM.HandleFunc("GET /api/plugins/{pluginID}", func(w http.ResponseWriter, r *http.Request) {
-		assertHeadersAndAuth(t, r)
+	for _, tc := range []struct {
+		name         string
+		pluginFolder string
+		pluginSlug   string
+		hasBackend   bool
+	}{
+		{
+			name:         "simple-frontend",
+			pluginFolder: "simple-frontend",
+			pluginSlug:   "grafana-simplefrontend-panel",
+			hasBackend:   false,
+		},
+		/* {
+			name:         "simple-backend",
+			pluginFolder: "simple-backend",
+			pluginSlug:   "grafana-simplebackend-datasource",
+			hasBackend:   true,
+		}, */
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 
-		w.WriteHeader(http.StatusOK)
-		require.NoError(t, json.NewEncoder(w).Encode(map[string]any{
-			"id":     1,
-			"status": "active",
-			"slug":   pluginID,
-		}))
-	})
+			var publishCalls int
+			runner, err := act.NewRunner(t)
+			require.NoError(t, err)
 
-	runner.GCOM.HandleFunc("POST /api/plugins", func(w http.ResponseWriter, r *http.Request) {
-		assertHeadersAndAuth(t, r)
+			assertHeadersAndAuth := func(t *testing.T, r *http.Request) {
+				expHeaders := http.Header{
+					"Accept":        []string{"application/json"},
+					"User-Agent":    []string{"github-actions-shared-workflows:/plugins/publish"},
+					"Authorization": []string{"Bearer " + fakeGcomTokenDev},
+				}
+				if r.Header.Get("X-Api-Key") != "" {
+					expHeaders.Set("Authorization", "Bearer "+fakeIapToken)
+					expHeaders.Set("X-Api-Key", fakeGcomTokenDev)
+				} else {
+					expHeaders.Set("Authorization", "Bearer "+fakeGcomTokenDev)
+				}
+				require.Subset(t, r.Header, expHeaders)
+			}
 
-		var body map[string]any
-		require.NoError(t, json.NewDecoder(r.Body).Decode(&body), "should be able to decode json body")
-		require.Equal(t, []any{"universal"}, body["scopes"], "should have correct scopes")
-		require.Equal(t, false, body["pending"], "should have correct pending status")
-		require.Equal(t, "https://github.com/grafana/plugin-ci-workflows", body["url"], "should have correct url")
-		require.Equal(t, gitSha, body["commit"], "should have correct commit sha")
-		require.Equal(t, map[string]any{
-			"any": map[string]any{
-				"url": "https://storage.googleapis.com/integration-artifacts/grafana-simplefrontend-panel/release/1.0.0/any/grafana-simplefrontend-panel-1.0.0.zip",
-			},
-		}, body["download"], "should have correct download URLs")
+			runner.GCOM.HandleFunc("GET /api/plugins/{pluginID}", func(w http.ResponseWriter, r *http.Request) {
+				assertHeadersAndAuth(t, r)
 
-		w.WriteHeader(http.StatusOK)
-		require.NoError(t, json.NewEncoder(w).Encode(map[string]any{
-			"plugin": map[string]any{"id": 1337},
-		}))
-	})
+				w.WriteHeader(http.StatusOK)
+				require.NoError(t, json.NewEncoder(w).Encode(map[string]any{
+					"id":     1,
+					"status": "active",
+					"slug":   pluginSlug,
+				}))
+			})
 
-	require.NoError(t, err)
-	wf, err := cd.NewWorkflow(
-		cd.WithWorkflowInputs(cd.WorkflowInputs{
-			CI: ci.WorkflowInputs{
-				PluginDirectory:     workflow.Input(filepath.Join("tests", "simple-frontend")),
-				DistArtifactsPrefix: workflow.Input("simple-frontend-"),
-				Testing:             workflow.Input(false),
-				AllowUnsigned:       workflow.Input(true),
+			runner.GCOM.HandleFunc("POST /api/plugins", func(w http.ResponseWriter, r *http.Request) {
+				publishCalls++
+				assertHeadersAndAuth(t, r)
 
-				RunTruffleHog:      workflow.Input(false),
-				RunPluginValidator: workflow.Input(false),
-				RunPlaywright:      workflow.Input(false),
-			},
-			DisableDocsPublishing: workflow.Input(true),
-			DisableGitHubRelease:  workflow.Input(true),
-			Environment:           workflow.Input("dev"),
-			// Branch:                     workflow.Input("main"),
-			Scopes: workflow.Input("universal"),
-			// GrafanaCloudDeploymentType: workflow.Input("provisioned"),
-		}),
-		cd.WithCIOptions(
-			// TODO: also test with signature
-			ci.WithMockedPackagedDistArtifacts(t, "dist/simple-frontend", "dist-artifacts-unsigned/simple-frontend"),
-			ci.WithMockedWorkflowContext(t, ci.Context{IsTrusted: true}),
-		),
+				var body map[string]any
+				require.NoError(t, json.NewDecoder(r.Body).Decode(&body), "should be able to decode json body")
+				require.Equal(t, []any{"universal"}, body["scopes"], "should have correct scopes")
+				require.Equal(t, false, body["pending"], "should have correct pending status")
+				require.Equal(t, "https://github.com/grafana/plugin-ci-workflows", body["url"], "should have correct url")
+				require.Equal(t, gitSha, body["commit"], "should have correct commit sha")
 
-		// Mocks
-		cd.WithMockedGCOM(runner.GCOM),
-		cd.MutateAllWorkflows().With(
-			workflow.WithMockedVault(t, workflow.VaultSecrets{
-				DefaultValue: newPointer(""),
-				CommonSecrets: map[string]string{
-					"plugins/gcom-publish-token:dev":  "dummy-gcom-api-key-dev",
-					"plugins/gcom-publish-token:ops":  "dummy-gcom-api-key-ops",
-					"plugins/gcom-publish-token:prod": "dummy-gcom-api-key-prod",
-				},
-			}),
-			workflow.WithMockedGitHubAppToken(t),
-			workflow.WithMockedGCS(t),
-		),
+				// Different URLS depending on backend (os/arch zips) or not (just "any" zip)
+				var expDownloadURLs map[string]any
+				if tc.hasBackend {
+					// TODO: implement
+				} else {
+					expDownloadURLs = map[string]any{
+						"any": map[string]any{
+							"url": gcsPublishURL(pluginSlug, "1.0.0", "any"),
+						},
+					}
+				}
+				require.Equal(t, expDownloadURLs, body["download"], "should have correct download URLs")
 
-		// CD mutations to make it work in tests
-		cd.MutateCDWorkflow().With(
-			// Mock GCS artifacts exist safety check
-			workflow.WithNoOpStep(t, "upload-to-gcs-release", "gcloud-sdk"),
-			workflow.WithReplacedStep(t, "upload-to-gcs-release", "gcs_artifacts_exist", workflow.Step{
-				Run:   workflow.Commands{`echo "gcs_artifacts_exist=false" >> $GITHUB_OUTPUT`}.String(),
-				Shell: "bash",
-			}),
+				w.WriteHeader(http.StatusOK)
+				require.NoError(t, json.NewEncoder(w).Encode(map[string]any{
+					"plugin": map[string]any{"id": 1337},
+				}))
+			})
 
-			// Mock IAP token for GCOM API calls
-			workflow.WithReplacedStep(t, "publish-to-catalog", "gcloud", workflow.Step{
-				Run:   workflow.Commands{`echo "id_token=dummy-iap-token" >> $GITHUB_OUTPUT`}.String(),
-				Shell: "bash",
-			}),
+			wf, err := cd.NewWorkflow(
+				cd.WithWorkflowInputs(cd.WorkflowInputs{
+					CI: ci.WorkflowInputs{
+						PluginDirectory:     workflow.Input(filepath.Join("tests", tc.pluginFolder)),
+						DistArtifactsPrefix: workflow.Input(tc.pluginFolder + "-"),
 
-			// TODO: done for simplicity now, remove later
-			// workflow.WithNoOpStep(t, "publish-to-catalog", "check-and-create-stub"),
+						// Disable testing mode so the deployment is triggered
+						Testing: workflow.Input(false),
+						// No logic for mocking signatures yet, so allow unsigned for now
+						AllowUnsigned: workflow.Input(true),
 
-			// TODO: implement
-			workflow.WithNoOpStep(t, "publish-to-catalog", "check-artifact-zips"),
-		),
-	)
-	require.NoError(t, err)
+						// Disable some options for speeding up CI execution
+						RunTruffleHog:      workflow.Input(false),
+						RunPluginValidator: workflow.Input(false),
+						RunPlaywright:      workflow.Input(false),
+					},
+					DisableDocsPublishing: workflow.Input(true),
+					DisableGitHubRelease:  workflow.Input(true),
 
-	r, err := runner.Run(wf, act.NewPushEventPayload("main", act.WithEventActor("dependabot[bot]")))
-	require.NoError(t, err)
-	/* o, ok := r.Outputs.Get("setup", "vars", "environments")
-	require.True(t, ok)
-	t.Logf("the pif %+v", o) */
-	require.True(t, r.Success, "workflow should succeed")
+					// This doesn't work due to a bug in act, so hardcode it for now
+					Environment: workflow.Input("dev"),
+
+					Scopes: workflow.Input("universal"),
+				}),
+				cd.WithCIOptions(
+					// Do not build the plugin, put pre-built zips in place to speed up CI execution
+					ci.WithMockedPackagedDistArtifacts(
+						t,
+						"dist/"+tc.pluginFolder,
+						"dist-artifacts-unsigned/"+tc.pluginFolder,
+					),
+					ci.WithMockedWorkflowContext(t, ci.Context{IsTrusted: true}),
+				),
+
+				// Mocks
+				cd.WithMockedGCOM(runner.GCOM),
+				cd.MutateAllWorkflows().With(
+					workflow.WithMockedVault(t, mockVault),
+					workflow.WithMockedGitHubAppToken(t),
+					workflow.WithMockedGCS(t),
+				),
+
+				// CD mutations to make it work in tests
+				cd.MutateCDWorkflow().With(
+					// Mock GCS artifacts exist safety check
+					workflow.WithNoOpStep(t, "upload-to-gcs-release", "gcloud-sdk"),
+					workflow.WithReplacedStep(
+						t, "upload-to-gcs-release", "gcs_artifacts_exist",
+						workflow.MockOutputsStep(map[string]string{
+							"gcs_artifacts_exist": "false",
+						}),
+					),
+					workflow.WithNoOpStep(t, "publish-to-catalog", "check-artifact-zips"),
+
+					// Mock IAP token for GCOM API calls
+					workflow.WithReplacedStep(
+						t, "publish-to-catalog", "gcloud",
+						workflow.MockOutputsStep(map[string]string{
+							"id_token": fakeIapToken,
+						})),
+				),
+			)
+			require.NoError(t, err)
+
+			r, err := runner.Run(wf, act.NewPushEventPayload("main", act.WithEventActor("dependabot[bot]")))
+			require.NoError(t, err)
+
+			require.True(t, r.Success, "workflow should succeed")
+
+			// Check setup outputs which define the deployment target(s)
+			for k, v := range map[string]string{
+				"platforms":             `["any"]`,
+				"plugin-version-suffix": "",
+				"environments":          `["dev"]`,
+				"publish-docs":          "false",
+			} {
+				o, ok := r.Outputs.Get("setup", "vars", k)
+				require.True(t, ok)
+				require.Equalf(t, v, o, "output %q should be %q", k, v)
+			}
+
+			// Ensure GCOM API calls were made and assertions were run
+			require.Equal(t, 1, publishCalls, "GCOM API POST /plugins should be called exactly once")
+
+			// Assert summary content
+			require.Len(t, r.Summary, 1, "should have exactly one summary")
+			require.Contains(t, r.Summary[0], "## 📦 Published to Catalog (dev)")
+			require.Contains(t, r.Summary[0], "- **Plugin ID**: `"+pluginSlug+"`")
+			require.Contains(t, r.Summary[0], "- **Version**: `1.0.0`")
+
+			// Check GCS release upload
+			expGCSFiles := []string{
+				// CI artifacts
+				filepath.Join("integration-artifacts", pluginSlug, "1.0.0", "main", "latest", pluginSlug+"-1.0.0.zip"),
+				filepath.Join("integration-artifacts", pluginSlug, "1.0.0", "main", gitSha, pluginSlug+"-1.0.0.zip"),
+
+				// Release artifacts
+				filepath.Join("integration-artifacts", pluginSlug, "release", "1.0.0", "any", pluginSlug+"-1.0.0.zip"),
+				filepath.Join("integration-artifacts", pluginSlug, "release", "latest", "any", pluginSlug+"-latest.zip"),
+			}
+			// Also expect the checksums
+			for _, fn := range expGCSFiles {
+				expGCSFiles = append(expGCSFiles, fn+".md5", fn+".sha1")
+			}
+			// This artifact for some reason doesn't have the corresponding checksum files,
+			// so we add it manually after adding the checksums for all other files.
+			expGCSFiles = append(expGCSFiles, filepath.Join("integration-artifacts", pluginSlug, "release", "latest", pluginSlug+"-latest.zip"))
+			require.NoError(t, checkFilesExist(runner.GCS.Fs, expGCSFiles, checkFilesExistOptions{strict: true}), "GCS files should be present")
+		})
+	}
+}
+
+func gcsPublishURL(pluginSlug string, version string, platform string) string {
+	return "https://storage.googleapis.com/integration-artifacts/" + pluginSlug + "/release/" + version + "/" + platform + "/" + pluginSlug + "-" + version + ".zip"
 }

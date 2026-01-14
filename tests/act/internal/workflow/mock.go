@@ -25,7 +25,6 @@ const (
 // You can use GitHub Actions expressions in destFolder, e.g., "${{ github.workspace }}/plugins/my-plugin/dist".
 func CopyMockFilesStep(sourceFolder string, destFolder string) Step {
 	return Step{
-		Name: "Copy mock files",
 		Run: Commands{
 			"set -x",
 			"mkdir -p " + destFolder,
@@ -40,13 +39,8 @@ func CopyMockFilesStep(sourceFolder string, destFolder string) Step {
 // NoOpStep returns a Step that does nothing (no-op) for testing purposes.
 // The step simply echoes a message indicating it is a no-op step.
 func NoOpStep(originalStep Step) Step {
-	nameOrID := originalStep.Name
-	if nameOrID == "" {
-		nameOrID = originalStep.ID
-	}
 	return Step{
-		Name:  nameOrID + " (no-opp'ed for testing)",
-		ID:    originalStep.ID,
+		Name:  originalStep.nameOrID() + " (no-oped for testing)",
 		Run:   "echo 'noop-ed step for testing'",
 		Shell: "bash",
 	}
@@ -234,8 +228,6 @@ func MockVaultSecretsStep(originalStep Step, secrets VaultSecrets) (Step, error)
 	}
 
 	step := Step{
-		ID:    originalStep.ID,
-		Name:  originalStep.Name + " (mocked)",
 		Env:   map[string]string{},
 		Shell: "bash",
 	}
@@ -272,7 +264,6 @@ func MockArgoWorkflowStep(originalStep Step) (Step, error) {
 	}
 
 	return Step{
-		Name: originalStep.Name + " (mocked)",
 		Run: Commands{
 			`echo "Mocking Argo Workflow trigger step"`,
 			`echo "uri=https://mock-argo-workflows.example.com/workflows/grafana-plugins-cd/mock-workflow-id" >> "$GITHUB_OUTPUT"`,
@@ -281,12 +272,18 @@ func MockArgoWorkflowStep(originalStep Step) (Step, error) {
 	}, nil
 }
 
+// MockGitHubAppTokenStep returns a Step that mocks the actions/create-github-app-token action.
+// Instead of actually creating a GitHub app token, it outputs a mock token.
+// The originalStep parameter is the original GitHub app token step to be mocked.
+// The original step must use the `actions/create-github-app-token` action.
+// If those conditions are not met, an error is returned.
+//
+// The mocked step outputs the `token` output expected by subsequent steps.
 func MockGitHubAppTokenStep(originalStep Step, token string) (Step, error) {
 	if !strings.HasPrefix(originalStep.Uses, GitHubAppTokenAction) {
 		return Step{}, fmt.Errorf("cannot mock github app token for a step that uses %q action, must be %q", originalStep.Uses, GitHubAppTokenAction)
 	}
 	return Step{
-		Name: originalStep.Name + " (mocked)",
 		Run: Commands{
 			`echo "Mocking GitHub app token step"`,
 			`echo "token=${MOCK_TOKEN}" >> "$GITHUB_OUTPUT"`,
@@ -296,4 +293,20 @@ func MockGitHubAppTokenStep(originalStep Step, token string) (Step, error) {
 			"MOCK_TOKEN": token,
 		},
 	}, nil
+}
+
+// MockOutputsStep returns a Step that only sets the given outputs and does nothing else.
+// This can be used to mock the outputs of a step for testing purposes, without executing its real implementation.
+func MockOutputsStep(outputs map[string]string) Step {
+	var stepCommands Commands
+	env := make(map[string]string, len(outputs))
+	for k, v := range outputs {
+		stepCommands = append(stepCommands, fmt.Sprintf(`echo "%s=${%s}" >> "$GITHUB_OUTPUT"`, k, k))
+		env[k] = v
+	}
+	return Step{
+		Run:   stepCommands.String(),
+		Env:   env,
+		Shell: "bash",
+	}
 }
