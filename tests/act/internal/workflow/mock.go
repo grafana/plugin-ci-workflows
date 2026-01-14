@@ -58,6 +58,7 @@ func NoOpStep(originalStep Step) Step {
 // The original step must use the `google-github-actions/upload-cloud-storage` action
 // and have valid "path" and "destination" inputs.
 // If those conditions are not met, an error is returned.
+// The "parent" input (optional) is also handled and mimics the behavior of the original action.
 func MockGCSUploadStep(originalStep Step) (Step, error) {
 	// Make sure the original step is indeed a GCS upload step
 	if !strings.HasPrefix(originalStep.Uses, GCSUploadAction) {
@@ -72,7 +73,34 @@ func MockGCSUploadStep(originalStep Step) (Step, error) {
 		return Step{}, fmt.Errorf("could not mock gcs step %q (id: %q) because inputs are not valid", originalStep.Name, originalStep.ID)
 	}
 
+	// Parent input is optional, default to true.
+	// If false, the contents of the folder are copied, but not the folder itself.
+	// If true, the folder (including itself) is copied.
+	// This mimics the behavior of the original Google Cloud Storage upload action.
+	parent := true
+	if v, ok := originalStep.With["parent"].(bool); ok {
+		parent = v
+	}
+	// Handle folder copying behavior:
+	// - parent=true: copy the folder (including itself), e.g., cp src/folder dest → dest/folder/...
+	// - parent=false: copy the contents of the folder (without the folder itself), e.g., cp src/folder/. dest → dest/...
+	var folderCpCmdSuffix string
+	var folderNameForOutput string
+	if parent {
+		// No special handling for cp. Copy the folder itself, recursively.
+		folderCpCmdSuffix = ""
+		// Include the folder name in the files list.
+		// MUST have a trailing slash in the output name (for sed).
+		folderNameForOutput = filepath.Base(srcPath) + "/"
+	} else {
+		// Copy the contents of the folder, without the folder itself.
+		folderCpCmdSuffix = "/."
+		// No folder in output name. The content is copied, not the folder itself.
+		folderNameForOutput = ""
+	}
+
 	return Step{
+		// TODO: remove so it's handled by mockedName(), in other WIP PR
 		Name: originalStep.Name + " (mocked)",
 		Run: Commands{
 			"set -x",
@@ -87,11 +115,13 @@ func MockGCSUploadStep(originalStep Step) (Step, error) {
 			`  files=$(echo "$files" | cut -d'/' -f2-)`,
 			`else`,
 			// srcPath is a directory: copy recursively
-			`  cp -r "${SRC_PATH}" /gcs/${DEST_PATH}`,
+			// if parent is true, copy the folder (including itself)
+			// if parent is false, copy the contents of the folder (without the folder itself)
+			`  cp -r "${SRC_PATH}` + folderCpCmdSuffix + `" /gcs/${DEST_PATH}`,
 			`  cd "${SRC_PATH}"`,
 			// Get a list of all uploaded files, separated by commas.
-			// Find all files, prepend destPath, remove leading ./, get relative path (remove bucket name after `/gcs`), join with commas
-			`  files=$(find . -type f | sed 's|^\./|${DEST_PATH}/|' | cut -d'/' -f2- | tr '\n' ',' | sed 's/,$//')`,
+			// Find all files, prepend destPath (and folder name if parent=true), remove leading ./, get relative path (remove bucket name after `/gcs`), join with commas
+			`  files=$(find . -type f | sed "s|^\./|${DEST_PATH}/` + folderNameForOutput + `|" | cut -d'/' -f2- | tr '\n' ',' | sed 's/,$//')`,
 			`fi`,
 
 			// For debugging
