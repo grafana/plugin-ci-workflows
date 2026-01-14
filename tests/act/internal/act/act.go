@@ -408,6 +408,9 @@ func (r *Runner) parseGHACommand(data logLine, runResult *RunResult) {
 			Title:   data.KvPairs["title"],
 			Message: data.Arg,
 		})
+	case "summary":
+		// Summary
+		runResult.Summary = append(runResult.Summary, data.Content)
 	default:
 		// Nothing special to do
 		if r.Verbose && data.Command != "" {
@@ -483,6 +486,9 @@ type RunResult struct {
 
 	// Annotations contains the GitHub Actions annotations generated during the workflow run.
 	Annotations []Annotation
+
+	// Summary contains the summary of the workflow run.
+	Summary []string
 }
 
 // AnnotationLevel represents the level of a GitHub Actions annotation.
