@@ -13,6 +13,7 @@ clean-act-tmp:
 	rm -rf /tmp/act-actions-cache
 	rm -rf /tmp/act-cache
 	rm -rf /tmp/act-gcs
+	rm -rf /tmp/act-tmp
 
 clean-act-toolcache-volumes:
 	docker volume ls -q | grep "^act-toolcache-" | xargs docker volume rm
