@@ -337,6 +337,14 @@ on:
         type: boolean
 
       # Options for testing the workflow itself.
+      dist-artifacts-prefix:
+        description: |
+          Prefix to use when uploading the dist artifacts as GitHub artifacts.
+          Can be used if multiple CI jobs can be run in parallel in the same repository, in order to avoid name clashes.
+          For example: `my-plugin-`.
+        type: string
+        required: false
+        default: ""
       DO-NOT-USE-allow-pinned-commit-hashes:
         description: |
           FOR INTERNAL TESTING ONLY, DO NOT USE.
@@ -590,6 +598,7 @@ jobs:
       allow-unsigned: ${{ inputs.allow-unsigned }}
       signature-type: ${{ inputs.signature-type }}
 
+      dist-artifacts-prefix: ${{ inputs.dist-artifacts-prefix }}
       DO-NOT-USE-allow-pinned-commit-hashes: ${{ inputs.DO-NOT-USE-allow-pinned-commit-hashes }}
 
   build-attestation:
@@ -608,7 +617,7 @@ jobs:
       - name: Download GitHub artifact
         uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
         with:
-          name: dist-artifacts
+          name: ${{ inputs.dist-artifacts-prefix }}dist-artifacts
           path: /tmp/dist-artifacts
 
       - name: Generate artifact attestation
@@ -830,7 +839,7 @@ jobs:
       - name: Download GitHub artifact
         uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
         with:
-          name: dist-artifacts
+          name: ${{ inputs.dist-artifacts-prefix }}dist-artifacts
           path: /tmp/dist-artifacts
 
       - name: Prepare "latest" artifacts
@@ -1066,7 +1075,7 @@ jobs:
       - name: Download GitHub artifact
         uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
         with:
-          name: dist-artifacts
+          name: ${{ inputs.dist-artifacts-prefix }}dist-artifacts
           path: /tmp/dist-artifacts
 
       - name: Parse changelog
