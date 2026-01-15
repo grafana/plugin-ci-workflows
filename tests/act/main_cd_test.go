@@ -46,12 +46,12 @@ func TestCD(t *testing.T) {
 		pluginSlug   string
 		hasBackend   bool
 	}{
-		/* {
+		{
 			name:         "simple-frontend",
 			pluginFolder: "simple-frontend",
 			pluginSlug:   "grafana-simplefrontend-panel",
 			hasBackend:   false,
-		}, */
+		},
 		{
 			name:         "simple-backend",
 			pluginFolder: "simple-backend",
