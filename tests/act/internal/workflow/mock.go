@@ -2,7 +2,6 @@
 package workflow
 
 import (
-	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"strings"
