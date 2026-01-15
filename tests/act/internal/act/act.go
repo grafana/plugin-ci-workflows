@@ -12,6 +12,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -174,12 +175,11 @@ func (r *Runner) args(eventKind EventKind, actor string, workflowFile string, pa
 		// Required for cloning private repos
 		"--secret", "GITHUB_TOKEN=" + r.gitHubToken,
 
-		// Addidional Docker flags
-		// --add-host: enables host.docker.internal on Linux (already works on Docker Desktop) for mock HTTP servers
+		// Additional Docker flags
 		// Mounts:
 		// - mockdata: for mocked testdata, dist artifacts
 		// - GCS: for mocked GCS
-		"--container-options", `"--add-host=host.docker.internal:host-gateway -v $PWD/tests/act/mockdata:/mockdata -v ` + r.GCS.basePath + `:/gcs"`,
+		"--container-options", r.containerOptions(),
 	}
 	if r.actionsCachePath != "" {
 		// Create and use per-runner cache.
@@ -527,6 +527,60 @@ func (r *RunResult) GetTestingWorkflowRunID() (string, error) {
 		return "", errors.New("could not get workflow run id. make sure you created the testing workflow via NewTestingWorkflow")
 	}
 	return runID, nil
+}
+
+// containerOptions returns the Docker container options for act.
+// On Linux, it adds --add-host to enable host.docker.internal (already works on Docker Desktop for macOS/Windows).
+func (r *Runner) containerOptions() string {
+	opts := []string{
+		"-v $PWD/tests/act/mockdata:/mockdata",
+		"-v " + r.GCS.basePath + ":/gcs",
+	}
+
+	// On Linux, add --add-host for host.docker.internal (Docker Desktop handles this automatically)
+	if runtime.GOOS == "linux" {
+		if hostIP := getDockerHostIP(); hostIP != "" {
+			opts = append([]string{"--add-host=host.docker.internal:" + hostIP}, opts...)
+		}
+	}
+
+	return `"` + strings.Join(opts, " ") + `"`
+}
+
+// getDockerHostIP returns the IP address that Docker containers can use to reach the host.
+// On Linux, this is typically the docker0 bridge IP (172.17.0.1) or the IP from the default route.
+// Returns empty string if detection fails (the mock servers won't work, but at least act will start).
+func getDockerHostIP() string {
+	// Try to get the IP from the default route (most reliable method)
+	cmd := exec.Command("ip", "route", "get", "1")
+	output, err := cmd.Output()
+	if err == nil {
+		// Output looks like: "1.0.0.0 via 192.168.1.1 dev eth0 src 192.168.1.100 uid 1000"
+		// We want the "src" IP
+		fields := strings.Fields(string(output))
+		for i, field := range fields {
+			if field == "src" && i+1 < len(fields) {
+				return fields[i+1]
+			}
+		}
+	}
+
+	// Fallback: try docker0 bridge IP (common default)
+	iface, err := net.InterfaceByName("docker0")
+	if err == nil {
+		addrs, err := iface.Addrs()
+		if err == nil && len(addrs) > 0 {
+			// Get the first IPv4 address
+			for _, addr := range addrs {
+				if ipnet, ok := addr.(*net.IPNet); ok && ipnet.IP.To4() != nil {
+					return ipnet.IP.String()
+				}
+			}
+		}
+	}
+
+	// Last resort: use the common docker bridge IP
+	return "172.17.0.1"
 }
 
 // getFreePort asks the kernel for a free open port that is ready to use.
