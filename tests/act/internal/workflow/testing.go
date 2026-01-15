@@ -160,28 +160,6 @@ func NewTestingWorkflow(baseName string, workflow BaseWorkflow, opts ...TestingW
 // TestingWorkflowOption defines a function type for configuring TestingWorkflow instances.
 type TestingWorkflowOption func(*TestingWorkflow)
 
-// WithPullRequestTargetTrigger is a TestingWorkflowOption that sets a pull_request_target trigger to the workflow.
-// This can be used to test workflows that respond to pull_request_target events.
-func WithPullRequestTargetTrigger(branches []string) TestingWorkflowOption {
-	return func(t *TestingWorkflow) {
-		t.On.PullRequestTarget = OnPullRequestTarget{
-			Branches: branches,
-		}
-	}
-}
-
-// WithRemoveAllStepsAfter removes all steps after the given step ID
-// in the given job ID in the workflow.
-// This can be used to stop the workflow at a certain point for testing purposes.
-func WithRemoveAllStepsAfter(t *testing.T, jobID, stepID string) TestingWorkflowOption {
-	return func(twf *TestingWorkflow) {
-		job, ok := twf.BaseWorkflow.Jobs[jobID]
-		require.True(t, ok, fmt.Errorf("job %q not found", jobID))
-		err := job.RemoveAllStepsAfter(stepID)
-		require.NoError(t, err, "remove all steps after %q in job %q", stepID, jobID)
-	}
-}
-
 // WithOnlyOneJob keeps only the given job ID and its dependencies
 // in the workflow, removing all other jobs.
 // This can be used to run only a specific job for testing purposes.
@@ -308,51 +286,5 @@ func WithRemoveAllStepsAfter(t *testing.T, jobID, stepID string) TestingWorkflow
 		require.True(t, ok, fmt.Errorf("job %q not found", jobID))
 		err := job.RemoveAllStepsAfter(stepID)
 		require.NoError(t, err, "remove all steps after %q in job %q", stepID, jobID)
-	}
-}
-
-// WithOnlyOneJob keeps only the given job ID and its dependencies
-// in the workflow, removing all other jobs.
-// This can be used to run only a specific job for testing purposes.
-func WithOnlyOneJob(t *testing.T, jobID string) TestingWorkflowOption {
-	return func(twf *TestingWorkflow) {
-		onlyJob, ok := twf.BaseWorkflow.Jobs[jobID]
-		require.True(t, ok, fmt.Errorf("job %q not found", jobID))
-
-		// Remove all jobs except the given one and its dependencies
-		for k := range twf.BaseWorkflow.Jobs {
-			if k == jobID || slices.Contains(onlyJob.Needs, k) {
-				continue
-			}
-			delete(twf.BaseWorkflow.Jobs, k)
-		}
-	}
-}
-
-// WithNoOpStep modifies the TestingWorkflow to replace the step with the given ID
-// in the job with the given name with a no-op step.
-// This can be used to skip steps that are not relevant for the test or that would fail otherwise.
-func WithNoOpStep(t *testing.T, jobID, stepID string) TestingWorkflowOption {
-	return func(twf *TestingWorkflow) {
-		err := twf.BaseWorkflow.Jobs[jobID].ReplaceStep(stepID, NoOpStep(stepID))
-		require.NoError(t, err)
-	}
-}
-
-// WithMockedGCS modifies the workflow to mock all GCS upload steps
-// (which use the google-github-actions/upload-cloud-storage action)
-// to instead copy files to a local folder mounted into the act container at /gcs.
-// It also takes all google-github-actions/auth steps and no-ops them,
-// as authentication is not needed for local file copy.
-// This allows testing GCS upload functionality without actually accessing GCS.
-// Since GCS is only used in trusted contexts, callers should most likely also use WithMockedWorkflowContext.
-func WithMockedGCS(t *testing.T) TestingWorkflowOption {
-	return func(twf *TestingWorkflow) {
-		require.NoError(t, twf.MockAllStepsUsingAction(GCSLoginAction, func(step Step) (Step, error) {
-			return NoOpStep(step.ID), nil
-		}))
-		require.NoError(t, twf.MockAllStepsUsingAction(GCSUploadAction, func(step Step) (Step, error) {
-			return MockGCSUploadStep(step)
-		}))
 	}
 }
