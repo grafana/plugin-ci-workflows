@@ -413,6 +413,7 @@ jobs:
         with:
           script: |
             const fs = require('fs');
+            const path = require('path');
 
             // Helper to get input/env values
             function getInput(name, fallback = '') {
@@ -427,6 +428,7 @@ jobs:
             const DISABLE_DOCS_PUBLISHING = getInput('DISABLE_DOCS_PUBLISHING') === 'true';
             const PLUGIN_VERSION_SUFFIX = getInput('PLUGIN_VERSION_SUFFIX', '');
             const COMMIT_SHA = getInput('COMMIT_SHA');
+            const PLUGIN_DIRECTORY = getInput('PLUGIN_DIRECTORY');
 
             // Determine if the reference is a release one (allowed to publish to prod)
             let isReleaseReference = false;
@@ -442,7 +444,7 @@ jobs:
             // has-backend is also returned by the ci job, but we do the check here again
             // so we don't have to depend on the ci job.
             // The ci workflow uses this same check to determine if the plugin has a backend.
-            const hasBackend = fs.existsSync('Magefile.go');
+            const hasBackend = fs.existsSync(path.join(PLUGIN_DIRECTORY, 'Magefile.go'));
             let platforms = ['any'];
             if (hasBackend) {
               platforms = ['linux', 'darwin', 'windows', 'any'];
@@ -556,6 +558,7 @@ jobs:
           DISABLE_DOCS_PUBLISHING: ${{ inputs.disable-docs-publishing }}
           COMMIT_SHA: ${{ steps.checkout-specified-branch.outputs.commit }}
           PLUGIN_VERSION_SUFFIX: ${{ inputs.plugin-version-suffix }}
+          PLUGIN_DIRECTORY: ${{ inputs.plugin-directory }}
 
   ci:
     name: CI
