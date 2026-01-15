@@ -179,8 +179,7 @@ func (r *Runner) args(eventKind EventKind, actor string, workflowFile string, pa
 		// Mounts:
 		// - mockdata: for mocked testdata, dist artifacts
 		// - GCS: for mocked GCS
-		// - /tmp: for temporary files, so the host's /tmp is used
-		"--container-options", `"--add-host=host.docker.internal:host-gateway -v $PWD/tests/act/mockdata:/mockdata -v ` + r.GCS.basePath + `:/gcs -v /tmp/act-tmp` + r.uuid.String() + `:/tmp"`,
+		"--container-options", `"--add-host=host.docker.internal:host-gateway -v $PWD/tests/act/mockdata:/mockdata -v ` + r.GCS.basePath + `:/gcs"`,
 	}
 	if r.actionsCachePath != "" {
 		// Create and use per-runner cache.
