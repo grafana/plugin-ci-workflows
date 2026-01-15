@@ -176,9 +176,6 @@ func (r *Runner) args(eventKind EventKind, actor string, workflowFile string, pa
 		"--secret", "GITHUB_TOKEN=" + r.gitHubToken,
 
 		// Additional Docker flags
-		// Mounts:
-		// - mockdata: for mocked testdata, dist artifacts
-		// - GCS: for mocked GCS
 		"--container-options", r.containerOptions(),
 	}
 	if r.actionsCachePath != "" {
@@ -532,12 +529,16 @@ func (r *RunResult) GetTestingWorkflowRunID() (string, error) {
 // containerOptions returns the Docker container options for act.
 // On Linux, it adds --add-host to enable host.docker.internal (already works on Docker Desktop for macOS/Windows).
 func (r *Runner) containerOptions() string {
+
 	opts := []string{
+		// mocked testdata, dist artifacts
 		"-v $PWD/tests/act/mockdata:/mockdata",
+		// mocked GCS
 		"-v " + r.GCS.basePath + ":/gcs",
 	}
 
 	// On Linux, add --add-host for host.docker.internal (Docker Desktop handles this automatically)
+	// This is needed for local mock HTTP servers (e.g.: GCOM)
 	if runtime.GOOS == "linux" {
 		if hostIP := getDockerHostIP(); hostIP != "" {
 			opts = append([]string{"--add-host=host.docker.internal:" + hostIP}, opts...)
