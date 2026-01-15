@@ -53,6 +53,7 @@ func NoOpStep(originalStep Step) Step {
 // and have valid "path" and "destination" inputs.
 // If those conditions are not met, an error is returned.
 // The "parent" input (optional) is also handled and mimics the behavior of the original action.
+// The "glob" input (optional) filters which files to upload using a glob pattern (e.g., "*.txt", "**/*.json").
 func MockGCSUploadStep(originalStep Step) (Step, error) {
 	// Make sure the original step is indeed a GCS upload step
 	if !strings.HasPrefix(originalStep.Uses, GCSUploadAction) {
@@ -65,6 +66,12 @@ func MockGCSUploadStep(originalStep Step) (Step, error) {
 	destPath, ok2 := originalStep.With["destination"].(string)
 	if srcPath == "" || destPath == "" || !ok1 || !ok2 {
 		return Step{}, fmt.Errorf("could not mock gcs step %q (id: %q) because inputs are not valid", originalStep.Name, originalStep.ID)
+	}
+
+	// Glob input is optional, empty string means no filtering (copy all files).
+	globPattern := ""
+	if v, ok := originalStep.With["glob"].(string); ok {
+		globPattern = v
 	}
 
 	// Parent input is optional, default to true.
@@ -93,42 +100,76 @@ func MockGCSUploadStep(originalStep Step) (Step, error) {
 		folderNameForOutput = ""
 	}
 
-	return Step{
-		// TODO: remove so it's handled by mockedName(), in other WIP PR
-		Name: originalStep.Name + " (mocked)",
-		Run: Commands{
-			"set -x",
-			`mkdir -p /gcs/${DEST_PATH}`,
+	// Build the bash commands based on whether glob is provided
+	var commands Commands
+	commands = append(commands,
+		"set -x",
+		`mkdir -p /gcs/${DEST_PATH}`,
 
-			// Handle both file and directory srcPath
-			`if [ -f "${SRC_PATH}" ]; then`,
-			// srcPath is a file: copy directly
-			`  cp "${SRC_PATH}" /gcs/${DEST_PATH}/`,
-			`  filename=$(basename "${SRC_PATH}")`,
-			`  files="${DEST_PATH}/${filename}"`,
-			`  files=$(echo "$files" | cut -d'/' -f2-)`,
-			`else`,
-			// srcPath is a directory: copy recursively
-			// if parent is true, copy the folder (including itself)
-			// if parent is false, copy the contents of the folder (without the folder itself)
-			`  cp -r "${SRC_PATH}` + folderCpCmdSuffix + `" /gcs/${DEST_PATH}`,
-			`  cd "${SRC_PATH}"`,
+		// Handle both file and directory srcPath
+		`if [ -f "${SRC_PATH}" ]; then`,
+		// srcPath is a file: copy directly (glob doesn't apply to single files)
+		`  cp "${SRC_PATH}" /gcs/${DEST_PATH}/`,
+		`  filename=$(basename "${SRC_PATH}")`,
+		`  files="${DEST_PATH}/${filename}"`,
+		`  files=$(echo "$files" | cut -d'/' -f2-)`,
+		`else`,
+		// srcPath is a directory
+		`  cd "${SRC_PATH}"`,
+	)
+
+	if globPattern != "" {
+		// Glob mode: copy only files matching the pattern
+		// - globstar enables ** to match directories recursively
+		// - nullglob makes the pattern expand to nothing if no files match (avoids literal pattern in output)
+		commands = append(commands,
+			`  shopt -s globstar nullglob`,
+			`  files=""`,
+			`  for file in ${GLOB_PATTERN}; do`,
+			`    if [ -f "$file" ]; then`,
+			// Create target directory preserving structure, then copy the file
+			`      target_dir="/gcs/${DEST_PATH}/${FOLDER_NAME}$(dirname "$file")"`,
+			`      mkdir -p "$target_dir"`,
+			`      cp "$file" "$target_dir/"`,
+			// Build the files list (comma-separated)
+			`      rel_path="${DEST_PATH}/${FOLDER_NAME}${file}"`,
+			`      rel_path=$(echo "$rel_path" | cut -d'/' -f2-)`,
+			`      if [ -n "$files" ]; then files="$files,"; fi`,
+			`      files="$files$rel_path"`,
+			`    fi`,
+			`  done`,
+		)
+	} else {
+		// Original behavior: copy all files recursively
+		// if parent is true, copy the folder (including itself)
+		// if parent is false, copy the contents of the folder (without the folder itself)
+		commands = append(commands,
+			`  cp -r "${SRC_PATH}`+folderCpCmdSuffix+`" /gcs/${DEST_PATH}`,
 			// Get a list of all uploaded files, separated by commas.
 			// Find all files, prepend destPath (and folder name if parent=true), remove leading ./, get relative path (remove bucket name after `/gcs`), join with commas
-			`  files=$(find . -type f | sed "s|^\./|${DEST_PATH}/` + folderNameForOutput + `|" | cut -d'/' -f2- | tr '\n' ',' | sed 's/,$//')`,
-			`fi`,
+			`  files=$(find . -type f | sed "s|^\./|${DEST_PATH}/`+folderNameForOutput+`|" | cut -d'/' -f2- | tr '\n' ',' | sed 's/,$//')`,
+		)
+	}
 
-			// For debugging
-			"echo 'Mock GCS upload complete. Mock GCS bucket content:'",
-			"find /gcs -type f",
+	commands = append(commands,
+		`fi`,
+		// For debugging
+		"echo 'Mock GCS upload complete. Mock GCS bucket content:'",
+		"find /gcs -type f",
+		// Set output (simplified)
+		`echo "uploaded=$files" >> "$GITHUB_OUTPUT"`,
+	)
 
-			// Set output (simplified)
-			`echo "uploaded=$files" >> "$GITHUB_OUTPUT"`,
-		}.String(),
+	return Step{
+		// TODO: remove so it's handled by mockedName(), in other WIP PR
+		Name:  originalStep.Name + " (mocked)",
+		Run:   commands.String(),
 		Shell: "bash",
 		Env: map[string]string{
-			"SRC_PATH":  srcPath,
-			"DEST_PATH": destPath,
+			"SRC_PATH":     srcPath,
+			"DEST_PATH":    destPath,
+			"GLOB_PATTERN": globPattern,
+			"FOLDER_NAME":  folderNameForOutput,
 		},
 	}, nil
 }

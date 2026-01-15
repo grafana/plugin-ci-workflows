@@ -8,24 +8,77 @@ import (
 )
 
 func TestMockGCSUploadStep(t *testing.T) {
-	step := Step{
-		Name: "Upload GCS",
-		Uses: "google-github-actions/upload-cloud-storage@6397bd7208e18d13ba2619ee21b9873edc94427a",
-		With: map[string]any{
-			"path":        "/tmp/dist-artifacts",
-			"destination": "integration-artifacts/grafana-foo-plugin/folder",
-		},
-	}
-	mockedStep, err := MockGCSUploadStep(step)
-	require.NoError(t, err)
-	require.Equal(t, "Upload GCS (mocked)", mockedStep.Name)
-	require.Contains(t, mockedStep.Run, `echo "uploaded=$files" >> "$GITHUB_OUTPUT"`, "should contain echo to output")
-	require.Contains(t, mockedStep.Run, `mkdir -p /gcs/${DEST_PATH}`, "should contain bucket folder creation")
-	require.Contains(t, mockedStep.Run, `  cp -r "${SRC_PATH}" /gcs/${DEST_PATH}`, "should contain cp command")
-	require.Equal(t, map[string]string{
-		"DEST_PATH": "integration-artifacts/grafana-foo-plugin/folder",
-		"SRC_PATH":  "/tmp/dist-artifacts",
-	}, mockedStep.Env, "should have correct env vars")
+	t.Run("basic upload without glob", func(t *testing.T) {
+		step := Step{
+			Name: "Upload GCS",
+			Uses: "google-github-actions/upload-cloud-storage@6397bd7208e18d13ba2619ee21b9873edc94427a",
+			With: map[string]any{
+				"path":        "/tmp/dist-artifacts",
+				"destination": "integration-artifacts/grafana-foo-plugin/folder",
+			},
+		}
+		mockedStep, err := MockGCSUploadStep(step)
+		require.NoError(t, err)
+		require.Equal(t, "Upload GCS (mocked)", mockedStep.Name)
+		require.Contains(t, mockedStep.Run, `echo "uploaded=$files" >> "$GITHUB_OUTPUT"`, "should contain echo to output")
+		require.Contains(t, mockedStep.Run, `mkdir -p /gcs/${DEST_PATH}`, "should contain bucket folder creation")
+		require.Contains(t, mockedStep.Run, `  cp -r "${SRC_PATH}" /gcs/${DEST_PATH}`, "should contain cp command")
+		require.NotContains(t, mockedStep.Run, "globstar", "should not use globstar without glob pattern")
+		require.Equal(t, map[string]string{
+			"DEST_PATH":    "integration-artifacts/grafana-foo-plugin/folder",
+			"SRC_PATH":     "/tmp/dist-artifacts",
+			"GLOB_PATTERN": "",
+			"FOLDER_NAME":  "dist-artifacts/",
+		}, mockedStep.Env, "should have correct env vars")
+	})
+
+	t.Run("upload with glob pattern", func(t *testing.T) {
+		step := Step{
+			Name: "Upload GCS",
+			Uses: "google-github-actions/upload-cloud-storage@6397bd7208e18d13ba2619ee21b9873edc94427a",
+			With: map[string]any{
+				"path":        "/tmp/dist-artifacts",
+				"destination": "integration-artifacts/grafana-foo-plugin/folder",
+				"glob":        "**/*.zip",
+			},
+		}
+		mockedStep, err := MockGCSUploadStep(step)
+		require.NoError(t, err)
+		require.Equal(t, "Upload GCS (mocked)", mockedStep.Name)
+		require.Contains(t, mockedStep.Run, `echo "uploaded=$files" >> "$GITHUB_OUTPUT"`, "should contain echo to output")
+		require.Contains(t, mockedStep.Run, `mkdir -p /gcs/${DEST_PATH}`, "should contain bucket folder creation")
+		require.Contains(t, mockedStep.Run, "shopt -s globstar nullglob", "should enable globstar")
+		require.Contains(t, mockedStep.Run, `for file in ${GLOB_PATTERN}`, "should iterate over glob matches")
+		require.NotContains(t, mockedStep.Run, `cp -r "${SRC_PATH}"`, "should not use recursive cp with glob")
+		require.Equal(t, map[string]string{
+			"DEST_PATH":    "integration-artifacts/grafana-foo-plugin/folder",
+			"SRC_PATH":     "/tmp/dist-artifacts",
+			"GLOB_PATTERN": "**/*.zip",
+			"FOLDER_NAME":  "dist-artifacts/",
+		}, mockedStep.Env, "should have correct env vars including glob pattern")
+	})
+
+	t.Run("upload with glob and parent=false", func(t *testing.T) {
+		step := Step{
+			Name: "Upload GCS",
+			Uses: "google-github-actions/upload-cloud-storage@6397bd7208e18d13ba2619ee21b9873edc94427a",
+			With: map[string]any{
+				"path":        "/tmp/dist-artifacts",
+				"destination": "integration-artifacts/grafana-foo-plugin/folder",
+				"glob":        "*.txt",
+				"parent":      false,
+			},
+		}
+		mockedStep, err := MockGCSUploadStep(step)
+		require.NoError(t, err)
+		require.Contains(t, mockedStep.Run, "shopt -s globstar nullglob", "should enable globstar")
+		require.Equal(t, map[string]string{
+			"DEST_PATH":    "integration-artifacts/grafana-foo-plugin/folder",
+			"SRC_PATH":     "/tmp/dist-artifacts",
+			"GLOB_PATTERN": "*.txt",
+			"FOLDER_NAME":  "",
+		}, mockedStep.Env, "should have empty FOLDER_NAME when parent=false")
+	})
 }
 
 func TestMockVaultSecretsStep(t *testing.T) {
