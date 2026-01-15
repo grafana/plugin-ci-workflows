@@ -344,8 +344,8 @@ func anyZipFileName(pluginID, version string) string {
 }
 
 // osArchZipFileName returns the file name for the OS/Arch specific ZIP file
-func osArchZipFileName(pluginID, version, osArch string) string {
-	return pluginID + "-" + version + "." + osArch + ".zip"
+func osArchZipFileName(pluginID, version string, osArch osArchCombo) string {
+	return pluginID + "-" + version + "." + osArch.String() + ".zip"
 }
 
 // getGitCommitSHA returns the current git commit SHA of the repository in the current working directory.
@@ -364,13 +364,13 @@ func newPointer[T any](v T) *T {
 }
 
 // osArchCombos defines the supported OS/Arch combinations for plugin packaging.
-var osArchCombos = [...]string{
-	"darwin_amd64",
-	"darwin_arm64",
-	"linux_amd64",
-	"linux_arm",
-	"linux_arm64",
-	"windows_amd64",
+var osArchCombos = []osArchCombo{
+	{os: "darwin", arch: "amd64"},
+	{os: "darwin", arch: "arm64"},
+	{os: "linux", arch: "amd64"},
+	{os: "linux", arch: "arm"},
+	{os: "linux", arch: "arm64"},
+	{os: "windows", arch: "amd64"},
 }
 
 type osArchCombo struct {
@@ -380,16 +380,4 @@ type osArchCombo struct {
 
 func (c *osArchCombo) String() string {
 	return c.os + "_" + c.arch
-}
-
-func osArchCombosSplit() []osArchCombo {
-	r := make([]osArchCombo, len(osArchCombos))
-	for i, osArch := range osArchCombos {
-		parts := strings.Split(osArch, "_")
-		r[i] = osArchCombo{
-			os:   parts[0],
-			arch: parts[1],
-		}
-	}
-	return r
 }

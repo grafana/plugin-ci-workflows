@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/grafana/plugin-ci-workflows/tests/act/internal/act"
@@ -133,12 +132,13 @@ func TestPackage(t *testing.T) {
 					filepath.Join(tc.expPluginID, "go_plugin_build_manifest"),
 				)
 				for _, osArch := range osArchCombos {
-					if strings.Contains(osArch, "windows") {
-						osArch += ".exe"
+					var ext string
+					if osArch.os == "windows" {
+						ext = ".exe"
 					}
 					expBasePluginZipFiles = append(
 						expBasePluginZipFiles,
-						filepath.Join(tc.expPluginID, "gpx_simple_backend_"+osArch),
+						filepath.Join(tc.expPluginID, "gpx_simple_backend_"+ext),
 					)
 				}
 			}
@@ -182,8 +182,8 @@ func TestPackage(t *testing.T) {
 					// Create a copy of the expected base files for each zip file we check
 					expPluginZipFiles := make([]string, len(expBasePluginZipFiles))
 					copy(expPluginZipFiles, expBasePluginZipFiles[:])
-					backendExeFn := "gpx_simple_backend_" + osArch
-					if strings.Contains(osArch, "windows") {
+					backendExeFn := "gpx_simple_backend_" + osArch.String()
+					if osArch.os == "windows" {
 						backendExeFn += ".exe"
 					}
 					// Expect the backend executable for this os/arch

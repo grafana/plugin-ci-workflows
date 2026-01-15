@@ -106,7 +106,7 @@ func TestCD(t *testing.T) {
 				// Different URLs depending on backend (os/arch zips) or not (just "any" zip)
 				expDownloadURLs := map[string]any{}
 				if tc.hasBackend {
-					for _, osArch := range osArchCombosSplit() {
+					for _, osArch := range osArchCombos {
 						expDownloadURLs[osArch.os+"-"+osArch.arch] = map[string]any{"url": gcsPublishURLBackend(tc.pluginSlug, "1.0.0", osArch.os, osArch.arch)}
 					}
 				}
@@ -235,24 +235,24 @@ func TestCD(t *testing.T) {
 			// Check GCS release upload
 			expGCSFiles := []string{
 				// CI artifacts
-				filepath.Join("integration-artifacts", tc.pluginSlug, pluginVersion, "main", "latest", tc.pluginSlug+"-"+pluginVersion+".zip"),
-				filepath.Join("integration-artifacts", tc.pluginSlug, pluginVersion, "main", gitSha, tc.pluginSlug+"-"+pluginVersion+".zip"),
+				filepath.Join("integration-artifacts", tc.pluginSlug, pluginVersion, "main", "latest", anyZipFileName(tc.pluginSlug, pluginVersion)),
+				filepath.Join("integration-artifacts", tc.pluginSlug, pluginVersion, "main", gitSha, anyZipFileName(tc.pluginSlug, pluginVersion)),
 
 				// Release artifacts
-				filepath.Join("integration-artifacts", tc.pluginSlug, "release", pluginVersion, "any", tc.pluginSlug+"-"+pluginVersion+".zip"),
-				filepath.Join("integration-artifacts", tc.pluginSlug, "release", "latest", "any", tc.pluginSlug+"-latest.zip"),
+				filepath.Join("integration-artifacts", tc.pluginSlug, "release", pluginVersion, "any", anyZipFileName(tc.pluginSlug, pluginVersion)),
+				filepath.Join("integration-artifacts", tc.pluginSlug, "release", "latest", "any", anyZipFileName(tc.pluginSlug, "latest")),
 			}
 			if tc.hasBackend {
-				for _, osArch := range osArchCombosSplit() {
+				for _, osArch := range osArchCombos {
 					expGCSFiles = append(
 						expGCSFiles,
 						// Os/arch CI artifacts
-						filepath.Join("integration-artifacts", tc.pluginSlug, pluginVersion, "main", "latest", tc.pluginSlug+"-"+pluginVersion+"."+osArch.String()+".zip"),
-						filepath.Join("integration-artifacts", tc.pluginSlug, pluginVersion, "main", gitSha, tc.pluginSlug+"-"+pluginVersion+"."+osArch.String()+".zip"),
+						filepath.Join("integration-artifacts", tc.pluginSlug, pluginVersion, "main", "latest", osArchZipFileName(tc.pluginSlug, pluginVersion, osArch)),
+						filepath.Join("integration-artifacts", tc.pluginSlug, pluginVersion, "main", gitSha, osArchZipFileName(tc.pluginSlug, pluginVersion, osArch)),
 
 						// Os/arch release artifacts
-						filepath.Join("integration-artifacts", tc.pluginSlug, "release", pluginVersion, osArch.os, tc.pluginSlug+"-"+pluginVersion+"."+osArch.String()+".zip"),
-						filepath.Join("integration-artifacts", tc.pluginSlug, "release", "latest", osArch.os, tc.pluginSlug+"-latest."+osArch.String()+".zip"),
+						filepath.Join("integration-artifacts", tc.pluginSlug, "release", pluginVersion, osArch.os, osArchZipFileName(tc.pluginSlug, pluginVersion, osArch)),
+						filepath.Join("integration-artifacts", tc.pluginSlug, "release", "latest", osArch.os, osArchZipFileName(tc.pluginSlug, "latest", osArch)),
 					)
 				}
 			}
@@ -262,7 +262,7 @@ func TestCD(t *testing.T) {
 			}
 			// This artifact for some reason doesn't have the corresponding checksum files,
 			// so we add it manually after adding the checksums for all other files.
-			expGCSFiles = append(expGCSFiles, filepath.Join("integration-artifacts", tc.pluginSlug, "release", "latest", tc.pluginSlug+"-latest.zip"))
+			expGCSFiles = append(expGCSFiles, filepath.Join("integration-artifacts", tc.pluginSlug, "release", "latest", anyZipFileName(tc.pluginSlug, "latest")))
 			// Assert files exist in mocked GCS
 			require.NoError(t, checkFilesExist(runner.GCS.Fs, expGCSFiles, checkFilesExistOptions{strict: true}), "GCS files should be present")
 		})
