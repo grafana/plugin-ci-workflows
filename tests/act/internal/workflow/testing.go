@@ -1,7 +1,13 @@
 package workflow
 
 import (
+	"fmt"
+	"slices"
+	"strings"
+	"testing"
+
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/require"
 )
 
 // TestingWorkflow represents a workflow that is meant to be temporary and used for testing purposes.
@@ -31,11 +37,21 @@ func (t *TestingWorkflow) FileName() string {
 	return "act-" + t.baseWorkflowName + "-" + t.uuid.String() + ".yml"
 }
 
-// Children returns the child workflows of this testing workflow.
-func (t *TestingWorkflow) Children() []Workflow {
-	children := make([]Workflow, 0, len(t.children))
+// Children returns the child workflows of this testing workflow as a slice.
+func (t *TestingWorkflow) Children() []*TestingWorkflow {
+	children := make([]*TestingWorkflow, 0, len(t.children))
 	for _, child := range t.children {
 		children = append(children, child)
+	}
+	return children
+}
+
+// ChildrenRecursive returns all child workflows of this testing workflow, recursively, as a slice.
+func (t *TestingWorkflow) ChildrenRecursive() []*TestingWorkflow {
+	children := make([]*TestingWorkflow, 0, len(t.children))
+	for _, child := range t.children {
+		children = append(children, child)
+		children = append(children, child.ChildrenRecursive()...)
 	}
 	return children
 }
@@ -55,9 +71,55 @@ func (t *TestingWorkflow) AddChild(name string, child *TestingWorkflow) {
 	t.children[name] = child
 }
 
+// UUID returns the unique identifier for this testing workflow.
+func (t *TestingWorkflow) UUID() uuid.UUID {
+	return t.uuid
+}
+
+// AddUUIDToAllJobsRecursive adds a UUID to each job in the workflow and all its children (recursively) in order to
+// make unique container names and allow tests to run in parallel, so that
+// container names created by act don't clash
+func (t *TestingWorkflow) AddUUIDToAllJobsRecursive() {
+	uid := t.UUID().String()
+	allWorkflows := t.ChildrenRecursive()
+	// Add the main workflow as well
+	allWorkflows = append(allWorkflows, t)
+	// Add UUID to all jobs to avoid container name clashes
+	for _, wf := range allWorkflows {
+		for _, j := range wf.Jobs() {
+			if j.Name != "" {
+				j.Name += "-"
+			}
+			j.Name += uid
+		}
+	}
+}
+
+// MockStepFactory is a function that creates a mocked step from an original step.
+type MockStepFactory func(originalStep Step) (Step, error)
+
+// MockAllStepsUsingAction modifies all steps in the workflow that use the given action prefix
+// by replacing them with the mocked step created by the given mockStepFactory function.
+func (t *TestingWorkflow) MockAllStepsUsingAction(actionPrefix string, mockStepFactory MockStepFactory) error {
+	for _, job := range t.Jobs() {
+		for i, step := range job.Steps {
+			if strings.HasPrefix(step.Uses, actionPrefix) {
+				mockedStep, err := mockStepFactory(step)
+				if err != nil {
+					return fmt.Errorf("mock step factory: %w", err)
+				}
+				if err := job.ReplaceStepAtIndex(i, mockedStep); err != nil {
+					return fmt.Errorf("replace step: %w", err)
+				}
+			}
+		}
+	}
+	return nil
+}
+
 // NewTestingWorkflow creates a new TestingWorkflow instance.
 // It accepts a base workflow name, a BaseWorkflow instance, and optional configuration options.
-func NewTestingWorkflow(baseName string, workflow BaseWorkflow, opts ...NewTestingWorkflowOption) *TestingWorkflow {
+func NewTestingWorkflow(baseName string, workflow BaseWorkflow, opts ...TestingWorkflowOption) *TestingWorkflow {
 	wf := TestingWorkflow{
 		uuid:             uuid.New(),
 		baseWorkflowName: baseName,
@@ -96,14 +158,82 @@ func NewTestingWorkflow(baseName string, workflow BaseWorkflow, opts ...NewTesti
 	return &wf
 }
 
-// NewTestingWorkflowOption defines a function type for configuring TestingWorkflow instances.
-type NewTestingWorkflowOption func(*TestingWorkflow)
+// TestingWorkflowOption defines a function type for configuring TestingWorkflow instances.
+type TestingWorkflowOption func(*TestingWorkflow)
 
-// withUUID is a NewTestingWorkflowOption that sets a specific UUID for the TestingWorkflow.
+// WithUUID is a TestingWorkflowOption that sets a specific UUID for the TestingWorkflow.
 // This is useful for linking child workflows to their parents in tests.
 // If both have the same UUID, they will have predictable file names.
-func withUUID(id uuid.UUID) NewTestingWorkflowOption {
+func WithUUID(id uuid.UUID) TestingWorkflowOption {
 	return func(t *TestingWorkflow) {
 		t.uuid = id
+	}
+}
+
+// WithPullRequestTargetTrigger is a TestingWorkflowOption that sets a pull_request_target trigger to the workflow.
+// This can be used to test workflows that respond to pull_request_target events.
+func WithPullRequestTargetTrigger(branches []string) TestingWorkflowOption {
+	return func(t *TestingWorkflow) {
+		t.On.PullRequestTarget = OnPullRequestTarget{
+			Branches: branches,
+		}
+	}
+}
+
+// WithRemoveAllStepsAfter removes all steps after the given step ID
+// in the given job ID in the workflow.
+// This can be used to stop the workflow at a certain point for testing purposes.
+func WithRemoveAllStepsAfter(t *testing.T, jobID, stepID string) TestingWorkflowOption {
+	return func(twf *TestingWorkflow) {
+		job, ok := twf.BaseWorkflow.Jobs[jobID]
+		require.True(t, ok, fmt.Errorf("job %q not found", jobID))
+		err := job.RemoveAllStepsAfter(stepID)
+		require.NoError(t, err, "remove all steps after %q in job %q", stepID, jobID)
+	}
+}
+
+// WithOnlyOneJob keeps only the given job ID and its dependencies
+// in the workflow, removing all other jobs.
+// This can be used to run only a specific job for testing purposes.
+func WithOnlyOneJob(t *testing.T, jobID string) TestingWorkflowOption {
+	return func(twf *TestingWorkflow) {
+		onlyJob, ok := twf.BaseWorkflow.Jobs[jobID]
+		require.True(t, ok, fmt.Errorf("job %q not found", jobID))
+
+		// Remove all jobs except the given one and its dependencies
+		for k := range twf.BaseWorkflow.Jobs {
+			if k == jobID || slices.Contains(onlyJob.Needs, k) {
+				continue
+			}
+			delete(twf.BaseWorkflow.Jobs, k)
+		}
+	}
+}
+
+// WithNoOpStep modifies the TestingWorkflow to replace the step with the given ID
+// in the job with the given name with a no-op step.
+// This can be used to skip steps that are not relevant for the test or that would fail otherwise.
+func WithNoOpStep(t *testing.T, jobID, stepID string) TestingWorkflowOption {
+	return func(twf *TestingWorkflow) {
+		err := twf.BaseWorkflow.Jobs[jobID].ReplaceStep(stepID, NoOpStep(stepID))
+		require.NoError(t, err)
+	}
+}
+
+// WithMockedGCS modifies the workflow to mock all GCS upload steps
+// (which use the google-github-actions/upload-cloud-storage action)
+// to instead copy files to a local folder mounted into the act container at /gcs.
+// It also takes all google-github-actions/auth steps and no-ops them,
+// as authentication is not needed for local file copy.
+// This allows testing GCS upload functionality without actually accessing GCS.
+// Since GCS is only used in trusted contexts, callers should most likely also use WithMockedWorkflowContext.
+func WithMockedGCS(t *testing.T) TestingWorkflowOption {
+	return func(twf *TestingWorkflow) {
+		require.NoError(t, twf.MockAllStepsUsingAction(GCSLoginAction, func(step Step) (Step, error) {
+			return NoOpStep(step.ID), nil
+		}))
+		require.NoError(t, twf.MockAllStepsUsingAction(GCSUploadAction, func(step Step) (Step, error) {
+			return MockGCSUploadStep(step)
+		}))
 	}
 }

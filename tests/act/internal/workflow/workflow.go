@@ -11,6 +11,10 @@ import (
 	"github.com/goccy/go-yaml"
 )
 
+const (
+	PCIWFBaseRef = "grafana/plugin-ci-workflows/.github/workflows"
+)
+
 // Workflow is an interface for workflows that can be marshaled to YAML format.
 type Workflow interface {
 	// FileName returns the file name for the workflow.
@@ -20,7 +24,7 @@ type Workflow interface {
 	Marshal() ([]byte, error)
 
 	// Children returns the child workflows of this workflow.
-	Children() []Workflow
+	Children() []*TestingWorkflow
 
 	// Jobs returns the jobs defined in the workflow.
 	Jobs() map[string]*Job
@@ -283,4 +287,19 @@ type Commands []string
 // String joins the commands into a single string separated by newlines.
 func (c Commands) String() string {
 	return strings.Join(c, "\n")
+}
+
+// Input is a helper function to create a pointer to a value.
+// It is useful to avoid having to write `&value` everywhere.
+func Input[T any](value T) *T {
+	return &value
+}
+
+// SetJobInput sets a job input value if it's not nil.
+// It uses generics to avoid the interface nil gotcha where a typed nil pointer
+// passed to an `any` parameter results in a non-nil interface value.
+func SetJobInput[T any](job *Job, key string, value *T) {
+	if value != nil {
+		job.With[key] = *value
+	}
 }

@@ -8,6 +8,7 @@ import (
 
 	"github.com/grafana/plugin-ci-workflows/tests/act/internal/act"
 	"github.com/grafana/plugin-ci-workflows/tests/act/internal/workflow"
+	"github.com/grafana/plugin-ci-workflows/tests/act/internal/workflow/ci"
 	"github.com/stretchr/testify/require"
 )
 
@@ -40,17 +41,19 @@ func TestContext(t *testing.T) {
 			runner, err := act.NewRunner(t)
 			require.NoError(t, err)
 
-			wf, err := workflow.NewSimpleCI(
-				workflow.WithPluginDirectoryInput(filepath.Join("tests", "simple-frontend")),
-				workflow.WithDistArtifactPrefixInput("simple-frontend-"),
-
-				// Eventually disable testing mode, otherwise context is never trusted
-				workflow.WithTestingInput(tc.testingInput),
-
+			wf, err := ci.NewWorkflow(
+				ci.WithWorkflowInputs(ci.WorkflowInputs{
+					PluginDirectory:     workflow.Input(filepath.Join("tests", "simple-frontend")),
+					DistArtifactsPrefix: workflow.Input("simple-frontend-"),
+					// Eventually disable testing mode, otherwise context is never trusted
+					Testing: workflow.Input(tc.testingInput),
+				}),
 				// Only run test-and-build job and stop after workflow-context step
 				// (no need to build the plugin, etc, for this test)
-				workflow.WithOnlyOneJob(t, testAndBuild),
-				workflow.WithRemoveAllStepsAfter(t, testAndBuild, workflowContext),
+				ci.MutateCIWorkflow().With(
+					workflow.WithOnlyOneJob(t, testAndBuild),
+					workflow.WithRemoveAllStepsAfter(t, testAndBuild, workflowContext),
+				),
 			)
 			require.NoError(t, err)
 
@@ -96,12 +99,16 @@ func TestContext(t *testing.T) {
 			runner, err := act.NewRunner(t)
 			require.NoError(t, err)
 
-			wf, err := workflow.NewSimpleCI(
-				workflow.WithPluginDirectoryInput(filepath.Join("tests", "simple-frontend")),
-				workflow.WithDistArtifactPrefixInput("simple-frontend-"),
-				workflow.WithTestingInput(tc.testingInput),
-				workflow.WithOnlyOneJob(t, testAndBuild),
-				workflow.WithRemoveAllStepsAfter(t, testAndBuild, workflowContext),
+			wf, err := ci.NewWorkflow(
+				ci.WithWorkflowInputs(ci.WorkflowInputs{
+					PluginDirectory:     workflow.Input(filepath.Join("tests", "simple-frontend")),
+					DistArtifactsPrefix: workflow.Input("simple-frontend-"),
+					Testing:             workflow.Input(tc.testingInput),
+				}),
+				ci.MutateCIWorkflow().With(
+					workflow.WithOnlyOneJob(t, testAndBuild),
+					workflow.WithRemoveAllStepsAfter(t, testAndBuild, workflowContext),
+				),
 			)
 			require.NoError(t, err)
 
@@ -146,12 +153,16 @@ func TestContext(t *testing.T) {
 			runner, err := act.NewRunner(t)
 			require.NoError(t, err)
 
-			wf, err := workflow.NewSimpleCI(
-				workflow.WithPluginDirectoryInput(filepath.Join("tests", "simple-frontend")),
-				workflow.WithDistArtifactPrefixInput("simple-frontend-"),
-				workflow.WithTestingInput(tc.testingInput),
-				workflow.WithOnlyOneJob(t, testAndBuild),
-				workflow.WithRemoveAllStepsAfter(t, testAndBuild, workflowContext),
+			wf, err := ci.NewWorkflow(
+				ci.WithWorkflowInputs(ci.WorkflowInputs{
+					PluginDirectory:     workflow.Input(filepath.Join("tests", "simple-frontend")),
+					DistArtifactsPrefix: workflow.Input("simple-frontend-"),
+					Testing:             workflow.Input(tc.testingInput),
+				}),
+				ci.MutateCIWorkflow().With(
+					workflow.WithOnlyOneJob(t, testAndBuild),
+					workflow.WithRemoveAllStepsAfter(t, testAndBuild, workflowContext),
+				),
 			)
 			require.NoError(t, err)
 
@@ -195,13 +206,19 @@ func TestContext(t *testing.T) {
 			runner, err := act.NewRunner(t)
 			require.NoError(t, err)
 
-			wf, err := workflow.NewSimpleCI(
-				workflow.WithPluginDirectoryInput(filepath.Join("tests", "simple-frontend")),
-				workflow.WithDistArtifactPrefixInput("simple-frontend-"),
-				workflow.WithTestingInput(tc.testingInput),
-				workflow.WithPullRequestTargetTrigger([]string{"main"}),
-				workflow.WithOnlyOneJob(t, testAndBuild),
-				workflow.WithRemoveAllStepsAfter(t, testAndBuild, workflowContext),
+			wf, err := ci.NewWorkflow(
+				ci.WithWorkflowInputs(ci.WorkflowInputs{
+					PluginDirectory:     workflow.Input(filepath.Join("tests", "simple-frontend")),
+					DistArtifactsPrefix: workflow.Input("simple-frontend-"),
+					Testing:             workflow.Input(tc.testingInput),
+				}),
+				ci.MutateCIWorkflow().With(
+					workflow.WithOnlyOneJob(t, testAndBuild),
+					workflow.WithRemoveAllStepsAfter(t, testAndBuild, workflowContext),
+				),
+				ci.MutateTestingWorkflow().With(
+					workflow.WithPullRequestTargetTrigger([]string{"main"}),
+				),
 			)
 			require.NoError(t, err)
 

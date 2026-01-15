@@ -5,6 +5,7 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"errors"
+	"flag"
 	"fmt"
 	"io"
 	"os"
@@ -20,6 +21,9 @@ import (
 
 // TestMain sets up the test environment before running the tests.
 func TestMain(m *testing.M) {
+	// Parse flags early so we can check testing.Short() before m.Run()
+	flag.Parse()
+
 	fmt.Println("preparing test environment")
 
 	// Go to the root of the repo
@@ -36,26 +40,31 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
-	// Read ci.yml to get the default tooling versions, so we can warm up the cache
-	ciWf, err := workflow.NewBaseWorkflowFromFile(filepath.Join(".github", "workflows", "ci.yml"))
-	if err != nil {
-		panic(err)
-	}
+	// Skip cache warm-up in short mode
+	if !testing.Short() {
+		// Read ci.yml to get the default tooling versions, so we can warm up the cache
+		ciWf, err := workflow.NewBaseWorkflowFromFile(filepath.Join(".github", "workflows", "ci.yml"))
+		if err != nil {
+			panic(err)
+		}
 
-	// Warm up both action cache and tool cache in a single workflow.
-	// This runs one workflow that:
-	// 1. Pre-caches all external actions (with if: false so they download but don't run)
-	// 2. Runs the tooling setup to warm up the tool cache (Go version, Node version, etc.)
-	// 3. Runs the Trufflehog setup to warm up the Trufflehog binary cache
-	if err := warmUpCaches(ciWf); err != nil {
-		panic(fmt.Errorf("warm up caches: %w", err))
-	}
+		// Warm up both action cache and tool cache in a single workflow.
+		// This runs one workflow that:
+		// 1. Pre-caches all external actions (with if: false so they download but don't run)
+		// 2. Runs the tooling setup to warm up the tool cache (Go version, Node version, etc.)
+		// 3. Runs the Trufflehog setup to warm up the Trufflehog binary cache
+		if err := warmUpCaches(ciWf); err != nil {
+			panic(fmt.Errorf("warm up caches: %w", err))
+		}
 
-	// Verify that the action cache was populated
-	if empty, err := isDirEmpty(act.TemplateActionsCachePath); err != nil {
-		panic(fmt.Errorf("check action cache: %w", err))
-	} else if empty {
-		panic(fmt.Errorf("action cache directory is empty: %s", act.TemplateActionsCachePath))
+		// Verify that the action cache was populated
+		if empty, err := isDirEmpty(act.TemplateActionsCachePath); err != nil {
+			panic(fmt.Errorf("check action cache: %w", err))
+		} else if empty {
+			panic(fmt.Errorf("action cache directory is empty: %s", act.TemplateActionsCachePath))
+		}
+	} else {
+		fmt.Println("skipping cache warm-up (short mode)")
 	}
 
 	fmt.Println("test environment ready")

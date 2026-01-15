@@ -2,15 +2,14 @@
 package workflow
 
 import (
-	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"strings"
 )
 
 const (
-	gcsLoginAction  = "google-github-actions/auth"
-	gcsUploadAction = "google-github-actions/upload-cloud-storage"
+	GCSLoginAction  = "google-github-actions/auth"
+	GCSUploadAction = "google-github-actions/upload-cloud-storage"
 )
 
 // CopyMockFilesStep returns a Step that copies mock files from a source folder to a destination folder.
@@ -51,8 +50,8 @@ func NoOpStep(id string) Step {
 // If those conditions are not met, an error is returned.
 func MockGCSUploadStep(originalStep Step) (Step, error) {
 	// Make sure the original step is indeed a GCS upload step
-	if !strings.HasPrefix(originalStep.Uses, gcsUploadAction) {
-		return Step{}, fmt.Errorf("cannot mock gcs for a step that uses %q action, must be %q", originalStep.Uses, gcsUploadAction)
+	if !strings.HasPrefix(originalStep.Uses, GCSUploadAction) {
+		return Step{}, fmt.Errorf("cannot mock gcs for a step that uses %q action, must be %q", originalStep.Uses, GCSUploadAction)
 	}
 
 	// Extract the existing inputs and use them in the mocked bash step.
@@ -86,27 +85,8 @@ func MockGCSUploadStep(originalStep Step) (Step, error) {
 	}, nil
 }
 
-// MockWorkflowContextStep returns a Step that mocks the "workflow-context" step
-// to return the given mocked Context.
-func MockWorkflowContextStep(ctx Context) (Step, error) {
-	ctxJSON, err := json.Marshal(ctx)
-	if err != nil {
-		return Step{}, fmt.Errorf("marshal workflow context to json: %w", err)
-	}
-	return Step{
-		Name: "Determine workflow context (mocked)",
-		Run: Commands{
-			`echo "result=$RESULT" >> "$GITHUB_OUTPUT"`,
-		}.String(),
-		Env: map[string]string{
-			"RESULT": string(ctxJSON),
-		},
-		Shell: "bash",
-	}, nil
-}
-
-// localMockdataPath returns the full path to a file or folder inside tests/act/mockdata
+// LocalMockdataPath returns the full path to a file or folder inside tests/act/mockdata
 // used for accessing mock data locally, outside of the act container.
-func localMockdataPath(parts ...string) string {
+func LocalMockdataPath(parts ...string) string {
 	return filepath.Join("tests", "act", "mockdata", filepath.Join(parts...))
 }
