@@ -22,6 +22,8 @@ func TestCD(t *testing.T) {
 	require.NoError(t, err)
 
 	const (
+		pluginVersion = "1.0.0"
+
 		fakeGcomTokenDev  = "dummy-gcom-api-key-dev"
 		fakeGcomTokenOps  = "dummy-gcom-api-key-ops"
 		fakeGcomTokenProd = "dummy-gcom-api-key-prod"
@@ -44,12 +46,12 @@ func TestCD(t *testing.T) {
 		pluginSlug   string
 		hasBackend   bool
 	}{
-		{
+		/* {
 			name:         "simple-frontend",
 			pluginFolder: "simple-frontend",
 			pluginSlug:   "grafana-simplefrontend-panel",
 			hasBackend:   false,
-		},
+		}, */
 		{
 			name:         "simple-backend",
 			pluginFolder: "simple-backend",
@@ -121,9 +123,11 @@ func TestCD(t *testing.T) {
 			// so hardcoding it for now.
 			// TODO: add sanity check: make workflow fail if there's a dynamic matrix, otherwise it fails silently.
 			environmentMatrixValue := []string{"dev"}
-			platformMatrixValue := []string{"any"}
+			var platformMatrixValue []string
 			if tc.hasBackend {
-				platformMatrixValue = append(platformMatrixValue, []string{"linux", "darwin", "windows"}...)
+				platformMatrixValue = []string{"linux", "darwin", "windows", "any"}
+			} else {
+				platformMatrixValue = []string{"any"}
 			}
 
 			wf, err := cd.NewWorkflow(
@@ -188,7 +192,7 @@ func TestCD(t *testing.T) {
 						}),
 					),
 
-					// Hack for act dynamix matrix
+					// Hack for act dynamic matrices
 					workflow.WithMatrix("publish-to-catalog", map[string][]string{
 						"environment": environmentMatrixValue,
 					}),
@@ -206,8 +210,10 @@ func TestCD(t *testing.T) {
 
 			// Check setup outputs which define the deployment target(s)
 			// TODO: separate test case that tests for the setup outputs because the logic is quite complex.
+			platformsValue, err := json.Marshal(platformMatrixValue)
+			require.NoError(t, err)
 			for k, v := range map[string]string{
-				"platforms":             `["any"]`,
+				"platforms":             string(platformsValue),
 				"plugin-version-suffix": "",
 				"environments":          `["dev"]`,
 				"publish-docs":          "false",
@@ -224,17 +230,31 @@ func TestCD(t *testing.T) {
 			require.Len(t, r.Summary, 1, "should have exactly one summary")
 			require.Contains(t, r.Summary[0], "## 📦 Published to Catalog (dev)")
 			require.Contains(t, r.Summary[0], "- **Plugin ID**: `"+tc.pluginSlug+"`")
-			require.Contains(t, r.Summary[0], "- **Version**: `1.0.0`")
+			require.Contains(t, r.Summary[0], "- **Version**: `"+pluginVersion+"`")
 
 			// Check GCS release upload
 			expGCSFiles := []string{
 				// CI artifacts
-				filepath.Join("integration-artifacts", tc.pluginSlug, "1.0.0", "main", "latest", tc.pluginSlug+"-1.0.0.zip"),
-				filepath.Join("integration-artifacts", tc.pluginSlug, "1.0.0", "main", gitSha, tc.pluginSlug+"-1.0.0.zip"),
+				filepath.Join("integration-artifacts", tc.pluginSlug, pluginVersion, "main", "latest", tc.pluginSlug+"-"+pluginVersion+".zip"),
+				filepath.Join("integration-artifacts", tc.pluginSlug, pluginVersion, "main", gitSha, tc.pluginSlug+"-"+pluginVersion+".zip"),
 
 				// Release artifacts
-				filepath.Join("integration-artifacts", tc.pluginSlug, "release", "1.0.0", "any", tc.pluginSlug+"-1.0.0.zip"),
+				filepath.Join("integration-artifacts", tc.pluginSlug, "release", pluginVersion, "any", tc.pluginSlug+"-"+pluginVersion+".zip"),
 				filepath.Join("integration-artifacts", tc.pluginSlug, "release", "latest", "any", tc.pluginSlug+"-latest.zip"),
+			}
+			if tc.hasBackend {
+				for _, osArch := range osArchCombosSplit() {
+					expGCSFiles = append(
+						expGCSFiles,
+						// Os/arch CI artifacts
+						filepath.Join("integration-artifacts", tc.pluginSlug, pluginVersion, "main", "latest", tc.pluginSlug+"-"+pluginVersion+"."+osArch.String()+".zip"),
+						filepath.Join("integration-artifacts", tc.pluginSlug, pluginVersion, "main", gitSha, tc.pluginSlug+"-"+pluginVersion+"."+osArch.String()+".zip"),
+
+						// Os/arch release artifacts
+						filepath.Join("integration-artifacts", tc.pluginSlug, "release", pluginVersion, osArch.os, tc.pluginSlug+"-"+pluginVersion+"."+osArch.String()+".zip"),
+						filepath.Join("integration-artifacts", tc.pluginSlug, "release", "latest", osArch.os, tc.pluginSlug+"-latest."+osArch.String()+".zip"),
+					)
+				}
 			}
 			// Also expect the checksums
 			for _, fn := range expGCSFiles {

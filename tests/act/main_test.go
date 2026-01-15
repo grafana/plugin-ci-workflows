@@ -378,6 +378,10 @@ type osArchCombo struct {
 	arch string
 }
 
+func (c *osArchCombo) String() string {
+	return c.os + "_" + c.arch
+}
+
 func osArchCombosSplit() []osArchCombo {
 	r := make([]osArchCombo, len(osArchCombos))
 	for i, osArch := range osArchCombos {
