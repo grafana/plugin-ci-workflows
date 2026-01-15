@@ -13,10 +13,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestCDSetup(t *testing.T) {
-
-}
-
 func TestCD(t *testing.T) {
 	gitSha, err := getGitCommitSHA()
 	require.NoError(t, err)

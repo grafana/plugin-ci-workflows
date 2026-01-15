@@ -80,6 +80,7 @@ func (t *TestingWorkflow) UUID() uuid.UUID {
 // make unique container names and allow tests to run in parallel, so that
 // container names created by act don't clash
 func (t *TestingWorkflow) AddUUIDToAllJobsRecursive() {
+	uid := t.UUID().String()
 	allWorkflows := t.ChildrenRecursive()
 	// Add the main workflow as well
 	allWorkflows = append(allWorkflows, t)
@@ -89,7 +90,7 @@ func (t *TestingWorkflow) AddUUIDToAllJobsRecursive() {
 			if j.Name != "" {
 				j.Name += "-"
 			}
-			j.Name += t.UUID().String()
+			j.Name += uid
 		}
 	}
 }

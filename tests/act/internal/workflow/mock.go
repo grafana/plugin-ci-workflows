@@ -40,7 +40,7 @@ func CopyMockFilesStep(sourceFolder string, destFolder string) Step {
 // The step simply echoes a message indicating it is a no-op step.
 func NoOpStep(originalStep Step) Step {
 	return Step{
-		Name:  originalStep.nameOrID() + " (no-oped for testing)",
+		Name:  originalStep.nameOrID() + " (no-op'd for testing)",
 		Run:   "echo 'noop-ed step for testing'",
 		Shell: "bash",
 	}

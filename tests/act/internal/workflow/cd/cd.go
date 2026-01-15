@@ -62,12 +62,6 @@ func NewWorkflow(opts ...WorkflowOption) (Workflow, error) {
 		return Workflow{}, fmt.Errorf("new base workflow from file for child cd workflow: %w", err)
 	}
 
-	// Read ci.yml to create the CI grandchild workflow (cd.yml calls ci.yml)
-	/* ciGrandchildBaseWf, err := workflow.NewBaseWorkflowFromFile(filepath.Join(".github", "workflows", "ci.yml"))
-	if err != nil {
-		return Workflow{}, fmt.Errorf("new base workflow from file for grandchild ci workflow: %w", err)
-	} */
-
 	// Create the parent workflow
 	testingWf := Workflow{TestingWorkflow: workflow.NewTestingWorkflow("simple-cd", cdBaseWf)}
 
@@ -77,9 +71,6 @@ func NewWorkflow(opts ...WorkflowOption) (Workflow, error) {
 	testingWf.AddChild("cd", cdChildTestingWf)
 
 	// Add the CI grandchild workflow as a child of the CD workflow
-	// ciGrandchildTestingWf := workflow.NewTestingWorkflow("ci", ciGrandchildBaseWf, workflow.WithUUID(testingWf.UUID()))
-	// cdChildTestingWf.AddChild("ci", ciGrandchildTestingWf)
-	// TODO: do not create simple-ci yaml file
 	ciGrandchildWf, err := ci.NewWorkflow()
 	if err != nil {
 		return Workflow{}, fmt.Errorf("new ci grandchild workflow: %w", err)
@@ -169,7 +160,7 @@ func WithMockedArgoWorkflows(t *testing.T) WorkflowOption {
 		err := w.CDWorkflow().MockAllStepsUsingAction(workflow.ArgoWorkflowAction, func(step workflow.Step) (workflow.Step, error) {
 			return workflow.MockArgoWorkflowStep(step)
 		})
-		require.NoError(t, fmt.Errorf("mock argo workflow step: %w", err))
+		require.NoError(t, err, "mock argo workflow step")
 	}
 }
 
