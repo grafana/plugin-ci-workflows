@@ -1,7 +1,6 @@
 package main
 
 import (
-	"slices"
 	"strings"
 	"testing"
 
@@ -48,13 +47,7 @@ func TestValidator(t *testing.T) {
 			sourceFolder:       "simple-backend",
 			packagedDistFolder: "dist-artifacts-unsigned/simple-backend",
 			expSuccess:         true,
-			expAnnotations: append(slices.Clone(baseValidatorAnnotations), []act.Annotation{
-				{
-					Level:   act.AnnotationLevelWarning,
-					Title:   "plugin-validator: Warning: Your Grafana Go SDK is older than 2 months",
-					Message: `Please upgrade your Grafana Go SDK to the latest version by running: "go get -u github.com/grafana/grafana-plugin-sdk-go"`,
-				},
-			}...),
+			expAnnotations:     baseValidatorAnnotations,
 		},
 		{
 			name:               "simple-frontend-yarn succeeds with warnings",
