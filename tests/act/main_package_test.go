@@ -132,13 +132,13 @@ func TestPackage(t *testing.T) {
 					filepath.Join(tc.expPluginID, "go_plugin_build_manifest"),
 				)
 				for _, osArch := range osArchCombos {
-					var ext string
+					suffix := osArch.String()
 					if osArch.os == "windows" {
-						ext = ".exe"
+						suffix += ".exe"
 					}
 					expBasePluginZipFiles = append(
 						expBasePluginZipFiles,
-						filepath.Join(tc.expPluginID, "gpx_simple_backend_"+ext),
+						filepath.Join(tc.expPluginID, "gpx_simple_backend_"+suffix),
 					)
 				}
 			}
