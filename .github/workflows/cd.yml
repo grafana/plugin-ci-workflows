@@ -342,6 +342,14 @@ on:
         type: boolean
 
       # Options for testing the workflow itself.
+      dist-artifacts-prefix:
+        description: |
+          Prefix to use when uploading the dist artifacts as GitHub artifacts.
+          Can be used if multiple CI jobs can be run in parallel in the same repository, in order to avoid name clashes.
+          For example: `my-plugin-`.
+        type: string
+        required: false
+        default: ""
       DO-NOT-USE-allow-pinned-commit-hashes:
         description: |
           FOR INTERNAL TESTING ONLY, DO NOT USE.
@@ -350,6 +358,14 @@ on:
         type: boolean
         required: false
         default: false
+      DO-NOT-USE-gcom-api-url:
+        description: |
+          FOR INTERNAL TESTING ONLY, DO NOT USE.
+          If set, overrides the GCOM API URL for all publish operations.
+          Used for testing with mock GCOM servers.
+        type: string
+        required: false
+        default: ""
 
 concurrency:
   group: cd-${{ github.head_ref || github.run_id }}
@@ -397,6 +413,7 @@ jobs:
         with:
           script: |
             const fs = require('fs');
+            const path = require('path');
 
             // Helper to get input/env values
             function getInput(name, fallback = '') {
@@ -411,6 +428,7 @@ jobs:
             const DISABLE_DOCS_PUBLISHING = getInput('DISABLE_DOCS_PUBLISHING') === 'true';
             const PLUGIN_VERSION_SUFFIX = getInput('PLUGIN_VERSION_SUFFIX', '');
             const COMMIT_SHA = getInput('COMMIT_SHA');
+            const PLUGIN_DIRECTORY = getInput('PLUGIN_DIRECTORY');
 
             // Determine if the reference is a release one (allowed to publish to prod)
             let isReleaseReference = false;
@@ -426,7 +444,7 @@ jobs:
             // has-backend is also returned by the ci job, but we do the check here again
             // so we don't have to depend on the ci job.
             // The ci workflow uses this same check to determine if the plugin has a backend.
-            const hasBackend = fs.existsSync('Magefile.go');
+            const hasBackend = fs.existsSync(path.join(PLUGIN_DIRECTORY, 'Magefile.go'));
             let platforms = ['any'];
             if (hasBackend) {
               platforms = ['linux', 'darwin', 'windows', 'any'];
@@ -540,6 +558,7 @@ jobs:
           DISABLE_DOCS_PUBLISHING: ${{ inputs.disable-docs-publishing }}
           COMMIT_SHA: ${{ steps.checkout-specified-branch.outputs.commit }}
           PLUGIN_VERSION_SUFFIX: ${{ inputs.plugin-version-suffix }}
+          PLUGIN_DIRECTORY: ${{ inputs.plugin-directory }}
 
   ci:
     name: CI
@@ -588,6 +607,7 @@ jobs:
       allow-unsigned: ${{ inputs.allow-unsigned }}
       signature-type: ${{ inputs.signature-type }}
 
+      dist-artifacts-prefix: ${{ inputs.dist-artifacts-prefix }}
       DO-NOT-USE-allow-pinned-commit-hashes: ${{ inputs.DO-NOT-USE-allow-pinned-commit-hashes }}
 
   build-attestation:
@@ -606,7 +626,7 @@ jobs:
       - name: Download GitHub artifact
         uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
         with:
-          name: dist-artifacts
+          name: ${{ inputs.dist-artifacts-prefix }}dist-artifacts
           path: /tmp/dist-artifacts
 
       - name: Generate artifact attestation
@@ -698,6 +718,7 @@ jobs:
           ENVIRONMENT: ${{ matrix.environment }}
 
       - name: Check and create stub
+        id: check-and-create-stub
         uses: grafana/plugin-ci-workflows/actions/internal/plugins/publish/check-and-create-stub@main
         if: ${{ matrix.environment != 'prod' && matrix.environment != 'prod-canary' }}
         with:
@@ -705,8 +726,10 @@ jobs:
           environment: ${{ matrix.environment }}
           gcom-publish-token: ${{ env.GCOM_PUBLISH_TOKEN }}
           gcloud-auth-token: ${{ steps.gcloud.outputs.id_token }}
+          gcom-api-url: ${{ inputs.DO-NOT-USE-gcom-api-url }}
 
       - name: Check artifact ZIP(s)
+        id: check-artifact-zips
         uses: grafana/plugin-ci-workflows/actions/internal/plugins/publish/check-artifacts@main
         with:
           zips: ${{ needs.upload-to-gcs-release.outputs.gcs-zip-urls }}
@@ -722,6 +745,7 @@ jobs:
           gcloud-auth-token: ${{ steps.gcloud.outputs.id_token }}
           ignore-conflicts: ${{ steps.determine-continue.outputs.ignore_conflicts }}
           publish-as-pending: ${{ matrix.environment == 'prod-canary' || inputs.publish-to-catalog-as-pending }}
+          gcom-api-url: ${{ inputs.DO-NOT-USE-gcom-api-url }}
 
       - name: Print publish summary
         run: |
@@ -824,7 +848,7 @@ jobs:
       - name: Download GitHub artifact
         uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
         with:
-          name: dist-artifacts
+          name: ${{ inputs.dist-artifacts-prefix }}dist-artifacts
           path: /tmp/dist-artifacts
 
       - name: Prepare "latest" artifacts
@@ -843,6 +867,7 @@ jobs:
           service_account: github-plugin-ci-workflows@grafanalabs-workload-identity.iam.gserviceaccount.com
 
       - name: "Set up Cloud SDK"
+        id: gcloud-sdk
         uses: "google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db" # v3.0.1
         with:
           version: ">= 363.0.0"
@@ -1059,7 +1084,7 @@ jobs:
       - name: Download GitHub artifact
         uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
         with:
-          name: dist-artifacts
+          name: ${{ inputs.dist-artifacts-prefix }}dist-artifacts
           path: /tmp/dist-artifacts
 
       - name: Parse changelog
