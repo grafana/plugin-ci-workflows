@@ -126,8 +126,9 @@ type WorkflowInputs struct {
 	// Use GCOMMock.DockerAccessibleURL() to get a Docker-accessible URL.
 	GCOMApiURL *string
 
-	ReleaseReferenceRegex *string
-	DocsOnly              *bool
+	ReleaseReferenceRegex    *string
+	DocsOnly                 *bool
+	AllowPublishingPRsToProd *bool
 }
 
 // WithWorkflowInputs sets the inputs for the CD workflow.
@@ -144,7 +145,7 @@ func WithWorkflowInputs(inputs WorkflowInputs) WorkflowOption {
 		workflow.SetJobInput(job, "trigger-argo", inputs.TriggerArgo)
 		workflow.SetJobInput(job, "release-reference-regex", inputs.ReleaseReferenceRegex)
 		workflow.SetJobInput(job, "docs-only", inputs.DocsOnly)
-
+		workflow.SetJobInput(job, "allow-publishing-prs-to-prod", inputs.AllowPublishingPRsToProd)
 		workflow.SetJobInput(job, "DO-NOT-USE-gcom-api-url", inputs.GCOMApiURL)
 	}
 }

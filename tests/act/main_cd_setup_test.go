@@ -30,6 +30,7 @@ func TestCD_Setup(t *testing.T) {
 	type testCase struct {
 		name              string
 		inputs            cd.WorkflowInputs
+		workflowOptions   []cd.WorkflowOption
 		expOutputs        map[string]string
 		triggerEvent      *act.Event
 		expFailureMessage string
@@ -161,6 +162,7 @@ func TestCD_Setup(t *testing.T) {
 					name:         "prod deployments are blocked if not a release reference",
 					triggerEvent: newPointer(act.NewPushEventPayload("feature-branch")),
 					inputs: cd.WorkflowInputs{
+						// Default value for ReleaseReferenceRegex should be "main".
 						Environment: workflow.Input("prod"),
 					},
 					expFailureMessage: `The reference 'feature-branch' is not a release reference. Deploying to 'prod' is only allowed from release reference.`,
@@ -179,7 +181,7 @@ func TestCD_Setup(t *testing.T) {
 			},
 		},
 		{
-			name: "plugin version suffix",
+			name: "automatic plugin version suffix",
 			testCases: []testCase{
 				{
 					name:         "plugin version suffix is set if deploying to dev and not a release reference",
@@ -220,10 +222,11 @@ func TestCD_Setup(t *testing.T) {
 				},
 			},
 		}, {
+			// same as above, but for pull_request trigger
 			name: "auto-cd-example:pull_request",
 			testCases: []testCase{
 				{
-					name:         "does not deploy pull requests but adds plugin version suffix to ci build",
+					name:         "does not deploy pull requests automatically but adds plugin version suffix to ci build",
 					triggerEvent: newPointer(act.NewPullRequestEventPayload("feature-branch")),
 					inputs:       autoCDExamplePushInputs,
 					expOutputs: map[string]string{
@@ -233,7 +236,7 @@ func TestCD_Setup(t *testing.T) {
 				},
 			},
 		}, {
-			// examples/base/provisioned-plugin-auto-cd/publish.yaml: triggered manually from the UI (for cutting releases and deployinh)
+			// examples/base/provisioned-plugin-auto-cd/publish.yaml: triggered manually from the UI (for cutting releases and deploying)
 			name: "auto-cd-example:workflow_dispatch",
 			testCases: []testCase{
 				{
@@ -276,6 +279,107 @@ func TestCD_Setup(t *testing.T) {
 					expOutputs: map[string]string{
 						"environments":          `["dev"]`,
 						"plugin-version-suffix": gitSha,
+					},
+				},
+				{
+					name: "can deploy branches that match release reference regex to prod if there is no PR",
+					triggerEvent: newPointer(
+						act.NewWorkflowDispatchEventPayload(map[string]any{}),
+					),
+					inputs: cd.WorkflowInputs{
+						Branch:                workflow.Input("release/1.2.0"),
+						ReleaseReferenceRegex: workflow.Input("release/.*"),
+						Environment:           workflow.Input("prod"),
+					},
+					workflowOptions: []cd.WorkflowOption{
+						cd.MutateCDWorkflow().With(
+							// Mock GitHub API response (no PR)
+							workflow.WithEnvironment(t, "setup", "vars", map[string]string{
+								"ACT_MOCK_PRS": `[]`,
+							}),
+						),
+					},
+					expOutputs: map[string]string{
+						"environments":          `["dev","ops","prod"]`,
+						"plugin-version-suffix": "",
+					},
+				},
+				{
+					name: "cannot deploy PRs to prod",
+					triggerEvent: newPointer(
+						act.NewWorkflowDispatchEventPayload(map[string]any{
+							"branch":      "feature-branch",
+							"environment": "prod",
+						}),
+					),
+					inputs:            autoCDExamplePublishInputs,
+					expFailureMessage: `is not a release reference. Deploying to 'prod' is only allowed from release reference.`,
+				},
+				{
+					name: "cannot deploy branches that match release reference regex to prod if there's an open PR",
+					triggerEvent: newPointer(
+						act.NewWorkflowDispatchEventPayload(map[string]any{}),
+					),
+					inputs: cd.WorkflowInputs{
+						Branch:                workflow.Input("release/1.2.0"),
+						ReleaseReferenceRegex: workflow.Input("release/.*"),
+						Environment:           workflow.Input("prod"),
+					},
+					workflowOptions: []cd.WorkflowOption{
+						cd.MutateCDWorkflow().With(
+							// Mock GitHub API response (PR open and unmerged)
+							workflow.WithEnvironment(t, "setup", "vars", map[string]string{
+								"ACT_MOCK_PRS": `[{ "merged_at": null }]`,
+							}),
+						),
+					},
+					expFailureMessage: `is a release branch but it has an open PR.`,
+				},
+				{
+					name: "can deploy branches that match release reference regex to prod if the PR has been merged",
+					triggerEvent: newPointer(
+						act.NewWorkflowDispatchEventPayload(map[string]any{}),
+					),
+					inputs: cd.WorkflowInputs{
+						Branch:                workflow.Input("release/1.2.0"),
+						ReleaseReferenceRegex: workflow.Input("release/.*"),
+						Environment:           workflow.Input("prod"),
+					},
+					workflowOptions: []cd.WorkflowOption{
+						cd.MutateCDWorkflow().With(
+							// Mock GitHub API response (PR closed and merged)
+							workflow.WithEnvironment(t, "setup", "vars", map[string]string{
+								"ACT_MOCK_PRS": `[{ "merged_at": "2026-01-16T12:00:00Z" }]`,
+							}),
+						),
+					},
+					expOutputs: map[string]string{
+						"environments":          `["dev","ops","prod"]`,
+						"plugin-version-suffix": "",
+					},
+				},
+				{
+					name: "can force deploy a release branch to prod if there's an open PR and allow-publishing-prs-to-prod is true",
+					triggerEvent: newPointer(
+						act.NewWorkflowDispatchEventPayload(map[string]any{}),
+					),
+					inputs: cd.WorkflowInputs{
+						Branch:                   workflow.Input("release/1.2.0"),
+						ReleaseReferenceRegex:    workflow.Input("release/.*"),
+						Environment:              workflow.Input("prod"),
+						AllowPublishingPRsToProd: workflow.Input(true),
+					},
+					workflowOptions: []cd.WorkflowOption{
+						cd.MutateCDWorkflow().With(
+							// Mock GitHub API response (PR open and unmerged)
+							workflow.WithEnvironment(t, "setup", "vars", map[string]string{
+								"ACT_MOCK_PRS": `[{ "merged_at": null }]`,
+							}),
+						),
+					},
+					expOutputs: map[string]string{
+						"environments":          `["dev","ops","prod"]`,
+						"plugin-version-suffix": "",
 					},
 				},
 			},
@@ -411,6 +515,8 @@ func TestCD_Setup(t *testing.T) {
 							workflow.WithPullRequestTrigger([]string{"main"}),
 						))
 					}
+					// Additional user-provided options
+					opts = append(opts, tc.workflowOptions...)
 
 					wf, err := cd.NewWorkflow(opts...)
 					require.NoError(t, err)
