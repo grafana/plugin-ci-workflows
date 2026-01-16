@@ -234,12 +234,34 @@ func WithMatrix(job string, matrix map[string][]string) TestingWorkflowOption {
 	}
 }
 
+func WithPullRequestTrigger(branches []string) TestingWorkflowOption {
+	return func(t *TestingWorkflow) {
+		t.On = On{
+			PullRequest: OnPullRequest{
+				Branches: branches,
+			},
+		}
+	}
+}
+
 // WithPullRequestTargetTrigger is a TestingWorkflowOption that sets a pull_request_target trigger to the workflow.
 // This can be used to test workflows that respond to pull_request_target events.
 func WithPullRequestTargetTrigger(branches []string) TestingWorkflowOption {
 	return func(t *TestingWorkflow) {
-		t.On.PullRequestTarget = OnPullRequestTarget{
-			Branches: branches,
+		t.On = On{
+			PullRequestTarget: OnPullRequestTarget{
+				Branches: branches,
+			},
+		}
+	}
+}
+
+func WithWorkflowDispatchTrigger(inputs map[string]WorkflowCallInput) TestingWorkflowOption {
+	return func(t *TestingWorkflow) {
+		t.On = On{
+			WorkflowDispatch: OnWorkflowDispatch{
+				Inputs: inputs,
+			},
 		}
 	}
 }

@@ -125,6 +125,9 @@ type WorkflowInputs struct {
 	// GCOMApiURL overrides the GCOM API URL for testing with mock servers.
 	// Use GCOMMock.DockerAccessibleURL() to get a Docker-accessible URL.
 	GCOMApiURL *string
+
+	ReleaseReferenceRegex *string
+	DocsOnly              *bool
 }
 
 // WithWorkflowInputs sets the inputs for the CD workflow.
@@ -139,6 +142,9 @@ func WithWorkflowInputs(inputs WorkflowInputs) WorkflowOption {
 		workflow.SetJobInput(job, "disable-docs-publishing", inputs.DisableDocsPublishing)
 		workflow.SetJobInput(job, "disable-github-release", inputs.DisableGitHubRelease)
 		workflow.SetJobInput(job, "trigger-argo", inputs.TriggerArgo)
+		workflow.SetJobInput(job, "release-reference-regex", inputs.ReleaseReferenceRegex)
+		workflow.SetJobInput(job, "docs-only", inputs.DocsOnly)
+
 		workflow.SetJobInput(job, "DO-NOT-USE-gcom-api-url", inputs.GCOMApiURL)
 	}
 }

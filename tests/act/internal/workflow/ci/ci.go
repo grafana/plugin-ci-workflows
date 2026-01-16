@@ -92,6 +92,7 @@ type WorkflowOption func(*Workflow)
 // They are used to customize the CI workflow.
 type WorkflowInputs struct {
 	PluginDirectory     *string
+	PluginVersionSuffix *string
 	DistArtifactsPrefix *string
 
 	RunPlaywright *bool
@@ -109,6 +110,7 @@ type WorkflowInputs struct {
 // This is a helper function to set the inputs for the CI workflow.
 func SetCIInputs(dst *workflow.Job, inputs WorkflowInputs) {
 	workflow.SetJobInput(dst, "plugin-directory", inputs.PluginDirectory)
+	workflow.SetJobInput(dst, "plugin-version-suffix", inputs.PluginVersionSuffix)
 	workflow.SetJobInput(dst, "dist-artifacts-prefix", inputs.DistArtifactsPrefix)
 	workflow.SetJobInput(dst, "run-playwright", inputs.RunPlaywright)
 	workflow.SetJobInput(dst, "run-plugin-validator", inputs.RunPluginValidator)
