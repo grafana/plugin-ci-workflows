@@ -18,8 +18,13 @@ type logLine struct {
 
 	// Intercepted GHA commands
 
-	Command string            `json:"command,omitempty"`
-	Name    string            `json:"name,omitempty"`
+	Command string `json:"command,omitempty"`
+	Name    string `json:"name,omitempty"`
+
+	// GHA annotation command
 	Arg     string            `json:"arg,omitempty"`
 	KvPairs map[string]string `json:"kvPairs,omitempty"`
+
+	// GHA summary command
+	Content string `json:"content,omitempty"`
 }
