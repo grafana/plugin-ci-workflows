@@ -234,6 +234,8 @@ func WithMatrix(job string, matrix map[string][]string) TestingWorkflowOption {
 	}
 }
 
+// WithPullRequestTrigger is a TestingWorkflowOption that sets a pull_request trigger to the workflow.
+// This can be used to test workflows that respond to pull_request events.
 func WithPullRequestTrigger(branches []string) TestingWorkflowOption {
 	return func(t *TestingWorkflow) {
 		t.On = On{
@@ -256,6 +258,8 @@ func WithPullRequestTargetTrigger(branches []string) TestingWorkflowOption {
 	}
 }
 
+// WithWorkflowDispatchTrigger is a TestingWorkflowOption that sets a workflow_dispatch trigger to the workflow.
+// This can be used to test workflows that are manually triggered via the GitHub UI or API.
 func WithWorkflowDispatchTrigger(inputs map[string]WorkflowCallInput) TestingWorkflowOption {
 	return func(t *TestingWorkflow) {
 		t.On = On{

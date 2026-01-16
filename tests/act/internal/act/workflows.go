@@ -134,6 +134,8 @@ func NewPullRequestEventPayload(prBranch string, opts ...EventOption) Event {
 	}, opts...)
 }
 
+// NewWorkflowDispatchEventPayload creates a new EventPayload for a workflow_dispatch event
+// with the given inputs. This can be used to test workflows that are manually triggered.
 func NewWorkflowDispatchEventPayload(inputs map[string]any, opts ...EventOption) Event {
 	return NewEventPayload(EventKindWorkflowDispatch, map[string]any{
 		"inputs": inputs,

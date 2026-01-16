@@ -292,6 +292,7 @@ type WorkflowCallInput struct {
 	Options     []any                 `yaml:"options,omitempty"`
 }
 
+// WorkflowCallInputType represents the type of a workflow call input in GitHub Actions.
 type WorkflowCallInputType string
 
 const (
