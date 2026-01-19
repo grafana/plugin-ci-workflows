@@ -1,6 +1,6 @@
 module github.com/grafana/simple-backend
 
-go 1.25.0
+go 1.25
 
 require github.com/grafana/grafana-plugin-sdk-go v0.280.0
 
