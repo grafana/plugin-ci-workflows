@@ -32,7 +32,7 @@ func TestCacheWarmup_GoNodeVersions(t *testing.T) {
 
 	var examplesErr error
 	var scannedExamples int
-	err = filepath.WalkDir(filepath.Join("tests"), func(path string, d fs.DirEntry, err error) error {
+	walkErr := filepath.WalkDir(filepath.Join("tests"), func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -99,6 +99,7 @@ func TestCacheWarmup_GoNodeVersions(t *testing.T) {
 		}
 		return nil
 	})
+	require.NoError(t, walkErr, "error while walking directory")
 	require.NotZero(t, scannedExamples, "no examples found")
 	require.NoError(t, examplesErr, "some examples are not using the default Go or Node versions: this will cause issues with the act cache warmup.")
 }
