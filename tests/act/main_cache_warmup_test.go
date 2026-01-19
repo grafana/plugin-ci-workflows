@@ -87,9 +87,7 @@ func TestCacheWarmup_GoNodeVersions(t *testing.T) {
 			// Extract the Go version from the line
 			parts := strings.Split(line, " ")
 			require.Len(t, parts, 2, "expected 2 parts in go.mod for 'go' or 'toolchain' directive")
-			if len(parts) > 1 {
-				goVersion = parts[1]
-			}
+			goVersion = parts[1]
 
 			// Toolchain has higher priority, so if we find it, break immediately.
 			if isToolchain {
