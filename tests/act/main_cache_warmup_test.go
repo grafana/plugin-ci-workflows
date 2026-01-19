@@ -67,12 +67,15 @@ func TestCacheWarmup_GoNodeVersions(t *testing.T) {
 		if _, err := os.Stat(goModPath); os.IsNotExist(err) {
 			return nil
 		}
-		goModContent, err := os.ReadFile(goModPath)
+		f, err := os.Open(goModPath)
 		if err != nil {
 			return err
 		}
+		defer func() {
+			require.NoError(t, f.Close())
+		}()
 		var goVersion string
-		scanner := bufio.NewScanner(strings.NewReader(string(goModContent)))
+		scanner := bufio.NewScanner(f)
 		for scanner.Scan() {
 			line := scanner.Text()
 			isToolchain := strings.HasPrefix(line, "toolchain")
