@@ -94,7 +94,7 @@ jobs:
           ENVIRONMENT: ${{ env.ENVIRONMENT }}
 
       - name: Change plugin scope
-        uses: grafana/plugin-ci-workflows/actions/plugins/publish/change-plugin-scope@ci-cd-workflows/v5.1.0
+        uses: grafana/plugin-ci-workflows/actions/plugins/publish/change-plugin-scope@ci-cd-workflows/v6.0.0
         with:
           plugin-id: ${{ env.PLUGIN_ID }}
           plugin-version: ${{ inputs.plugin_version }}

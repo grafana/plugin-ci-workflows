@@ -1,6 +1,6 @@
 {
   "actions/plugins/publish/publish": "2.0.1",
-  ".github/workflows": "5.1.0",
+  ".github/workflows": "6.0.0",
   "actions/plugins/version-bump-changelog": "1.1.0",
   "actions/plugins/publish/change-plugin-scope": "1.0.0",
   "actions/plugins/release-please": "1.0.1",
