@@ -64,9 +64,7 @@ func NewWorkflow(opts ...WorkflowOption) (Workflow, error) {
 	testingWf := Workflow{workflow.NewTestingWorkflow("simple-ci", ciBaseWf)}
 
 	// Add the child workflow (ci) now, so further customization can be done on it via opts.
-	// Use the same UUID as the parent, so they have the same uuid in the file name
-	// and it is easier to correlate them.
-	childTestingWf := workflow.NewTestingWorkflow("ci", childBaseWf, workflow.WithUUID(testingWf.UUID()))
+	childTestingWf := workflow.NewTestingWorkflow("ci", childBaseWf)
 	testingWf.AddChild("ci", childTestingWf)
 
 	// Change the parent workflow so it calls the mocked child workflow

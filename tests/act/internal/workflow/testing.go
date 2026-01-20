@@ -161,12 +161,76 @@ func NewTestingWorkflow(baseName string, workflow BaseWorkflow, opts ...TestingW
 // TestingWorkflowOption defines a function type for configuring TestingWorkflow instances.
 type TestingWorkflowOption func(*TestingWorkflow)
 
-// WithUUID is a TestingWorkflowOption that sets a specific UUID for the TestingWorkflow.
-// This is useful for linking child workflows to their parents in tests.
-// If both have the same UUID, they will have predictable file names.
-func WithUUID(id uuid.UUID) TestingWorkflowOption {
-	return func(t *TestingWorkflow) {
-		t.uuid = id
+// WithOnlyOneJob keeps only the given job ID and its dependencies
+// in the workflow, removing all other jobs.
+// This can be used to run only a specific job for testing purposes.
+func WithOnlyOneJob(t *testing.T, jobID string) TestingWorkflowOption {
+	return func(twf *TestingWorkflow) {
+		onlyJob, ok := twf.BaseWorkflow.Jobs[jobID]
+		require.True(t, ok, fmt.Errorf("job %q not found", jobID))
+
+		// Remove all jobs except the given one and its dependencies
+		for k := range twf.BaseWorkflow.Jobs {
+			if k == jobID || slices.Contains(onlyJob.Needs, k) {
+				continue
+			}
+			delete(twf.BaseWorkflow.Jobs, k)
+		}
+	}
+}
+
+// WithoutJob removes the given job from the workflow.
+func WithoutJob(jobID string) TestingWorkflowOption {
+	return func(twf *TestingWorkflow) {
+		delete(twf.BaseWorkflow.Jobs, jobID)
+	}
+}
+
+// WithReplacedStep replaces the step with the given ID in the given job with the given step.
+// This can be used to replace a step with a mocked step for testing purposes.
+func WithReplacedStep(t *testing.T, jobID string, stepID string, step Step) TestingWorkflowOption {
+	return func(twf *TestingWorkflow) {
+		job, ok := twf.BaseWorkflow.Jobs[jobID]
+		require.True(t, ok, fmt.Errorf("job %q not found", jobID))
+		err := job.ReplaceStep(stepID, step)
+		require.NoError(t, err, "replace step %q in job %q", stepID, jobID)
+	}
+}
+
+// WithNoOpStep modifies the TestingWorkflow to replace the step with the given ID
+// in the job with the given name with a no-op step.
+// This can be used to skip steps that are not relevant for the test or that would fail otherwise.
+func WithNoOpStep(t *testing.T, jobID, stepID string) TestingWorkflowOption {
+	return func(twf *TestingWorkflow) {
+		step := twf.BaseWorkflow.Jobs[jobID].GetStep(stepID)
+		require.NotNilf(t, step, "step with id %q not found in job %q", stepID, jobID)
+		err := twf.BaseWorkflow.Jobs[jobID].ReplaceStep(stepID, NoOpStep(*step))
+		require.NoError(t, err)
+	}
+}
+
+// WithMatrix sets the matrix for the given job.
+// This can be used to test workflows that use a dynamic matrix.
+// act doesn't support dynamic matrix values, so this is a workaround to set the matrix for the given job.
+//
+// For example, if the matrix is:
+// ```
+//
+//	matrix:
+//	  environment: ${{ fromJson(needs.setup.outputs.environments) }}
+//
+// ```
+//
+// It will not be expanded correctly at runtime (it will be empty), so we need to set the matrix manually.
+// More information: https://github.com/go-gitea/gitea/issues/25179
+// TODO: remove this once act supports dynamic matrix values.
+func WithMatrix(job string, matrix map[string][]string) TestingWorkflowOption {
+	return func(twf *TestingWorkflow) {
+		matrixMap := make(map[string]any)
+		for k, v := range matrix {
+			matrixMap[k] = v
+		}
+		twf.BaseWorkflow.Jobs[job].Strategy.Matrix = matrixMap
 	}
 }
 
@@ -192,34 +256,6 @@ func WithRemoveAllStepsAfter(t *testing.T, jobID, stepID string) TestingWorkflow
 	}
 }
 
-// WithOnlyOneJob keeps only the given job ID and its dependencies
-// in the workflow, removing all other jobs.
-// This can be used to run only a specific job for testing purposes.
-func WithOnlyOneJob(t *testing.T, jobID string) TestingWorkflowOption {
-	return func(twf *TestingWorkflow) {
-		onlyJob, ok := twf.BaseWorkflow.Jobs[jobID]
-		require.True(t, ok, fmt.Errorf("job %q not found", jobID))
-
-		// Remove all jobs except the given one and its dependencies
-		for k := range twf.BaseWorkflow.Jobs {
-			if k == jobID || slices.Contains(onlyJob.Needs, k) {
-				continue
-			}
-			delete(twf.BaseWorkflow.Jobs, k)
-		}
-	}
-}
-
-// WithNoOpStep modifies the TestingWorkflow to replace the step with the given ID
-// in the job with the given name with a no-op step.
-// This can be used to skip steps that are not relevant for the test or that would fail otherwise.
-func WithNoOpStep(t *testing.T, jobID, stepID string) TestingWorkflowOption {
-	return func(twf *TestingWorkflow) {
-		err := twf.BaseWorkflow.Jobs[jobID].ReplaceStep(stepID, NoOpStep(stepID))
-		require.NoError(t, err)
-	}
-}
-
 // WithMockedGCS modifies the workflow to mock all GCS upload steps
 // (which use the google-github-actions/upload-cloud-storage action)
 // to instead copy files to a local folder mounted into the act container at /gcs.
@@ -230,10 +266,49 @@ func WithNoOpStep(t *testing.T, jobID, stepID string) TestingWorkflowOption {
 func WithMockedGCS(t *testing.T) TestingWorkflowOption {
 	return func(twf *TestingWorkflow) {
 		require.NoError(t, twf.MockAllStepsUsingAction(GCSLoginAction, func(step Step) (Step, error) {
-			return NoOpStep(step.ID), nil
+			return NoOpStep(step), nil
 		}))
 		require.NoError(t, twf.MockAllStepsUsingAction(GCSUploadAction, func(step Step) (Step, error) {
 			return MockGCSUploadStep(step)
 		}))
+	}
+}
+
+// WithMockedVault modifies the SimpleCD workflow to mock all Vault secrets steps
+// (which use the grafana/shared-workflows/actions/get-vault-secrets action)
+// to instead return the provided mock secrets.
+// This allows testing CD workflows without actually accessing Vault.
+//
+// The secrets map should contain the secret names as keys and their mock values.
+// For example:
+//
+//	secrets := VaultSecrets{
+//	    "GCOM_PUBLISH_TOKEN_DEV": "mock-dev-token",
+//	    "GCOM_PUBLISH_TOKEN_OPS": "mock-ops-token",
+//	    "GCOM_PUBLISH_TOKEN_PROD": "mock-prod-token",
+//	}
+func WithMockedVault(t *testing.T, secrets VaultSecrets) TestingWorkflowOption {
+	return func(twf *TestingWorkflow) {
+		err := twf.MockAllStepsUsingAction(VaultSecretsAction, func(step Step) (Step, error) {
+			return MockVaultSecretsStep(step, secrets)
+		})
+		require.NoError(t, err)
+	}
+}
+
+// WithMockedGitHubAppToken modifies the workflow to mock the GitHub app token creation step
+// (which use the actions/create-github-app-token action)
+// to instead return the provided mock token.
+// This allows testing GitHub app token creation functionality without actually creating a GitHub app.
+// Since GitHub app tokens are only used in trusted contexts, callers should most likely also use WithMockedWorkflowContext.
+func WithMockedGitHubAppToken(t *testing.T, token ...string) TestingWorkflowOption {
+	if len(token) == 0 {
+		token = []string{"MOCK_GITHUB_APP_TOKEN"}
+	}
+	return func(twf *TestingWorkflow) {
+		err := twf.MockAllStepsUsingAction(GitHubAppTokenAction, func(originalStep Step) (Step, error) {
+			return MockGitHubAppTokenStep(originalStep, token[0])
+		})
+		require.NoError(t, err)
 	}
 }

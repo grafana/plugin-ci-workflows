@@ -70,15 +70,21 @@ type Secrets map[string]string
 // Steps is the YAML representation of a list of GitHub Actions steps.
 type Steps []Step
 
+type Strategy struct {
+	FailFast *bool          `yaml:"fail-fast,omitempty"`
+	Matrix   map[string]any `yaml:"matrix,omitempty"`
+}
+
 // Job is the YAML representation of a GitHub Actions job.
 type Job struct {
 	Name string `yaml:"name,omitempty"`
 
 	If string `yaml:"if,omitempty"`
 
-	RunsOn  string            `yaml:"runs-on,omitempty"`
-	Needs   []string          `yaml:"needs,omitempty"`
-	Outputs map[string]string `yaml:"outputs,omitempty"`
+	RunsOn   string            `yaml:"runs-on,omitempty"`
+	Needs    []string          `yaml:"needs,omitempty"`
+	Outputs  map[string]string `yaml:"outputs,omitempty"`
+	Strategy Strategy          `yaml:"strategy,omitempty"`
 
 	Permissions Permissions `yaml:"permissions,omitempty"`
 
@@ -111,10 +117,14 @@ func (j *Job) ReplaceStepAtIndex(stepIndex int, steps ...Step) error {
 	}
 	originalStep := j.Steps[stepIndex]
 
-	// Preserve original step "If" condition if present
-	if originalStep.If != "" {
-		for i := range steps {
+	for i := range steps {
+		// Preserve original step "If" condition if present
+		if originalStep.If != "" {
 			steps[i].If = originalStep.If
+		}
+		// Preserve the original step name, if not provided in the new step
+		if steps[i].Name == "" {
+			steps[i].Name = originalStep.mockedName()
 		}
 	}
 
@@ -219,6 +229,23 @@ type Step struct {
 	WorkingDirectory string `yaml:"working-directory,omitempty"`
 
 	Env map[string]string `yaml:"env,omitempty"`
+}
+
+// nameOrID returns the name or ID of the step.
+// If the name is not empty, it returns the name.
+// If the name is empty, it returns the ID.
+// If the ID is empty, it returns an empty string.
+func (s *Step) nameOrID() string {
+	if s.Name != "" {
+		return s.Name
+	}
+	return s.ID
+}
+
+// mockedName returns the name of the step with the "(mocked)" suffix.
+// If the step has no name, it returns the ID with the "(mocked)" suffix.
+func (s *Step) mockedName() string {
+	return s.nameOrID() + " (mocked)"
 }
 
 // On is the YAML representation of GitHub Actions workflow triggers.
