@@ -161,20 +161,26 @@ func NewTestingWorkflow(baseName string, workflow BaseWorkflow, opts ...TestingW
 // TestingWorkflowOption defines a function type for configuring TestingWorkflow instances.
 type TestingWorkflowOption func(*TestingWorkflow)
 
-// WithOnlyOneJob keeps only the given job ID and its dependencies
-// in the workflow, removing all other jobs.
-// This can be used to run only a specific job for testing purposes.
-func WithOnlyOneJob(t *testing.T, jobID string) TestingWorkflowOption {
+// WithOnlyOneJob keeps only the given job ID, removing all other jobs.
+// If removeDependencies is true, it will also remove all dependencies of the given job.
+// You normally don't want to remove dependencies, otherwise the workflow might fail if it consumes the output of a dependency.
+func WithOnlyOneJob(t *testing.T, jobID string, removeDependencies bool) TestingWorkflowOption {
 	return func(twf *TestingWorkflow) {
 		onlyJob, ok := twf.BaseWorkflow.Jobs[jobID]
 		require.True(t, ok, fmt.Errorf("job %q not found", jobID))
 
-		// Remove all jobs except the given one and its dependencies
+		// Remove all jobs
 		for k := range twf.BaseWorkflow.Jobs {
-			if k == jobID || slices.Contains(onlyJob.Needs, k) {
+			// Do not remove the given job if it's a dependency and we don't want to remove dependencies
+			if k == jobID || (slices.Contains(onlyJob.Needs, k) && !removeDependencies) {
 				continue
 			}
 			delete(twf.BaseWorkflow.Jobs, k)
+		}
+		// Remove all dependencies from the only job left in the workflow, otherwise it won't run
+		// because it depends on a job that has been removed.
+		if removeDependencies {
+			onlyJob.Needs = nil
 		}
 	}
 }
