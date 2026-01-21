@@ -94,6 +94,12 @@ type WorkflowInputs struct {
 	PluginDirectory     *string
 	DistArtifactsPrefix *string
 
+	GoVersion           *string
+	NodeVersion         *string
+	GolangciLintVersion *string
+	MageVersion         *string
+	TrufflehogVersion   *string
+
 	RunPlaywright *bool
 
 	RunPluginValidator    *bool
@@ -110,10 +116,20 @@ type WorkflowInputs struct {
 func SetCIInputs(dst *workflow.Job, inputs WorkflowInputs) {
 	workflow.SetJobInput(dst, "plugin-directory", inputs.PluginDirectory)
 	workflow.SetJobInput(dst, "dist-artifacts-prefix", inputs.DistArtifactsPrefix)
+
+	workflow.SetJobInput(dst, "go-version", inputs.GoVersion)
+	workflow.SetJobInput(dst, "node-version", inputs.NodeVersion)
+	workflow.SetJobInput(dst, "golangci-lint-version", inputs.GolangciLintVersion)
+	workflow.SetJobInput(dst, "mage-version", inputs.MageVersion)
+	workflow.SetJobInput(dst, "trufflehog-version", inputs.TrufflehogVersion)
+
 	workflow.SetJobInput(dst, "run-playwright", inputs.RunPlaywright)
+
 	workflow.SetJobInput(dst, "run-plugin-validator", inputs.RunPluginValidator)
 	workflow.SetJobInput(dst, "plugin-validator-config", inputs.PluginValidatorConfig)
+
 	workflow.SetJobInput(dst, "run-trufflehog", inputs.RunTruffleHog)
+
 	workflow.SetJobInput(dst, "allow-unsigned", inputs.AllowUnsigned)
 	workflow.SetJobInput(dst, "testing", inputs.Testing)
 }
