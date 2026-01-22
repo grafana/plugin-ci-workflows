@@ -569,22 +569,27 @@ jobs:
           # Copy workspace to a new tempdir to avoid issues when mounting the folder when running with act
           TEMP_WORKSPACE_DIR=$(mktemp -d)
           cp -r "${PLUGIN_DIRECTORY}"/* "$TEMP_WORKSPACE_DIR/"
+          # Add validator config file
+          mv "$PLUGIN_VALIDATOR_CONFIG_PATH" "$TEMP_WORKSPACE_DIR/.plugin-validator.yaml"
+          # Remove node_modules so it's not scanned by the validator
+          rm -rf "$TEMP_WORKSPACE_DIR/node_modules"
 
           # Give a UUID to each container so multiple can be run in parallel when running with act
           UUID=$(cat /proc/sys/kernel/random/uuid)
 
-          # Do not run clamav because it takes too long
-          docker run --name="plugin-validator-${UUID}" --pull=always --platform=linux/amd64 \
-            -v "${PLUGIN_VALIDATOR_CONFIG_PATH}:/workspace/.plugin-validator.yaml:ro" \
-            -v "${TEMP_WORKSPACE_DIR}/dist-artifacts:/workspace/dist-artifacts:ro" \
-            -v "${TEMP_WORKSPACE_DIR}:/workspace" \
-            -v "/tmp/empty:/workspace/node_modules" \
+          # Create the validator container but don't start it yet.
+          # We cannot use a volume mount here if we are using act on Mac OS, so
+          # we need to copy the workspace to a new tempdir and then start the container.
+          # Also, do not run clamav because it takes too long
+          docker create --name="plugin-validator-${UUID}" --pull=always --platform=linux/amd64 \
             -e SKIP_CLAMAV=1 \
             grafana/plugin-validator-cli \
             -ghaOutput \
             -config=/workspace/.plugin-validator.yaml \
             -sourceCodeUri=file:///workspace \
             "/workspace/dist-artifacts/${UNIVERSAL_ZIP}"
+          docker cp "$TEMP_WORKSPACE_DIR" "plugin-validator-${UUID}:/workspace"
+          docker start -a "plugin-validator-${UUID}"
           EXIT_CODE=$(docker inspect "plugin-validator-${UUID}" --format='{{.State.ExitCode}}')
           docker rm "plugin-validator-${UUID}"
           exit "$EXIT_CODE"

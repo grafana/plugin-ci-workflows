@@ -244,8 +244,6 @@ jobs:
         run: ${{ steps.package-manager.outputs.execLocalCmd }} playwright test --config "${PLAYWRIGHT_CONFIG}"
         env:
           PLAYWRIGHT_CONFIG: ${{ inputs.playwright-config }}
-          GRAFANA_VERSION: ${{ matrix.GRAFANA_IMAGE.VERSION }}
-          GRAFANA_IMAGE: ${{ matrix.GRAFANA_IMAGE.NAME }}
         working-directory: ${{ inputs.plugin-directory }}
 
       - name: Upload artifacts
