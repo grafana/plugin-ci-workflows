@@ -85,8 +85,8 @@ func TestGCS(t *testing.T) {
 
 					// Assert files uploaded to GCS (commit hash)
 					anyZipFn := anyZipFileName(tc.id, tc.version)
-					commitBasePath := filepath.Join("integration-artifacts", tc.id, tc.version, "main", commitHash, tc.folder+"-dist-artifacts")
-					latestBasePath := filepath.Join("integration-artifacts", tc.id, tc.version, "main", "latest", tc.folder+"-dist-artifacts")
+					commitBasePath := filepath.Join("integration-artifacts", tc.id, tc.version, "main", commitHash)
+					latestBasePath := filepath.Join("integration-artifacts", tc.id, tc.version, "main", "latest")
 
 					// Expect commit hash any zip
 					expFiles := []string{filepath.Join(commitBasePath, anyZipFn)}
