@@ -24,7 +24,7 @@ on:
         description: |
           Comma-separated list of scopes for the plugin version in the catalog.
           Default is 'universal'.
-          Can also be set to 'grafana_cloud' or a list of grafana_cloud_org's or grafana_cloud_instance's like "grafana_cloud_org_{slug},grafana_cloud_org_{slug}" or "grafan_cloud_instance_{slug},grafan_cloud_instance_{slug}"
+          Can also be set to 'grafana_cloud' or a list of grafana_cloud_org's or grafana_cloud_instance's like "grafana_cloud_org_{slug_one},grafana_cloud_org_{slug_two}" or "grafana_cloud_instance_{slug_one},grafana_cloud_instance_{slug_two}"
           More information about available scopes can be found here https://enghub.grafana-ops.net/docs/default/component/grafana-plugins-platform/grafana-com/gcom-cli-cheat-sheet/#scoping
         required: false
         default: universal
@@ -366,6 +366,28 @@ on:
         type: string
         required: false
         default: ""
+
+    outputs:
+      # Same outputs as the CI workflow.
+      # Please refer to ci.yml for the output descriptions.
+      plugin:
+        value: ${{ jobs.ci.outputs.plugin }}
+      has-docs:
+        value: ${{ jobs.ci.outputs.has-docs }}
+      universal-zip:
+        value: ${{ jobs.ci.outputs.universal-zip }}
+      os-arch-zips:
+        value: ${{ jobs.ci.outputs.os-arch-zips }}
+      zips:
+        value: ${{ jobs.ci.outputs.zips }}
+      gcs-zip-urls-latest:
+        value: ${{ jobs.ci.outputs.gcs-zip-urls-latest }}
+      gcs-zip-urls-commit:
+        value: ${{ jobs.ci.outputs.gcs-zip-urls-commit }}
+      gcs-universal-zip-url-latest:
+        value: ${{ jobs.ci.outputs.gcs-universal-zip-url-latest }}
+      gcs-universal-zip-url-commit:
+        value: ${{ jobs.ci.outputs.gcs-universal-zip-url-commit }}
 
 concurrency:
   group: cd-${{ github.head_ref || github.run_id }}
