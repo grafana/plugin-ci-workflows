@@ -173,21 +173,17 @@ func TestCD_Argo(t *testing.T) {
 			// Argo should be triggered
 			// Verify the Argo Workflow trigger step received the expected inputs
 			require.Len(t, calls, 1, "expected exactly one Argo Workflow trigger call")
-
 			inputs := calls[0].Inputs
 			require.Equal(t, "grafana-plugins-cd", inputs["namespace"])
 			require.Equal(t, "grafana-plugins-deploy", inputs["workflow_template"])
+			// Verify the "parameters" input (new-line-separated key=value pairs that are then passed to the Argo Workflow)
 			argoInputs := make(map[string]string, len(tc.expArgoInputs))
 			for _, line := range strings.Split(inputs["parameters"].(string), "\n") {
-				parts := strings.SplitN(line, "=", 2)
-				if parts[0] == "" {
+				key, value, _ := strings.Cut(line, "=")
+				if key == "" {
 					continue
 				}
-				if len(parts) == 2 {
-					argoInputs[parts[0]] = parts[1]
-				} else {
-					argoInputs[parts[0]] = ""
-				}
+				argoInputs[key] = value
 			}
 			require.Equal(t, tc.expArgoInputs, argoInputs, "wrong argo inputs provided to argo workflow trigger step")
 
