@@ -191,4 +191,37 @@ func TestCD_Argo(t *testing.T) {
 			require.Contains(t, r.Summary[0], "**👉 You can follow the deployment [here](https://mock-argo-workflows.example.com/workflows/grafana-plugins-cd/mock-workflow-id)**")
 		})
 	}
+
+	t.Run("unsupported grafana cloud deployment type doesn't trigger argo", func(t *testing.T) {
+		t.Parallel()
+
+		runner, err := act.NewRunner(t)
+		require.NoError(t, err)
+		wf, err := cd.NewWorkflow(
+			cd.WithWorkflowInputs(cd.WorkflowInputs{
+				TriggerArgo:                workflow.Input(true),
+				GrafanaCloudDeploymentType: workflow.Input("foo bar baz"),
+				Environment:                workflow.Input("dev"),
+				AutoMergeEnvironments:      workflow.Input("dev"),
+				ArgoWorkflowSlackChannel:   workflow.Input("#some-slack-channel"),
+			}),
+			// Only run Argo Workflow trigger job, no CI or CD
+			cd.MutateCDWorkflow().With(
+				workflow.WithOnlyOneJob(t, "trigger-argo-workflow", false),
+				workflow.WithNoOpJobWithOutputs(t, "publish-to-catalog", map[string]string{}),
+				workflow.WithNoOpJobWithOutputs(t, "ci", map[string]string{
+					"plugin": `{"id": "simple-frontend", "version": "1.0.0"}`,
+				}),
+				workflow.WithNoOpJobWithOutputs(t, "upload-to-gcs-release", map[string]string{}),
+			),
+			cd.WithMockedArgoWorkflows(t, runner.Argo),
+		)
+		require.NoError(t, err)
+
+		r, err := runner.Run(wf, act.NewPushEventPayload("main"))
+		require.NoError(t, err)
+		require.False(t, r.Success, "workflow should fail")
+		require.Empty(t, runner.Argo.GetCalls(), "expected no Argo Workflow trigger calls")
+		require.Empty(t, r.Summary, "expected no summary")
+	})
 }
