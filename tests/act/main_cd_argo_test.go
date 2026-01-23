@@ -1,14 +1,12 @@
 package main
 
 import (
-	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/grafana/plugin-ci-workflows/tests/act/internal/act"
 	"github.com/grafana/plugin-ci-workflows/tests/act/internal/workflow"
 	"github.com/grafana/plugin-ci-workflows/tests/act/internal/workflow/cd"
-	"github.com/grafana/plugin-ci-workflows/tests/act/internal/workflow/ci"
 	"github.com/stretchr/testify/require"
 )
 
@@ -136,22 +134,20 @@ func TestCD_Argo(t *testing.T) {
 
 			runner, err := act.NewRunner(t)
 			require.NoError(t, err)
-			tc.inputs.CI = ci.WorkflowInputs{
-				PluginDirectory:     workflow.Input(filepath.Join("tests", "simple-frontend")),
-				DistArtifactsPrefix: workflow.Input("simple-frontend-"),
-			}
 			wf, err := cd.NewWorkflow(
 				cd.WithWorkflowInputs(tc.inputs),
 				// Only run Argo Workflow trigger job, no CI or CD
 				// Mock the CI output because the Argo Workflow trigger job needs its output.
 				cd.MutateCDWorkflow().With(
 					workflow.WithOnlyOneJob(t, "trigger-argo-workflow", false),
-					workflow.WithNoOpJobWithOutputs(t, "upload-to-gcs-release", map[string]string{}),
+					// Mock direct dependencies of trigger-argo-workflow:
 					workflow.WithNoOpJobWithOutputs(t, "publish-to-catalog", map[string]string{}),
 					workflow.WithNoOpJobWithOutputs(t, "ci", map[string]string{
 						// Simplified CI output for testing
 						"plugin": `{"id": "simple-frontend", "version": "1.0.0"}`,
 					}),
+					// Indirect dependency: mock it so it doesn't run.
+					workflow.WithNoOpJobWithOutputs(t, "upload-to-gcs-release", map[string]string{}),
 				),
 				// Mock Argo Workflow trigger using the runner's HTTPSpy
 				cd.WithMockedArgoWorkflows(t, runner.Argo),
