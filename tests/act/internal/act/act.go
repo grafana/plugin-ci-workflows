@@ -59,6 +59,10 @@ type Runner struct {
 	// GCOM is the GCOM API mock used during the workflow run.
 	GCOM *GCOM
 
+	// Argo is the Argo mock used during the workflow run.
+	// It records inputs from the mocked Argo Workflow trigger step.
+	Argo *HTTPSpy
+
 	// gitHubToken is the token used to authenticate with GitHub.
 	gitHubToken string
 
@@ -128,7 +132,10 @@ func NewRunner(t *testing.T, opts ...RunnerOption) (*Runner, error) {
 		t:           t,
 		uuid:        uuid.New(),
 		gitHubToken: ghToken,
-		GCOM:        newGCOM(t),
+		GCOM: newGCOM(t),
+		Argo: NewHTTPSpy(t, map[string]string{
+			"uri": "https://mock-argo-workflows.example.com/workflows/grafana-plugins-cd/mock-workflow-id",
+		}),
 	}
 	if err := r.checkExecutables(); err != nil {
 		return nil, err

@@ -18,6 +18,55 @@ const (
 	GitHubAppTokenAction = "actions/create-github-app-token"
 )
 
+// MockStepWithHTTPSpy creates a mocked step that POSTs the original step's inputs to an HTTPSpy server
+// and sets the response as step outputs.
+//
+// This is a generic function for mocking any action that uses HTTPSpy for recording inputs.
+// The inputs from originalStep.With are passed as environment variables so that GitHub Actions
+// expressions (e.g., ${{ needs.ci.outputs.something }}) are evaluated at runtime before being sent.
+//
+// The mock server should return a JSON object where each key-value pair becomes a step output.
+//
+// Parameters:
+//   - originalStep: The original step being mocked (used to extract inputs from With)
+//   - mockServerURL: The URL of the HTTPSpy server (use HTTPSpy.DockerAccessibleURL())
+func MockStepWithHTTPSpy(originalStep Step, mockServerURL string) (Step, error) {
+	// Pass each input as an environment variable so GitHub Actions expressions are evaluated at runtime.
+	// We use a prefix to namespace them and collect the keys to build JSON in bash.
+	const envPrefix = "HTTPSPY_INPUT_"
+	env := map[string]string{
+		"HTTPSPY_MOCK_SERVER_URL": mockServerURL,
+	}
+	var inputKeys []string
+	for key, value := range originalStep.With {
+		env[envPrefix+key] = fmt.Sprintf("%v", value)
+		inputKeys = append(inputKeys, key)
+	}
+
+	// Serialize input keys to JSON array so bash knows which env vars to read
+	inputKeysJSON, err := json.Marshal(inputKeys)
+	if err != nil {
+		return Step{}, fmt.Errorf("marshal input keys to json: %w", err)
+	}
+	env["HTTPSPY_INPUT_KEYS"] = string(inputKeysJSON)
+
+	// Build JSON from environment variables at runtime, then POST to mock server
+	return Step{
+		Run: Commands{
+			`echo "Mocking step with HTTPSpy"`,
+			// Build JSON object from env vars using jq
+			// For each key in HTTPSPY_INPUT_KEYS, read the corresponding HTTPSPY_INPUT_* env var
+			`INPUTS_JSON=$(echo "${HTTPSPY_INPUT_KEYS}" | jq -c 'reduce .[] as $key ({}; . + {($key): env["HTTPSPY_INPUT_" + $key]})')`,
+			// POST the inputs to the mock server and capture the JSON response
+			`MOCK_RESPONSE=$(curl -s -X POST -H "Content-Type: application/json" -d "${INPUTS_JSON}" "${HTTPSPY_MOCK_SERVER_URL}")`,
+			// Parse the JSON response and set each key as an output
+			`echo "${MOCK_RESPONSE}" | jq -r 'to_entries[] | "\(.key)=\(.value)"' >> "$GITHUB_OUTPUT"`,
+		}.String(),
+		Shell: "bash",
+		Env:   env,
+	}, nil
+}
+
 // MockOutputsStep returns a Step that only sets the given outputs and does nothing else.
 // This can be used to mock the outputs of a step for testing purposes, without executing its real implementation.
 func MockOutputsStep(outputs map[string]string) Step {
@@ -26,6 +75,11 @@ func MockOutputsStep(outputs map[string]string) Step {
 	for k, v := range outputs {
 		stepCommands = append(stepCommands, fmt.Sprintf(`echo "%s=${%s}" >> "$GITHUB_OUTPUT"`, k, k))
 		env[k] = v
+	}
+	// If we have no outputs, we must have something in "runs" otherwise the empty string
+	// will break the yaml file (missing "run" key).
+	if len(outputs) == 0 {
+		stepCommands = append(stepCommands, `echo "no outputs to set"`)
 	}
 	return Step{
 		Run:   stepCommands.String(),
@@ -308,25 +362,23 @@ func MockVaultSecretsStep(originalStep Step, secrets VaultSecrets) (Step, error)
 }
 
 // MockArgoWorkflowStep returns a Step that mocks the grafana/shared-workflows/actions/trigger-argo-workflow action.
-// Instead of actually triggering an Argo Workflow, it outputs a mock URI for the workflow.
+// Instead of actually triggering an Argo Workflow, it POSTs the original step's inputs to the mock server
+// and outputs the response (typically containing the workflow URI).
+//
 // The originalStep parameter is the original Argo Workflow trigger step to be mocked.
 // The original step must use the `grafana/shared-workflows/actions/trigger-argo-workflow` action.
 // If those conditions are not met, an error is returned.
 //
-// The mocked step outputs the `uri` output expected by subsequent steps.
-func MockArgoWorkflowStep(originalStep Step) (Step, error) {
-	// Make sure the original step is indeed an Argo Workflow trigger step
+// The mockServerURL parameter is the URL of the HTTPSpy server that will receive the inputs.
+// Use HTTPSpy.DockerAccessibleURL() to get a URL that works from inside act's Docker containers.
+//
+// The mocked step parses the JSON response from the mock server and sets each key as an output.
+// The inputs are evaluated at runtime (GitHub Actions expressions are resolved) before being sent.
+func MockArgoWorkflowStep(originalStep Step, mockServerURL string) (Step, error) {
 	if !strings.HasPrefix(originalStep.Uses, ArgoWorkflowAction) {
 		return Step{}, fmt.Errorf("cannot mock argo workflow for a step that uses %q action, must be %q", originalStep.Uses, ArgoWorkflowAction)
 	}
-
-	return Step{
-		Run: Commands{
-			`echo "Mocking Argo Workflow trigger step"`,
-			`echo "uri=https://mock-argo-workflows.example.com/workflows/grafana-plugins-cd/mock-workflow-id" >> "$GITHUB_OUTPUT"`,
-		}.String(),
-		Shell: "bash",
-	}, nil
+	return MockStepWithHTTPSpy(originalStep, mockServerURL)
 }
 
 // MockGitHubAppTokenStep returns a Step that mocks the actions/create-github-app-token action.

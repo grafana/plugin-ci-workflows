@@ -486,7 +486,7 @@ func TestCD_Setup(t *testing.T) {
 						cd.WithWorkflowInputs(tc.inputs),
 						// Only run the setup job, not CI or the rest of CD.
 						cd.MutateCDWorkflow().With(
-							workflow.WithOnlyOneJob(t, "setup"),
+							workflow.WithOnlyOneJob(t, "setup", false),
 						),
 					}
 					// Adjust the testing workflow depending on the trigger event, otherwise act doesn't run it
