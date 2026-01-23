@@ -19,11 +19,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const (
-	// defaultGoVersion is the default Go version used by ci.yml when no go.mod is present.
-	defaultGoVersion   = "1.25"
-	defaultNodeVersion = "24"
-)
+var goVersionRegex = regexp.MustCompile(`^go\s+(\d+\.\d+)`)
 
 // readNodeMajorFromNvmrc reads the major Node.js version from an .nvmrc file.
 // It returns the major version string (e.g., "24").
@@ -45,7 +41,6 @@ func readGoVersionFromGoMod(path string) (string, error) {
 	defer func() { _ = f.Close() }()
 
 	// Match "go X.Y" or "go X.Y.Z" lines
-	goVersionRegex := regexp.MustCompile(`^go\s+(\d+\.\d+)`)
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
 		line := scanner.Text()
