@@ -26,7 +26,14 @@ echo "[$1] Preparing mockdata (dist)"
 cd "$(dirname "$0")/.."
 cd tests/$1
 
-nvm use
+if [ -f .nvmrc ]; then
+    nvm use
+    echo "Using Node version: $(node -v)"
+else
+    echo "No .nvmrc file found, using default Node version from simple-frontend testdata"
+    nvm use $(cat ../simple-frontend/.nvmrc)
+fi
+
 echo "Using Node version: $(node -v)"
 echo "Using Package Manager: $(pm)"
 
