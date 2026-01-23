@@ -3,7 +3,6 @@ package act
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -22,6 +21,8 @@ type SpyCallInputs struct {
 //
 // This is useful for mocking actions that run inside act's Docker containers,
 // which cannot directly communicate with the Go test process.
+//
+// HTTPSpy and its methods are safe for concurrent use.
 type HTTPSpy struct {
 	t       *testing.T
 	server  *httptest.Server
@@ -75,21 +76,12 @@ func NewHTTPSpy(t *testing.T, outputs map[string]string) *HTTPSpy {
 // handleRequest handles incoming POST requests, recording the JSON body as inputs
 // and returning the configured outputs as JSON.
 func (s *HTTPSpy) handleRequest(w http.ResponseWriter, r *http.Request) {
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		s.t.Logf("HTTPSpy: failed to read request body: %v", err)
+	defer r.Body.Close()
+	var inputs map[string]any
+	if err := json.NewDecoder(r.Body).Decode(&inputs); err != nil {
+		s.t.Logf("HTTPSpy: failed to parse JSON body: %v", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
-	}
-	defer r.Body.Close()
-
-	var inputs map[string]any
-	if len(body) > 0 {
-		if err := json.Unmarshal(body, &inputs); err != nil {
-			s.t.Logf("HTTPSpy: failed to parse JSON body: %v", err)
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
 	}
 
 	s.recordCall(SpyCallInputs{Inputs: inputs})
@@ -107,7 +99,7 @@ func (s *HTTPSpy) recordCall(inputs SpyCallInputs) {
 }
 
 // GetCalls returns all recorded calls.
-// This method is thread-safe.
+// This method is safe for concurrent use.
 func (s *HTTPSpy) GetCalls() []SpyCallInputs {
 	s.mux.Lock()
 	defer s.mux.Unlock()
@@ -118,7 +110,7 @@ func (s *HTTPSpy) GetCalls() []SpyCallInputs {
 }
 
 // Reset clears all recorded calls.
-// This method is thread-safe.
+// This method is safe for concurrent use.
 func (s *HTTPSpy) Reset() {
 	s.mux.Lock()
 	defer s.mux.Unlock()
