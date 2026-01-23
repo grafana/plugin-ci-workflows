@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.1.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v6.0.0...ci-cd-workflows/v6.1.0) (2026-01-22)
+
+
+### 🎉 Features
+
+* **cd:** export ci outputs in cd job ([#518](https://github.com/grafana/plugin-ci-workflows/issues/518)) ([ce2d1bb](https://github.com/grafana/plugin-ci-workflows/commit/ce2d1bb8737d7fef78d2c3e7889907b3e34df36b))
+
 ## [6.0.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v5.1.0...ci-cd-workflows/v6.0.0) (2026-01-19)
 
 

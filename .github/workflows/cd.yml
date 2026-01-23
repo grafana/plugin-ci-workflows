@@ -24,7 +24,7 @@ on:
         description: |
           Comma-separated list of scopes for the plugin version in the catalog.
           Default is 'universal'.
-          Can also be set to 'grafana_cloud' or a list of grafana_cloud_org's or grafana_cloud_instance's like "grafana_cloud_org_{slug},grafana_cloud_org_{slug}" or "grafan_cloud_instance_{slug},grafan_cloud_instance_{slug}"
+          Can also be set to 'grafana_cloud' or a list of grafana_cloud_org's or grafana_cloud_instance's like "grafana_cloud_org_{slug_one},grafana_cloud_org_{slug_two}" or "grafana_cloud_instance_{slug_one},grafana_cloud_instance_{slug_two}"
           More information about available scopes can be found here https://enghub.grafana-ops.net/docs/default/component/grafana-plugins-platform/grafana-com/gcom-cli-cheat-sheet/#scoping
         required: false
         default: universal
@@ -367,6 +367,28 @@ on:
         required: false
         default: ""
 
+    outputs:
+      # Same outputs as the CI workflow.
+      # Please refer to ci.yml for the output descriptions.
+      plugin:
+        value: ${{ jobs.ci.outputs.plugin }}
+      has-docs:
+        value: ${{ jobs.ci.outputs.has-docs }}
+      universal-zip:
+        value: ${{ jobs.ci.outputs.universal-zip }}
+      os-arch-zips:
+        value: ${{ jobs.ci.outputs.os-arch-zips }}
+      zips:
+        value: ${{ jobs.ci.outputs.zips }}
+      gcs-zip-urls-latest:
+        value: ${{ jobs.ci.outputs.gcs-zip-urls-latest }}
+      gcs-zip-urls-commit:
+        value: ${{ jobs.ci.outputs.gcs-zip-urls-commit }}
+      gcs-universal-zip-url-latest:
+        value: ${{ jobs.ci.outputs.gcs-universal-zip-url-latest }}
+      gcs-universal-zip-url-commit:
+        value: ${{ jobs.ci.outputs.gcs-universal-zip-url-commit }}
+
 concurrency:
   group: cd-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
@@ -429,6 +451,9 @@ jobs:
             const PLUGIN_VERSION_SUFFIX = getInput('PLUGIN_VERSION_SUFFIX', '');
             const COMMIT_SHA = getInput('COMMIT_SHA');
             const PLUGIN_DIRECTORY = getInput('PLUGIN_DIRECTORY');
+
+            const ACT = process.env['ACT'] === 'true';
+            const ACT_MOCK_PRS = getInput('ACT_MOCK_PRS');
 
             // Determine if the reference is a release one (allowed to publish to prod)
             let isReleaseReference = false;
@@ -528,11 +553,21 @@ jobs:
 
               // Block prod deployments if the branch has an open PR, unless explicitly allowed
               if (!ALLOW_PUBLISHING_PRS_TO_PROD) {
-                const { data: pullRequests } = await github.rest.pulls.list({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  head: `${context.repo.owner}:${BRANCH}`,
-                });
+                let pullRequests = [];
+                if (ACT && ACT_MOCK_PRS) {
+                  // Mock data for act
+                  console.log(`Mocking pull requests for act: ${ACT_MOCK_PRS}`);
+                  pullRequests = JSON.parse(ACT_MOCK_PRS);
+                  console.log(`Pull requests: ${JSON.stringify(pullRequests)}`);
+                } else if (!ACT) {
+                  // Use real GitHub API
+                  const { data } = await github.rest.pulls.list({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    head: `${context.repo.owner}:${BRANCH}`,
+                  });
+                  pullRequests = data;
+                }
                 if (pullRequests.length > 0 && pullRequests[0].merged_at === null) {
                   core.setFailed(
                     `The branch '${BRANCH}' is a release branch but it has an open PR. ` +
@@ -559,6 +594,8 @@ jobs:
           COMMIT_SHA: ${{ steps.checkout-specified-branch.outputs.commit }}
           PLUGIN_VERSION_SUFFIX: ${{ inputs.plugin-version-suffix }}
           PLUGIN_DIRECTORY: ${{ inputs.plugin-directory }}
+          # ACT TESTING ONLY: used for mocking GH API PR response in act tests.
+          ACT_MOCK_PRS: ""
 
   ci:
     name: CI

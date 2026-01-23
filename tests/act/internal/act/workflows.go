@@ -19,6 +19,7 @@ const (
 	EventKindPush              EventKind = "push"
 	EventKindPullRequest       EventKind = "pull_request"
 	EventKindPullRequestTarget EventKind = "pull_request_target"
+	EventKindWorkflowDispatch  EventKind = "workflow_dispatch"
 )
 
 // Event represents the event with a name and payload to pass to act.
@@ -130,6 +131,14 @@ func NewPullRequestEventPayload(prBranch string, opts ...EventOption) Event {
 				"ref": "main",
 			},
 		},
+	}, opts...)
+}
+
+// NewWorkflowDispatchEventPayload creates a new EventPayload for a workflow_dispatch event
+// with the given inputs. This can be used to test workflows that are manually triggered.
+func NewWorkflowDispatchEventPayload(inputs map[string]any, opts ...EventOption) Event {
+	return NewEventPayload(EventKindWorkflowDispatch, map[string]any{
+		"inputs": inputs,
 	}, opts...)
 }
 
