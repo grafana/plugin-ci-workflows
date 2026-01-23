@@ -76,7 +76,7 @@ func NewHTTPSpy(t *testing.T, outputs map[string]string) *HTTPSpy {
 // handleRequest handles incoming POST requests, recording the JSON body as inputs
 // and returning the configured outputs as JSON.
 func (s *HTTPSpy) handleRequest(w http.ResponseWriter, r *http.Request) {
-	defer r.Body.Close()
+	defer func() { _ = r.Body.Close() }()
 	var inputs map[string]any
 	if err := json.NewDecoder(r.Body).Decode(&inputs); err != nil {
 		s.t.Logf("HTTPSpy: failed to parse JSON body: %v", err)
