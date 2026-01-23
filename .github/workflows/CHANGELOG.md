@@ -1,5 +1,122 @@
 # Changelog
 
+## [6.1.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v6.0.0...ci-cd-workflows/v6.1.0) (2026-01-22)
+
+
+### 🎉 Features
+
+* **cd:** export ci outputs in cd job ([#518](https://github.com/grafana/plugin-ci-workflows/issues/518)) ([ce2d1bb](https://github.com/grafana/plugin-ci-workflows/commit/ce2d1bb8737d7fef78d2c3e7889907b3e34df36b))
+
+## [6.0.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v5.1.0...ci-cd-workflows/v6.0.0) (2026-01-19)
+
+
+### ⚠ BREAKING CHANGES
+
+* **playwright:** remove version and image arguments ([#507](https://github.com/grafana/plugin-ci-workflows/issues/507))
+* **cd:** allow releasing to prod from non-main branches ([#378](https://github.com/grafana/plugin-ci-workflows/issues/378))
+
+### 🎉 Features
+
+* **cd:** allow releasing to prod from non-main branches ([#378](https://github.com/grafana/plugin-ci-workflows/issues/378)) ([e1cf5f6](https://github.com/grafana/plugin-ci-workflows/commit/e1cf5f6083704fd837f4ec11761dd397b74f0929))
+* **ci:** add warning when ci and cd workflows are not on the same reference ([#492](https://github.com/grafana/plugin-ci-workflows/issues/492)) ([4e9ca04](https://github.com/grafana/plugin-ci-workflows/commit/4e9ca04ed0b13a33baf41d6cd53ce6fedb8cf683))
+* **ci:** support react image in e2e matrix ([#496](https://github.com/grafana/plugin-ci-workflows/issues/496)) ([6d8cb8c](https://github.com/grafana/plugin-ci-workflows/commit/6d8cb8c5240cc11619c221beb201ee07e5ee855c))
+* **playwright:** remove version and image arguments ([#507](https://github.com/grafana/plugin-ci-workflows/issues/507)) ([f70e822](https://github.com/grafana/plugin-ci-workflows/commit/f70e82266068fbe7cdfa97a5120d4e616ab1275f))
+
+
+### ✅ Tests
+
+* **act:** add gcom mock, cd.yml changes for testing ([#501](https://github.com/grafana/plugin-ci-workflows/issues/501)) ([e3f1779](https://github.com/grafana/plugin-ci-workflows/commit/e3f1779be66d8a2c7051adb0a42beb73184c5bea))
+* **act:** fix validator tests ([#506](https://github.com/grafana/plugin-ci-workflows/issues/506)) ([3c93dda](https://github.com/grafana/plugin-ci-workflows/commit/3c93dda78df9f6ac587e2c7e116ac7b1e04627a3))
+
+
+### 🔧 Chores
+
+* **ci:** run golangci-lint on internal go packages ([#485](https://github.com/grafana/plugin-ci-workflows/issues/485)) ([303148f](https://github.com/grafana/plugin-ci-workflows/commit/303148fcc64f3ecbca42d2eda4142dceafa2296b))
+* **deps:** update actions/attest-build-provenance action to v3.1.0 ([#484](https://github.com/grafana/plugin-ci-workflows/issues/484)) ([ba9c56e](https://github.com/grafana/plugin-ci-workflows/commit/ba9c56e2992bc28da40bce896349d7122c03e3f1))
+* **deps:** update actions/cache action to v5 ([#481](https://github.com/grafana/plugin-ci-workflows/issues/481)) ([3eaee5a](https://github.com/grafana/plugin-ci-workflows/commit/3eaee5a68d81c66037d8ba723d4070cb0e1be850))
+* **deps:** update stefanzweifel/git-auto-commit-action action to v7.1.0 ([#483](https://github.com/grafana/plugin-ci-workflows/issues/483)) ([f9a22aa](https://github.com/grafana/plugin-ci-workflows/commit/f9a22aa89487aa54a299a0c3b1e59e0832b7a0b9))
+* **deps:** update step-security/harden-runner action to v2.14.0 ([#477](https://github.com/grafana/plugin-ci-workflows/issues/477)) ([cdab179](https://github.com/grafana/plugin-ci-workflows/commit/cdab179fe05abb011a6b236c45426d4c6004f8af))
+
+## [5.1.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v5.0.0...ci-cd-workflows/v5.1.0) (2026-01-07)
+
+
+### 🎉 Features
+
+* **ci:** setup Go version from go.mod if possible ([#465](https://github.com/grafana/plugin-ci-workflows/issues/465)) ([5d5ab0a](https://github.com/grafana/plugin-ci-workflows/commit/5d5ab0a5fddf3b9ab538e5207a996d1fee8f908a))
+
+
+### 🐛 Bug Fixes
+
+* **tests:** fix act checkout in pull_request events ([#463](https://github.com/grafana/plugin-ci-workflows/issues/463)) ([56388a7](https://github.com/grafana/plugin-ci-workflows/commit/56388a7772a3a4f35fe67f54b77598a38ad30d9c))
+
+
+### ⚡ Performance Improvements
+
+* **ci:** cache mage, Trufflehog and golangci-lint binaries ([#467](https://github.com/grafana/plugin-ci-workflows/issues/467)) ([b736834](https://github.com/grafana/plugin-ci-workflows/commit/b73683467666c8a40cf2f475bec1ccfa77142d3a))
+
+
+### ✅ Tests
+
+* **act:** add plugin-validator tests ([#457](https://github.com/grafana/plugin-ci-workflows/issues/457)) ([82db8bf](https://github.com/grafana/plugin-ci-workflows/commit/82db8bf61eeea38e68bad0d74262676f0cf6237d))
+
+
+### 🔧 Chores
+
+* **deps:** update actions/create-github-app-token action to v2.2.1 ([#475](https://github.com/grafana/plugin-ci-workflows/issues/475)) ([eeaa07a](https://github.com/grafana/plugin-ci-workflows/commit/eeaa07abac7139e34586f25eba499b819d6b09ea))
+* **deps:** update actions/setup-node action to v6 ([#362](https://github.com/grafana/plugin-ci-workflows/issues/362)) ([69022ab](https://github.com/grafana/plugin-ci-workflows/commit/69022ab90ecdfe03890fa825bb3337d9625aac4f))
+* **deps:** update peter-evans/create-pull-request action to v8 ([#478](https://github.com/grafana/plugin-ci-workflows/issues/478)) ([8f4d6ea](https://github.com/grafana/plugin-ci-workflows/commit/8f4d6ea8d1cf3dbe4c7fffd951765b3ec40a0f53))
+* **main:** release plugins-frontend-e2e-against-stack 1.0.1 ([#432](https://github.com/grafana/plugin-ci-workflows/issues/432)) ([d3ca365](https://github.com/grafana/plugin-ci-workflows/commit/d3ca3655e308cd68c085f42910760aa01e726b44))
+
+## [5.0.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v4.3.0...ci-cd-workflows/v5.0.0) (2025-12-17)
+
+
+### ⚠ BREAKING CHANGES
+
+* **ci:** `universal-zip-url-*` outputs are now URLs rather than paths
+* **deps:** Update default Node version to 24 LTS
+* **deps:** Update default golangci-lint version to 2.7.2
+* **deps:** Update default Go version to 1.25
+* **ci:** use pm-detect to understand nodejs package manager ([#204](https://github.com/grafana/plugin-ci-workflows/issues/204))
+
+### 🎉 Features
+
+* **ci:** use pm-detect to understand nodejs package manager ([#204](https://github.com/grafana/plugin-ci-workflows/issues/204)) ([e739fbe](https://github.com/grafana/plugin-ci-workflows/commit/e739fbe50419be210cc2577abf54bfe6bf31903d))
+
+
+### 🐛 Bug Fixes
+
+* **ci:** `universal-zip-url-*` outputs are now URLs rather than paths ([b5e3ec2](https://github.com/grafana/plugin-ci-workflows/commit/b5e3ec296c7478c55c2c5a826f7c23b2b805463b))
+* **ci:** do not copy backend into the "dist" folder ([b5e3ec2](https://github.com/grafana/plugin-ci-workflows/commit/b5e3ec296c7478c55c2c5a826f7c23b2b805463b))
+* use local exec for playwright test ([#451](https://github.com/grafana/plugin-ci-workflows/issues/451)) ([b27d62d](https://github.com/grafana/plugin-ci-workflows/commit/b27d62de5de920e3a1755b645f02a515b4c9535d))
+
+
+### ✅ Tests
+
+* **act:** add pre-generated dist mockdata for test plugins ([#417](https://github.com/grafana/plugin-ci-workflows/issues/417)) ([cb33db6](https://github.com/grafana/plugin-ci-workflows/commit/cb33db657c080f4a5d60c6ac5edbfe67fec25f30))
+* add concurrency to pr-checks-test-ci workflow ([630b056](https://github.com/grafana/plugin-ci-workflows/commit/630b0567a932b5c1595d7fee1db70dd7cb1ba746))
+* pin actions in pr-checks-test-ci workflow ([630b056](https://github.com/grafana/plugin-ci-workflows/commit/630b0567a932b5c1595d7fee1db70dd7cb1ba746))
+* run smoke tests with act ([#389](https://github.com/grafana/plugin-ci-workflows/issues/389)) ([0f2f7c6](https://github.com/grafana/plugin-ci-workflows/commit/0f2f7c6fc427418a4367065129b398fae3e16831))
+* use local repository for release please manifest tag when running act ([630b056](https://github.com/grafana/plugin-ci-workflows/commit/630b0567a932b5c1595d7fee1db70dd7cb1ba746))
+
+
+### 🔧 Chores
+
+* build and package plugin in its directory, better support for artifact prefix ([#438](https://github.com/grafana/plugin-ci-workflows/issues/438)) ([dbbcc52](https://github.com/grafana/plugin-ci-workflows/commit/dbbcc5276e91ee2be918cc9de9792f07b72deb50))
+* **deps:** update actions/checkout action to v5.0.1 ([#413](https://github.com/grafana/plugin-ci-workflows/issues/413)) ([8c591cd](https://github.com/grafana/plugin-ci-workflows/commit/8c591cdfe41c0ead6a235dcdb51f5e74af15642d))
+* **deps:** update actions/checkout action to v6 ([#437](https://github.com/grafana/plugin-ci-workflows/issues/437)) ([949a63c](https://github.com/grafana/plugin-ci-workflows/commit/949a63c075e5e00352872d5447919635da59c2f2))
+* **deps:** update actions/checkout action to v6.0.1 ([#455](https://github.com/grafana/plugin-ci-workflows/issues/455)) ([aec5016](https://github.com/grafana/plugin-ci-workflows/commit/aec5016c9a2acddc606cb728b5abfbc53eebe6e3))
+* **deps:** update actions/create-github-app-token action to v2.2.0 ([#435](https://github.com/grafana/plugin-ci-workflows/issues/435)) ([5b2407c](https://github.com/grafana/plugin-ci-workflows/commit/5b2407c17df02b33f6c4ff83de1ec363d4f44fe7))
+* **deps:** update actions/setup-go action to v6.1.0 ([#436](https://github.com/grafana/plugin-ci-workflows/issues/436)) ([5f5e089](https://github.com/grafana/plugin-ci-workflows/commit/5f5e0894940c7ebcd5f0492c0cc7ead07ce0cd84))
+* **deps:** Update default Go version to 1.25 ([b1f1b22](https://github.com/grafana/plugin-ci-workflows/commit/b1f1b2282f0c3d7900adc515aada375ba1ef7c45))
+* **deps:** Update default golangci-lint version to 2.7.2 ([b1f1b22](https://github.com/grafana/plugin-ci-workflows/commit/b1f1b2282f0c3d7900adc515aada375ba1ef7c45))
+* **deps:** Update default Node version to 24 LTS ([b1f1b22](https://github.com/grafana/plugin-ci-workflows/commit/b1f1b2282f0c3d7900adc515aada375ba1ef7c45))
+* **deps:** update grafana/shared-workflows/trigger-argo-workflow action to v1.2.1 ([#433](https://github.com/grafana/plugin-ci-workflows/issues/433)) ([6c260c0](https://github.com/grafana/plugin-ci-workflows/commit/6c260c01bda5a3f3b4ae0aa46e54937d1acaaf5a))
+* **deps:** update peter-evans/create-pull-request action to v7.0.9 ([#434](https://github.com/grafana/plugin-ci-workflows/issues/434)) ([55c4108](https://github.com/grafana/plugin-ci-workflows/commit/55c4108fe05536f88f323434025fe5332f2f3652))
+* **deps:** update pnpm/action-setup action to v4.2.0 ([#450](https://github.com/grafana/plugin-ci-workflows/issues/450)) ([5fbf8e6](https://github.com/grafana/plugin-ci-workflows/commit/5fbf8e65a1b34e114507ad501fceff69f9818c8f))
+* **deps:** update softprops/action-gh-release action to v2.5.0 ([#452](https://github.com/grafana/plugin-ci-workflows/issues/452)) ([48548e8](https://github.com/grafana/plugin-ci-workflows/commit/48548e8674b4543e59af0d4da4025e35b3d858f1))
+* **deps:** update step-security/harden-runner action to v2.13.3 ([#456](https://github.com/grafana/plugin-ci-workflows/issues/456)) ([fccf74b](https://github.com/grafana/plugin-ci-workflows/commit/fccf74bf9e1223cc0ab9b0d084662850cd7d4b92))
+* **main:** release plugins-frontend-e2e-against-stack 1.0.0 ([#430](https://github.com/grafana/plugin-ci-workflows/issues/430)) ([6443ba2](https://github.com/grafana/plugin-ci-workflows/commit/6443ba2a59ec8d75208cc5c04a0e47eedcda583d))
+
 ## [4.3.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v4.2.0...ci-cd-workflows/v4.3.0) (2025-11-26)
 
 

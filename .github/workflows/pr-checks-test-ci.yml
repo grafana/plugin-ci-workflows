@@ -4,6 +4,10 @@ on:
   pull_request:
     branches:
       - main
+    paths:
+      - "tests/**"
+      - ".github/workflows/pr-checks-test-ci.yml"
+      - ".github/workflows/ci.yml"
   push:
     branches:
       - main
@@ -25,13 +29,14 @@ permissions:
 jobs:
   act-tests:
     name: Act tests
-    runs-on: ubuntu-x64-large
+    runs-on: ubuntu-x64-xlarge-io
     steps:
       - name: Checkout
-        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           ref: ${{ github.event.pull_request.head.sha || github.ref }}
           fetch-depth: 0
+          lfs: true
 
       # This is needed otherwise actions/checkout puts the repo in detached head
       # and act complains it cannot determine to which branch the current commit belongs to.
@@ -51,7 +56,7 @@ jobs:
         shell: bash
 
       - name: Setup Go
-        uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
+        uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
         with:
           go-version-file: tests/act/go.mod
           cache-dependency-path: tests/act/go.sum
@@ -60,7 +65,7 @@ jobs:
 
       - name: Run act tests
         run: |
-          go test -v
+          go test -v -timeout 1h
         working-directory: tests/act
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

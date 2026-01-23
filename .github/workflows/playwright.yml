@@ -25,6 +25,10 @@ on:
         default: false
         required: false
         type: boolean
+      skip-grafana-react-19-preview-image:
+        default: false
+        required: false
+        type: boolean
       version-resolver-type:
         required: false
         type: string
@@ -83,15 +87,16 @@ jobs:
       matrix: ${{ steps.resolve-versions.outputs.matrix }}
     steps:
       - name: Checkout
-        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           persist-credentials: false
 
       - name: Resolve Grafana E2E versions
         id: resolve-versions
-        uses: grafana/plugin-actions/e2e-version@e2e-version/v1.1.2
+        uses: grafana/plugin-actions/e2e-version@e2e-version/v1.2.0
         with:
           skip-grafana-dev-image: ${{ inputs.skip-grafana-dev-image }}
+          skip-grafana-react-19-preview-image: ${{ inputs.skip-grafana-react-19-preview-image }}
           version-resolver-type: ${{ inputs.version-resolver-type }}
           grafana-dependency: ${{ inputs.grafana-dependency }}
 
@@ -105,15 +110,29 @@ jobs:
     name: e2e ${{ matrix.GRAFANA_IMAGE.name }}@${{ matrix.GRAFANA_IMAGE.VERSION }}
     runs-on: ubuntu-x64-large
     steps:
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           persist-credentials: false
 
+      - name: Detect package manager
+        id: package-manager
+        uses: grafana/plugin-actions/package-manager-detect@package-manager-detect/v1.0.1
+        with:
+          working-directory: ${{ inputs.plugin-directory }}
+
+      - name: Install pnpm
+        if: steps.package-manager.outputs.name == 'pnpm'
+        uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4.2.0
+        with:
+          version: ${{ steps.package-manager.outputs.version }}
+
       - name: Setup Node.js environment
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
         with:
           node-version: ${{ inputs.node-version }}
           node-version-file: ${{ inputs.plugin-directory }}/.nvmrc
+          cache: ${{ steps.package-manager.outputs.name }}
+          cache-dependency-path: ${{ steps.package-manager.outputs.lockFilePath }}
 
       - name: Login to Google Cloud
         if: inputs.npm-registry-auth == true
@@ -130,13 +149,7 @@ jobs:
         run: GOOGLE_APPLICATION_CREDENTIALS=${{ env.GOOGLE_APPLICATION_CREDENTIALS }} npx google-artifactregistry-auth --credential-config ./.npmrc
 
       - name: Install npm dependencies
-        # TODO: find a better way
-        run: |
-          if [ -f yarn.lock ]; then
-            yarn install --frozen-lockfile
-          else
-            npm ci
-          fi
+        run: ${{ steps.package-manager.outputs.frozenInstallCmd }}
         shell: bash
         working-directory: ${{ inputs.plugin-directory }}
 
@@ -166,13 +179,14 @@ jobs:
 
       - name: Cache Playwright
         id: cache
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ steps.version.outputs.version }}
 
       - name: Install Playwright Browsers
-        run: npx playwright install --with-deps chromium
+        run: ${{ steps.package-manager.outputs.execLocalCmd }} playwright install --with-deps chromium
+        shell: bash
 
       - name: Download GitHub artifact
         uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
@@ -227,11 +241,9 @@ jobs:
 
       - name: Run Playwright tests
         id: run-tests
-        run: npx playwright test --config "${PLAYWRIGHT_CONFIG}"
+        run: ${{ steps.package-manager.outputs.execLocalCmd }} playwright test --config "${PLAYWRIGHT_CONFIG}"
         env:
           PLAYWRIGHT_CONFIG: ${{ inputs.playwright-config }}
-          GRAFANA_VERSION: ${{ matrix.GRAFANA_IMAGE.VERSION }}
-          GRAFANA_IMAGE: ${{ matrix.GRAFANA_IMAGE.NAME }}
         working-directory: ${{ inputs.plugin-directory }}
 
       - name: Upload artifacts

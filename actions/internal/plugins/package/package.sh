@@ -101,18 +101,23 @@ fi
 exe_basename=$(basename $exe)
 for file in $(find "$backend_folder" -type f -name "${exe_basename}_*"); do
     # Extract os+arch from the file name
-    os_arch=$(echo $(basename $file) | sed -E "s|${exe_basename}_(\w+)(.exe)?|\1|")
+    os_arch=$(echo $(basename $file) | sed -E "s|${exe_basename}_([a-zA-Z0-9_]+)(.exe)?|\1|")
 
     # Temporary folder for the zip file
     tmp=$(mktemp -d)
     pushd $tmp > /dev/null
-
-    # Copy all files but the executables
     mkdir -p "$plugin_id"
-    rsync -a --exclude "${exe_basename}*" "$dist/" "$plugin_id"
+
+    # Copy all files but the executables, preserving permissions and mod times (similar to rsync)
+    pushd "$dist" > /dev/null
+    # -name "${exe_basename}*" -prune: Ignore (prune) all executables
+    # -o -type f -print0: OR, print file name (NUL-terminated) for use with xargs -0
+    # Copy with cp, preserving permissions and create any required parent directories to the dest folder
+    find . -name "${exe_basename}*" -prune -o -type f -print0 | xargs -0 cp -p --parents -t "$tmp/$plugin_id"
+    popd > /dev/null
 
     # Copy only the current executable
-    cp "$dist/$file" "$plugin_id/$backend_folder"
+    cp "$dist/$file" "$tmp/$plugin_id/$backend_folder"
     os_arch_zip_fn="$plugin_id-$plugin_version.$os_arch.zip"
     echo "Creating package: $os_arch_zip_fn"
 

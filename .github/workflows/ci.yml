@@ -30,27 +30,26 @@ on:
         description: golangci-lint version to use
         type: string
         required: false
-      go-setup-caching:
-        description: Defines if setup-go action should have caching enabled (https://github.com/actions/setup-go#caching-dependency-files-and-build-outputs)olangci-lint version to use
-        type: boolean
+      mage-version:
+        description: Mage version to use
+        type: string
         required: false
-        default: true
       trufflehog-version:
         description: Trufflehog version to use
         type: string
         required: false
+      go-setup-caching:
+        description: Defines if setup-go action should have caching enabled (https://github.com/actions/setup-go#caching-dependency-files-and-build-outputs)
+        type: boolean
+        required: false
+        default: true
 
       # Build options.
       plugin-directory:
-        description: Directory of the plugin, if not in the root of the repository. If provided, package-manager must also be provided.
+        description: Directory of the plugin, if not in the root of the repository.
         type: string
         required: false
         default: .
-      package-manager:
-        description: The package manager to use.
-        type: string
-        required: false
-        default: ""
       frontend-secrets:
         description: The secrets to use within frontend steps
         type: string
@@ -94,6 +93,11 @@ on:
         required: false
       run-playwright-with-skip-grafana-dev-image:
         description: Optionally, you can skip the Grafana dev image
+        type: boolean
+        required: false
+        default: false
+      run-playwright-with-skip-grafana-react-19-preview-image:
+        description: Optionally, you can skip the Grafana React 19 preview image
         type: boolean
         required: false
         default: false
@@ -291,10 +295,11 @@ permissions:
 
 env:
   # Default versions for tooling
-  DEFAULT_NODE_VERSION: "22"
-  DEFAULT_GO_VERSION: "1.24"
-  DEFAULT_GOLANGCI_LINT_VERSION: "1.64.8"
+  DEFAULT_NODE_VERSION: "24"
+  DEFAULT_GO_VERSION: "1.25"
+  DEFAULT_GOLANGCI_LINT_VERSION: "2.7.2"
   DEFAULT_TRUFFLEHOG_VERSION: "3.91.0"
+  DEFAULT_MAGE_VERSION: "v1.15.0"
 
   GCS_ARTIFACTS_BUCKET: integration-artifacts
   VAULT_INSTANCE: ops
@@ -302,53 +307,9 @@ env:
 jobs:
   check-for-release-channel:
     name: Check for release channel
-    runs-on: ubuntu-arm64-small
-    steps:
-      - name: Checkout
-        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
-
-      - name: Check for rolling releases channel
-        run: |
-          diff=$(grep -E 'grafana/plugin-ci-workflows.+@main' -rn .github/workflows/ || true)
-          if [[ -n "$diff" ]]; then
-            echo "Found usage of rolling releases channel in the following files:"
-            echo "$diff"
-
-            title="Detected plugin-ci-workflows rolling release channel"
-            message="You are using workflows from plugin-ci-workflows rolling releases channel (\`@main\`). \
-          This is discouraged as it may lead to unexpected breaking changes. \
-          Please pin to a specific tagged release to ensure better stability. \
-          For more information, refer to the docs: https://enghub.grafana-ops.net/docs/default/component/grafana-plugins-platform/plugins-ci-github-actions/010-plugins-ci-github-actions/#versions-and-release-channels"
-
-            echo "::warning title=$title::$message"
-            exit 0
-          fi
-        shell: bash
-
-      - name: Check for plugin-ci-workflows pinned to commit hash
-        run: |
-          diff=$(grep -E 'grafana/plugin-ci-workflows.+@[0-9a-f]{6,40}' -rn .github/workflows/ || true)
-          if [[ -n "$diff" ]]; then
-            echo "Found plugin-ci-workflows pinned to a commit hash in the following files:"
-            echo "$diff"
-
-            title="Detected plugin-ci-workflows pinned to a commit hash"
-            message="You are pinning plugin-ci-workflows to a commit hash. \
-          To limit the amount of exposure (security reasons), this is not allowed and the workflow will fail. \
-          Please pin to a specific tagged release instead. \
-          For more information, refer to the docs: https://enghub.grafana-ops.net/docs/default/component/grafana-plugins-platform/plugins-ci-github-actions/010-plugins-ci-github-actions/#versions-and-release-channels"
-
-            echo "::error title=$title::$message"
-            if [ "${ALLOW_PINNED_COMMIT_HASHES}" != "true" ]; then
-              # Hard fail by default
-              exit 1
-            else
-              exit 0
-            fi
-          fi
-        env:
-          ALLOW_PINNED_COMMIT_HASHES: ${{ inputs.DO-NOT-USE-allow-pinned-commit-hashes }}
-        shell: bash
+    uses: grafana/plugin-ci-workflows/.github/workflows/check-release-channel.yml@main
+    with:
+      DO-NOT-USE-allow-pinned-commit-hashes: ${{ inputs.DO-NOT-USE-allow-pinned-commit-hashes }}
 
   test-and-build:
     name: Test and build plugin
@@ -369,9 +330,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
-          ref: ${{ inputs.branch }}
+          # Force exact ref when running in act (it copies files locally, it breaks if we specify another ref)
+          ref: ${{ !github.event.act && inputs.branch || github.sha }}
           persist-credentials: false
 
       - name: Determine workflow context
@@ -402,18 +364,66 @@ jobs:
         env:
           INPUT_TESTING: ${{ inputs.testing }}
 
+      - name: Determine Go and Node versions
+        id: tooling-versions
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          script: |
+            const fs = require('fs');
+
+            const PLUGIN_DIRECTORY = process.env['PLUGIN_DIRECTORY'] || '.';
+            const GO_VERSION = process.env['GO_VERSION'];
+            const NODE_VERSION = process.env['NODE_VERSION'];
+
+            const DEFAULT_GO_VERSION = process.env['DEFAULT_GO_VERSION'];
+            const DEFAULT_NODE_VERSION = process.env['DEFAULT_NODE_VERSION'];
+
+            // Both Go and Node versions are determined as follows:
+            // 1. If explicitly provided as input, use that
+            // 2. If a version file (.nvmrc/go.mod) exists in the plugin directory, use that
+            // 3. Otherwise, use the workflow-level default version
+            let goVersion = '';
+            let goVersionFile = '';
+            if (GO_VERSION) {
+              goVersion = GO_VERSION;
+            } else if (fs.existsSync(`${PLUGIN_DIRECTORY}/go.mod`)) {
+              goVersionFile = `${PLUGIN_DIRECTORY}/go.mod`;
+            } else {
+              goVersion = DEFAULT_GO_VERSION;
+            }
+
+            let nodeVersion = '';
+            let nodeVersionFile = '';
+            if (NODE_VERSION) {
+              nodeVersion = NODE_VERSION;
+            } else if (fs.existsSync(`${PLUGIN_DIRECTORY}/.nvmrc`)) {
+              nodeVersionFile = `${PLUGIN_DIRECTORY}/.nvmrc`;
+            } else {
+              nodeVersion = DEFAULT_NODE_VERSION;
+            }
+
+            const o = { goVersion, goVersionFile, nodeVersion, nodeVersionFile };
+            console.log("Tooling versions:", JSON.stringify(o));
+            return o;
+        env:
+          PLUGIN_DIRECTORY: ${{ inputs.plugin-directory }}
+          GO_VERSION: ${{ inputs.go-version }}
+          NODE_VERSION: ${{ inputs.node-version }}
+          DEFAULT_GO_VERSION: ${{ env.DEFAULT_GO_VERSION }}
+          DEFAULT_NODE_VERSION: ${{ env.DEFAULT_NODE_VERSION }}
+
       - name: Setup
+        id: setup
         uses: grafana/plugin-ci-workflows/actions/internal/plugins/setup@main
         with:
-          # The priority to setup the node version is:
-          # 1. inputs.node-version
-          # 2. inputs.plugin-directory/.nvmrc
-          # 3. workflow-level DEFAULT_NODE_VERSION
-          node-version: ${{ inputs.node-version || (hashFiles(format('{0}/.nvmrc', inputs.plugin-directory)) == '' && env.DEFAULT_NODE_VERSION || '') }}
-          node-version-file: ${{ inputs.plugin-directory }}/.nvmrc
-          go-version: ${{ inputs.go-version || env.DEFAULT_GO_VERSION }}
-          golangci-lint-version: ${{ inputs.golangci-lint-version || env.DEFAULT_GOLANGCI_LINT_VERSION }}
+          plugin-directory: ${{ inputs.plugin-directory }}
+          node-version: ${{ fromJson(steps.tooling-versions.outputs.result).nodeVersion }}
+          node-version-file: ${{ fromJson(steps.tooling-versions.outputs.result).nodeVersionFile }}
+          go-version: ${{ fromJson(steps.tooling-versions.outputs.result).goVersion }}
+          go-version-file: ${{ fromJson(steps.tooling-versions.outputs.result).goVersionFile }}
           go-setup-caching: ${{ inputs.go-setup-caching }}
+          golangci-lint-version: ${{ inputs.golangci-lint-version || env.DEFAULT_GOLANGCI_LINT_VERSION }}
+          mage-version: ${{ inputs.mage-version || env.DEFAULT_MAGE_VERSION }}
 
       - name: Get secrets from Vault
         id: get-secrets
@@ -429,7 +439,7 @@ jobs:
 
       - name: Generate GitHub token
         id: generate-github-token
-        uses: actions/create-github-app-token@67018539274d69449ef7c02e8e71183d1719ab42 # v2.1.4
+        uses: actions/create-github-app-token@29824e69f54612133e76f7eaac726eef6c875baf # v2.2.1
         if: ${{ fromJson(steps.workflow-context.outputs.result).isTrusted }}
         with:
           app-id: ${{ fromJSON(steps.get-secrets.outputs.secrets).GITHUB_APP_ID }}
@@ -446,6 +456,7 @@ jobs:
         shell: bash
 
       - name: Replace plugin version
+        id: replace-plugin-version
         if: ${{ inputs.plugin-version-suffix != '' }}
         run: |
           package_json_path="$PLUGIN_DIRECTORY/package.json"
@@ -476,14 +487,15 @@ jobs:
         working-directory: ${{ inputs.plugin-directory }}
 
       - name: Test and build frontend
+        id: frontend
         uses: grafana/plugin-ci-workflows/actions/internal/plugins/frontend@main
         with:
-          package-manager: ${{ inputs.package-manager }}
           plugin-directory: ${{ inputs.plugin-directory }}
           secrets: ${{ (fromJson(steps.workflow-context.outputs.result).isTrusted && inputs.frontend-secrets != '') && inputs.frontend-secrets || '' }}
           npm-registry-auth: ${{ inputs.npm-registry-auth }}
 
       - name: Test and build backend
+        id: backend
         if: ${{ steps.check-for-backend.outputs.has-backend == 'true' }}
         uses: grafana/plugin-ci-workflows/actions/internal/plugins/backend@main
         with:
@@ -496,8 +508,8 @@ jobs:
         uses: grafana/plugin-ci-workflows/actions/internal/plugins/package@main
         with:
           universal: "true"
-          dist-folder: dist
-          output-folder: dist-artifacts
+          dist-folder: ${{ inputs.plugin-directory }}/dist
+          output-folder: ${{ inputs.plugin-directory }}/dist-artifacts
           access-policy-token: ${{ fromJson(steps.workflow-context.outputs.result).isTrusted && fromJSON(steps.get-secrets.outputs.secrets).SIGN_PLUGIN_ACCESS_POLICY_TOKEN || '' }}
           allow-unsigned: ${{ ((inputs.environment == 'dev' || inputs.environment == '' || inputs.environment == 'none') && !(fromJson(steps.workflow-context.outputs.result).isTrusted)) || inputs.allow-unsigned }}
           signature-type: ${{ inputs.signature-type }}
@@ -507,8 +519,8 @@ jobs:
         uses: grafana/plugin-ci-workflows/actions/internal/plugins/package@main
         with:
           universal: "false"
-          dist-folder: dist
-          output-folder: dist-artifacts
+          dist-folder: ${{ inputs.plugin-directory }}/dist
+          output-folder: ${{ inputs.plugin-directory }}/dist-artifacts
           access-policy-token: ${{ fromJson(steps.workflow-context.outputs.result).isTrusted && fromJSON(steps.get-secrets.outputs.secrets).SIGN_PLUGIN_ACCESS_POLICY_TOKEN || '' }}
           allow-unsigned: ${{ ((inputs.environment == 'dev' || inputs.environment == '' || inputs.environment == 'none') && !(fromJson(steps.workflow-context.outputs.result).isTrusted)) || inputs.allow-unsigned }}
           signature-type: ${{ inputs.signature-type }}
@@ -518,7 +530,7 @@ jobs:
         uses: grafana/plugin-ci-workflows/actions/internal/plugins/trufflehog@main
         with:
           trufflehog-version: ${{ inputs.trufflehog-version || env.DEFAULT_TRUFFLEHOG_VERSION }}
-          folder: dist-artifacts
+          folder: ${{ inputs.plugin-directory }}/dist-artifacts
           include-detectors: ${{ inputs.trufflehog-include-detectors }}
           exclude-detectors: ${{ inputs.trufflehog-exclude-detectors }}
 
@@ -528,8 +540,8 @@ jobs:
           if [ -n "${PLUGIN_VALIDATOR_CONFIG}" ]; then
             # User-provided configuration content
             echo "Using provided plugin-validator configuration content."
-            PLUGIN_VALIDATOR_CONFIG_PATH=".plugin-validator.yaml"
-            echo "${PLUGIN_VALIDATOR_CONFIG}" > ${PLUGIN_VALIDATOR_CONFIG_PATH}
+            PLUGIN_VALIDATOR_CONFIG_PATH=$(mktemp)
+            echo "${PLUGIN_VALIDATOR_CONFIG}" > "${PLUGIN_VALIDATOR_CONFIG_PATH}"
           elif [ -n "${PLUGIN_VALIDATOR_CONFIG_PATH}" ]; then
             # User-provided configuration file path
             echo "Using plugin-validator configuration file at path: ${PLUGIN_VALIDATOR_CONFIG_PATH}"
@@ -539,8 +551,8 @@ jobs:
             fi
           else
             # Default hardcoded configuration
-            PLUGIN_VALIDATOR_CONFIG_PATH=".plugin-validator.yaml"
             echo "${PLUGIN_VALIDATOR_CONFIG_PATH} configuration file is missing. Providing a default one as fallback."
+            PLUGIN_VALIDATOR_CONFIG_PATH=$(mktemp)
             cat <<EOF > "${PLUGIN_VALIDATOR_CONFIG_PATH}"
           global:
             enabled: true
@@ -554,19 +566,33 @@ jobs:
           # will recurse into the plugin's directory (including node_modules).
           mkdir -p /tmp/empty
 
-          # Do not run clamav because it takes too long
-          docker run --name=plugin-validator --pull=always \
-            -v "$PWD/${PLUGIN_VALIDATOR_CONFIG_PATH}:/workspace/.plugin-validator.yaml:ro" \
-            -v "$PWD/dist-artifacts:/workspace/dist-artifacts:ro" \
-            -v "$PWD/${PLUGIN_DIRECTORY}:/workspace" \
-            -v "/tmp/empty:/workspace/node_modules" \
+          # Copy workspace to a new tempdir to avoid issues when mounting the folder when running with act
+          TEMP_WORKSPACE_DIR=$(mktemp -d)
+          cp -r "${PLUGIN_DIRECTORY}"/* "$TEMP_WORKSPACE_DIR/"
+          # Add validator config file
+          mv "$PLUGIN_VALIDATOR_CONFIG_PATH" "$TEMP_WORKSPACE_DIR/.plugin-validator.yaml"
+          # Remove node_modules so it's not scanned by the validator
+          rm -rf "$TEMP_WORKSPACE_DIR/node_modules"
+
+          # Give a UUID to each container so multiple can be run in parallel when running with act
+          UUID=$(cat /proc/sys/kernel/random/uuid)
+
+          # Create the validator container but don't start it yet.
+          # We cannot use a volume mount here if we are using act on Mac OS, so
+          # we need to copy the workspace to a new tempdir and then start the container.
+          # Also, do not run clamav because it takes too long
+          docker create --name="plugin-validator-${UUID}" --pull=always --platform=linux/amd64 \
             -e SKIP_CLAMAV=1 \
             grafana/plugin-validator-cli \
             -ghaOutput \
             -config=/workspace/.plugin-validator.yaml \
             -sourceCodeUri=file:///workspace \
             "/workspace/dist-artifacts/${UNIVERSAL_ZIP}"
-          exit "$(docker inspect plugin-validator --format='{{.State.ExitCode}}')"
+          docker cp "$TEMP_WORKSPACE_DIR" "plugin-validator-${UUID}:/workspace"
+          docker start -a "plugin-validator-${UUID}"
+          EXIT_CODE=$(docker inspect "plugin-validator-${UUID}" --format='{{.State.ExitCode}}')
+          docker rm "plugin-validator-${UUID}"
+          exit "$EXIT_CODE"
         env:
           UNIVERSAL_ZIP: ${{ steps.universal-zip.outputs.zip }}
           PLUGIN_VALIDATOR_CONFIG: ${{ inputs.plugin-validator-config }}
@@ -578,11 +604,15 @@ jobs:
         id: outputs
         run: |
           {
+            ID=$(jq -r .id "${PLUGIN_DIRECTORY}/dist/plugin.json")
+            VERSION=$(jq -r .info.version "${PLUGIN_DIRECTORY}/dist/plugin.json")
+            EXECUTABLE=$(jq -r .executable "${PLUGIN_DIRECTORY}/dist/plugin.json")
+
             echo plugin="$(jq -n -c \
-                --arg id "$(jq -r .id dist/plugin.json)" \
-                --arg version "$(jq -r .info.version dist/plugin.json)" \
+                --arg id "${ID}" \
+                --arg version "${VERSION}" \
                 --arg has-backend "${HAS_BACKEND}" \
-                --arg executable "$(jq -r .executable dist/plugin.json)" \
+                --arg executable "${EXECUTABLE}" \
                 '$ARGS.named'
               )"
 
@@ -595,6 +625,7 @@ jobs:
           }  >> "$GITHUB_OUTPUT"
           cat "$GITHUB_OUTPUT"
         env:
+          PLUGIN_DIRECTORY: ${{ inputs.plugin-directory }}
           HAS_BACKEND: ${{ steps.check-for-backend.outputs.has-backend }}
           UNIVERSAL_ZIP: ${{ steps.universal-zip.outputs.zip }}
           OS_ARCH_ZIPS: ${{ steps.os-arch-zips.outputs.zip }}
@@ -604,7 +635,7 @@ jobs:
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         with:
           name: ${{ inputs.dist-artifacts-prefix }}dist-artifacts
-          path: dist-artifacts/
+          path: ${{ inputs.plugin-directory }}/dist-artifacts/
           retention-days: 7
 
   docs:
@@ -627,9 +658,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
-          ref: ${{ inputs.branch }}
+          # Force exact ref when running in act (it copies files locally, it breaks if we specify another ref)
+          ref: ${{ !github.event.act && inputs.branch || github.sha }}
           persist-credentials: false
 
       - name: Check docs exist
@@ -655,6 +687,7 @@ jobs:
       plugin-directory: ${{ inputs.plugin-directory }}
       grafana-dependency: ${{ inputs.run-playwright-with-grafana-dependency }}
       skip-grafana-dev-image: ${{ inputs.run-playwright-with-skip-grafana-dev-image }}
+      skip-grafana-react-19-preview-image: ${{ inputs.run-playwright-with-skip-grafana-react-19-preview-image }}
       version-resolver-type: ${{ inputs.run-playwright-with-version-resolver-type }}
       upload-artifacts: ${{ inputs.upload-playwright-artifacts }}
       docker-compose-file: ${{ inputs.playwright-docker-compose-file }}
@@ -676,6 +709,7 @@ jobs:
       version: ${{ fromJSON(needs.test-and-build.outputs.plugin).version}}
       grafana-dependency: ${{ inputs.run-playwright-with-grafana-dependency }}
       skip-grafana-dev-image: ${{ inputs.run-playwright-with-skip-grafana-dev-image }}
+      skip-grafana-react-19-preview-image: ${{ inputs.run-playwright-with-skip-grafana-react-19-preview-image }}
       version-resolver-type: ${{ inputs.run-playwright-with-version-resolver-type }}
       upload-artifacts: ${{ inputs.upload-playwright-artifacts }}
       grafana-compose-file: ${{ inputs.playwright-docker-compose-file }}
@@ -707,7 +741,7 @@ jobs:
         uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
         with:
           name: ${{ inputs.dist-artifacts-prefix }}dist-artifacts
-          path: /tmp/dist-artifacts
+          path: /tmp/${{ inputs.dist-artifacts-prefix }}dist-artifacts
 
       - name: Login to Google Cloud
         uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
@@ -734,7 +768,7 @@ jobs:
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main'}}
         uses: google-github-actions/upload-cloud-storage@6397bd7208e18d13ba2619ee21b9873edc94427a # v3.0.0
         with:
-          path: /tmp/dist-artifacts
+          path: /tmp/${{ inputs.dist-artifacts-prefix }}dist-artifacts
           destination: ${{ env.gcs_artifacts_path_latest }}
           parent: false
           process_gcloudignore: false
@@ -743,7 +777,7 @@ jobs:
         id: gcs-upload-commit
         uses: google-github-actions/upload-cloud-storage@6397bd7208e18d13ba2619ee21b9873edc94427a # v3.0.0
         with:
-          path: /tmp/dist-artifacts
+          path: /tmp/${{ inputs.dist-artifacts-prefix }}dist-artifacts
           destination: ${{ env.gcs_artifacts_path_commit }}
           parent: false
           process_gcloudignore: false
@@ -786,8 +820,8 @@ jobs:
 
           universal_zip_file_name=$(basename "${UNIVERSAL_ZIP}")
           if [ -n "$universal_zip_file_name" ]; then
-            echo universal_zip_url_latest="$gcs_artifacts_path_latest/$universal_zip_file_name" >> "$GITHUB_OUTPUT"
-            echo universal_zip_url_commit="$gcs_artifacts_path_commit/$universal_zip_file_name" >> "$GITHUB_OUTPUT"
+            echo universal_zip_url_latest="https://storage.googleapis.com/$gcs_artifacts_path_latest/$universal_zip_file_name" >> "$GITHUB_OUTPUT"
+            echo universal_zip_url_commit="https://storage.googleapis.com/$gcs_artifacts_path_commit/$universal_zip_file_name" >> "$GITHUB_OUTPUT"
           fi
         env:
           GCS_UPLOADED_FILES_LATEST: ${{ steps.gcs-upload-latest.outputs.uploaded }}

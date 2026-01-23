@@ -22,6 +22,10 @@ on:
         default: false
         required: false
         type: boolean
+      skip-grafana-react-19-preview-image:
+        default: false
+        required: false
+        type: boolean
       version-resolver-type:
         required: false
         type: string
@@ -65,15 +69,16 @@ jobs:
       matrix: ${{ steps.resolve-versions.outputs.matrix }}
     steps:
       - name: Checkout
-        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           persist-credentials: false
 
       - name: Resolve Grafana E2E versions
         id: resolve-versions
-        uses: grafana/plugin-actions/e2e-version@e2e-version/v1.1.2
+        uses: grafana/plugin-actions/e2e-version@e2e-version/v1.2.0
         with:
           skip-grafana-dev-image: ${{ inputs.skip-grafana-dev-image }}
+          skip-grafana-react-19-preview-image: ${{ inputs.skip-grafana-react-19-preview-image }}
           version-resolver-type: ${{ inputs.version-resolver-type }}
           grafana-dependency: ${{ inputs.grafana-dependency }}
 
@@ -87,7 +92,7 @@ jobs:
     name: e2e ${{ matrix.GRAFANA_IMAGE.name }}@${{ matrix.GRAFANA_IMAGE.VERSION }}
     runs-on: ubuntu-x64-large
     steps:
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           persist-credentials: false
 
@@ -147,8 +152,6 @@ jobs:
           docker compose --profile playwright ${DOCKER_COMPOSE_FILE:+-f "$DOCKER_COMPOSE_FILE"} up playwright --exit-code-from playwright
         env:
           DOCKER_COMPOSE_FILE: ${{ inputs.grafana-compose-file }}
-          GRAFANA_VERSION: ${{ matrix.GRAFANA_IMAGE.VERSION }}
-          GRAFANA_IMAGE: ${{ matrix.GRAFANA_IMAGE.NAME }}
 
       - name: Upload artifacts
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0

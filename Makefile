@@ -1,0 +1,53 @@
+.PHONY: clean-node-modules clean-dist clean-act-tmp clean-act-toolcache-volumes clean-lfs clean \
+	reset-mockdata mockdata-dist mockdata-dist-artifacts mockdata \
+	genreadme act-lint act-test actionlint
+
+clean-node-modules:
+	find tests -name node_modules -type d -prune -exec rm -rf '{}' +
+
+clean-dist:
+	find tests ! -path '*/act/*' -name dist -type d -prune -exec rm -rf '{}' +
+
+clean-act-tmp:
+	rm -rf /tmp/act-artifacts
+	rm -rf /tmp/act-actions-cache
+	rm -rf /tmp/act-cache
+	rm -rf /tmp/act-gcs
+
+clean-act-toolcache-volumes:
+	docker volume ls -q | grep "^act-toolcache-" | xargs docker volume rm
+
+clean-lfs:
+	git lfs prune
+
+clean: clean-node-modules clean-dist clean-act-tmp clean-act-toolcache-volumes clean-lfs
+
+reset-mockdata:
+	rm -rf tests/act/mockdata/dist/*
+	rm -rf tests/act/mockdata/dist-artifacts-unsigned/*
+
+mockdata-dist: reset-mockdata
+	for tc in $$(./scripts/find-tests.sh); do \
+		./scripts/mockdata-dist.sh $$tc; \
+	done
+	@echo All done!
+
+mockdata-dist-artifacts: mockdata-dist
+	for tc in $$(./scripts/find-tests.sh); do \
+		./scripts/mockdata-dist-artifacts.sh $$tc; \
+	done
+	@echo All done!
+
+mockdata: mockdata-dist-artifacts
+
+genreadme:
+	cd examples/base && go run genreadme.go
+
+act-lint:
+	cd tests/act && golangci-lint run
+
+act-test:
+	cd tests/act && go test -v -timeout 1h
+
+actionlint:
+	actionlint
