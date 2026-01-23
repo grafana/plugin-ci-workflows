@@ -1,5 +1,42 @@
 # Changelog
 
+## [6.1.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v6.0.0...ci-cd-workflows/v6.1.0) (2026-01-22)
+
+
+### 🎉 Features
+
+* **cd:** export ci outputs in cd job ([#518](https://github.com/grafana/plugin-ci-workflows/issues/518)) ([ce2d1bb](https://github.com/grafana/plugin-ci-workflows/commit/ce2d1bb8737d7fef78d2c3e7889907b3e34df36b))
+
+## [6.0.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v5.1.0...ci-cd-workflows/v6.0.0) (2026-01-19)
+
+
+### ⚠ BREAKING CHANGES
+
+* **playwright:** remove version and image arguments ([#507](https://github.com/grafana/plugin-ci-workflows/issues/507))
+* **cd:** allow releasing to prod from non-main branches ([#378](https://github.com/grafana/plugin-ci-workflows/issues/378))
+
+### 🎉 Features
+
+* **cd:** allow releasing to prod from non-main branches ([#378](https://github.com/grafana/plugin-ci-workflows/issues/378)) ([e1cf5f6](https://github.com/grafana/plugin-ci-workflows/commit/e1cf5f6083704fd837f4ec11761dd397b74f0929))
+* **ci:** add warning when ci and cd workflows are not on the same reference ([#492](https://github.com/grafana/plugin-ci-workflows/issues/492)) ([4e9ca04](https://github.com/grafana/plugin-ci-workflows/commit/4e9ca04ed0b13a33baf41d6cd53ce6fedb8cf683))
+* **ci:** support react image in e2e matrix ([#496](https://github.com/grafana/plugin-ci-workflows/issues/496)) ([6d8cb8c](https://github.com/grafana/plugin-ci-workflows/commit/6d8cb8c5240cc11619c221beb201ee07e5ee855c))
+* **playwright:** remove version and image arguments ([#507](https://github.com/grafana/plugin-ci-workflows/issues/507)) ([f70e822](https://github.com/grafana/plugin-ci-workflows/commit/f70e82266068fbe7cdfa97a5120d4e616ab1275f))
+
+
+### ✅ Tests
+
+* **act:** add gcom mock, cd.yml changes for testing ([#501](https://github.com/grafana/plugin-ci-workflows/issues/501)) ([e3f1779](https://github.com/grafana/plugin-ci-workflows/commit/e3f1779be66d8a2c7051adb0a42beb73184c5bea))
+* **act:** fix validator tests ([#506](https://github.com/grafana/plugin-ci-workflows/issues/506)) ([3c93dda](https://github.com/grafana/plugin-ci-workflows/commit/3c93dda78df9f6ac587e2c7e116ac7b1e04627a3))
+
+
+### 🔧 Chores
+
+* **ci:** run golangci-lint on internal go packages ([#485](https://github.com/grafana/plugin-ci-workflows/issues/485)) ([303148f](https://github.com/grafana/plugin-ci-workflows/commit/303148fcc64f3ecbca42d2eda4142dceafa2296b))
+* **deps:** update actions/attest-build-provenance action to v3.1.0 ([#484](https://github.com/grafana/plugin-ci-workflows/issues/484)) ([ba9c56e](https://github.com/grafana/plugin-ci-workflows/commit/ba9c56e2992bc28da40bce896349d7122c03e3f1))
+* **deps:** update actions/cache action to v5 ([#481](https://github.com/grafana/plugin-ci-workflows/issues/481)) ([3eaee5a](https://github.com/grafana/plugin-ci-workflows/commit/3eaee5a68d81c66037d8ba723d4070cb0e1be850))
+* **deps:** update stefanzweifel/git-auto-commit-action action to v7.1.0 ([#483](https://github.com/grafana/plugin-ci-workflows/issues/483)) ([f9a22aa](https://github.com/grafana/plugin-ci-workflows/commit/f9a22aa89487aa54a299a0c3b1e59e0832b7a0b9))
+* **deps:** update step-security/harden-runner action to v2.14.0 ([#477](https://github.com/grafana/plugin-ci-workflows/issues/477)) ([cdab179](https://github.com/grafana/plugin-ci-workflows/commit/cdab179fe05abb011a6b236c45426d4c6004f8af))
+
 ## [5.1.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v5.0.0...ci-cd-workflows/v5.1.0) (2026-01-07)
 
 
