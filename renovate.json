@@ -22,8 +22,7 @@
         },
         {
             "matchPaths": ["actions/plugins/frontend-e2e-against-stack/**"],
-            "groupName": "frontend-e2e-against-stack dependencies",
-            "schedule": ["weekly"]
+            "groupName": "frontend-e2e-against-stack dependencies"
         }
     ],
     "regexManagers": [
