@@ -5,23 +5,33 @@
         "github>grafana/grafana-renovate-config//presets/automerge",
         "github>grafana/grafana-renovate-config//presets/labels",
         "github>grafana/grafana-renovate-config//presets/docker"
-    ],    
+    ],
     "extends": [
-        "config:best-practices"        
+        "config:best-practices"
     ],
     "packageRules": [
         {
-            "matchManagers": ["github-actions"],
-            "matchPackageNames": ["grafana/plugin-actions"],
+            "matchManagers": [
+                "github-actions"
+            ],
+            "matchPackageNames": [
+                "grafana/plugin-actions"
+            ],
             "pinDigests": false
         },
         {
-            "matchManagers": ["github-actions"],
-            "matchPackageNames": ["grafana/docs-base"],
+            "matchManagers": [
+                "github-actions"
+            ],
+            "matchPackageNames": [
+                "grafana/docs-base"
+            ],
             "pinDigests": false
         },
         {
-            "matchPaths": ["actions/plugins/frontend-e2e-against-stack/**"],
+            "matchFileNames": [
+                "actions/plugins/frontend-e2e-against-stack/**"
+            ],
             "groupName": "frontend-e2e-against-stack dependencies"
         }
     ],
