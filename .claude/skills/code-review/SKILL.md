@@ -1,5 +1,5 @@
 ---
-name: Code review
+name: code-review
 description: Conduct a code review of the changes in the current branch compared to main
 ---
 
