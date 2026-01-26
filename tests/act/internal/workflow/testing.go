@@ -234,12 +234,51 @@ func WithMatrix(job string, matrix map[string][]string) TestingWorkflowOption {
 	}
 }
 
+// WithEnvironment sets the environment variables for the given step in the given job.
+// This can be used to set environment variables for testing purposes.
+// This is also handy for passing mocked data to be used when running act tests, if the step supports it.
+func WithEnvironment(t *testing.T, job string, step string, environment map[string]string) TestingWorkflowOption {
+	return func(twf *TestingWorkflow) {
+		step := twf.BaseWorkflow.Jobs[job].GetStep(step)
+		require.NotNilf(t, step, "step %q not found in job %q", step, job)
+		for k, v := range environment {
+			step.Env[k] = v
+		}
+	}
+}
+
+// WithPullRequestTrigger is a TestingWorkflowOption that sets a pull_request trigger to the workflow.
+// This can be used to test workflows that respond to pull_request events.
+func WithPullRequestTrigger(branches []string) TestingWorkflowOption {
+	return func(t *TestingWorkflow) {
+		t.On = On{
+			PullRequest: OnPullRequest{
+				Branches: branches,
+			},
+		}
+	}
+}
+
 // WithPullRequestTargetTrigger is a TestingWorkflowOption that sets a pull_request_target trigger to the workflow.
 // This can be used to test workflows that respond to pull_request_target events.
 func WithPullRequestTargetTrigger(branches []string) TestingWorkflowOption {
 	return func(t *TestingWorkflow) {
-		t.On.PullRequestTarget = OnPullRequestTarget{
-			Branches: branches,
+		t.On = On{
+			PullRequestTarget: OnPullRequestTarget{
+				Branches: branches,
+			},
+		}
+	}
+}
+
+// WithWorkflowDispatchTrigger is a TestingWorkflowOption that sets a workflow_dispatch trigger to the workflow.
+// This can be used to test workflows that are manually triggered via the GitHub UI or API.
+func WithWorkflowDispatchTrigger(inputs map[string]WorkflowCallInput) TestingWorkflowOption {
+	return func(t *TestingWorkflow) {
+		t.On = On{
+			WorkflowDispatch: OnWorkflowDispatch{
+				Inputs: inputs,
+			},
 		}
 	}
 }
