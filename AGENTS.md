@@ -176,6 +176,6 @@ for _, tc := range []testCase{
 
 **Workflow testing patterns:** See existing tests for current API usage:
 - [main_smoke_test.go](tests/act/main_smoke_test.go) - Basic CI workflow tests
-- [main_cd_test.go](tests/act/main_cd_test.go)  More complex CD workflow tests, with mocking and test workflow manipulation
+- [main_cd_test.go](tests/act/main_cd_test.go) - More complex CD workflow tests, with mocking and test workflow manipulation
 - [internal/workflow/ci/ci.go](tests/act/internal/workflow/ci/ci.go) - CI workflow helpers
 - [internal/act/act.go](tests/act/internal/act/act.go) - Runner implementation
