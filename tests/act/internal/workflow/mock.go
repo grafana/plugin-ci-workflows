@@ -18,6 +18,22 @@ const (
 	GitHubAppTokenAction = "actions/create-github-app-token"
 )
 
+// MockOutputsStep returns a Step that only sets the given outputs and does nothing else.
+// This can be used to mock the outputs of a step for testing purposes, without executing its real implementation.
+func MockOutputsStep(outputs map[string]string) Step {
+	var stepCommands Commands
+	env := make(map[string]string, len(outputs))
+	for k, v := range outputs {
+		stepCommands = append(stepCommands, fmt.Sprintf(`echo "%s=${%s}" >> "$GITHUB_OUTPUT"`, k, k))
+		env[k] = v
+	}
+	return Step{
+		Run:   stepCommands.String(),
+		Env:   env,
+		Shell: "bash",
+	}
+}
+
 // CopyMockFilesStep returns a Step that copies mock files from a source folder to a destination folder.
 // The mock files are present in tests/act/mockdata in the repo, which is mounted into the act container at /mockdata.
 // The sourceFolder is relative to /mockdata, e.g., "dist/simple-frontend".

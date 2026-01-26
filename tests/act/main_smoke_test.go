@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/grafana/plugin-ci-workflows/tests/act/internal/act"
@@ -123,11 +122,12 @@ func TestSmoke(t *testing.T) {
 			}))
 			if hasBackend {
 				for _, osArch := range osArchCombos {
-					if strings.Contains(osArch, "windows") {
-						osArch = osArch + ".exe"
+					osArchFnSuffix := osArch.String()
+					if osArch.os == "windows" {
+						osArchFnSuffix += ".exe"
 					}
 					require.NoError(t, checkFilesExist(zfs, []string{
-						filepath.Join(tc.exp.ID, tc.exp.Executable+"_"+osArch),
+						filepath.Join(tc.exp.ID, tc.exp.Executable+"_"+osArchFnSuffix),
 					}))
 				}
 			}
