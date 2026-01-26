@@ -19,6 +19,10 @@
             "matchManagers": ["github-actions"],
             "matchPackageNames": ["grafana/docs-base"],
             "pinDigests": false
+        },
+        {
+            "matchPaths": ["actions/plugins/frontend-e2e-against-stack/**"],
+            "groupName": "frontend-e2e-against-stack dependencies"
         }
     ],
     "minimumReleaseAge": "14 days",
