@@ -16,7 +16,7 @@ permissions:
 
 env:
   ACTIONLINT_VERSION: "1.7.3"
-  GOLANGCI_LINT_VERSION: "v2.7.2"
+  GOLANGCI_LINT_VERSION: "2.7.2"
 
 jobs:
   actionlint:
@@ -61,5 +61,5 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 # v9.2.0
         with:
-          version: ${{ env.GOLANGCI_LINT_VERSION }}
+          version: v${{ env.GOLANGCI_LINT_VERSION }}
           working-directory: ${{ matrix.directory }}

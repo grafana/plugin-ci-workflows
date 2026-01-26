@@ -25,6 +25,54 @@
             "groupName": "frontend-e2e-against-stack dependencies"
         }
     ],
+    "regexManagers": [
+        {
+            "fileMatch": ["\\.github/workflows/.*\\.ya?ml$"],
+            "matchStrings": ["DEFAULT_NODE_VERSION:\\s*\"(?<currentValue>\\d+)\""],
+            "depNameTemplate": "node",
+            "datasourceTemplate": "node-version",
+            "replacementStringTemplate": "{{newMajor}}"
+        },
+        {
+            "fileMatch": ["\\.github/workflows/.*\\.ya?ml$"],
+            "matchStrings": ["DEFAULT_GO_VERSION:\\s*\"(?<currentValue>\\d+\\.\\d+)\""],
+            "depNameTemplate": "go",
+            "datasourceTemplate": "golang-version",
+            "replacementStringTemplate": "{{newMajor}}.{{newMinor}}"
+        },
+        {
+            "fileMatch": ["\\.github/workflows/.*\\.ya?ml$"],
+            "matchStrings": ["(?:DEFAULT_)?GOLANGCI_LINT_VERSION:\\s*\"(?<currentValue>[^\"]+)\""],
+            "depNameTemplate": "golangci-lint",
+            "packageNameTemplate": "golangci/golangci-lint",
+            "datasourceTemplate": "github-releases",
+            "extractVersionTemplate": "^v?(?<version>.*)$"
+        },
+        {
+            "fileMatch": ["\\.github/workflows/.*\\.ya?ml$"],
+            "matchStrings": ["DEFAULT_TRUFFLEHOG_VERSION:\\s*\"(?<currentValue>[^\"]+)\""],
+            "depNameTemplate": "trufflehog",
+            "packageNameTemplate": "trufflesecurity/trufflehog",
+            "datasourceTemplate": "github-releases",
+            "extractVersionTemplate": "^v?(?<version>.*)$"
+        },
+        {
+            "fileMatch": ["\\.github/workflows/.*\\.ya?ml$"],
+            "matchStrings": ["DEFAULT_MAGE_VERSION:\\s*\"(?<currentValue>[^\"]+)\""],
+            "depNameTemplate": "mage",
+            "packageNameTemplate": "magefile/mage",
+            "datasourceTemplate": "github-releases",
+            "extractVersionTemplate": "^v?(?<version>.*)$"
+        },
+        {
+            "fileMatch": ["\\.github/workflows/.*\\.ya?ml$"],
+            "matchStrings": ["ACTIONLINT_VERSION:\\s*\"(?<currentValue>[^\"]+)\""],
+            "depNameTemplate": "actionlint",
+            "packageNameTemplate": "rhysd/actionlint",
+            "datasourceTemplate": "github-releases",
+            "extractVersionTemplate": "^v?(?<version>.*)$"
+        }
+    ],
     "minimumReleaseAge": "14 days",
     "prConcurrentLimit": 10,
     "rebaseWhen": "behind-base-branch"
