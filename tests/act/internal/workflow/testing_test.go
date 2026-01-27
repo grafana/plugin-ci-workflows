@@ -62,20 +62,6 @@ func TestWithInjectedSteps(t *testing.T) {
 		require.Equal(t, []string{"step-a", "step-b", "new-1", "new-2", "step-c", "step-d"}, stepIDs(twf.BaseWorkflow.Jobs[testJobID].Steps))
 	})
 
-	t.Run("PositionReplace with InjectionStepID", func(t *testing.T) {
-		twf := newTestWorkflow(
-			WithInjectedSteps(t, testJobID, InjectedStepsOptions{
-				Position:        InjectedStepsOptionsPositionReplace,
-				InjectionStepID: "step-c",
-				Steps: Steps{
-					{ID: "new-1", Name: "New Step 1"},
-					{ID: "new-2", Name: "New Step 2"},
-				},
-			}),
-		)
-		require.Equal(t, []string{"step-a", "step-b", "new-1", "new-2", "step-d"}, stepIDs(twf.BaseWorkflow.Jobs[testJobID].Steps))
-	})
-
 	t.Run("PositionBefore with InjectionStepIndex", func(t *testing.T) {
 		twf := newTestWorkflow(
 			WithInjectedSteps(t, testJobID, InjectedStepsOptions{
@@ -104,20 +90,6 @@ func TestWithInjectedSteps(t *testing.T) {
 		require.Equal(t, []string{"step-a", "step-b", "new-1", "new-2", "step-c", "step-d"}, stepIDs(twf.BaseWorkflow.Jobs[testJobID].Steps))
 	})
 
-	t.Run("PositionReplace with InjectionStepIndex", func(t *testing.T) {
-		twf := newTestWorkflow()
-		opt := WithInjectedSteps(t, testJobID, InjectedStepsOptions{
-			Position:           InjectedStepsOptionsPositionReplace,
-			InjectionStepIndex: 1, // step-b
-			Steps: Steps{
-				{ID: "new-1", Name: "New Step 1"},
-				{ID: "new-2", Name: "New Step 2"},
-			},
-		})
-		opt(twf)
-		require.Equal(t, []string{"step-a", "new-1", "new-2", "step-c", "step-d"}, stepIDs(twf.BaseWorkflow.Jobs[testJobID].Steps))
-	})
-
 	t.Run("inject before first step", func(t *testing.T) {
 		twf := newTestWorkflow(
 			WithInjectedSteps(t, testJobID, InjectedStepsOptions{
@@ -144,34 +116,6 @@ func TestWithInjectedSteps(t *testing.T) {
 			}),
 		)
 		require.Equal(t, []string{"step-a", "step-b", "step-c", "step-d", "new-1", "new-2"}, stepIDs(twf.BaseWorkflow.Jobs[testJobID].Steps))
-	})
-
-	t.Run("replace first step", func(t *testing.T) {
-		twf := newTestWorkflow(
-			WithInjectedSteps(t, testJobID, InjectedStepsOptions{
-				Position:           InjectedStepsOptionsPositionReplace,
-				InjectionStepIndex: 0,
-				Steps: Steps{
-					{ID: "new-1", Name: "New Step 1"},
-					{ID: "new-2", Name: "New Step 2"},
-				},
-			}),
-		)
-		require.Equal(t, []string{"new-1", "new-2", "step-b", "step-c", "step-d"}, stepIDs(twf.BaseWorkflow.Jobs[testJobID].Steps))
-	})
-
-	t.Run("replace last step", func(t *testing.T) {
-		twf := newTestWorkflow(
-			WithInjectedSteps(t, testJobID, InjectedStepsOptions{
-				Position:           InjectedStepsOptionsPositionReplace,
-				InjectionStepIndex: 3,
-				Steps: Steps{
-					{ID: "new-1", Name: "New Step 1"},
-					{ID: "new-2", Name: "New Step 2"},
-				},
-			}),
-		)
-		require.Equal(t, []string{"step-a", "step-b", "step-c", "new-1", "new-2"}, stepIDs(twf.BaseWorkflow.Jobs[testJobID].Steps))
 	})
 
 	t.Run("inject after last step using -1 index", func(t *testing.T) {

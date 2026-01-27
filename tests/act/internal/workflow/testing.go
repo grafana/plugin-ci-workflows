@@ -303,7 +303,7 @@ func WithRemoveAllStepsAfter(t *testing.T, jobID, stepID string) TestingWorkflow
 
 // InjectedStepsOptions defines options for injecting steps into a job via WithInjectedSteps.
 type InjectedStepsOptions struct {
-	// Position indicates whether to inject the new steps before, after, or replacing the injection step.
+	// Position indicates whether to inject the new steps before or after the injection step.
 	Position InjectedStepsOptionsPosition
 
 	// InjectionStepID is the ID of the step where the new steps will be injected.
@@ -313,7 +313,7 @@ type InjectedStepsOptions struct {
 	// InjectionStepIndex is the index of the step where the new steps will be injected.
 	// You can use 0 to inject before the first step.
 	// You can use -1 to inject after the last step.
-	// Otherwise, provide a valid step index.
+	// Otherwise, provide a valid step index to inject before/after that step, depending on Position.
 	// Either InjectionStepID or InjectionStepIndex must be set, but not both.
 	InjectionStepIndex int
 
@@ -330,9 +330,6 @@ const (
 
 	// InjectedStepsOptionsPositionAfter indicates that the new steps will be injected after the injection step.
 	InjectedStepsOptionsPositionAfter
-
-	// InjectedStepsOptionsPositionReplace indicates that the injection step will be removed and replaced with the new steps.
-	InjectedStepsOptionsPositionReplace
 )
 
 // WithInjectedSteps injects the given steps into the given job at the specified position
@@ -361,10 +358,6 @@ func WithInjectedSteps(t *testing.T, jobID string, opts InjectedStepsOptions) Te
 			job.Steps = append(job.Steps[:injectionStepIndex], append(opts.Steps, job.Steps[injectionStepIndex:]...)...)
 		case InjectedStepsOptionsPositionAfter:
 			job.Steps = append(job.Steps[:injectionStepIndex+1], append(opts.Steps, job.Steps[injectionStepIndex+1:]...)...)
-		case InjectedStepsOptionsPositionReplace:
-			err := job.RemoveStepAtIndex(injectionStepIndex)
-			require.NoError(t, err, "remove injection step at index %d in job %q", injectionStepIndex, jobID)
-			job.Steps = append(job.Steps[:injectionStepIndex], append(opts.Steps, job.Steps[injectionStepIndex:]...)...)
 		}
 	}
 }
