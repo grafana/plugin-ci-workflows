@@ -257,7 +257,7 @@ func TestToolingVersions(t *testing.T) {
 								Name: "Prepare plugin folder without .nvmrc",
 								Run: workflow.Commands{
 									`ls -lah`,
-									`echo ".nvmrc content:"`,
+									`echo "old .nvmrc content:"`,
 									"cat .nvmrc",
 									"rm .nvmrc",
 									`echo ".nvmrc has been removed"`,
