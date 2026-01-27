@@ -215,6 +215,67 @@ func WithNoOpStep(t *testing.T, jobID, stepID string) TestingWorkflowOption {
 	}
 }
 
+// InjectedStepsOptions defines options for injecting steps into a job via WithInjectedSteps.
+type InjectedStepsOptions struct {
+	// Position indicates whether to inject the new steps before or after the injection step.
+	Position InjectedStepsOptionsPosition
+
+	// InjectionStepID is the ID of the step where the new steps will be injected.
+	// Either InjectionStepID or InjectionStepIndex must be set, but not both.
+	InjectionStepID string
+
+	// InjectionStepIndex is the index of the step where the new steps will be injected.
+	// You can use 0 to inject before the first step.
+	// You can use -1 to inject after the last step.
+	// Otherwise, provide a valid step index to inject before/after that step, depending on Position.
+	// Either InjectionStepID or InjectionStepIndex must be set, but not both.
+	InjectionStepIndex int
+
+	// Steps are the steps to be injected.
+	Steps Steps
+}
+
+// InjectedStepsOptionsPosition indicates the position where the new steps will be injected.
+type InjectedStepsOptionsPosition int
+
+const (
+	// InjectedStepsOptionsPositionBefore indicates that the new steps will be injected before the injection step.
+	InjectedStepsOptionsPositionBefore InjectedStepsOptionsPosition = iota
+
+	// InjectedStepsOptionsPositionAfter indicates that the new steps will be injected after the injection step.
+	InjectedStepsOptionsPositionAfter
+)
+
+// WithInjectedSteps injects the given steps into the given job at the specified position
+// relative to the step identified by InjectionStepID or InjectionStepIndex (see InjectedStepsOptions).
+// This can be used to add custom steps for testing purposes.
+func WithInjectedSteps(t *testing.T, jobID string, opts InjectedStepsOptions) TestingWorkflowOption {
+	return func(twf *TestingWorkflow) {
+		job, ok := twf.BaseWorkflow.Jobs[jobID]
+		require.True(t, ok, fmt.Errorf("job %q not found", jobID))
+
+		var injectionStepIndex int
+		if opts.InjectionStepID != "" {
+			injectionStepIndex = job.getStepIndex(opts.InjectionStepID)
+			require.GreaterOrEqual(t, injectionStepIndex, 0, "injection step with id %q not found", opts.InjectionStepID)
+		} else {
+			injectionStepIndex = opts.InjectionStepIndex
+			require.GreaterOrEqual(t, injectionStepIndex, -1, "injection step index is < -1. it should be -1 (for injecting at the end) or a valid index.")
+			if injectionStepIndex == -1 {
+				injectionStepIndex = len(job.Steps) - 1
+			}
+			require.Less(t, injectionStepIndex, len(job.Steps), "injection step index %d out of bounds (steps length: %d)", injectionStepIndex, len(job.Steps))
+		}
+
+		switch opts.Position {
+		case InjectedStepsOptionsPositionBefore:
+			job.Steps = append(job.Steps[:injectionStepIndex], append(opts.Steps, job.Steps[injectionStepIndex:]...)...)
+		case InjectedStepsOptionsPositionAfter:
+			job.Steps = append(job.Steps[:injectionStepIndex+1], append(opts.Steps, job.Steps[injectionStepIndex+1:]...)...)
+		}
+	}
+}
+
 // WithMatrix sets the matrix for the given job.
 // This can be used to test workflows that use a dynamic matrix.
 // act doesn't support dynamic matrix values, so this is a workaround to set the matrix for the given job.
@@ -298,67 +359,6 @@ func WithRemoveAllStepsAfter(t *testing.T, jobID, stepID string) TestingWorkflow
 		require.True(t, ok, fmt.Errorf("job %q not found", jobID))
 		err := job.RemoveAllStepsAfter(stepID)
 		require.NoError(t, err, "remove all steps after %q in job %q", stepID, jobID)
-	}
-}
-
-// InjectedStepsOptions defines options for injecting steps into a job via WithInjectedSteps.
-type InjectedStepsOptions struct {
-	// Position indicates whether to inject the new steps before or after the injection step.
-	Position InjectedStepsOptionsPosition
-
-	// InjectionStepID is the ID of the step where the new steps will be injected.
-	// Either InjectionStepID or InjectionStepIndex must be set, but not both.
-	InjectionStepID string
-
-	// InjectionStepIndex is the index of the step where the new steps will be injected.
-	// You can use 0 to inject before the first step.
-	// You can use -1 to inject after the last step.
-	// Otherwise, provide a valid step index to inject before/after that step, depending on Position.
-	// Either InjectionStepID or InjectionStepIndex must be set, but not both.
-	InjectionStepIndex int
-
-	// Steps are the steps to be injected.
-	Steps Steps
-}
-
-// InjectedStepsOptionsPosition indicates the position where the new steps will be injected.
-type InjectedStepsOptionsPosition int
-
-const (
-	// InjectedStepsOptionsPositionBefore indicates that the new steps will be injected before the injection step.
-	InjectedStepsOptionsPositionBefore InjectedStepsOptionsPosition = iota
-
-	// InjectedStepsOptionsPositionAfter indicates that the new steps will be injected after the injection step.
-	InjectedStepsOptionsPositionAfter
-)
-
-// WithInjectedSteps injects the given steps into the given job at the specified position
-// relative to the step identified by InjectionStepID or InjectionStepIndex (see InjectedStepsOptions).
-// This can be used to add custom steps for testing purposes.
-func WithInjectedSteps(t *testing.T, jobID string, opts InjectedStepsOptions) TestingWorkflowOption {
-	return func(twf *TestingWorkflow) {
-		job, ok := twf.BaseWorkflow.Jobs[jobID]
-		require.True(t, ok, fmt.Errorf("job %q not found", jobID))
-
-		var injectionStepIndex int
-		if opts.InjectionStepID != "" {
-			injectionStepIndex = job.getStepIndex(opts.InjectionStepID)
-			require.GreaterOrEqual(t, injectionStepIndex, 0, "injection step with id %q not found", opts.InjectionStepID)
-		} else {
-			injectionStepIndex = opts.InjectionStepIndex
-			require.GreaterOrEqual(t, injectionStepIndex, -1, "injection step index is < -1. it should be -1 (for injecting at the end) or a valid index.")
-			if injectionStepIndex == -1 {
-				injectionStepIndex = len(job.Steps) - 1
-			}
-			require.Less(t, injectionStepIndex, len(job.Steps), "injection step index %d out of bounds (steps length: %d)", injectionStepIndex, len(job.Steps))
-		}
-
-		switch opts.Position {
-		case InjectedStepsOptionsPositionBefore:
-			job.Steps = append(job.Steps[:injectionStepIndex], append(opts.Steps, job.Steps[injectionStepIndex:]...)...)
-		case InjectedStepsOptionsPositionAfter:
-			job.Steps = append(job.Steps[:injectionStepIndex+1], append(opts.Steps, job.Steps[injectionStepIndex+1:]...)...)
-		}
 	}
 }
 
