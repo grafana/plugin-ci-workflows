@@ -75,6 +75,9 @@ func TestToolingVersions(t *testing.T) {
 
 		// expSetupVersions contains the expected setup output, versions that were actually installed
 		expSetupVersions setupVersions
+
+		// wfOptions contains additional (optional) workflow options for mutating the workflow for testing purposes
+		wfOptions []ci.WorkflowOption
 	}
 
 	// Read default Node/Go versions from ci.yml
@@ -241,7 +244,31 @@ func TestToolingVersions(t *testing.T) {
 		{
 			// no version files and no inputs, so fall back to default versions
 			name:   "no version files and no inputs",
-			folder: "simple-frontend-no-nvmrc",
+			folder: "simple-frontend",
+			wfOptions: []ci.WorkflowOption{
+				// Start off from simple-frontend, but delete the .nvmrc file before setup step.
+				// This simulates a plugin without a node version in .nvmrc
+				ci.MutateCIWorkflow().With(
+					workflow.WithInjectedSteps(t, "test-and-build", workflow.InjectedStepsOptions{
+						Position:        workflow.InjectedStepsOptionsPositionBefore,
+						InjectionStepID: "tooling-versions",
+						Steps: workflow.Steps{
+							workflow.Step{
+								Name: "Prepare plugin folder without .nvmrc",
+								Run: workflow.Commands{
+									`ls -lah`,
+									`echo "old .nvmrc content:"`,
+									"cat .nvmrc",
+									"rm .nvmrc",
+									`echo ".nvmrc has been removed"`,
+								}.String(),
+								WorkingDirectory: filepath.Join("tests", "simple-frontend"),
+								Shell:            "bash",
+							},
+						},
+					}),
+				),
+			},
 			expToolingVersions: toolingVersionsOutput{
 				NodeVersion:     defaultNodeVersion,
 				GoVersion:       defaultGoVersion,
@@ -270,13 +297,19 @@ func TestToolingVersions(t *testing.T) {
 			// Override the plugin directory input with the actual plugin folder
 			wfInputs.PluginDirectory = workflow.Input(filepath.Join("tests", tc.folder))
 
-			wf, err := ci.NewWorkflow(
+			// Base workflow options
+			wfOpts := []ci.WorkflowOption{
 				ci.WithWorkflowInputs(wfInputs),
 				ci.MutateCIWorkflow().With(
 					workflow.WithOnlyOneJob(t, "test-and-build", true),
 					workflow.WithRemoveAllStepsAfter(t, "test-and-build", "setup"),
 				),
-			)
+			}
+			// Apply custom workflow options (if provided)
+			wfOpts = append(wfOpts, tc.wfOptions...)
+
+			// Create the workflow with the specified options
+			wf, err := ci.NewWorkflow(wfOpts...)
 			require.NoError(t, err)
 
 			r, err := runner.Run(wf, act.NewPushEventPayload("main"))
