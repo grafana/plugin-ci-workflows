@@ -121,6 +121,8 @@ type WorkflowInputs struct {
 	DisableDocsPublishing      *bool
 	DisableGitHubRelease       *bool
 	TriggerArgo                *bool
+	AutoMergeEnvironments      *string
+	ArgoWorkflowSlackChannel   *string
 
 	// GCOMApiURL overrides the GCOM API URL for testing with mock servers.
 	// Use GCOMMock.DockerAccessibleURL() to get a Docker-accessible URL.
@@ -143,6 +145,8 @@ func WithWorkflowInputs(inputs WorkflowInputs) WorkflowOption {
 		workflow.SetJobInput(job, "disable-docs-publishing", inputs.DisableDocsPublishing)
 		workflow.SetJobInput(job, "disable-github-release", inputs.DisableGitHubRelease)
 		workflow.SetJobInput(job, "trigger-argo", inputs.TriggerArgo)
+		workflow.SetJobInput(job, "auto-merge-environments", inputs.AutoMergeEnvironments)
+		workflow.SetJobInput(job, "argo-workflow-slack-channel", inputs.ArgoWorkflowSlackChannel)
 		workflow.SetJobInput(job, "release-reference-regex", inputs.ReleaseReferenceRegex)
 		workflow.SetJobInput(job, "docs-only", inputs.DocsOnly)
 		workflow.SetJobInput(job, "allow-publishing-prs-to-prod", inputs.AllowPublishingPRsToProd)
@@ -162,12 +166,16 @@ func WithCIOptions(opts ...ci.WorkflowOption) WorkflowOption {
 
 // WithMockedArgoWorkflows modifies the SimpleCD workflow to mock the Argo Workflow trigger step
 // (which uses the grafana/shared-workflows/actions/trigger-argo-workflow action)
-// to instead return a mock URI.
-// This allows testing CD workflows without actually triggering Argo Workflows.
-func WithMockedArgoWorkflows(t *testing.T) WorkflowOption {
+// to instead POST its inputs to the provided HTTPSpy and return a mock URI.
+// This allows testing CD workflows without actually triggering Argo Workflows,
+// while recording the inputs for later assertions.
+//
+// Use runner.Argo to get the HTTPSpy instance.
+func WithMockedArgoWorkflows(t *testing.T, spy *act.HTTPSpy) WorkflowOption {
 	return func(w *Workflow) {
+		url := spy.DockerAccessibleURL()
 		err := w.CDWorkflow().MockAllStepsUsingAction(workflow.ArgoWorkflowAction, func(step workflow.Step) (workflow.Step, error) {
-			return workflow.MockArgoWorkflowStep(step)
+			return workflow.MockArgoWorkflowStep(step, url)
 		})
 		require.NoError(t, err, "mock argo workflow step")
 	}
