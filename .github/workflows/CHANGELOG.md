@@ -1,5 +1,18 @@
 # Changelog
 
+## [6.1.1](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v6.1.0...ci-cd-workflows/v6.1.1) (2026-01-28)
+
+
+### ✅ Tests
+
+* **act:** add cd deployment logic tests ([#509](https://github.com/grafana/plugin-ci-workflows/issues/509)) ([2ca4b67](https://github.com/grafana/plugin-ci-workflows/commit/2ca4b6712464dc247e5df6c63446d1463886eeef))
+
+
+### 🔧 Chores
+
+* **deps:** update actions/checkout action to v6.0.2 ([#529](https://github.com/grafana/plugin-ci-workflows/issues/529)) ([352ce11](https://github.com/grafana/plugin-ci-workflows/commit/352ce11438654fcca4c009130595750fa979903c))
+* **renovate:** handle default go, node and tooling versions in workflows via renovate ([#533](https://github.com/grafana/plugin-ci-workflows/issues/533)) ([e8bea40](https://github.com/grafana/plugin-ci-workflows/commit/e8bea408ad660987d02b57a82236021fd8e3a79d))
+
 ## [6.1.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v6.0.0...ci-cd-workflows/v6.1.0) (2026-01-22)
 
 
