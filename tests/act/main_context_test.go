@@ -51,7 +51,7 @@ func TestContext(t *testing.T) {
 				// Only run test-and-build job and stop after workflow-context step
 				// (no need to build the plugin, etc, for this test)
 				ci.MutateCIWorkflow().With(
-					workflow.WithOnlyOneJob(t, testAndBuild),
+					workflow.WithOnlyOneJob(t, testAndBuild, false),
 					workflow.WithRemoveAllStepsAfter(t, testAndBuild, workflowContext),
 				),
 			)
@@ -106,7 +106,7 @@ func TestContext(t *testing.T) {
 					Testing:             workflow.Input(tc.testingInput),
 				}),
 				ci.MutateCIWorkflow().With(
-					workflow.WithOnlyOneJob(t, testAndBuild),
+					workflow.WithOnlyOneJob(t, testAndBuild, false),
 					workflow.WithRemoveAllStepsAfter(t, testAndBuild, workflowContext),
 				),
 			)
@@ -160,7 +160,7 @@ func TestContext(t *testing.T) {
 					Testing:             workflow.Input(tc.testingInput),
 				}),
 				ci.MutateCIWorkflow().With(
-					workflow.WithOnlyOneJob(t, testAndBuild),
+					workflow.WithOnlyOneJob(t, testAndBuild, false),
 					workflow.WithRemoveAllStepsAfter(t, testAndBuild, workflowContext),
 				),
 			)
@@ -213,7 +213,7 @@ func TestContext(t *testing.T) {
 					Testing:             workflow.Input(tc.testingInput),
 				}),
 				ci.MutateCIWorkflow().With(
-					workflow.WithOnlyOneJob(t, testAndBuild),
+					workflow.WithOnlyOneJob(t, testAndBuild, false),
 					workflow.WithRemoveAllStepsAfter(t, testAndBuild, workflowContext),
 				),
 				ci.MutateTestingWorkflow().With(
