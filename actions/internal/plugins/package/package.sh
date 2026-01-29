@@ -111,9 +111,14 @@ for file in $(find "$backend_folder" -type f -name "${exe_basename}_*"); do
     # Copy all files but the executables, preserving permissions and mod times (similar to rsync)
     pushd "$dist" > /dev/null
     # -name "${exe_basename}*" -prune: Ignore (prune) all executables
-    # -o -type f -print0: OR, print file name (NUL-terminated) for use with xargs -0
+    # -o -type f -print0: OR, print file name (NUL-terminated) for use with while read
     # Copy with cp, preserving permissions and create any required parent directories to the dest folder
-    find . -name "${exe_basename}*" -prune -o -type f -print0 | xargs -0 cp -p --parents -t "$tmp/$plugin_id"
+    # Note: Using a while loop instead of xargs for macOS compatibility (BSD cp lacks --parents and -t)
+    find . -name "${exe_basename}*" -prune -o -type f -print0 | while IFS= read -r -d '' file; do
+        dir=$(dirname "$file")
+        mkdir -p "$tmp/$plugin_id/$dir"
+        cp -p "$file" "$tmp/$plugin_id/$dir/"
+    done
     popd > /dev/null
 
     # Copy only the current executable
