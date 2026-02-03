@@ -1,11 +1,13 @@
 package main
 
 import (
+	"slices"
 	"strings"
 	"testing"
 
 	"github.com/grafana/plugin-ci-workflows/tests/act/internal/act"
 	"github.com/grafana/plugin-ci-workflows/tests/act/internal/workflow"
+	"github.com/grafana/plugin-ci-workflows/tests/act/internal/workflow/ci"
 	"github.com/stretchr/testify/require"
 )
 
@@ -46,7 +48,13 @@ func TestValidator(t *testing.T) {
 			sourceFolder:       "simple-backend",
 			packagedDistFolder: "dist-artifacts-unsigned/simple-backend",
 			expSuccess:         true,
-			expAnnotations:     baseValidatorAnnotations,
+			expAnnotations: append(slices.Clone(baseValidatorAnnotations), []act.Annotation{
+				{
+					Level:   act.AnnotationLevelWarning,
+					Title:   "plugin-validator: Warning: Your Grafana Go SDK is older than 2 months",
+					Message: `Please upgrade your Grafana Go SDK to the latest version by running: "go get -u github.com/grafana/grafana-plugin-sdk-go"`,
+				},
+			}...),
 		},
 		{
 			name:               "simple-frontend-yarn succeeds with warnings",
@@ -86,20 +94,21 @@ analyzers:
   osv-scanner:
     enabled: false
 `
-			wf, err := workflow.NewSimpleCI(
-				workflow.WithPluginDirectoryInput("tests/"+tc.sourceFolder),
-				workflow.WithDistArtifactPrefixInput(tc.sourceFolder+"-"),
+			wf, err := ci.NewWorkflow(
+				ci.WithWorkflowInputs(ci.WorkflowInputs{
+					PluginDirectory:     workflow.Input("tests/" + tc.sourceFolder),
+					DistArtifactsPrefix: workflow.Input(tc.sourceFolder + "-"),
 
-				// Disable some features to speed up the test
-				workflow.WithPlaywrightInput(false),
-				workflow.WithRunTruffleHogInput(false),
+					// Disable some features to speed up the test
+					RunPlaywright: workflow.Input(false),
+					RunTruffleHog: workflow.Input(false),
 
-				// Enable the plugin validator (opt-in)
-				workflow.WithRunPluginValidatorInput(true),
-				workflow.WithPluginValidatorConfigInput(validatorConfig),
-
+					// Enable the plugin validator (opt-in)
+					RunPluginValidator:    workflow.Input(true),
+					PluginValidatorConfig: workflow.Input(validatorConfig),
+				}),
 				// Mock dist so we don't spend time building the plugin
-				workflow.WithMockedPackagedDistArtifacts(t, "dist/"+tc.sourceFolder, tc.packagedDistFolder),
+				ci.WithMockedPackagedDistArtifacts(t, "dist/"+tc.sourceFolder, tc.packagedDistFolder),
 			)
 			require.NoError(t, err)
 

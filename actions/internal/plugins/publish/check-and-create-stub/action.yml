@@ -26,6 +26,12 @@ inputs:
       Required only for publishing to dev or ops.
     required: false
     default: ""
+  gcom-api-url:
+    description: |
+      FOR INTERNAL TESTING ONLY.
+      Override the GCOM API URL (used for testing with mock servers).
+    required: false
+    default: ""
 
 runs:
   using: composite
@@ -38,6 +44,7 @@ runs:
       env:
         GCLOUD_AUTH_TOKEN: ${{ inputs.gcloud-auth-token }}
         GCOM_PUBLISH_TOKEN: ${{ inputs.gcom-publish-token }}
+        GCOM_API_URL: ${{ inputs.gcom-api-url }}
 
         ENVIRONMENT: ${{ inputs.environment }}
         PLUGIN_ID: ${{ inputs.plugin-id }}

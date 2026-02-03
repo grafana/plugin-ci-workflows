@@ -96,6 +96,11 @@ on:
         type: boolean
         required: false
         default: false
+      run-playwright-with-skip-grafana-react-19-preview-image:
+        description: Optionally, you can skip the Grafana React 19 preview image
+        type: boolean
+        required: false
+        default: false
       run-playwright-with-version-resolver-type:
         description: Define which version resolver type to use for Playwright E2E tests.
         type: string
@@ -302,53 +307,9 @@ env:
 jobs:
   check-for-release-channel:
     name: Check for release channel
-    runs-on: ubuntu-arm64-small
-    steps:
-      - name: Checkout
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
-
-      - name: Check for rolling releases channel
-        run: |
-          diff=$(grep -E 'grafana/plugin-ci-workflows.+@main' -rn .github/workflows/ || true)
-          if [[ -n "$diff" ]]; then
-            echo "Found usage of rolling releases channel in the following files:"
-            echo "$diff"
-
-            title="Detected plugin-ci-workflows rolling release channel"
-            message="You are using workflows from plugin-ci-workflows rolling releases channel (\`@main\`). \
-          This is discouraged as it may lead to unexpected breaking changes. \
-          Please pin to a specific tagged release to ensure better stability. \
-          For more information, refer to the docs: https://enghub.grafana-ops.net/docs/default/component/grafana-plugins-platform/plugins-ci-github-actions/010-plugins-ci-github-actions/#versions-and-release-channels"
-
-            echo "::warning title=$title::$message"
-            exit 0
-          fi
-        shell: bash
-
-      - name: Check for plugin-ci-workflows pinned to commit hash
-        run: |
-          diff=$(grep -E 'grafana/plugin-ci-workflows.+@[0-9a-f]{6,40}' -rn .github/workflows/ || true)
-          if [[ -n "$diff" ]]; then
-            echo "Found plugin-ci-workflows pinned to a commit hash in the following files:"
-            echo "$diff"
-
-            title="Detected plugin-ci-workflows pinned to a commit hash"
-            message="You are pinning plugin-ci-workflows to a commit hash. \
-          To limit the amount of exposure (security reasons), this is not allowed and the workflow will fail. \
-          Please pin to a specific tagged release instead. \
-          For more information, refer to the docs: https://enghub.grafana-ops.net/docs/default/component/grafana-plugins-platform/plugins-ci-github-actions/010-plugins-ci-github-actions/#versions-and-release-channels"
-
-            echo "::error title=$title::$message"
-            if [ "${ALLOW_PINNED_COMMIT_HASHES}" != "true" ]; then
-              # Hard fail by default
-              exit 1
-            else
-              exit 0
-            fi
-          fi
-        env:
-          ALLOW_PINNED_COMMIT_HASHES: ${{ inputs.DO-NOT-USE-allow-pinned-commit-hashes }}
-        shell: bash
+    uses: grafana/plugin-ci-workflows/.github/workflows/check-release-channel.yml@main
+    with:
+      DO-NOT-USE-allow-pinned-commit-hashes: ${{ inputs.DO-NOT-USE-allow-pinned-commit-hashes }}
 
   test-and-build:
     name: Test and build plugin
@@ -369,7 +330,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           # Force exact ref when running in act (it copies files locally, it breaks if we specify another ref)
           ref: ${{ !github.event.act && inputs.branch || github.sha }}
@@ -608,22 +569,27 @@ jobs:
           # Copy workspace to a new tempdir to avoid issues when mounting the folder when running with act
           TEMP_WORKSPACE_DIR=$(mktemp -d)
           cp -r "${PLUGIN_DIRECTORY}"/* "$TEMP_WORKSPACE_DIR/"
+          # Add validator config file
+          mv "$PLUGIN_VALIDATOR_CONFIG_PATH" "$TEMP_WORKSPACE_DIR/.plugin-validator.yaml"
+          # Remove node_modules so it's not scanned by the validator
+          rm -rf "$TEMP_WORKSPACE_DIR/node_modules"
 
           # Give a UUID to each container so multiple can be run in parallel when running with act
           UUID=$(cat /proc/sys/kernel/random/uuid)
 
-          # Do not run clamav because it takes too long
-          docker run --name="plugin-validator-${UUID}" --pull=always --platform=linux/amd64 \
-            -v "${PLUGIN_VALIDATOR_CONFIG_PATH}:/workspace/.plugin-validator.yaml:ro" \
-            -v "${TEMP_WORKSPACE_DIR}/dist-artifacts:/workspace/dist-artifacts:ro" \
-            -v "${TEMP_WORKSPACE_DIR}:/workspace" \
-            -v "/tmp/empty:/workspace/node_modules" \
+          # Create the validator container but don't start it yet.
+          # We cannot use a volume mount here if we are using act on Mac OS, so
+          # we need to copy the workspace to a new tempdir and then start the container.
+          # Also, do not run clamav because it takes too long
+          docker create --name="plugin-validator-${UUID}" --pull=always --platform=linux/amd64 \
             -e SKIP_CLAMAV=1 \
             grafana/plugin-validator-cli \
             -ghaOutput \
             -config=/workspace/.plugin-validator.yaml \
             -sourceCodeUri=file:///workspace \
             "/workspace/dist-artifacts/${UNIVERSAL_ZIP}"
+          docker cp "$TEMP_WORKSPACE_DIR" "plugin-validator-${UUID}:/workspace"
+          docker start -a "plugin-validator-${UUID}"
           EXIT_CODE=$(docker inspect "plugin-validator-${UUID}" --format='{{.State.ExitCode}}')
           docker rm "plugin-validator-${UUID}"
           exit "$EXIT_CODE"
@@ -692,7 +658,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           # Force exact ref when running in act (it copies files locally, it breaks if we specify another ref)
           ref: ${{ !github.event.act && inputs.branch || github.sha }}
@@ -721,6 +687,7 @@ jobs:
       plugin-directory: ${{ inputs.plugin-directory }}
       grafana-dependency: ${{ inputs.run-playwright-with-grafana-dependency }}
       skip-grafana-dev-image: ${{ inputs.run-playwright-with-skip-grafana-dev-image }}
+      skip-grafana-react-19-preview-image: ${{ inputs.run-playwright-with-skip-grafana-react-19-preview-image }}
       version-resolver-type: ${{ inputs.run-playwright-with-version-resolver-type }}
       upload-artifacts: ${{ inputs.upload-playwright-artifacts }}
       docker-compose-file: ${{ inputs.playwright-docker-compose-file }}
@@ -742,6 +709,7 @@ jobs:
       version: ${{ fromJSON(needs.test-and-build.outputs.plugin).version}}
       grafana-dependency: ${{ inputs.run-playwright-with-grafana-dependency }}
       skip-grafana-dev-image: ${{ inputs.run-playwright-with-skip-grafana-dev-image }}
+      skip-grafana-react-19-preview-image: ${{ inputs.run-playwright-with-skip-grafana-react-19-preview-image }}
       version-resolver-type: ${{ inputs.run-playwright-with-version-resolver-type }}
       upload-artifacts: ${{ inputs.upload-playwright-artifacts }}
       grafana-compose-file: ${{ inputs.playwright-docker-compose-file }}

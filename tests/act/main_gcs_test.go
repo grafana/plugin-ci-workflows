@@ -8,6 +8,7 @@ import (
 
 	"github.com/grafana/plugin-ci-workflows/tests/act/internal/act"
 	"github.com/grafana/plugin-ci-workflows/tests/act/internal/workflow"
+	"github.com/grafana/plugin-ci-workflows/tests/act/internal/workflow/ci"
 	"github.com/stretchr/testify/require"
 )
 
@@ -42,32 +43,39 @@ func TestGCS(t *testing.T) {
 				act.NewPullRequestEventPayload("feature-branch"),
 			} {
 				t.Run(string(event.Kind), func(t *testing.T) {
+					t.Parallel()
+
 					runner, err := act.NewRunner(t)
 					require.NoError(t, err)
 
-					wf, err := workflow.NewSimpleCI(
-						workflow.WithPluginDirectoryInput(filepath.Join("tests", tc.folder)),
-						workflow.WithDistArtifactPrefixInput(tc.folder+"-"),
-
-						// Disable some features to speed up the test
-						workflow.WithPlaywrightInput(false),
-						workflow.WithRunTruffleHogInput(false),
-						workflow.WithRunPluginValidatorInput(false),
+					wf, err := ci.NewWorkflow(
+						ci.WithWorkflowInputs(ci.WorkflowInputs{
+							PluginDirectory:     workflow.Input(filepath.Join("tests", tc.folder)),
+							DistArtifactsPrefix: workflow.Input(tc.folder + "-"),
+							AllowUnsigned:       workflow.Input(true),
+							// Disable some features to speed up the test
+							RunPlaywright:      workflow.Input(false),
+							RunTruffleHog:      workflow.Input(false),
+							RunPluginValidator: workflow.Input(false),
+						}),
 
 						// Mock dist so we don't spend time building the plugin
-						workflow.WithMockedDist(t, "dist/"+tc.folder),
+						ci.WithMockedDist(t, "dist/"+tc.folder),
+
 						// Mock a trusted context to enable GCS upload
-						workflow.WithMockedWorkflowContext(t, workflow.Context{
+						ci.WithMockedWorkflowContext(t, ci.Context{
 							IsTrusted: true,
 						}),
-						// Mock all GCS access
-						workflow.WithMockedGCS(t),
 
-						// No-op steps that are normally executed in a trusted context
-						// but are not relevant for this test and would error out otherwise.
-						workflow.WithNoOpStep(t, "test-and-build", "get-secrets"),
-						workflow.WithNoOpStep(t, "test-and-build", "generate-github-token"),
-						workflow.WithAllowUnsignedInput(true),
+						ci.MutateCIWorkflow().With(
+							// Mock all GCS access
+							workflow.WithMockedGCS(t),
+
+							// No-op steps that are normally executed in a trusted context
+							// but are not relevant for this test and would error out otherwise.
+							workflow.WithNoOpStep(t, "test-and-build", "get-secrets"),
+							workflow.WithNoOpStep(t, "test-and-build", "generate-github-token"),
+						),
 					)
 					require.NoError(t, err)
 
@@ -77,8 +85,8 @@ func TestGCS(t *testing.T) {
 
 					// Assert files uploaded to GCS (commit hash)
 					anyZipFn := anyZipFileName(tc.id, tc.version)
-					commitBasePath := filepath.Join("integration-artifacts", tc.id, tc.version, "main", commitHash, tc.folder+"-dist-artifacts")
-					latestBasePath := filepath.Join("integration-artifacts", tc.id, tc.version, "main", "latest", tc.folder+"-dist-artifacts")
+					commitBasePath := filepath.Join("integration-artifacts", tc.id, tc.version, "main", commitHash)
+					latestBasePath := filepath.Join("integration-artifacts", tc.id, tc.version, "main", "latest")
 
 					// Expect commit hash any zip
 					expFiles := []string{filepath.Join(commitBasePath, anyZipFn)}

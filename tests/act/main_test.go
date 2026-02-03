@@ -5,7 +5,9 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"errors"
+	"flag"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -19,6 +21,11 @@ import (
 
 // TestMain sets up the test environment before running the tests.
 func TestMain(m *testing.M) {
+	// Parse flags early so we can check testing.Short() before m.Run()
+	flag.Parse()
+
+	fmt.Println("preparing test environment")
+
 	// Go to the root of the repo
 	root, err := getRepoRootAbsPath()
 	if err != nil {
@@ -33,21 +40,94 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
-	// Read ci.yml to get the default tooling versions, so we can warm up the cache
-	ciWf, err := workflow.NewBaseWorkflowFromFile(filepath.Join(".github", "workflows", "ci.yml"))
-	if err != nil {
-		panic(err)
+	// Skip cache warm-up in short mode
+	if !testing.Short() {
+		// Read ci.yml to get the default tooling versions, so we can warm up the cache
+		ciWf, err := workflow.NewBaseWorkflowFromFile(filepath.Join(".github", "workflows", "ci.yml"))
+		if err != nil {
+			panic(err)
+		}
+
+		// Warm up both action cache and tool cache in a single workflow.
+		// This runs one workflow that:
+		// 1. Pre-caches all external actions (with if: false so they download but don't run)
+		// 2. Runs the tooling setup to warm up the tool cache (Go version, Node version, etc.)
+		// 3. Runs the Trufflehog setup to warm up the Trufflehog binary cache
+		if err := warmUpCaches(ciWf); err != nil {
+			panic(fmt.Errorf("warm up caches: %w", err))
+		}
+
+		// Verify that the action cache was populated
+		if empty, err := isDirEmpty(act.TemplateActionsCachePath); err != nil {
+			panic(fmt.Errorf("check action cache: %w", err))
+		} else if empty {
+			panic(fmt.Errorf("action cache directory is empty: %s", act.TemplateActionsCachePath))
+		}
+	} else {
+		fmt.Println("skipping cache warm-up (short mode)")
 	}
 
-	// Warm up act-toolcache volume, otherwise we get weird errors
-	// when running the "setup/*" actions in parallel tests since they
-	// all share the same act-toolcache volume.
-	runner, err := act.NewRunner(&testing.T{}, act.WithName("toolcache-warmup"))
+	fmt.Println("test environment ready")
+
+	// Run the tests
+	os.Exit(m.Run())
+}
+
+// warmUpCaches pre-populates both the action cache and tool cache in a single workflow.
+// It first caches all external actions (with if: false so they download but don't run),
+// then runs the tooling setup steps to warm up the tool cache.
+func warmUpCaches(ciWf workflow.BaseWorkflow) error {
+	fmt.Println("warming up action and tool caches...")
+
+	// Extract all external actions from workflow files
+	externalActions, err := act.ExtractExternalActions(
+		filepath.Join(".github", "workflows"),
+		"actions",
+	)
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("extract external actions: %w", err)
 	}
+	fmt.Printf("found %d external actions to cache\n", len(externalActions))
+
+	// Build the steps list:
+	// 1. First, cache all external actions with `if: false` (download but don't run)
+	// 2. Then run the tooling setup steps to warm up the tool cache
+	var steps []workflow.Step
+
+	// Step 1: Cache all external actions
+	for _, action := range externalActions {
+		steps = append(steps, workflow.Step{
+			Name: "Cache " + action,
+			Uses: action,
+			If:   "false",
+		})
+	}
+
+	// Step 2: Warm up tooling (Go, Node, golangci-lint, mage)
+	steps = append(steps, workflow.Step{
+		Name: "Warm up tooling",
+		Uses: "grafana/plugin-ci-workflows/actions/internal/plugins/setup@main",
+		With: map[string]any{
+			"go-version":            ciWf.Env["DEFAULT_GO_VERSION"],
+			"node-version":          ciWf.Env["DEFAULT_NODE_VERSION"],
+			"golangci-lint-version": ciWf.Env["DEFAULT_GOLANGCI_LINT_VERSION"],
+			"mage-version":          ciWf.Env["DEFAULT_MAGE_VERSION"],
+			"act-cache-warmup":      "true",
+		},
+	})
+
+	// Step 3: Warm up Trufflehog binary cache
+	steps = append(steps, workflow.Step{
+		Name: "Warm up Trufflehog",
+		Uses: "grafana/plugin-ci-workflows/actions/internal/plugins/trufflehog@main",
+		With: map[string]any{
+			"trufflehog-version": ciWf.Env["DEFAULT_TRUFFLEHOG_VERSION"],
+			"setup-only":         "true",
+		},
+	})
+
 	cacheWarmupWf := workflow.BaseWorkflow{
-		Name: "Act tool cache warm up",
+		Name: "Act cache warm up",
 		On: workflow.On{
 			Push: workflow.OnPush{
 				Branches: []string{"main"},
@@ -55,47 +135,63 @@ func TestMain(m *testing.M) {
 		},
 		Jobs: map[string]*workflow.Job{
 			"warmup": {
-				Name:   "Warm up tool cache",
+				Name:   "Warm up caches",
 				RunsOn: "ubuntu-arm64-small",
-				Steps: []workflow.Step{
-					{
-						Name: "Warm up tooling",
-						Uses: "grafana/plugin-ci-workflows/actions/internal/plugins/setup@main",
-						With: map[string]any{
-							"go-version":            ciWf.Env["DEFAULT_GO_VERSION"],
-							"node-version":          ciWf.Env["DEFAULT_NODE_VERSION"],
-							"golangci-lint-version": ciWf.Env["DEFAULT_GOLANGCI_LINT_VERSION"],
-							"mage-version":          ciWf.Env["DEFAULT_MAGE_VERSION"],
-							"act-cache-warmup":      "true",
-						},
-					},
-					{
-						Name: "Warm up Trufflehog",
-						Uses: "grafana/plugin-ci-workflows/actions/internal/plugins/trufflehog@main",
-						With: map[string]any{
-							"trufflehog-version": ciWf.Env["DEFAULT_TRUFFLEHOG_VERSION"],
-							"setup-only":         "true",
-						},
-					},
-				},
+				Steps:  steps,
 			},
 		},
 	}
-	r, err := runner.Run(
-		workflow.NewTestingWorkflow("toolcache-warmup", cacheWarmupWf),
+
+	// Run the warmup workflow to populate the shared action cache
+	warmupRunner, err := act.NewRunner(
+		&testing.T{},
+		act.WithActionsCachePath(act.TemplateActionsCachePath),
+		act.WithName("toolcache-warmup"),
+	)
+	if err != nil {
+		return fmt.Errorf("create warmup runner: %w", err)
+	}
+
+	r, err := warmupRunner.Run(
+		workflow.NewTestingWorkflow("cache-warmup", cacheWarmupWf),
 		act.NewPushEventPayload("main"),
 	)
 	if err != nil {
-		panic(fmt.Errorf("warm up act toolcache: %w", err))
+		return fmt.Errorf("run warmup workflow: %w", err)
 	}
 	if !r.Success {
-		panic("warm up act toolcache: workflow failed")
+		return fmt.Errorf("warmup workflow failed")
 	}
 
-	fmt.Println("test environment ready")
+	fmt.Println("cache warm up complete")
+	return nil
+}
 
-	// Run the tests
-	os.Exit(m.Run())
+// isDirEmpty checks if a directory is empty or doesn't exist.
+// Returns true if the directory is empty or doesn't exist, false otherwise.
+func isDirEmpty(path string) (empty bool, err error) {
+	f, err := os.Open(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return true, nil
+		}
+		return false, err
+	}
+	defer func() {
+		if closeErr := f.Close(); closeErr != nil && err == nil {
+			err = closeErr
+		}
+	}()
+
+	// Try to read one entry - io.EOF means directory is empty
+	_, err = f.Readdirnames(1)
+	if errors.Is(err, io.EOF) {
+		return true, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return false, nil
 }
 
 // getRepoRootAbsPath returns the absolute path of the root of the git repository.
@@ -249,8 +345,8 @@ func anyZipFileName(pluginID, version string) string {
 }
 
 // osArchZipFileName returns the file name for the OS/Arch specific ZIP file
-func osArchZipFileName(pluginID, version, osArch string) string {
-	return pluginID + "-" + version + "." + osArch + ".zip"
+func osArchZipFileName(pluginID, version string, osArch osArchCombo) string {
+	return pluginID + "-" + version + "." + osArch.String() + ".zip"
 }
 
 // getGitCommitSHA returns the current git commit SHA of the repository in the current working directory.
@@ -264,12 +360,25 @@ func getGitCommitSHA() (string, error) {
 	return strings.TrimSpace(string(output)), nil
 }
 
+func newPointer[T any](v T) *T {
+	return &v
+}
+
 // osArchCombos defines the supported OS/Arch combinations for plugin packaging.
-var osArchCombos = [...]string{
-	"darwin_amd64",
-	"darwin_arm64",
-	"linux_amd64",
-	"linux_arm",
-	"linux_arm64",
-	"windows_amd64",
+var osArchCombos = []osArchCombo{
+	{os: "darwin", arch: "amd64"},
+	{os: "darwin", arch: "arm64"},
+	{os: "linux", arch: "amd64"},
+	{os: "linux", arch: "arm"},
+	{os: "linux", arch: "arm64"},
+	{os: "windows", arch: "amd64"},
+}
+
+type osArchCombo struct {
+	os   string
+	arch string
+}
+
+func (c *osArchCombo) String() string {
+	return c.os + "_" + c.arch
 }

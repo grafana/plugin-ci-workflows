@@ -3,11 +3,11 @@ package main
 import (
 	"encoding/json"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/grafana/plugin-ci-workflows/tests/act/internal/act"
 	"github.com/grafana/plugin-ci-workflows/tests/act/internal/workflow"
+	"github.com/grafana/plugin-ci-workflows/tests/act/internal/workflow/ci"
 	"github.com/stretchr/testify/require"
 )
 
@@ -68,10 +68,12 @@ func TestSmoke(t *testing.T) {
 			runner, err := act.NewRunner(t)
 			require.NoError(t, err)
 
-			wf, err := workflow.NewSimpleCI(
-				workflow.WithPluginDirectoryInput(filepath.Join("tests", tc.folder)),
-				workflow.WithDistArtifactPrefixInput(tc.folder+"-"),
-				workflow.WithPlaywrightInput(false),
+			wf, err := ci.NewWorkflow(
+				ci.WithWorkflowInputs(ci.WorkflowInputs{
+					PluginDirectory:     workflow.Input(filepath.Join("tests", tc.folder)),
+					DistArtifactsPrefix: workflow.Input(tc.folder + "-"),
+					RunPlaywright:       workflow.Input(false),
+				}),
 			)
 			require.NoError(t, err)
 
@@ -119,11 +121,12 @@ func TestSmoke(t *testing.T) {
 			}))
 			if hasBackend {
 				for _, osArch := range osArchCombos {
-					if strings.Contains(osArch, "windows") {
-						osArch = osArch + ".exe"
+					osArchFnSuffix := osArch.String()
+					if osArch.os == "windows" {
+						osArchFnSuffix += ".exe"
 					}
 					require.NoError(t, checkFilesExist(zfs, []string{
-						filepath.Join(tc.exp.ID, tc.exp.Executable+"_"+osArch),
+						filepath.Join(tc.exp.ID, tc.exp.Executable+"_"+osArchFnSuffix),
 					}))
 				}
 			}

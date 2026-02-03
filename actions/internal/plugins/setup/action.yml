@@ -49,6 +49,20 @@ inputs:
     description: mage version to use.
     required: true
 
+outputs:
+  node-version:
+    description: The Node.js version that was installed.
+    value: ${{ steps.node.outputs.node-version }}
+  go-version:
+    description: The Go version that was installed.
+    value: ${{ steps.go.outputs.go-version }}
+  node-package-manager-name:
+    description: The name of the detected Node.js package manager (npm, yarn, or pnpm).
+    value: ${{ steps.package-manager.outputs.name }}
+  node-package-manager-version:
+    description: The version of the detected Node.js package manager.
+    value: ${{ steps.package-manager.outputs.version }}
+
 runs:
   using: composite
   steps:
@@ -66,6 +80,7 @@ runs:
         version: ${{ steps.package-manager.outputs.version }}
 
     - name: Node
+      id: node
       uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
       with:
         node-version: "${{ inputs.node-version }}"

@@ -54,25 +54,32 @@ if [ -z $scopes ]; then
     scopes='["universal"]'
 fi
 
-has_iap=false
-case $gcom_env in
-    dev)
-        gcom_api_url=https://grafana-dev.com/api
-        has_iap=true
-        ;;
-    ops|staging)
-        gcom_api_url=https://grafana-ops.com/api
-        has_iap=true
-        ;;
-    prod)
-        gcom_api_url=https://grafana.com/api
-        ;;
-    *)
-        echo "Invalid environment: $gcom_env (supported values: 'dev', 'ops', 'staging', 'prod')"
-        usage
-        exit 1
-        ;;
-esac
+# Allow URL override for testing (GCOM_API_URL takes precedence)
+if [ -n "$GCOM_API_URL" ]; then
+    gcom_api_url=$GCOM_API_URL
+    has_iap=false
+    echo "Using GCOM_API_URL override: $gcom_api_url"
+else
+    has_iap=false
+    case $gcom_env in
+        dev)
+            gcom_api_url=https://grafana-dev.com/api
+            has_iap=true
+            ;;
+        ops|staging)
+            gcom_api_url=https://grafana-ops.com/api
+            has_iap=true
+            ;;
+        prod)
+            gcom_api_url=https://grafana.com/api
+            ;;
+        *)
+            echo "Invalid environment: $gcom_env (supported values: 'dev', 'ops', 'staging', 'prod')"
+            usage
+            exit 1
+            ;;
+    esac
+fi
 
 # Build args for curl to GCOM (auth headers)
 curl_args=(

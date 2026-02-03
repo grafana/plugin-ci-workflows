@@ -6,10 +6,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"net"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -49,11 +52,22 @@ type Runner struct {
 	// uuid is a unique identifier for this Runner instance.
 	uuid uuid.UUID
 
+	// actionsCachePath is the absolute path where GitHub Actions are cached.
+	// If empty, a new temporary directory is created for each runner.
+	actionsCachePath string
+
 	// ArtifactsStorage is the storage for artifacts uploaded during the workflow run.
 	ArtifactsStorage ArtifactsStorage
 
 	// GCS is the GCS mock storage used during the workflow run.
 	GCS GCS
+
+	// GCOM is the GCOM API mock used during the workflow run.
+	GCOM *GCOM
+
+	// Argo is the Argo mock used during the workflow run.
+	// It records inputs from the mocked Argo Workflow trigger step.
+	Argo *HTTPSpy
 
 	// gitHubToken is the token used to authenticate with GitHub.
 	gitHubToken string
@@ -73,6 +87,13 @@ type Runner struct {
 	// inGitHubActions indicates whether the runner is executing in a GitHub Actions environment.
 	inGitHubActions bool
 }
+
+// actionsCachePathBase is the base path for the action cache.
+var actionsCachePathBase = filepath.Join("/tmp", "act-actions-cache")
+
+// TemplateActionsCachePath is the path where GitHub Actions are pre-cached during the warmup workflow.
+// This cache is then copied to each runner's actions cache path for the actual workflow runs.
+var TemplateActionsCachePath = filepath.Join(actionsCachePathBase, "template")
 
 // RunnerOption is a function that configures a Runner.
 type RunnerOption func(r *Runner)
@@ -97,6 +118,13 @@ func WithLinuxAMD64ContainerArchitecture() RunnerOption {
 	return WithContainerArchitecture("linux/amd64")
 }
 
+// WithActionsCachePath sets the actions cache path for the runner (absolute path).
+func WithActionsCachePath(cachePath string) RunnerOption {
+	return func(r *Runner) {
+		r.actionsCachePath = cachePath
+	}
+}
+
 // WithName sets the name of the Runner, used for logging.
 // By default, the Runner uses t.Name() as its name.
 func WithName(name string) RunnerOption {
@@ -119,10 +147,13 @@ func NewRunner(t *testing.T, opts ...RunnerOption) (*Runner, error) {
 	}
 	r := &Runner{
 		t:               t,
-		name:            t.Name(),
 		uuid:            uuid.New(),
 		gitHubToken:     ghToken,
 		inGitHubActions: os.Getenv("GITHUB_ACTIONS") == "true",
+		GCOM:            newGCOM(t),
+		Argo: NewHTTPSpy(t, map[string]string{
+			"uri": "https://mock-argo-workflows.example.com/workflows/grafana-plugins-cd/mock-workflow-id",
+		}),
 	}
 	if err := r.checkExecutables(); err != nil {
 		return nil, err
@@ -138,12 +169,15 @@ func NewRunner(t *testing.T, opts ...RunnerOption) (*Runner, error) {
 	for _, opt := range opts {
 		opt(r)
 	}
-
+	// Default to a new temporary directory for the actions cache if not set.
+	if r.actionsCachePath == "" {
+		WithActionsCachePath(filepath.Join(actionsCachePathBase, r.uuid.String()))(r)
+	}
 	return r, nil
 }
 
 // args returns the CLI arguments to pass to act for the given workflow and event payload files.
-func (r *Runner) args(eventKind EventKind, workflowFile string, payloadFile string) ([]string, error) {
+func (r *Runner) args(eventKind EventKind, actor string, workflowFile string, payloadFile string) ([]string, error) {
 	// Get a unique free port for the act artifact server, so multiple act instances can run in parallel
 	artifactServerPort, err := getFreePort()
 	if err != nil {
@@ -166,11 +200,21 @@ func (r *Runner) args(eventKind EventKind, workflowFile string, payloadFile stri
 		// Required for cloning private repos
 		"--secret", "GITHUB_TOKEN=" + r.gitHubToken,
 
-		// Mounts:
-		// - mockdata: for mocked testdata, dist artifacts
-		// - GCS: for mocked GCS
-		// - /tmp: for temporary files, so the host's /tmp is used
-		"--container-options", `"-v $PWD/tests/act/mockdata:/mockdata -v ` + r.GCS.basePath + `:/gcs -v /tmp:/tmp"`,
+		// Additional Docker flags
+		"--container-options", r.containerOptions(),
+	}
+	if r.actionsCachePath != "" {
+		// Create and use per-runner cache.
+		// Do not pre-populate the cache if we are using the shared cache (cache warmup).
+		if r.actionsCachePath != TemplateActionsCachePath {
+			if err := copyDir(TemplateActionsCachePath, r.actionsCachePath); err != nil {
+				return nil, fmt.Errorf("copy action cache: %w", err)
+			}
+		}
+		args = append(args, "--action-cache-path", r.actionsCachePath)
+	} else {
+		// Use shared cache
+		args = append(args, "--action-cache-path", TemplateActionsCachePath)
 	}
 
 	// Map local all possible references of plugin-ci-workflows to the local repository
@@ -179,7 +223,9 @@ func (r *Runner) args(eventKind EventKind, workflowFile string, payloadFile stri
 		return nil, err
 	}
 	args = append(args, localRepoArgs...)
-
+	if actor != "" {
+		args = append(args, "--actor", actor)
+	}
 	if r.ConcurrentJobs > 0 {
 		args = append(args, "--concurrent-jobs", fmt.Sprint(r.ConcurrentJobs))
 	}
@@ -275,7 +321,7 @@ func (r *Runner) Run(workflow workflow.Workflow, event Event) (runResult *RunRes
 		}
 	}()
 
-	args, err := r.args(event.Kind, workflowFile, payloadFile)
+	args, err := r.args(event.Kind, event.Actor, workflowFile, payloadFile)
 	if err != nil {
 		return nil, fmt.Errorf("get act args: %w", err)
 	}
@@ -321,6 +367,9 @@ func (r *Runner) Run(workflow workflow.Workflow, event Event) (runResult *RunRes
 	}
 
 	// Process json logs in merged stdout/stderr stream
+	// This must complete BEFORE cmd.Wait() is called, because cmd.Wait()
+	// closes the stdout pipe. If the goroutine is still reading when the
+	// pipe is closed, it will get a "file already closed" error.
 	errs := make(chan error, 1)
 	go func() {
 		if err := r.processStream(mergedR, runResult); err != nil {
@@ -329,7 +378,15 @@ func (r *Runner) Run(workflow workflow.Workflow, event Event) (runResult *RunRes
 		errs <- nil
 	}()
 
-	// Wait for act to finish
+	// Wait for stdout processing to complete FIRST.
+	// The scanner will return EOF when the process exits and closes its stdout.
+	if streamErr := <-errs; streamErr != nil {
+		// Still call Wait to clean up the process
+		_ = cmd.Wait()
+		return nil, streamErr
+	}
+
+	// Now wait for the process to fully exit and get its exit status.
 	if err := cmd.Wait(); err != nil {
 		if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() != 0 {
 			runResult.Success = false
@@ -417,6 +474,9 @@ func (r *Runner) parseGHACommand(data logLine, runResult *RunResult) {
 			Title:   data.KvPairs["title"],
 			Message: data.Arg,
 		})
+	case "summary":
+		// Summary
+		runResult.Summary = append(runResult.Summary, data.Content)
 	default:
 		// Nothing special to do
 		if r.Verbose && data.Command != "" {
@@ -492,6 +552,9 @@ type RunResult struct {
 
 	// Annotations contains the GitHub Actions annotations generated during the workflow run.
 	Annotations []Annotation
+
+	// Summary contains the summary of the workflow run.
+	Summary []string
 }
 
 // AnnotationLevel represents the level of a GitHub Actions annotation.
@@ -533,6 +596,64 @@ func (r *RunResult) GetTestingWorkflowRunID() (string, error) {
 	return runID, nil
 }
 
+// containerOptions returns the Docker container options for act.
+// On Linux, it adds --add-host to enable host.docker.internal (already works on Docker Desktop for macOS/Windows).
+func (r *Runner) containerOptions() string {
+
+	opts := []string{
+		// mocked testdata, dist artifacts
+		"-v $PWD/tests/act/mockdata:/mockdata",
+		// mocked GCS
+		"-v " + r.GCS.basePath + ":/gcs",
+	}
+
+	// On Linux, add --add-host for host.docker.internal (Docker Desktop handles this automatically)
+	// This is needed for local mock HTTP servers (e.g.: GCOM)
+	if runtime.GOOS == "linux" {
+		if hostIP := getDockerHostIP(); hostIP != "" {
+			opts = append([]string{"--add-host=host.docker.internal:" + hostIP}, opts...)
+		}
+	}
+
+	return `"` + strings.Join(opts, " ") + `"`
+}
+
+// getDockerHostIP returns the IP address that Docker containers can use to reach the host.
+// On Linux, this is typically the docker0 bridge IP (172.17.0.1) or the IP from the default route.
+// Returns empty string if detection fails (the mock servers won't work, but at least act will start).
+func getDockerHostIP() string {
+	// Try to get the IP from the default route (most reliable method)
+	cmd := exec.Command("ip", "route", "get", "1")
+	output, err := cmd.Output()
+	if err == nil {
+		// Output looks like: "1.0.0.0 via 192.168.1.1 dev eth0 src 192.168.1.100 uid 1000"
+		// We want the "src" IP
+		fields := strings.Fields(string(output))
+		for i, field := range fields {
+			if field == "src" && i+1 < len(fields) {
+				return fields[i+1]
+			}
+		}
+	}
+
+	// Fallback: try docker0 bridge IP (common default)
+	iface, err := net.InterfaceByName("docker0")
+	if err == nil {
+		addrs, err := iface.Addrs()
+		if err == nil && len(addrs) > 0 {
+			// Get the first IPv4 address
+			for _, addr := range addrs {
+				if ipnet, ok := addr.(*net.IPNet); ok && ipnet.IP.To4() != nil {
+					return ipnet.IP.String()
+				}
+			}
+		}
+	}
+
+	// Last resort: use the common docker bridge IP
+	return "172.17.0.1"
+}
+
 // getFreePort asks the kernel for a free open port that is ready to use.
 func getFreePort() (port int, err error) {
 	var a *net.TCPAddr
@@ -548,4 +669,85 @@ func getFreePort() (port int, err error) {
 		}
 	}
 	return
+}
+
+// copyDir recursively copies a directory tree from src to dst.
+// If src does not exist, it creates an empty dst directory.
+func copyDir(src, dst string) error {
+	// Check if source exists
+	srcInfo, err := os.Stat(src)
+	if os.IsNotExist(err) {
+		// Source doesn't exist, just create an empty destination directory
+		return os.MkdirAll(dst, 0755)
+	}
+	if err != nil {
+		return fmt.Errorf("stat source: %w", err)
+	}
+	if !srcInfo.IsDir() {
+		return fmt.Errorf("source is not a directory: %s", src)
+	}
+
+	// Create destination directory
+	if err := os.MkdirAll(dst, srcInfo.Mode()); err != nil {
+		return fmt.Errorf("create destination directory: %w", err)
+	}
+
+	// Walk through source directory and copy all files
+	return filepath.WalkDir(src, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// Calculate relative path and destination path
+		relPath, err := filepath.Rel(src, path)
+		if err != nil {
+			return fmt.Errorf("get relative path: %w", err)
+		}
+		dstPath := filepath.Join(dst, relPath)
+
+		if d.IsDir() {
+			info, err := d.Info()
+			if err != nil {
+				return fmt.Errorf("get dir info: %w", err)
+			}
+			return os.MkdirAll(dstPath, info.Mode())
+		}
+
+		// Copy file
+		return copyFile(path, dstPath)
+	})
+}
+
+// copyFile copies a single file from src to dst, preserving permissions.
+func copyFile(src, dst string) (err error) {
+	srcFile, err := os.Open(src)
+	if err != nil {
+		return fmt.Errorf("open source file: %w", err)
+	}
+	defer func() {
+		if closeErr := srcFile.Close(); closeErr != nil && err == nil {
+			err = closeErr
+		}
+	}()
+
+	srcInfo, err := srcFile.Stat()
+	if err != nil {
+		return fmt.Errorf("stat source file: %w", err)
+	}
+
+	dstFile, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, srcInfo.Mode())
+	if err != nil {
+		return fmt.Errorf("create destination file: %w", err)
+	}
+	defer func() {
+		if closeErr := dstFile.Close(); closeErr != nil && err == nil {
+			err = closeErr
+		}
+	}()
+
+	if _, err := io.Copy(dstFile, srcFile); err != nil {
+		return fmt.Errorf("copy file contents: %w", err)
+	}
+
+	return nil
 }

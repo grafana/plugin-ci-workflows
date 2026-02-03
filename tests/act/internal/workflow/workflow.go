@@ -11,6 +11,10 @@ import (
 	"github.com/goccy/go-yaml"
 )
 
+const (
+	PCIWFBaseRef = "grafana/plugin-ci-workflows/.github/workflows"
+)
+
 // Workflow is an interface for workflows that can be marshaled to YAML format.
 type Workflow interface {
 	// FileName returns the file name for the workflow.
@@ -20,7 +24,7 @@ type Workflow interface {
 	Marshal() ([]byte, error)
 
 	// Children returns the child workflows of this workflow.
-	Children() []Workflow
+	Children() []*TestingWorkflow
 
 	// Jobs returns the jobs defined in the workflow.
 	Jobs() map[string]*Job
@@ -66,15 +70,21 @@ type Secrets map[string]string
 // Steps is the YAML representation of a list of GitHub Actions steps.
 type Steps []Step
 
+type Strategy struct {
+	FailFast *bool          `yaml:"fail-fast,omitempty"`
+	Matrix   map[string]any `yaml:"matrix,omitempty"`
+}
+
 // Job is the YAML representation of a GitHub Actions job.
 type Job struct {
 	Name string `yaml:"name,omitempty"`
 
 	If string `yaml:"if,omitempty"`
 
-	RunsOn  string            `yaml:"runs-on,omitempty"`
-	Needs   []string          `yaml:"needs,omitempty"`
-	Outputs map[string]string `yaml:"outputs,omitempty"`
+	RunsOn   string            `yaml:"runs-on,omitempty"`
+	Needs    []string          `yaml:"needs,omitempty"`
+	Outputs  map[string]string `yaml:"outputs,omitempty"`
+	Strategy Strategy          `yaml:"strategy,omitempty"`
 
 	Permissions Permissions `yaml:"permissions,omitempty"`
 
@@ -107,10 +117,14 @@ func (j *Job) ReplaceStepAtIndex(stepIndex int, steps ...Step) error {
 	}
 	originalStep := j.Steps[stepIndex]
 
-	// Preserve original step "If" condition if present
-	if originalStep.If != "" {
-		for i := range steps {
+	for i := range steps {
+		// Preserve original step "If" condition if present
+		if originalStep.If != "" {
 			steps[i].If = originalStep.If
+		}
+		// Preserve the original step name, if not provided in the new step
+		if steps[i].Name == "" {
+			steps[i].Name = originalStep.mockedName()
 		}
 	}
 
@@ -182,6 +196,18 @@ func (j *Job) GetStep(id string) *Step {
 	return nil
 }
 
+// RemoveAllStepsAfter removes all steps after the step with the given id (exclusive).
+// The step with the given id is preserved.
+// If the step with the given id is not found, an error is returned.
+func (j *Job) RemoveAllStepsAfter(id string) error {
+	stepIndex := j.getStepIndex(id)
+	if stepIndex == -1 {
+		return fmt.Errorf("step with id %q not found", id)
+	}
+	j.Steps = j.Steps[:stepIndex+1]
+	return nil
+}
+
 // ContainerJob is the YAML representation of a GitHub Actions job running in a container.
 type ContainerJob struct {
 	Image   string   `yaml:"image,omitempty"`
@@ -205,11 +231,30 @@ type Step struct {
 	Env map[string]string `yaml:"env,omitempty"`
 }
 
+// nameOrID returns the name or ID of the step.
+// If the name is not empty, it returns the name.
+// If the name is empty, it returns the ID.
+// If the ID is empty, it returns an empty string.
+func (s *Step) nameOrID() string {
+	if s.Name != "" {
+		return s.Name
+	}
+	return s.ID
+}
+
+// mockedName returns the name of the step with the "(mocked)" suffix.
+// If the step has no name, it returns the ID with the "(mocked)" suffix.
+func (s *Step) mockedName() string {
+	return s.nameOrID() + " (mocked)"
+}
+
 // On is the YAML representation of GitHub Actions workflow triggers.
 type On struct {
-	Push         OnPush         `yaml:"push,omitempty"`
-	PullRequest  OnPullRequest  `yaml:"pull_request,omitempty"`
-	WorkflowCall OnWorkflowCall `yaml:"workflow_call,omitempty"`
+	Push              OnPush              `yaml:"push,omitempty"`
+	PullRequest       OnPullRequest       `yaml:"pull_request,omitempty"`
+	PullRequestTarget OnPullRequestTarget `yaml:"pull_request_target,omitempty"`
+	WorkflowCall      OnWorkflowCall      `yaml:"workflow_call,omitempty"`
+	WorkflowDispatch  OnWorkflowDispatch  `yaml:"workflow_dispatch,omitempty"`
 }
 
 // OnPush is the YAML representation of GitHub Actions push event trigger.
@@ -222,19 +267,40 @@ type OnPullRequest struct {
 	Branches []string `yaml:"branches,omitempty"`
 }
 
+// OnPullRequestTarget is the YAML representation of GitHub Actions pull_request_target event trigger.
+type OnPullRequestTarget struct {
+	Branches []string `yaml:"branches,omitempty"`
+}
+
 // OnWorkflowCall is the YAML representation of GitHub Actions workflow_call event trigger.
 type OnWorkflowCall struct {
 	Inputs  map[string]WorkflowCallInput  `yaml:"inputs,omitempty"`
 	Outputs map[string]WorkflowCallOutput `yaml:"outputs,omitempty"`
 }
 
+// OnWorkflowDispatch is the YAML representation of GitHub Actions workflow_dispatch event trigger.
+type OnWorkflowDispatch struct {
+	Inputs map[string]WorkflowCallInput `yaml:"inputs,omitempty"`
+}
+
 // WorkflowCallInput is the YAML representation of a GitHub Actions workflow call input field.
 type WorkflowCallInput struct {
-	Description string `yaml:"description,omitempty"`
-	Type        string `yaml:"type,omitempty"`
-	Required    bool   `yaml:"required,omitempty"`
-	Default     any    `yaml:"default,omitempty"`
+	Description string                `yaml:"description,omitempty"`
+	Type        WorkflowCallInputType `yaml:"type,omitempty"`
+	Required    bool                  `yaml:"required,omitempty"`
+	Default     any                   `yaml:"default,omitempty"`
+	Options     []any                 `yaml:"options,omitempty"`
 }
+
+// WorkflowCallInputType represents the type of a workflow call input in GitHub Actions.
+type WorkflowCallInputType string
+
+const (
+	WorkflowCallInputTypeBoolean WorkflowCallInputType = "boolean"
+	WorkflowCallInputTypeNumber  WorkflowCallInputType = "number"
+	WorkflowCallInputTypeString  WorkflowCallInputType = "string"
+	WorkflowCallInputTypeChoice  WorkflowCallInputType = "choice"
+)
 
 // WorkflowCallOutput is the YAML representation of a GitHub Actions workflow call output field.
 type WorkflowCallOutput struct {
@@ -265,4 +331,19 @@ type Commands []string
 // String joins the commands into a single string separated by newlines.
 func (c Commands) String() string {
 	return strings.Join(c, "\n")
+}
+
+// Input is a helper function to create a pointer to a value.
+// It is useful to avoid having to write `&value` everywhere.
+func Input[T any](value T) *T {
+	return &value
+}
+
+// SetJobInput sets a job input value if it's not nil.
+// It uses generics to avoid the interface nil gotcha where a typed nil pointer
+// passed to an `any` parameter results in a non-nil interface value.
+func SetJobInput[T any](job *Job, key string, value *T) {
+	if value != nil {
+		job.With[key] = *value
+	}
 }

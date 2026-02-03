@@ -3,11 +3,11 @@ package main
 import (
 	"encoding/json"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/grafana/plugin-ci-workflows/tests/act/internal/act"
 	"github.com/grafana/plugin-ci-workflows/tests/act/internal/workflow"
+	"github.com/grafana/plugin-ci-workflows/tests/act/internal/workflow/ci"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/require"
 )
@@ -42,15 +42,15 @@ func TestPackage(t *testing.T) {
 
 			runner, err := act.NewRunner(t)
 			require.NoError(t, err)
-			wf, err := workflow.NewSimpleCI(
-				// CI workflow options
-				workflow.WithPluginDirectoryInput(filepath.Join("tests", tc.folder)),
-				workflow.WithDistArtifactPrefixInput(tc.folder+"-"),
-				workflow.WithPlaywrightInput(false),
-				workflow.WithRunTruffleHogInput(false),
-
+			wf, err := ci.NewWorkflow(
+				ci.WithWorkflowInputs(ci.WorkflowInputs{
+					PluginDirectory:     workflow.Input(filepath.Join("tests", tc.folder)),
+					DistArtifactsPrefix: workflow.Input(tc.folder + "-"),
+					RunPlaywright:       workflow.Input(false),
+					RunTruffleHog:       workflow.Input(false),
+				}),
 				// Mock the test-and-build job to copy pre-built dist files
-				workflow.WithMockedDist(t, "dist/"+tc.folder),
+				ci.WithMockedDist(t, "dist/"+tc.folder),
 			)
 			require.NoError(t, err)
 
@@ -132,12 +132,13 @@ func TestPackage(t *testing.T) {
 					filepath.Join(tc.expPluginID, "go_plugin_build_manifest"),
 				)
 				for _, osArch := range osArchCombos {
-					if strings.Contains(osArch, "windows") {
-						osArch += ".exe"
+					suffix := osArch.String()
+					if osArch.os == "windows" {
+						suffix += ".exe"
 					}
 					expBasePluginZipFiles = append(
 						expBasePluginZipFiles,
-						filepath.Join(tc.expPluginID, "gpx_simple_backend_"+osArch),
+						filepath.Join(tc.expPluginID, "gpx_simple_backend_"+suffix),
 					)
 				}
 			}
@@ -179,8 +180,8 @@ func TestPackage(t *testing.T) {
 					// Create a copy of the expected base files for each zip file we check
 					expPluginZipFiles := make([]string, len(expBasePluginZipFiles))
 					copy(expPluginZipFiles, expBasePluginZipFiles[:])
-					backendExeFn := "gpx_simple_backend_" + osArch
-					if strings.Contains(osArch, "windows") {
+					backendExeFn := "gpx_simple_backend_" + osArch.String()
+					if osArch.os == "windows" {
 						backendExeFn += ".exe"
 					}
 					// Expect the backend executable for this os/arch

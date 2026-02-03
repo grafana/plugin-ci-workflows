@@ -1,4 +1,6 @@
-.PHONY: reset-mockdata clean-node-modules clean-act-tmp clean-lfs mockdata-dist mockdata-dist-artifacts mockdata
+.PHONY: clean-node-modules clean-dist clean-act-tmp clean-act-toolcache-volumes clean-lfs clean \
+	reset-mockdata mockdata-dist mockdata-dist-artifacts mockdata \
+	genreadme act-lint act-test actionlint
 
 clean-node-modules:
 	find tests -name node_modules -type d -prune -exec rm -rf '{}' +
@@ -8,6 +10,7 @@ clean-dist:
 
 clean-act-tmp:
 	rm -rf /tmp/act-artifacts
+	rm -rf /tmp/act-actions-cache
 	rm -rf /tmp/act-cache
 	rm -rf /tmp/act-gcs
 
@@ -36,3 +39,15 @@ mockdata-dist-artifacts: mockdata-dist
 	@echo All done!
 
 mockdata: mockdata-dist-artifacts
+
+genreadme:
+	cd examples/base && go run genreadme.go
+
+act-lint:
+	cd tests/act && golangci-lint run
+
+act-test:
+	cd tests/act && go test -v -timeout 1h
+
+actionlint:
+	actionlint
