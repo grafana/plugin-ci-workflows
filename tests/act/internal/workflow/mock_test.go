@@ -205,9 +205,34 @@ func TestMockArgoWorkflowStep(t *testing.T) {
 	step := Step{
 		Name: "Trigger Argo Workflow",
 		Uses: "grafana/shared-workflows/actions/trigger-argo-workflow@e100806688f1209051080dfea5719fbbd1d18cc0",
+		With: map[string]any{
+			"namespace":         "grafana-plugins-cd",
+			"workflow_template": "grafana-plugins-deploy",
+			"parameters":        "slug=test-plugin\nversion=1.0.0",
+		},
 	}
-	mockedStep, err := MockArgoWorkflowStep(step)
+	mockServerURL := "http://host.docker.internal:12345"
+	mockedStep, err := MockArgoWorkflowStep(step, mockServerURL)
 	require.NoError(t, err)
-	require.Equal(t, "Trigger Argo Workflow (mocked)", mockedStep.Name)
-	require.Contains(t, mockedStep.Run, `echo "uri=https://mock-argo-workflows.example.com/workflows/grafana-plugins-cd/mock-workflow-id" >> "$GITHUB_OUTPUT"`)
+	// Note: The mocked name is set by MockAllStepsUsingAction, not by MockArgoWorkflowStep directly
+
+	// Verify the step builds JSON from env vars and POSTs to the mock server
+	require.Contains(t, mockedStep.Run, `INPUTS_JSON=$(echo "${HTTPSPY_INPUT_KEYS}"`)
+	require.Contains(t, mockedStep.Run, `curl -s -X POST`)
+	// Verify the step parses JSON response and sets outputs using jq
+	require.Contains(t, mockedStep.Run, `jq -r 'to_entries[]`)
+	require.Contains(t, mockedStep.Run, `>> "$GITHUB_OUTPUT"`)
+
+	// Verify each input is passed as a separate env var (values will be evaluated at runtime)
+	// Keys are preserved as-is (no uppercase/underscore transformation)
+	require.Equal(t, "grafana-plugins-cd", mockedStep.Env["HTTPSPY_INPUT_namespace"])
+	require.Equal(t, "grafana-plugins-deploy", mockedStep.Env["HTTPSPY_INPUT_workflow_template"])
+	require.Equal(t, "slug=test-plugin\nversion=1.0.0", mockedStep.Env["HTTPSPY_INPUT_parameters"])
+
+	// Verify input keys are passed so bash can build JSON
+	require.Contains(t, mockedStep.Env["HTTPSPY_INPUT_KEYS"], `"namespace"`)
+	require.Contains(t, mockedStep.Env["HTTPSPY_INPUT_KEYS"], `"workflow_template"`)
+	require.Contains(t, mockedStep.Env["HTTPSPY_INPUT_KEYS"], `"parameters"`)
+
+	require.Equal(t, mockServerURL, mockedStep.Env["HTTPSPY_MOCK_SERVER_URL"])
 }

@@ -172,7 +172,7 @@ func WithOnlyOneJob(t *testing.T, jobID string, removeDependencies bool) Testing
 		// Remove all jobs
 		for k := range twf.BaseWorkflow.Jobs {
 			// Do not remove the given job if it's a dependency and we don't want to remove dependencies
-			if k == jobID || (slices.Contains(onlyJob.Needs, k) && !removeDependencies) {
+			if k == jobID || (!removeDependencies && isDependency(twf, onlyJob, k)) {
 				continue
 			}
 			delete(twf.BaseWorkflow.Jobs, k)
@@ -185,10 +185,54 @@ func WithOnlyOneJob(t *testing.T, jobID string, removeDependencies bool) Testing
 	}
 }
 
+// isDependency checks if the given jobID is a dependency (direct or indirect) of the given job.
+func isDependency(wf *TestingWorkflow, job *Job, jobID string) bool {
+	if slices.Contains(job.Needs, jobID) {
+		// Direct dependency
+		return true
+	}
+	// Recursively check for indirect dependencies
+	for _, need := range job.Needs {
+		if isDependency(wf, wf.Jobs()[need], jobID) {
+			return true
+		}
+	}
+	return false
+}
+
 // WithoutJob removes the given job from the workflow.
 func WithoutJob(jobID string) TestingWorkflowOption {
 	return func(twf *TestingWorkflow) {
 		delete(twf.BaseWorkflow.Jobs, jobID)
+	}
+}
+
+// WithNoOpJobWithOutputs modifies the TestingWorkflow to replace the given job with a no-op job that sets the given outputs.
+// This can be used to skip jobs that are not relevant for the test or that would fail otherwise.
+// This is useful combined with WithOnlyOneJob to remove all jobs except the given one.
+// Then, WithNoOpJobWithOutputs can be used on the remaining job's dependencies to set mock outputs rather than running the actual job.
+// This way the remaining job can run (needs.X.outputs.Y will be available) and the test can run.
+func WithNoOpJobWithOutputs(t *testing.T, jobID string, outputs map[string]string) TestingWorkflowOption {
+	return func(twf *TestingWorkflow) {
+		job, ok := twf.BaseWorkflow.Jobs[jobID]
+		require.True(t, ok, fmt.Errorf("job %q not found", jobID))
+
+		// Reset uses and nil in case the job uses an action rather than steps
+		job.Uses = ""
+		job.With = nil
+
+		// Enforce runs-on/empty strategy otherwise the job can't run the steps
+		job.RunsOn = "ubuntu-arm64-small"
+		job.Strategy = Strategy{}
+
+		// Set the steps to a no-op step that sets the outputs
+		mockStep := MockOutputsStep(outputs)
+		mockStep.ID = "set-outputs"
+		job.Outputs = make(map[string]string, len(outputs))
+		for k := range outputs {
+			job.Outputs[k] = fmt.Sprintf("${{ steps.%s.outputs.%s }}", mockStep.ID, k)
+		}
+		job.Steps = Steps{mockStep}
 	}
 }
 
