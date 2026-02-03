@@ -5,20 +5,88 @@
         "github>grafana/grafana-renovate-config//presets/automerge",
         "github>grafana/grafana-renovate-config//presets/labels",
         "github>grafana/grafana-renovate-config//presets/docker"
-    ],    
+    ],
     "extends": [
-        "config:best-practices"        
+        "config:best-practices"
     ],
     "packageRules": [
         {
-            "matchManagers": ["github-actions"],
-            "matchPackageNames": ["grafana/plugin-actions"],
+            "matchManagers": [
+                "github-actions"
+            ],
+            "matchPackageNames": [
+                "grafana/plugin-actions"
+            ],
             "pinDigests": false
         },
         {
-            "matchManagers": ["github-actions"],
-            "matchPackageNames": ["grafana/docs-base"],
+            "matchManagers": [
+                "github-actions"
+            ],
+            "matchPackageNames": [
+                "grafana/docs-base"
+            ],
             "pinDigests": false
+        },
+        {
+            "matchFileNames": [
+                "actions/plugins/frontend-e2e-against-stack/**"
+            ],
+            "groupName": "frontend-e2e-against-stack dependencies"
+        }
+    ],
+    "customManagers": [
+        {
+            "customType": "regex",
+            "managerFilePatterns": ["\\.github/workflows/.*\\.ya?ml$"],
+            "matchStrings": ["DEFAULT_NODE_VERSION:\\s*\"(?<currentValue>\\d+)\""],
+            "depNameTemplate": "node",
+            "datasourceTemplate": "node-version",
+            "extractVersionTemplate": "^(?<version>\\d+)"
+        },
+        {
+            "customType": "regex",
+            "managerFilePatterns": ["\\.github/workflows/.*\\.ya?ml$"],
+            "matchStrings": ["DEFAULT_GO_VERSION:\\s*\"(?<currentValue>\\d+\\.\\d+)\""],
+            "depNameTemplate": "go",
+            "datasourceTemplate": "golang-version",
+            "extractVersionTemplate": "^(?<version>\\d+\\.\\d+)"
+        },
+        {
+            "customType": "regex",
+            "managerFilePatterns": ["\\.github/workflows/.*\\.ya?ml$"],
+            "matchStrings": ["(?:DEFAULT_)?GOLANGCI_LINT_VERSION:\\s*\"(?<currentValue>[^\"]+)\""],
+            "depNameTemplate": "golangci-lint",
+            "packageNameTemplate": "golangci/golangci-lint",
+            "datasourceTemplate": "github-releases",
+            "extractVersionTemplate": "^v?(?<version>.*)$"
+        },
+        {
+            "customType": "regex",
+            "managerFilePatterns": ["\\.github/workflows/.*\\.ya?ml$"],
+            "matchStrings": ["DEFAULT_TRUFFLEHOG_VERSION:\\s*\"(?<currentValue>[^\"]+)\""],
+            "depNameTemplate": "trufflehog",
+            "packageNameTemplate": "trufflesecurity/trufflehog",
+            "datasourceTemplate": "github-releases",
+            "extractVersionTemplate": "^v?(?<version>.*)$"
+        },
+        {
+            "customType": "regex",
+            "managerFilePatterns": ["\\.github/workflows/.*\\.ya?ml$"],
+            "matchStrings": ["DEFAULT_MAGE_VERSION:\\s*\"(?<currentValue>[^\"]+)\""],
+            "depNameTemplate": "mage",
+            "packageNameTemplate": "magefile/mage",
+            "datasourceTemplate": "github-releases",
+            "extractVersionTemplate": "^v?(?<version>.*)$"
+        },
+        {
+            "customType": "regex",
+            "managerFilePatterns": ["\\.github/workflows/.*\\.ya?ml$"],
+            "matchStrings": ["ACTIONLINT_VERSION:\\s*\"(?<currentValue>[^\"]+)\""],
+            "depNameTemplate": "actionlint",
+            "packageNameTemplate": "rhysd/actionlint",
+            "datasourceTemplate": "github-releases",
+            "extractVersionTemplate": "^v?(?<version>.*)$"
         }
     ],
     "minimumReleaseAge": "14 days",

@@ -254,6 +254,7 @@ type On struct {
 	PullRequest       OnPullRequest       `yaml:"pull_request,omitempty"`
 	PullRequestTarget OnPullRequestTarget `yaml:"pull_request_target,omitempty"`
 	WorkflowCall      OnWorkflowCall      `yaml:"workflow_call,omitempty"`
+	WorkflowDispatch  OnWorkflowDispatch  `yaml:"workflow_dispatch,omitempty"`
 }
 
 // OnPush is the YAML representation of GitHub Actions push event trigger.
@@ -277,13 +278,29 @@ type OnWorkflowCall struct {
 	Outputs map[string]WorkflowCallOutput `yaml:"outputs,omitempty"`
 }
 
+// OnWorkflowDispatch is the YAML representation of GitHub Actions workflow_dispatch event trigger.
+type OnWorkflowDispatch struct {
+	Inputs map[string]WorkflowCallInput `yaml:"inputs,omitempty"`
+}
+
 // WorkflowCallInput is the YAML representation of a GitHub Actions workflow call input field.
 type WorkflowCallInput struct {
-	Description string `yaml:"description,omitempty"`
-	Type        string `yaml:"type,omitempty"`
-	Required    bool   `yaml:"required,omitempty"`
-	Default     any    `yaml:"default,omitempty"`
+	Description string                `yaml:"description,omitempty"`
+	Type        WorkflowCallInputType `yaml:"type,omitempty"`
+	Required    bool                  `yaml:"required,omitempty"`
+	Default     any                   `yaml:"default,omitempty"`
+	Options     []any                 `yaml:"options,omitempty"`
 }
+
+// WorkflowCallInputType represents the type of a workflow call input in GitHub Actions.
+type WorkflowCallInputType string
+
+const (
+	WorkflowCallInputTypeBoolean WorkflowCallInputType = "boolean"
+	WorkflowCallInputTypeNumber  WorkflowCallInputType = "number"
+	WorkflowCallInputTypeString  WorkflowCallInputType = "string"
+	WorkflowCallInputTypeChoice  WorkflowCallInputType = "choice"
+)
 
 // WorkflowCallOutput is the YAML representation of a GitHub Actions workflow call output field.
 type WorkflowCallOutput struct {
