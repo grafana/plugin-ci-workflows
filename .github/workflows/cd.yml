@@ -269,21 +269,6 @@ on:
           Disable docs publishing to the website.
         default: false
         type: boolean
-      argo-workflow-slack-channel:
-        description: |
-          Slack channel to use for Argo Workflow deployment notifications.
-          This is only used when deploying to Grafana Cloud.
-          Default is '#grafana-plugins-platform-ci'.
-        default: "#grafana-plugins-platform-ci"
-        type: string
-      auto-merge-environments:
-        description: |
-          Comma separated list of environments to auto-merge when deploying to Grafana Cloud via Argo.
-          Supported values are 'dev' and 'ops' (or 'staging').
-          'prod-canary' and 'prod' will never be auto-merged.
-          Default is 'dev'.
-        default: dev
-        type: string
       frontend-secrets:
         description: The secrets to use within frontend steps
         type: string
@@ -301,13 +286,68 @@ on:
           Default is false.
         default: false
         type: boolean
-      # Useful if you want to publish to catalog (e.g. dev) but _not_ trigger Argo
+
+      # Argo Workflow options
       trigger-argo:
         description: |
-          Trigger Argo after publish to catalog
+          Whether to trigger the Argo Workflow after publish to catalog.
+          Set to `false` to disable Argo.
+          When set to `true`, Argo is triggered and will deploy the provisioned plugin to Grafana Cloud,
+          in the environment(s) specified in the `environment` input.
+
+          Setting it to `false` is useful if you want to publish to catalog (e.g. dev) but _not_ trigger Argo.
+          For example, if you want to test a PR in the dev catalog in _one_ instance in Grafana Cloud via stack overrides,
+          rather than deploying it to all instances in Grafana Cloud via Argo.
         default: true
         required: false
         type: boolean
+      argo-workflow-slack-channel:
+        description: |
+          Slack channel to use for Argo Workflow deployment notifications.
+          This is only used when Argo is triggered.
+          Default is '#grafana-plugins-platform-ci'.
+        default: "#grafana-plugins-platform-ci"
+        type: string
+      auto-merge-environments:
+        description: |
+          Comma separated list of environments whose PRs will be auto-merged when deploying to Grafana Cloud via Argo.
+          The Argo workflow will open the PR in deployment_tools, which will be auto-merged once CI passes.
+          Supported values are 'dev' and 'ops' (or 'staging').
+          'prod-canary' and 'prod' will never be auto-merged.
+          Default is 'dev'.
+        default: dev
+        type: string
+      auto-approve-durations:
+        description: |
+          JSON object defining how the approvals work in Argo for each environment.
+          Keys are environment names (`dev`, `ops`, `prod-canary`, `prod`).
+          Values are either:
+            - string durations: auto-approved in Argo after the specified duration (e.g.: "30m", "1h", "72h")
+            - "0" (or 0): auto-approve in Argo immediately
+            - null (or environment not present): require manual approval in Argo
+
+          By default, all environments are auto-approved immediately.
+
+          Example: `{"dev": "0", "ops": "1h", "prod-canary": null, "prod": "72h"}`
+          Meaning:
+            1. auto-approve dev an deploy
+            2. progress to ops 1 hour after the dev deployment
+            3. require manual approval for prod-canary
+            4. auto-approve prod 72 hours after the prod-canary deployment
+          The `environment` input determines what are the target environments.
+          This input configures the auto-approval rules for each environment.
+          Since this is a JSON string, make sure to properly escape it in the yaml file.
+          For example:
+          
+          ```
+          # The `|` and new line is very important, otherwise it gets interpreted as a map
+          auto-approve-environments: |
+            {"dev": "0", "ops": "1h", "prod-canary": null, "prod": "72h"}
+          ```
+        default: |
+          {"dev": 0, "ops": 0, "prod-canary": 0, "prod": 0}
+        type: string
+        
 
       branch:
         description: |
@@ -845,6 +885,8 @@ jobs:
             commit=${{ github.sha }}
             commit_link=${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}
             auto_merge_environments=${{ steps.argo-parameters.outputs.auto_merge_environments }}
+            auto_approve_durations=${{ inputs.auto-approve-durations }}
+            prod_targets_all=true
 
       - name: Print job summary
         run: |
