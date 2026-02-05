@@ -931,7 +931,8 @@ jobs:
             commit=${{ github.sha }}
             commit_link=${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}
             auto_merge_environments=${{ steps.argo-parameters.outputs.auto_merge_environments }}
-            auto_approve_durations=${{ steps.argo-parameters.outputs.auto_approve_durations }}
+            auto_approve_durations=
+            auto_approve_durations_b64=${{ steps.argo-parameters.outputs.auto_approve_durations }}
             prod_targets_all=${{ inputs.prod-targets-all }}
 
       - name: Print job summary
