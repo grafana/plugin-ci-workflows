@@ -25,12 +25,11 @@ func TestCD_Argo(t *testing.T) {
 	for _, tc := range []tc{
 		// Provisioned plugins deployment
 		{
-			name: "provisioned plugin dev deployment",
+			name: "provisioned plugin dev deployment with defaults",
 			inputs: cd.WorkflowInputs{
 				TriggerArgo:                workflow.Input(true),
 				GrafanaCloudDeploymentType: workflow.Input("provisioned"),
 				Environment:                workflow.Input("dev"),
-				AutoMergeEnvironments:      workflow.Input("dev"),
 				ArgoWorkflowSlackChannel:   workflow.Input("#some-slack-channel"),
 			},
 			expArgoShouldBeTriggered: true,
@@ -41,7 +40,9 @@ func TestCD_Argo(t *testing.T) {
 				"slack_channel":           "#some-slack-channel",
 				"commit":                  gitSha,
 				"commit_link":             "https://github.com/grafana/plugin-ci-workflows/commit/" + gitSha,
-				"auto_merge_environments": "dev",
+				"auto_merge_environments": "dev+ops+prod-canary+prod",
+				"auto_approve_durations":  `{"dev": 0, "ops": 0, "prod-canary": null, "prod": null}`,
+				"prod_targets_all":        "true",
 			},
 		},
 		{
@@ -62,6 +63,8 @@ func TestCD_Argo(t *testing.T) {
 				"commit":                  gitSha,
 				"commit_link":             "https://github.com/grafana/plugin-ci-workflows/commit/" + gitSha,
 				"auto_merge_environments": "dev",
+				"auto_approve_durations":  `{"dev": 0, "ops": 0, "prod-canary": null, "prod": null}`,
+				"prod_targets_all":        "true",
 			},
 		},
 		{
@@ -82,6 +85,8 @@ func TestCD_Argo(t *testing.T) {
 				"commit":                  gitSha,
 				"commit_link":             "https://github.com/grafana/plugin-ci-workflows/commit/" + gitSha,
 				"auto_merge_environments": "dev",
+				"auto_approve_durations":  `{"dev": 0, "ops": 0, "prod-canary": null, "prod": null}`,
+				"prod_targets_all":        "true",
 			},
 		},
 		{
@@ -102,6 +107,54 @@ func TestCD_Argo(t *testing.T) {
 				"commit":                  gitSha,
 				"commit_link":             "https://github.com/grafana/plugin-ci-workflows/commit/" + gitSha,
 				"auto_merge_environments": "dev+ops",
+				"auto_approve_durations":  `{"dev": 0, "ops": 0, "prod-canary": null, "prod": null}`,
+				"prod_targets_all":        "true",
+			},
+		},
+		{
+			name: "provisioned plugin prod deployment prod_targets_all=false",
+			inputs: cd.WorkflowInputs{
+				TriggerArgo:                workflow.Input(true),
+				GrafanaCloudDeploymentType: workflow.Input("provisioned"),
+				Environment:                workflow.Input("prod"),
+				ArgoWorkflowSlackChannel:   workflow.Input("#some-slack-channel"),
+				ProdTargetsAll:             workflow.Input(false),
+			},
+			expArgoShouldBeTriggered: true,
+			expArgoInputs: map[string]string{
+				"slug":                    "simple-frontend",
+				"version":                 "1.0.0",
+				"environment":             "prod",
+				"slack_channel":           "#some-slack-channel",
+				"commit":                  gitSha,
+				"commit_link":             "https://github.com/grafana/plugin-ci-workflows/commit/" + gitSha,
+				"auto_merge_environments": "dev+ops+prod-canary+prod",
+				"auto_approve_durations":  `{"dev": 0, "ops": 0, "prod-canary": null, "prod": null}`,
+				"prod_targets_all":        "false",
+			},
+		},
+		{
+			name: "provisioned plugin with custom approval durations and auto-merge",
+			inputs: cd.WorkflowInputs{
+				TriggerArgo:                workflow.Input(true),
+				GrafanaCloudDeploymentType: workflow.Input("provisioned"),
+				Environment:                workflow.Input("prod"),
+				ArgoWorkflowSlackChannel:   workflow.Input("#some-slack-channel"),
+				AutoMergeEnvironments:      workflow.Input("dev,ops"),
+				AutoApproveDurations:       workflow.Input(`{"dev":0,"ops":"1h","prod-canary":"24h","prod":"72h"}`),
+				ProdTargetsAll:             workflow.Input(false),
+			},
+			expArgoShouldBeTriggered: true,
+			expArgoInputs: map[string]string{
+				"slug":                    "simple-frontend",
+				"version":                 "1.0.0",
+				"environment":             "prod",
+				"slack_channel":           "#some-slack-channel",
+				"commit":                  gitSha,
+				"commit_link":             "https://github.com/grafana/plugin-ci-workflows/commit/" + gitSha,
+				"auto_merge_environments": "dev+ops",
+				"auto_approve_durations":  `{"dev":0,"ops":"1h","prod-canary":"24h","prod":"72h"}`,
+				"prod_targets_all":        "false",
 			},
 		},
 
