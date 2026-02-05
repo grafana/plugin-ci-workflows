@@ -311,11 +311,12 @@ on:
       auto-merge-environments:
         description: |
           Comma separated list of environments whose PRs will be auto-merged when deploying to Grafana Cloud via Argo.
-          The Argo workflow will open the PR in deployment_tools, which will be auto-merged once CI passes.
-          Supported values are 'dev' and 'ops' (or 'staging').
-          'prod-canary' and 'prod' will never be auto-merged.
-          Default is 'dev'.
-        default: dev
+          The Argo workflow will open the PR in deployment_tools, which will be auto-merged once CI passes if the target
+          environment is in this list.
+          Supported values are `dev`, `ops`, `prod-canary` and `prod`.
+
+          The default is `dev,ops,prod-canary,prod`.
+        default: dev,ops,prod-canary,prod
         type: string
       auto-approve-durations:
         description: |
@@ -326,14 +327,16 @@ on:
             - "0" (or 0): auto-approve in Argo immediately
             - null (or environment not present): require manual approval in Argo
 
-          By default, all environments are auto-approved immediately.
+          By default:
+            - `dev` and `ops` are auto-approved immediately (0)
+            - `prod-canary` and `prod` require manual approval (null)
 
           Example: `{"dev": "0", "ops": "1h", "prod-canary": null, "prod": "72h"}`
           Meaning:
-            1. auto-approve dev an deploy
-            2. progress to ops 1 hour after the dev deployment
-            3. require manual approval for prod-canary
-            4. auto-approve prod 72 hours after the prod-canary deployment
+            1. auto-approve `dev` and deploy
+            2. progress to `ops` 1 hour after the `dev` deployment
+            3. require manual approval for `prod-canary`
+            4. auto-approve `prod` 72 hours after the `prod-canary` deployment
           The `environment` input determines what are the target environments.
           This input configures the auto-approval rules for each environment.
           Since this is a JSON string, make sure to properly escape it in the yaml file.
@@ -345,8 +348,16 @@ on:
             {"dev": "0", "ops": "1h", "prod-canary": null, "prod": "72h"}
           ```
         default: |
-          {"dev": 0, "ops": 0, "prod-canary": 0, "prod": 0}
+          {"dev": 0, "ops": 0, "prod-canary": null, "prod": null}
         type: string
+      prod-targets-all:
+        description: |
+          If true, when deploying to 'prod', the Argo workflow will deploy to all environments (dev, ops, prod-canary, prod).
+          This ensures the plugin version is synced across all environments.
+          If false, 'prod' it will only deploy to 'prod', skipping the previous environments.
+          Default is true.
+        default: true
+        type: boolean
         
 
       branch:
@@ -886,7 +897,7 @@ jobs:
             commit_link=${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}
             auto_merge_environments=${{ steps.argo-parameters.outputs.auto_merge_environments }}
             auto_approve_durations=${{ inputs.auto-approve-durations }}
-            prod_targets_all=true
+            prod_targets_all=${{ inputs.prod-targets-all }}
 
       - name: Print job summary
         run: |
