@@ -3,6 +3,7 @@ package cd
 import (
 	"fmt"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/grafana/plugin-ci-workflows/tests/act/internal/act"
@@ -124,10 +125,6 @@ type WorkflowInputs struct {
 	AutoMergeEnvironments      *string
 	ArgoWorkflowSlackChannel   *string
 
-	// GCOMApiURL overrides the GCOM API URL for testing with mock servers.
-	// Use GCOMMock.DockerAccessibleURL() to get a Docker-accessible URL.
-	GCOMApiURL *string
-
 	ReleaseReferenceRegex    *string
 	DocsOnly                 *bool
 	AllowPublishingPRsToProd *bool
@@ -150,7 +147,6 @@ func WithWorkflowInputs(inputs WorkflowInputs) WorkflowOption {
 		workflow.SetJobInput(job, "release-reference-regex", inputs.ReleaseReferenceRegex)
 		workflow.SetJobInput(job, "docs-only", inputs.DocsOnly)
 		workflow.SetJobInput(job, "allow-publishing-prs-to-prod", inputs.AllowPublishingPRsToProd)
-		workflow.SetJobInput(job, "DO-NOT-USE-gcom-api-url", inputs.GCOMApiURL)
 	}
 }
 
@@ -182,12 +178,31 @@ func WithMockedArgoWorkflows(t *testing.T, spy *act.HTTPSpy) WorkflowOption {
 }
 
 // WithMockedGCOM configures the workflow to use the provided GCOM mock server.
-// This sets the GCOM API URL to the mock server's Docker-accessible URL.
-func WithMockedGCOM(mock *act.GCOM) WorkflowOption {
+// This sets the "gcom-api-url" input to the mock server's Docker-accessible URL, for all actions that use the GCOM API.
+func WithMockedGCOM(t *testing.T, mock *act.GCOM) WorkflowOption {
+	gcomActions := []string{
+		"grafana/plugin-ci-workflows/actions/internal/plugins/publish/check-and-create-stub",
+		"grafana/plugin-ci-workflows/actions/plugins/publish/publish",
+	}
 	return func(w *Workflow) {
 		url := mock.DockerAccessibleURL()
-		job := w.BaseWorkflow.Jobs["cd"]
-		workflow.SetJobInput(job, "DO-NOT-USE-gcom-api-url", &url)
+		for _, job := range w.CDWorkflow().Jobs() {
+			for i, step := range job.Steps {
+				var isGCOMStep bool
+				for _, action := range gcomActions {
+					if step.Uses != "" && strings.HasPrefix(step.Uses, action) {
+						isGCOMStep = true
+						break
+					}
+				}
+				if !isGCOMStep {
+					continue
+				}
+				step.With["gcom-api-url"] = url
+				err := job.ReplaceStepAtIndex(i, step)
+				require.NoError(t, err)
+			}
+		}
 	}
 }
 
