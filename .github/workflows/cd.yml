@@ -825,8 +825,9 @@ jobs:
         id: trigger-argo-workflow
         uses: grafana/shared-workflows/actions/trigger-argo-workflow@e100806688f1209051080dfea5719fbbd1d18cc0 # trigger-argo-workflow/v1.2.1
         with:
+          instance: dev # TODO: remove
           namespace: grafana-plugins-cd
-          workflow_template: grafana-plugins-deploy
+          workflow_template: grafana-plugins-deploy-dev # TODO: switch back to stable wf template
           parameters: |
             slug=${{ fromJSON(needs.ci.outputs.plugin).id }}
             version=${{ fromJSON(needs.ci.outputs.plugin).version }}
