@@ -287,5 +287,5 @@ func TestCD_Argo(t *testing.T) {
 }
 
 func b64Encode(s string) string {
-	return base64.StdEncoding.EncodeToString([]byte(s + "\n"))
+	return base64.StdEncoding.EncodeToString([]byte(s))
 }
