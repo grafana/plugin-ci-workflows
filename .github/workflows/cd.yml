@@ -909,9 +909,11 @@ jobs:
           # doesn't handle parameters with commas in them properly, so we replace them with '+'.
           echo "environment=${ENVIRONMENT//,/+}" >> "$GITHUB_OUTPUT"
           echo "auto_merge_environments=${AUTO_MERGE_ENVIRONMENTS//,/+}" >> "$GITHUB_OUTPUT"
+          echo "auto_approve_durations=$(echo -n "${AUTO_APPROVE_DURATIONS}" | base64 -w 0)" >> "$GITHUB_OUTPUT"
         env:
           ENVIRONMENT: ${{ inputs.environment }}
           AUTO_MERGE_ENVIRONMENTS: ${{ inputs.auto-merge-environments }}
+          AUTO_APPROVE_DURATIONS: ${{ inputs.auto-approve-durations }}
         shell: bash
 
       - name: Trigger Argo Workflow
@@ -929,7 +931,7 @@ jobs:
             commit=${{ github.sha }}
             commit_link=${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}
             auto_merge_environments=${{ steps.argo-parameters.outputs.auto_merge_environments }}
-            auto_approve_durations=${{ inputs.auto-approve-durations }}
+            auto_approve_durations=${{ steps.argo-parameters.outputs.auto_approve_durations }}
             prod_targets_all=${{ inputs.prod-targets-all }}
 
       - name: Print job summary
