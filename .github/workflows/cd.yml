@@ -257,12 +257,12 @@ on:
 
           Allowed values:
           - `none` (or empty string): Skip catalog publishing and deployment (run only CI)
-          - `dev`: Publish to `dev` catalog and deploy to all `dev` instances in Grafana Cloud
-          - `ops` or `staging`: Publish to `ops` catalog and deploy to all `ops` instances in Grafana Cloud
-          - `prod-canary`: Publish to `prod` catalog and a deploy to subset of `prod` instances (free and on instant wave) in Grafana Cloud
+          - `dev`: Publish to `dev` catalog and (if `trigger-argo` is true) deploy to all `dev` instances in Grafana Cloud
+          - `ops` or `staging`: Publish to `ops` catalog and (if `trigger-argo` is true) deploy to all `ops` instances in Grafana Cloud
+          - `prod-canary`: Publish to `prod` catalog and (if `trigger-argo` is true) deploy to subset of `prod` instances (free and on instant wave) in Grafana Cloud
           - `prod`:
-              - If the `prod-targets-all` input is true (default), publish to ALL catalogs and ALL instances in Grafana Cloud (`dev`, `ops`, `prod-canary`, `prod`)
-              - If the `prod-targets-all` input is false, publish ONLY to `prod` catalog and deploy ONLY to `prod` instances in Grafana Cloud
+              - If the `prod-targets-all` input is true (default), publish to ALL catalogs and (if `trigger-argo` is true) deploy to ALL instances in Grafana Cloud (`dev`, `ops`, `prod-canary`, `prod`)
+              - If the `prod-targets-all` input is false, publish ONLY to `prod` catalog and (if `trigger-argo` is true) deploy ONLY to `prod` instances in Grafana Cloud
           - A comma separated combination of the values above. E.g.: `dev,ops`
 
           Note: Docs can only be published to the website when targeting `prod`.
@@ -315,16 +315,17 @@ on:
           in the environment(s) specified in the `environment` input.
 
           Setting it to `false` is useful if you want to publish to catalog (e.g. dev) but _not_ trigger Argo.
-          For example, if you want to test a PR in the dev catalog in _one_ instance in Grafana Cloud via stack overrides,
-          rather than deploying it to all instances in Grafana Cloud via Argo.
+          For example, if you want to test a PR in the dev catalog on _one_ Grafana Cloud instance via stack overrides,
+          rather than deploying the PR's build to all instances in Grafana Cloud via Argo.
         default: true
         required: false
         type: boolean
       argo-workflow-slack-channel:
         description: |
           Slack channel to use for Argo Workflow deployment notifications.
-          This is only used when Argo is triggered.
+          This is only used when Argo is triggered (when `trigger-argo` is true).
           Default is '#grafana-plugins-platform-ci'.
+          This should be changed to a Slack channel specific to your team.
         default: "#grafana-plugins-platform-ci"
         type: string
       auto-merge-environments:
@@ -335,7 +336,8 @@ on:
           Also see the `auto-approve-durations` input to further customize where and when the deployment approval is required.
 
           The default is `dev,ops,prod-canary,prod`, meaning the PRs will be auto-merged for all environments.
-          Combined with the default value of `auto-approve-durations` input, this means the deployment approvals happen in Argo ONLY by default.
+          Combined with the default value of `auto-approve-durations` input, this means the deployment approvals happen in Argo ONLY by default,
+          and all deployment_tools PRs will be merged automatically as soon as CI passes.
         default: dev,ops,prod-canary,prod
         type: string
       auto-approve-durations:
@@ -343,17 +345,17 @@ on:
           JSON object defining how the approvals work in Argo for each environment.
           Keys are environment names (`dev`, `ops`, `prod-canary`, `prod`).
           Values are either:
-            - string durations: auto-approve the deployment in Argo for that environment after the specified duration
-              (e.g.: "30m", "1h", "72h"). Note: "d" suffix (days) is not supported, use "h" instead.
-            - "0" (or 0): auto-approve the deployment in Argo immediately
-            - null (or environment not present): require manual approval of the deployment in Argo UI via the "Resume" button
+            - string durations: the deployment to that environment will be auto-approved in Argo after the specified duration
+              (e.g.: "30m", "1h", "72h"). NOTE: the "d" suffix (days) is not supported, use "h" instead.
+            - "0" (or 0): the deployment to that environment will be auto-approved in Argo immediately
+            - null (or environment not present): the deployment to that environment requires a manual approval in Argo UI, via the "Resume" button
 
           This input can be combined with `auto-merge-environments` to customize where the approval
-          happens (Argo, GitHub or both) and when it happens (automatic, manual or with a delay).
+          happens (Argo, GitHub or both) and when it happens (immediate, automatic with a delay, or manual).
 
           By default:
             - `dev` and `ops` are auto-approved immediately (0)
-            - `prod-canary` and `prod` require manual approval (null)
+            - `prod-canary` and `prod` require manual approval in Argo (null)
 
           Another example: `{"dev": "0", "ops": "1h", "prod-canary": null, "prod": "72h"}`
           Meaning:
@@ -381,7 +383,7 @@ on:
             The Argo workflow will deploy to all environments (`dev`, `ops`, `prod-canary`, `prod`) when deploying to `prod`.
             This can be used to ensure the plugin version is synced across all environments.
           If false:
-            When deploying to `prod`, the Argo workflow will only deploy to `prod`, skipping the previous environments.
+            When deploying to `prod`, the Argo workflow will only deploy to `prod`, skipping the previous environments (`dev`, `ops`, `prod-canary`).
             This can be useful if the `prod` deployment is delayed (via `auto-approve-environments` input)
             and `dev` (and/or `ops`) are continuously updated with the latest commit from `main`.
             Setting this input to false ensures that the `prod` deployment doesn't "roll-back" the plugin version
