@@ -87,6 +87,15 @@
             "packageNameTemplate": "rhysd/actionlint",
             "datasourceTemplate": "github-releases",
             "extractVersionTemplate": "^v?(?<version>.*)$"
+        },
+        {
+            "customType": "regex",
+            "managerFilePatterns": ["\\.github/workflows/.*\\.ya?ml$"],
+            "matchStrings": ["ACT_VERSION:\\s*\"(?<currentValue>[^\"]+)\""],
+            "depNameTemplate": "act",
+            "packageNameTemplate": "nektos/act",
+            "datasourceTemplate": "github-releases",
+            "extractVersionTemplate": "^v?(?<version>.*)$"
         }
     ],
     "minimumReleaseAge": "14 days",
