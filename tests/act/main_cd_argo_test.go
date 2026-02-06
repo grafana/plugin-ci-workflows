@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/base64"
 	"strings"
 	"testing"
 
@@ -35,16 +34,15 @@ func TestCD_Argo(t *testing.T) {
 			},
 			expArgoShouldBeTriggered: true,
 			expArgoInputs: map[string]string{
-				"slug":                       "simple-frontend",
-				"version":                    "1.0.0",
-				"environment":                "dev",
-				"slack_channel":              "#some-slack-channel",
-				"commit":                     gitSha,
-				"commit_link":                "https://github.com/grafana/plugin-ci-workflows/commit/" + gitSha,
-				"auto_merge_environments":    "dev+ops+prod-canary+prod",
-				"auto_approve_durations":     "",
-				"auto_approve_durations_b64": b64Encode(`{"dev": 0, "ops": 0, "prod-canary": null, "prod": null}`),
-				"prod_targets_all":           "true",
+				"slug":                    "simple-frontend",
+				"version":                 "1.0.0",
+				"environment":             "dev",
+				"slack_channel":           "#some-slack-channel",
+				"commit":                  gitSha,
+				"commit_link":             "https://github.com/grafana/plugin-ci-workflows/commit/" + gitSha,
+				"auto_merge_environments": "dev+ops+prod-canary+prod",
+				"auto_approve_durations":  `{"dev": 0, "ops": 0, "prod-canary": null, "prod": null}`,
+				"prod_targets_all":        "true",
 			},
 		},
 		{
@@ -58,16 +56,15 @@ func TestCD_Argo(t *testing.T) {
 			},
 			expArgoShouldBeTriggered: true,
 			expArgoInputs: map[string]string{
-				"slug":                       "simple-frontend",
-				"version":                    "1.0.0",
-				"environment":                "ops",
-				"slack_channel":              "#some-slack-channel",
-				"commit":                     gitSha,
-				"commit_link":                "https://github.com/grafana/plugin-ci-workflows/commit/" + gitSha,
-				"auto_merge_environments":    "dev",
-				"auto_approve_durations":     "",
-				"auto_approve_durations_b64": b64Encode(`{"dev": 0, "ops": 0, "prod-canary": null, "prod": null}`),
-				"prod_targets_all":           "true",
+				"slug":                    "simple-frontend",
+				"version":                 "1.0.0",
+				"environment":             "ops",
+				"slack_channel":           "#some-slack-channel",
+				"commit":                  gitSha,
+				"commit_link":             "https://github.com/grafana/plugin-ci-workflows/commit/" + gitSha,
+				"auto_merge_environments": "dev",
+				"auto_approve_durations":  `{"dev": 0, "ops": 0, "prod-canary": null, "prod": null}`,
+				"prod_targets_all":        "true",
 			},
 		},
 		{
@@ -81,16 +78,15 @@ func TestCD_Argo(t *testing.T) {
 			},
 			expArgoShouldBeTriggered: true,
 			expArgoInputs: map[string]string{
-				"slug":                       "simple-frontend",
-				"version":                    "1.0.0",
-				"environment":                "dev+ops",
-				"slack_channel":              "#some-slack-channel",
-				"commit":                     gitSha,
-				"commit_link":                "https://github.com/grafana/plugin-ci-workflows/commit/" + gitSha,
-				"auto_merge_environments":    "dev",
-				"auto_approve_durations":     "",
-				"auto_approve_durations_b64": b64Encode(`{"dev": 0, "ops": 0, "prod-canary": null, "prod": null}`),
-				"prod_targets_all":           "true",
+				"slug":                    "simple-frontend",
+				"version":                 "1.0.0",
+				"environment":             "dev+ops",
+				"slack_channel":           "#some-slack-channel",
+				"commit":                  gitSha,
+				"commit_link":             "https://github.com/grafana/plugin-ci-workflows/commit/" + gitSha,
+				"auto_merge_environments": "dev",
+				"auto_approve_durations":  `{"dev": 0, "ops": 0, "prod-canary": null, "prod": null}`,
+				"prod_targets_all":        "true",
 			},
 		},
 		{
@@ -104,16 +100,15 @@ func TestCD_Argo(t *testing.T) {
 			},
 			expArgoShouldBeTriggered: true,
 			expArgoInputs: map[string]string{
-				"slug":                       "simple-frontend",
-				"version":                    "1.0.0",
-				"environment":                "prod",
-				"slack_channel":              "#some-slack-channel",
-				"commit":                     gitSha,
-				"commit_link":                "https://github.com/grafana/plugin-ci-workflows/commit/" + gitSha,
-				"auto_merge_environments":    "dev+ops",
-				"auto_approve_durations":     "",
-				"auto_approve_durations_b64": b64Encode(`{"dev": 0, "ops": 0, "prod-canary": null, "prod": null}`),
-				"prod_targets_all":           "true",
+				"slug":                    "simple-frontend",
+				"version":                 "1.0.0",
+				"environment":             "prod",
+				"slack_channel":           "#some-slack-channel",
+				"commit":                  gitSha,
+				"commit_link":             "https://github.com/grafana/plugin-ci-workflows/commit/" + gitSha,
+				"auto_merge_environments": "dev+ops",
+				"auto_approve_durations":  `{"dev": 0, "ops": 0, "prod-canary": null, "prod": null}`,
+				"prod_targets_all":        "true",
 			},
 		},
 		{
@@ -127,16 +122,15 @@ func TestCD_Argo(t *testing.T) {
 			},
 			expArgoShouldBeTriggered: true,
 			expArgoInputs: map[string]string{
-				"slug":                       "simple-frontend",
-				"version":                    "1.0.0",
-				"environment":                "prod",
-				"slack_channel":              "#some-slack-channel",
-				"commit":                     gitSha,
-				"commit_link":                "https://github.com/grafana/plugin-ci-workflows/commit/" + gitSha,
-				"auto_merge_environments":    "dev+ops+prod-canary+prod",
-				"auto_approve_durations":     "",
-				"auto_approve_durations_b64": b64Encode(`{"dev": 0, "ops": 0, "prod-canary": null, "prod": null}`),
-				"prod_targets_all":           "false",
+				"slug":                    "simple-frontend",
+				"version":                 "1.0.0",
+				"environment":             "prod",
+				"slack_channel":           "#some-slack-channel",
+				"commit":                  gitSha,
+				"commit_link":             "https://github.com/grafana/plugin-ci-workflows/commit/" + gitSha,
+				"auto_merge_environments": "dev+ops+prod-canary+prod",
+				"auto_approve_durations":  `{"dev": 0, "ops": 0, "prod-canary": null, "prod": null}`,
+				"prod_targets_all":        "false",
 			},
 		},
 		{
@@ -152,16 +146,15 @@ func TestCD_Argo(t *testing.T) {
 			},
 			expArgoShouldBeTriggered: true,
 			expArgoInputs: map[string]string{
-				"slug":                       "simple-frontend",
-				"version":                    "1.0.0",
-				"environment":                "prod",
-				"slack_channel":              "#some-slack-channel",
-				"commit":                     gitSha,
-				"commit_link":                "https://github.com/grafana/plugin-ci-workflows/commit/" + gitSha,
-				"auto_merge_environments":    "dev+ops",
-				"auto_approve_durations":     "",
-				"auto_approve_durations_b64": b64Encode(`{"dev":0,"ops":"1h","prod-canary":"24h","prod":"72h"}`),
-				"prod_targets_all":           "false",
+				"slug":                    "simple-frontend",
+				"version":                 "1.0.0",
+				"environment":             "prod",
+				"slack_channel":           "#some-slack-channel",
+				"commit":                  gitSha,
+				"commit_link":             "https://github.com/grafana/plugin-ci-workflows/commit/" + gitSha,
+				"auto_merge_environments": "dev+ops",
+				"auto_approve_durations":  `{"dev":0,"ops":"1h","prod-canary":"24h","prod":"72h"}`,
+				"prod_targets_all":        "false",
 			},
 		},
 
@@ -284,8 +277,4 @@ func TestCD_Argo(t *testing.T) {
 		require.Empty(t, runner.Argo.GetCalls(), "expected no Argo Workflow trigger calls")
 		require.Empty(t, r.Summary, "expected no summary")
 	})
-}
-
-func b64Encode(s string) string {
-	return base64.StdEncoding.EncodeToString([]byte(s))
 }

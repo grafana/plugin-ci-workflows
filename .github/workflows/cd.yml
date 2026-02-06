@@ -366,11 +366,11 @@ on:
           For example:
           
           ```
-          # The `|-` and new line is very important, otherwise it gets interpreted as a map
-          auto-approve-environments: |-
+          # The `|` and new line is very important, otherwise it gets interpreted as a map
+          auto-approve-environments: |
             {"dev": "0", "ops": "1h", "prod-canary": null, "prod": "72h"}
           ```
-        default: |-
+        default: |
           {"dev": 0, "ops": 0, "prod-canary": null, "prod": null}
         type: string
       prod-targets-all:
