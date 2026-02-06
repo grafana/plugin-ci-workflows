@@ -78,6 +78,14 @@ func TestValidator(t *testing.T) {
 					Level:   act.AnnotationLevelError,
 					Title:   "plugin-validator: Error: Plugin archive is improperly structured",
 					Message: `It is possible your plugin archive structure is incorrect. Please see https://grafana.com/developers/plugin-tools/publish-a-plugin/package-a-plugin for more information on how to package a plugin.`,
+				}, {
+					Level:   act.AnnotationLevelWarning,
+					Title:   "plugin-validator: Warning: Code diff skipped due to errors in archive",
+					Message: `Fix the errors reported by archive before code diff can run.`,
+				}, {
+					Level:   act.AnnotationLevelWarning,
+					Title:   "plugin-validator: Warning: LLM review skipped due to errors in archive",
+					Message: `Fix the errors reported by archive before LLM review can run.`,
 				},
 			},
 		},
