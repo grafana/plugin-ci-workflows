@@ -27,7 +27,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  ACT_VERSION: v0.2.82
+  ACT_VERSION: "0.2.82"
 
 permissions:
   contents: read
@@ -57,7 +57,7 @@ jobs:
         run: |
           curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/nektos/act/master/install.sh | sudo bash -s -- -b /usr/bin "${ACT_VERSION}"
         env:
-          ACT_VERSION: ${{ env.ACT_VERSION }}
+          ACT_VERSION: v${{ env.ACT_VERSION }}
           GH_TOKEN: ${{ github.token }}
         shell: bash
 
