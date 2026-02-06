@@ -55,7 +55,7 @@ jobs:
 
       - name: Install act
         run: |
-          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/nektos/act/master/install.sh | sudo bash -s -- -b /usr/bin "v${ACT_VERSION}"
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/nektos/act/master/install.sh | sudo bash -s -- -b /usr/bin "${ACT_VERSION}"
         env:
           ACT_VERSION: v${{ env.ACT_VERSION }}
           GH_TOKEN: ${{ github.token }}
