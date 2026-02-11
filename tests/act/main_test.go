@@ -146,6 +146,7 @@ func warmUpCaches(ciWf workflow.BaseWorkflow) error {
 	warmupRunner, err := act.NewRunner(
 		&testing.T{},
 		act.WithActionsCachePath(act.TemplateActionsCachePath),
+		act.WithName("toolcache-warmup"),
 	)
 	if err != nil {
 		return fmt.Errorf("create warmup runner: %w", err)
