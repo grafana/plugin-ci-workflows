@@ -27,7 +27,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  ACT_VERSION: "0.2.82"
+  ACT_VERSION: "0.2.84"
 
 permissions:
   contents: read
