@@ -568,7 +568,7 @@ jobs:
 
           # Copy workspace to a new tempdir to avoid issues when mounting the folder when running with act
           TEMP_WORKSPACE_DIR=$(mktemp -d)
-          cp -r "${PLUGIN_DIRECTORY}"/* "$TEMP_WORKSPACE_DIR/"
+          cp -r "${PLUGIN_DIRECTORY}/." "$TEMP_WORKSPACE_DIR/"
           # Add validator config file
           mv "$PLUGIN_VALIDATOR_CONFIG_PATH" "$TEMP_WORKSPACE_DIR/.plugin-validator.yaml"
           # Remove node_modules so it's not scanned by the validator
