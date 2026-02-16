@@ -96,6 +96,15 @@
             "packageNameTemplate": "nektos/act",
             "datasourceTemplate": "github-releases",
             "extractVersionTemplate": "^v?(?<version>.*)$"
+        },
+        {
+            "customType": "regex",
+            "managerFilePatterns": [".github/workflows/*.{yml,yaml}"],
+            "matchStrings": ["DEFAULT_PLUGIN_VALIDATOR_VERSION:\\s*\"(?<currentValue>[^\"]+)\""],
+            "depNameTemplate": "plugin-validator",
+            "packageNameTemplate": "grafana/plugin-validator",
+            "datasourceTemplate": "github-releases",
+            "extractVersionTemplate": "^v?(?<version>.*)$"
         }
     ],
     "minimumReleaseAge": "14 days",

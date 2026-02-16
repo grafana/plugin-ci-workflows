@@ -16,6 +16,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/go-logfmt/logfmt"
 	"github.com/google/uuid"
 	"github.com/grafana/plugin-ci-workflows/tests/act/internal/workflow"
 )
@@ -132,7 +133,7 @@ func NewRunner(t *testing.T, opts ...RunnerOption) (*Runner, error) {
 		t:           t,
 		uuid:        uuid.New(),
 		gitHubToken: ghToken,
-		GCOM: newGCOM(t),
+		GCOM:        newGCOM(t),
 		Argo: NewHTTPSpy(t, map[string]string{
 			"uri": "https://mock-argo-workflows.example.com/workflows/grafana-plugins-cd/mock-workflow-id",
 		}),
@@ -181,6 +182,9 @@ func (r *Runner) args(eventKind EventKind, actor string, workflowFile string, pa
 
 		// Required for cloning private repos
 		"--secret", "GITHUB_TOKEN=" + r.gitHubToken,
+		// Required for intercepting debug log messages
+		// https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands#setting-a-debug-message
+		"--secret", "ACTIONS_STEP_DEBUG=true",
 
 		// Additional Docker flags
 		"--container-options", r.containerOptions(),
@@ -515,6 +519,18 @@ type Annotation struct {
 
 	// Message is the message of the annotation itself.
 	Message string
+}
+
+// ParseLogFmtMessage parses the annotation message as a logfmt string and returns a map of key-value pairs.
+func (a Annotation) ParseLogFmtMessage() map[string]string {
+	decoder := logfmt.NewDecoder(strings.NewReader(a.Message))
+	result := make(map[string]string)
+	for decoder.ScanRecord() {
+		for decoder.ScanKeyval() {
+			result[string(decoder.Key())] = string(decoder.Value())
+		}
+	}
+	return result
 }
 
 // newRunResult creates a new empty RunResult instance.

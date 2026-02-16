@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -40,8 +41,9 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
-	// Skip cache warm-up in short mode
-	if !testing.Short() {
+	// Skip cache warm-up in short mode or if env var is set to skip warm-up
+	skipWarmupEnv := strings.ToLower(strings.TrimSpace(os.Getenv("SKIP_ACT_CACHE_WARMUP")))
+	if !testing.Short() && skipWarmupEnv != "1" && skipWarmupEnv != "true" {
 		// Read ci.yml to get the default tooling versions, so we can warm up the cache
 		ciWf, err := workflow.NewBaseWorkflowFromFile(filepath.Join(".github", "workflows", "ci.yml"))
 		if err != nil {
@@ -380,4 +382,31 @@ type osArchCombo struct {
 
 func (c *osArchCombo) String() string {
 	return c.os + "_" + c.arch
+}
+
+// containsLogFmtAnnotation checks if there is an annotation with the given level and expected key-value pairs in the message,
+// which must be logfmt formatted.
+// It returns whether such an annotation was found. If the annotation is found but the expected key-value pairs don't match, it returns false.
+// The caller should assert on the returned boolean via testify, for example:
+//
+// ```go
+//
+//	found := containsLogFmtAnnotation(annotations, act.AnnotationLevelDebug, map[string]string{
+//		"msg":     "Running plugin-validator",
+//		"version": expectedVersion,
+//	})
+//	require.True(t, found, "expected annotation not found")
+//
+// ```
+func containsLogFmtAnnotation(annotations []act.Annotation, level act.AnnotationLevel, expected map[string]string) bool {
+	for _, a := range annotations {
+		if a.Level != level {
+			continue
+		}
+		parsed := a.ParseLogFmtMessage()
+		if reflect.DeepEqual(parsed, expected) {
+			return true
+		}
+	}
+	return false
 }

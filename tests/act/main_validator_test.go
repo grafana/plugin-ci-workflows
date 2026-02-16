@@ -1,6 +1,7 @@
 package main
 
 import (
+	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
@@ -12,6 +13,12 @@ import (
 )
 
 func TestValidator(t *testing.T) {
+	// Get DEFAULT_PLUGIN_VALIDATOR_VERSION from ci.yml
+	ciWf, err := workflow.NewBaseWorkflowFromFile(filepath.Join(".github", "workflows", "ci.yml"))
+	require.NoError(t, err)
+	defaultPluginValidatorVersion := ciWf.Env["DEFAULT_PLUGIN_VALIDATOR_VERSION"]
+	require.NotEmpty(t, defaultPluginValidatorVersion, "could not find DEFAULT_PLUGIN_VALIDATOR_VERSION env in ci.yml workflow")
+
 	baseValidatorAnnotations := []act.Annotation{
 		{
 			Level:   act.AnnotationLevelWarning,
@@ -40,8 +47,9 @@ func TestValidator(t *testing.T) {
 		sourceFolder       string
 		packagedDistFolder string
 
-		expSuccess     bool
-		expAnnotations []act.Annotation
+		expSuccess                bool
+		expAnnotations            []act.Annotation
+		expPluginValidatorVersion string
 	}{
 		{
 			name:               "simple-backend succeeds with warnings",
@@ -55,13 +63,15 @@ func TestValidator(t *testing.T) {
 					Message: `Please upgrade your Grafana Go SDK to the latest version by running: "go get -u github.com/grafana/grafana-plugin-sdk-go"`,
 				},
 			}...),
+			expPluginValidatorVersion: defaultPluginValidatorVersion,
 		},
 		{
-			name:               "simple-frontend-yarn succeeds with warnings",
-			sourceFolder:       "simple-frontend-yarn",
-			packagedDistFolder: "dist-artifacts-unsigned/simple-frontend-yarn",
-			expSuccess:         true,
-			expAnnotations:     baseValidatorAnnotations,
+			name:                      "simple-frontend-yarn succeeds with warnings",
+			sourceFolder:              "simple-frontend-yarn",
+			packagedDistFolder:        "dist-artifacts-unsigned/simple-frontend-yarn",
+			expSuccess:                true,
+			expAnnotations:            baseValidatorAnnotations,
+			expPluginValidatorVersion: defaultPluginValidatorVersion,
 		},
 		// Special ZIP where the archive is malformed, used to test plugin-validator error handling
 		{
@@ -88,6 +98,7 @@ func TestValidator(t *testing.T) {
 					Message: `Fix the errors reported by archive before LLM review can run.`,
 				},
 			},
+			expPluginValidatorVersion: defaultPluginValidatorVersion,
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -137,6 +148,15 @@ analyzers:
 				}
 			}
 			require.Equal(t, validatorAnnotationCount, len(tc.expAnnotations), "found unexpected plugin-validator gha annotation entries")
+
+			// Check debug annotation with the validator version
+			if tc.expPluginValidatorVersion != "" {
+				t.Log("IPPIF")
+				require.True(t, containsLogFmtAnnotation(r.Annotations, act.AnnotationLevelDebug, map[string]string{
+					"msg":     "Running plugin-validator",
+					"version": tc.expPluginValidatorVersion,
+				}), "expected debug annotation with plugin-validator version not found")
+			}
 		})
 	}
 }

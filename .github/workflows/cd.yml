@@ -195,6 +195,14 @@ on:
         type: boolean
         required: false
         default: false
+      plugin-validator-version:
+        description: |
+          plugin-validator version to use, without the `v` prefix.
+          The value `latest` can be used to always use the latest version available.
+          If not provided, the workflow default version will be used.
+          Example: `0.37.1`
+        type: string
+        required: false
       plugin-validator-config:
         description: |
           Content of the plugin validator configuration file (yaml) to use.
@@ -607,6 +615,7 @@ jobs:
       mage-version: ${{ inputs.mage-version }}
 
       run-plugin-validator: ${{ inputs.run-plugin-validator }}
+      plugin-validator-version: ${{ inputs.plugin-validator-version }}
       plugin-validator-config: ${{ inputs.plugin-validator-config }}
       plugin-validator-config-path: ${{ inputs.plugin-validator-config-path }}
 
