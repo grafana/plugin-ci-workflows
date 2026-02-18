@@ -590,7 +590,7 @@ jobs:
           # We cannot use a volume mount here if we are using act on Mac OS, so
           # we need to copy the workspace to a new tempdir and then start the container.
           # Also, do not run clamav because it takes too long
-          echo "::act::msg=\"Running plugin-validator\" version=${PLUGIN_VALIDATOR_VERSION}"
+          printf '::act-debug::msg="%s" version="%s"\n' "Running plugin-validator" "${PLUGIN_VALIDATOR_VERSION}"
           docker create --name="plugin-validator-${UUID}" --pull=always --platform=linux/amd64 \
             -e SKIP_CLAMAV=1 \
             grafana/plugin-validator-cli:${PLUGIN_VALIDATOR_VERSION} \
