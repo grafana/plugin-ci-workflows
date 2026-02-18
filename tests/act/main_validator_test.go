@@ -110,7 +110,7 @@ func TestValidator(t *testing.T) {
 			pluginValidatorVersion:    "0.37.0",
 			expSuccess:                true,
 			expAnnotations:            baseValidatorAnnotations,
-			expPluginValidatorVersion: "0.37.0",
+			expPluginValidatorVersion: "v0.37.0",
 		},
 		{
 			name:                      "latest version uses latest container tag",
