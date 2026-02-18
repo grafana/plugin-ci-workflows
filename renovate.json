@@ -38,7 +38,7 @@
     "customManagers": [
         {
             "customType": "regex",
-            "managerFilePatterns": ["\\.github/workflows/.*\\.ya?ml$"],
+            "managerFilePatterns": [".github/workflows/*.{yml,yaml}"],
             "matchStrings": ["DEFAULT_NODE_VERSION:\\s*\"(?<currentValue>\\d+)\""],
             "depNameTemplate": "node",
             "datasourceTemplate": "node-version",
@@ -46,7 +46,7 @@
         },
         {
             "customType": "regex",
-            "managerFilePatterns": ["\\.github/workflows/.*\\.ya?ml$"],
+            "managerFilePatterns": [".github/workflows/*.{yml,yaml}"],
             "matchStrings": ["DEFAULT_GO_VERSION:\\s*\"(?<currentValue>\\d+\\.\\d+)\""],
             "depNameTemplate": "go",
             "datasourceTemplate": "golang-version",
@@ -54,7 +54,7 @@
         },
         {
             "customType": "regex",
-            "managerFilePatterns": ["\\.github/workflows/.*\\.ya?ml$"],
+            "managerFilePatterns": [".github/workflows/*.{yml,yaml}"],
             "matchStrings": ["(?:DEFAULT_)?GOLANGCI_LINT_VERSION:\\s*\"(?<currentValue>[^\"]+)\""],
             "depNameTemplate": "golangci-lint",
             "packageNameTemplate": "golangci/golangci-lint",
@@ -63,7 +63,7 @@
         },
         {
             "customType": "regex",
-            "managerFilePatterns": ["\\.github/workflows/.*\\.ya?ml$"],
+            "managerFilePatterns": [".github/workflows/*.{yml,yaml}"],
             "matchStrings": ["DEFAULT_TRUFFLEHOG_VERSION:\\s*\"(?<currentValue>[^\"]+)\""],
             "depNameTemplate": "trufflehog",
             "packageNameTemplate": "trufflesecurity/trufflehog",
@@ -72,7 +72,7 @@
         },
         {
             "customType": "regex",
-            "managerFilePatterns": ["\\.github/workflows/.*\\.ya?ml$"],
+            "managerFilePatterns": [".github/workflows/*.{yml,yaml}"],
             "matchStrings": ["DEFAULT_MAGE_VERSION:\\s*\"(?<currentValue>[^\"]+)\""],
             "depNameTemplate": "mage",
             "packageNameTemplate": "magefile/mage",
@@ -81,10 +81,19 @@
         },
         {
             "customType": "regex",
-            "managerFilePatterns": ["\\.github/workflows/.*\\.ya?ml$"],
+            "managerFilePatterns": [".github/workflows/*.{yml,yaml}"],
             "matchStrings": ["ACTIONLINT_VERSION:\\s*\"(?<currentValue>[^\"]+)\""],
             "depNameTemplate": "actionlint",
             "packageNameTemplate": "rhysd/actionlint",
+            "datasourceTemplate": "github-releases",
+            "extractVersionTemplate": "^v?(?<version>.*)$"
+        },
+        {
+            "customType": "regex",
+            "managerFilePatterns": [".github/workflows/*.{yml,yaml}"],
+            "matchStrings": ["ACT_VERSION:\\s*\"(?<currentValue>[^\"]+)\""],
+            "depNameTemplate": "act",
+            "packageNameTemplate": "nektos/act",
             "datasourceTemplate": "github-releases",
             "extractVersionTemplate": "^v?(?<version>.*)$"
         }
