@@ -1,6 +1,8 @@
 package main
 
 import (
+	"encoding/json"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -187,4 +189,53 @@ func TestExportedWorkflowsInSyncWithReleasePlease(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestPluginActionsInReleasePleaseConfig(t *testing.T) {
+	// Ensure that all public plugin actions (those not under actions/internal/) are registered
+	// in release-please-config.json's "packages" section.
+	t.Parallel()
+
+	// Discover all action directories under actions/ that are NOT under actions/internal/.
+	// An action directory is one that contains action.yml or action.yaml.
+	actionDirs, err := findPluginActionDirs("actions")
+	require.NoError(t, err)
+	require.NotEmpty(t, actionDirs, "should find at least one plugin action")
+
+	// Parse release-please-config.json to get the packages map.
+	configBytes, err := os.ReadFile("release-please-config.json")
+	require.NoError(t, err)
+
+	var config struct {
+		Packages map[string]json.RawMessage `json:"packages"`
+	}
+	require.NoError(t, json.Unmarshal(configBytes, &config))
+
+	for _, actionDir := range actionDirs {
+		require.Contains(t, config.Packages, actionDir, "action %q should be listed in release-please-config.json packages", actionDir)
+	}
+}
+
+// findPluginActionDirs walks the given root and returns directories that contain
+// an action.yml or action.yaml file, excluding anything under actions/internal/.
+func findPluginActionDirs(root string) ([]string, error) {
+	var dirs []string
+	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		// Skip the actions/internal subtree entirely.
+		if info.IsDir() && path == filepath.Join("actions", "internal") {
+			return filepath.SkipDir
+		}
+		if info.IsDir() {
+			return nil
+		}
+		base := filepath.Base(path)
+		if base == "action.yml" || base == "action.yaml" {
+			dirs = append(dirs, filepath.Dir(path))
+		}
+		return nil
+	})
+	return dirs, err
 }
