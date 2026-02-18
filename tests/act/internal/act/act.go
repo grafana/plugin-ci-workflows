@@ -182,9 +182,6 @@ func (r *Runner) args(eventKind EventKind, actor string, workflowFile string, pa
 
 		// Required for cloning private repos
 		"--secret", "GITHUB_TOKEN=" + r.gitHubToken,
-		// Required for intercepting debug log messages
-		// https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands#setting-a-debug-message
-		"--secret", "ACTIONS_STEP_DEBUG=true",
 
 		// Additional Docker flags
 		"--container-options", r.containerOptions(),
@@ -399,6 +396,14 @@ func (r *Runner) processStream(reader io.Reader, runResult *RunResult) error {
 // updates the RunResult accordingly. If the log line does not contain a
 // recognized command, it is ignored.
 func (r *Runner) parseGHACommand(data logLine, runResult *RunResult) {
+	// Intercept custom "act" command and treat it as a debug annotation.
+	// Normally, debug annotations are very verbose and not shown in act output unless --verbose is provided.
+	// We use this custom "act" command to selectively log debug information in our workflows whenever we need to,
+	// and then we assert on these annotations.
+	if data.Command == "act" {
+		data.Command = "debug"
+	}
+
 	switch data.Command {
 	case "set-output":
 		if data.Name == "" {

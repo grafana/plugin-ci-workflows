@@ -151,10 +151,9 @@ analyzers:
 
 			// Check debug annotation with the validator version
 			if tc.expPluginValidatorVersion != "" {
-				t.Log("IPPIF")
 				require.True(t, containsLogFmtAnnotation(r.Annotations, act.AnnotationLevelDebug, map[string]string{
 					"msg":     "Running plugin-validator",
-					"version": tc.expPluginValidatorVersion,
+					"version": "v" + tc.expPluginValidatorVersion,
 				}), "expected debug annotation with plugin-validator version not found")
 			}
 		})
