@@ -593,7 +593,7 @@ jobs:
           printf '::act-debug::msg="%s" version="%s"\n' "Running plugin-validator" "${PLUGIN_VALIDATOR_VERSION}"
           docker create --name="plugin-validator-${UUID}" --pull=always --platform=linux/amd64 \
             -e SKIP_CLAMAV=1 \
-            grafana/plugin-validator-cli:${PLUGIN_VALIDATOR_VERSION} \
+            "grafana/plugin-validator-cli:${PLUGIN_VALIDATOR_VERSION}" \
             -ghaOutput \
             -config=/workspace/.plugin-validator.yaml \
             -sourceCodeUri=file:///workspace \
