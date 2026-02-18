@@ -16,7 +16,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/go-logfmt/logfmt"
 	"github.com/google/uuid"
 	"github.com/grafana/plugin-ci-workflows/tests/act/internal/workflow"
 )
@@ -524,18 +523,6 @@ type Annotation struct {
 
 	// Message is the message of the annotation itself.
 	Message string
-}
-
-// ParseLogFmtMessage parses the annotation message as a logfmt string and returns a map of key-value pairs.
-func (a Annotation) ParseLogFmtMessage() map[string]string {
-	decoder := logfmt.NewDecoder(strings.NewReader(a.Message))
-	result := make(map[string]string)
-	for decoder.ScanRecord() {
-		for decoder.ScanKeyval() {
-			result[string(decoder.Key())] = string(decoder.Value())
-		}
-	}
-	return result
 }
 
 // newRunResult creates a new empty RunResult instance.
