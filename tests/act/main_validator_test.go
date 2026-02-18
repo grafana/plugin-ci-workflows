@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/go-logfmt/logfmt"
 	"github.com/grafana/plugin-ci-workflows/tests/act/internal/act"
 	"github.com/grafana/plugin-ci-workflows/tests/act/internal/workflow"
 	"github.com/grafana/plugin-ci-workflows/tests/act/internal/workflow/ci"
@@ -18,6 +19,7 @@ func TestValidator(t *testing.T) {
 	require.NoError(t, err)
 	defaultPluginValidatorVersion := ciWf.Env["DEFAULT_PLUGIN_VALIDATOR_VERSION"]
 	require.NotEmpty(t, defaultPluginValidatorVersion, "could not find DEFAULT_PLUGIN_VALIDATOR_VERSION env in ci.yml workflow")
+	defaultPluginValidatorVersion = "v" + defaultPluginValidatorVersion
 
 	baseValidatorAnnotations := []act.Annotation{
 		{
@@ -43,9 +45,10 @@ func TestValidator(t *testing.T) {
 		},
 	}
 	for _, tc := range []struct {
-		name               string
-		sourceFolder       string
-		packagedDistFolder string
+		name                   string
+		sourceFolder           string
+		packagedDistFolder     string
+		pluginValidatorVersion string
 
 		expSuccess                bool
 		expAnnotations            []act.Annotation
@@ -100,6 +103,24 @@ func TestValidator(t *testing.T) {
 			},
 			expPluginValidatorVersion: defaultPluginValidatorVersion,
 		},
+		{
+			name:                      "pinned version uses pinned container tag",
+			sourceFolder:              "simple-frontend-yarn",
+			packagedDistFolder:        "dist-artifacts-unsigned/simple-frontend-yarn",
+			pluginValidatorVersion:    "0.37.0",
+			expSuccess:                true,
+			expAnnotations:            baseValidatorAnnotations,
+			expPluginValidatorVersion: "0.37.0",
+		},
+		{
+			name:                      "latest version uses latest container tag",
+			sourceFolder:              "simple-frontend-yarn",
+			packagedDistFolder:        "dist-artifacts-unsigned/simple-frontend-yarn",
+			pluginValidatorVersion:    "latest",
+			expSuccess:                true,
+			expAnnotations:            baseValidatorAnnotations,
+			expPluginValidatorVersion: "latest",
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
@@ -113,19 +134,24 @@ analyzers:
   osv-scanner:
     enabled: false
 `
+			ciInputs := ci.WorkflowInputs{
+				PluginDirectory:     workflow.Input("tests/" + tc.sourceFolder),
+				DistArtifactsPrefix: workflow.Input(tc.sourceFolder + "-"),
+
+				// Disable some features to speed up the test
+				RunPlaywright: workflow.Input(false),
+				RunTruffleHog: workflow.Input(false),
+
+				// Enable the plugin validator (opt-in)
+				RunPluginValidator:    workflow.Input(true),
+				PluginValidatorConfig: workflow.Input(validatorConfig),
+			}
+			// Optionally override the plugin-validator version
+			if tc.pluginValidatorVersion != "" {
+				ciInputs.PluginValidatorVersion = workflow.Input(tc.pluginValidatorVersion)
+			}
 			wf, err := ci.NewWorkflow(
-				ci.WithWorkflowInputs(ci.WorkflowInputs{
-					PluginDirectory:     workflow.Input("tests/" + tc.sourceFolder),
-					DistArtifactsPrefix: workflow.Input(tc.sourceFolder + "-"),
-
-					// Disable some features to speed up the test
-					RunPlaywright: workflow.Input(false),
-					RunTruffleHog: workflow.Input(false),
-
-					// Enable the plugin validator (opt-in)
-					RunPluginValidator:    workflow.Input(true),
-					PluginValidatorConfig: workflow.Input(validatorConfig),
-				}),
+				ci.WithWorkflowInputs(ciInputs),
 				// Mock dist so we don't spend time building the plugin
 				ci.WithMockedPackagedDistArtifacts(t, "dist/"+tc.sourceFolder, tc.packagedDistFolder),
 			)
@@ -139,6 +165,16 @@ analyzers:
 				require.False(t, r.Success, "workflow should fail")
 			}
 
+			// Check debug annotation with the validator version, if necessary
+			if tc.expPluginValidatorVersion != "" {
+				logFmtMsg, err := logfmt.MarshalKeyvals("msg", "Running plugin-validator", "version", tc.expPluginValidatorVersion)
+				require.NoError(t, err)
+				require.Contains(t, r.Annotations, act.Annotation{
+					Level:   act.AnnotationLevelDebug,
+					Message: string(logFmtMsg),
+				})
+			}
+
 			// Check annotation entries
 			require.Subset(t, r.Annotations, tc.expAnnotations)
 			var validatorAnnotationCount int
@@ -148,14 +184,6 @@ analyzers:
 				}
 			}
 			require.Equal(t, validatorAnnotationCount, len(tc.expAnnotations), "found unexpected plugin-validator gha annotation entries")
-
-			// Check debug annotation with the validator version
-			if tc.expPluginValidatorVersion != "" {
-				require.True(t, containsLogFmtAnnotation(r.Annotations, act.AnnotationLevelDebug, map[string]string{
-					"msg":     "Running plugin-validator",
-					"version": "v" + tc.expPluginValidatorVersion,
-				}), "expected debug annotation with plugin-validator version not found")
-			}
 		})
 	}
 }

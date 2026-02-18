@@ -11,7 +11,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"reflect"
 	"strings"
 	"testing"
 
@@ -382,31 +381,4 @@ type osArchCombo struct {
 
 func (c *osArchCombo) String() string {
 	return c.os + "_" + c.arch
-}
-
-// containsLogFmtAnnotation checks if there is an annotation with the given level and expected key-value pairs in the message,
-// which must be logfmt formatted.
-// It returns whether such an annotation was found. If the annotation is found but the expected key-value pairs don't match, it returns false.
-// The caller should assert on the returned boolean via testify, for example:
-//
-// ```go
-//
-//	found := containsLogFmtAnnotation(annotations, act.AnnotationLevelDebug, map[string]string{
-//		"msg":     "Running plugin-validator",
-//		"version": expectedVersion,
-//	})
-//	require.True(t, found, "expected annotation not found")
-//
-// ```
-func containsLogFmtAnnotation(annotations []act.Annotation, level act.AnnotationLevel, expected map[string]string) bool {
-	for _, a := range annotations {
-		if a.Level != level {
-			continue
-		}
-		parsed := a.ParseLogFmtMessage()
-		if reflect.DeepEqual(parsed, expected) {
-			return true
-		}
-	}
-	return false
 }
