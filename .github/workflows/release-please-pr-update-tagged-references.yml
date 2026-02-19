@@ -47,7 +47,8 @@ jobs:
 
   update-tagged-references:
     name: Update tagged references
-    needs: automated-commit-check
+    needs:
+      - automated-commit-check
     permissions:
       contents: write
       pull-requests: write
