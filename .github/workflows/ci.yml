@@ -596,7 +596,7 @@ jobs:
           docker rm "plugin-validator-${UUID}"
           exit "$EXIT_CODE"
         env:
-          PLUGIN_VALIDATOR_VERSION: ${{ env.DEFAULT_PLUGIN_VALIDATOR_VERSION }}
+          PLUGIN_VALIDATOR_VERSION: v${{ env.DEFAULT_PLUGIN_VALIDATOR_VERSION }}
           UNIVERSAL_ZIP: ${{ steps.universal-zip.outputs.zip }}
           PLUGIN_VALIDATOR_CONFIG: ${{ inputs.plugin-validator-config }}
           PLUGIN_VALIDATOR_CONFIG_PATH: ${{ inputs.plugin-validator-config-path }}
