@@ -172,14 +172,6 @@ on:
         type: boolean
         required: false
         default: false
-      plugin-validator-version:
-        description: |
-          plugin-validator version to use, without the `v` prefix.
-          The value `latest` can be used to always use the latest version available.
-          If not provided, the workflow default version will be used.
-          Example: `0.37.1`
-        type: string
-        required: false
       plugin-validator-config:
         description: |
           Content of the plugin validator configuration file (yaml) to use.
@@ -604,7 +596,7 @@ jobs:
           docker rm "plugin-validator-${UUID}"
           exit "$EXIT_CODE"
         env:
-          PLUGIN_VALIDATOR_VERSION: ${{ inputs.plugin-validator-version == 'latest' && 'latest' || format('v{0}', inputs.plugin-validator-version || env.DEFAULT_PLUGIN_VALIDATOR_VERSION) }}
+          PLUGIN_VALIDATOR_VERSION: ${{ env.DEFAULT_PLUGIN_VALIDATOR_VERSION }}
           UNIVERSAL_ZIP: ${{ steps.universal-zip.outputs.zip }}
           PLUGIN_VALIDATOR_CONFIG: ${{ inputs.plugin-validator-config }}
           PLUGIN_VALIDATOR_CONFIG_PATH: ${{ inputs.plugin-validator-config-path }}

@@ -45,10 +45,9 @@ func TestValidator(t *testing.T) {
 		},
 	}
 	for _, tc := range []struct {
-		name                   string
-		sourceFolder           string
-		packagedDistFolder     string
-		pluginValidatorVersion string
+		name               string
+		sourceFolder       string
+		packagedDistFolder string
 
 		expSuccess                bool
 		expAnnotations            []act.Annotation
@@ -103,24 +102,6 @@ func TestValidator(t *testing.T) {
 			},
 			expPluginValidatorVersion: defaultPluginValidatorVersion,
 		},
-		{
-			name:                      "pinned version uses pinned container tag",
-			sourceFolder:              "simple-frontend-yarn",
-			packagedDistFolder:        "dist-artifacts-unsigned/simple-frontend-yarn",
-			pluginValidatorVersion:    "0.37.0",
-			expSuccess:                true,
-			expAnnotations:            baseValidatorAnnotations,
-			expPluginValidatorVersion: "v0.37.0",
-		},
-		{
-			name:                      "latest version uses latest container tag",
-			sourceFolder:              "simple-frontend-yarn",
-			packagedDistFolder:        "dist-artifacts-unsigned/simple-frontend-yarn",
-			pluginValidatorVersion:    "latest",
-			expSuccess:                true,
-			expAnnotations:            baseValidatorAnnotations,
-			expPluginValidatorVersion: "latest",
-		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
@@ -134,24 +115,19 @@ analyzers:
   osv-scanner:
     enabled: false
 `
-			ciInputs := ci.WorkflowInputs{
-				PluginDirectory:     workflow.Input("tests/" + tc.sourceFolder),
-				DistArtifactsPrefix: workflow.Input(tc.sourceFolder + "-"),
-
-				// Disable some features to speed up the test
-				RunPlaywright: workflow.Input(false),
-				RunTruffleHog: workflow.Input(false),
-
-				// Enable the plugin validator (opt-in)
-				RunPluginValidator:    workflow.Input(true),
-				PluginValidatorConfig: workflow.Input(validatorConfig),
-			}
-			// Optionally override the plugin-validator version
-			if tc.pluginValidatorVersion != "" {
-				ciInputs.PluginValidatorVersion = workflow.Input(tc.pluginValidatorVersion)
-			}
 			wf, err := ci.NewWorkflow(
-				ci.WithWorkflowInputs(ciInputs),
+				ci.WithWorkflowInputs(ci.WorkflowInputs{
+					PluginDirectory:     workflow.Input("tests/" + tc.sourceFolder),
+					DistArtifactsPrefix: workflow.Input(tc.sourceFolder + "-"),
+
+					// Disable some features to speed up the test
+					RunPlaywright: workflow.Input(false),
+					RunTruffleHog: workflow.Input(false),
+
+					// Enable the plugin validator (opt-in)
+					RunPluginValidator:    workflow.Input(true),
+					PluginValidatorConfig: workflow.Input(validatorConfig),
+				}),
 				// Mock dist so we don't spend time building the plugin
 				ci.WithMockedPackagedDistArtifacts(t, "dist/"+tc.sourceFolder, tc.packagedDistFolder),
 			)
