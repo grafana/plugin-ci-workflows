@@ -921,7 +921,7 @@ jobs:
 
       - name: Trigger Argo Workflow
         id: trigger-argo-workflow
-        uses: grafana/shared-workflows/actions/trigger-argo-workflow@7f983a8135eb58eaec83c96d8b842b2092e110e3 # unreleased version with comma parsing bugfix
+        uses: grafana/shared-workflows/actions/trigger-argo-workflow@trigger-argo-workflow/v1.2.2
         with:
           namespace: grafana-plugins-cd
           workflow_template: grafana-plugins-deploy
