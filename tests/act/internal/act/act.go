@@ -422,11 +422,13 @@ func (r *Runner) processStream(reader io.Reader, runResult *RunResult) error {
 		var data logLine
 		line := scanner.Bytes()
 		err := json.Unmarshal(line, &data)
+		if err != nil {
+			// Preserve plain-text lines (commonly emitted on stderr) in non-verbose mode.
+			r.logOrBuffer(string(line), &logBuffer)
+			continue
+		}
 		if r.Verbose {
 			r.logOrBuffer(string(line), &logBuffer)
-		}
-		if err != nil {
-			continue
 		}
 
 		// Clean up uuids from data.Job for cleaner output
