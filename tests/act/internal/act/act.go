@@ -375,6 +375,7 @@ func (r *Runner) Run(workflow workflow.Workflow, event Event) (runResult *RunRes
 	go func() {
 		if err := r.processStream(mergedR, runResult); err != nil {
 			errs <- fmt.Errorf("process act output: %w", err)
+			return
 		}
 		errs <- nil
 	}()
@@ -396,9 +397,7 @@ func (r *Runner) Run(workflow workflow.Workflow, event Event) (runResult *RunRes
 		return nil, fmt.Errorf("act exit: %w", err)
 	}
 	runResult.Success = true
-
-	// Wait for output processing to complete
-	return runResult, <-errs
+	return runResult, nil
 }
 
 // logOrBuffer writes a message to the buffer if running in GitHub Actions,
