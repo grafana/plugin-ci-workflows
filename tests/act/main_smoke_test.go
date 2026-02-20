@@ -85,7 +85,6 @@ func TestSmoke(t *testing.T) {
 			var pluginOutput testAndBuildOutput
 			rawOutput, ok := r.Outputs.Get("test-and-build", "outputs", "plugin")
 			require.True(t, ok, "plugin output should be present")
-			t.Log(rawOutput)
 			err = json.Unmarshal([]byte(rawOutput), &pluginOutput)
 			require.NoError(t, err, "unmarshal plugin output JSON")
 			require.Equal(t, tc.exp, pluginOutput)

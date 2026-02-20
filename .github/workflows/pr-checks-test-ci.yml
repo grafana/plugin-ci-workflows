@@ -27,7 +27,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  ACT_VERSION: v0.2.82
+  ACT_VERSION: "0.2.84"
 
 permissions:
   contents: read
@@ -57,12 +57,12 @@ jobs:
         run: |
           curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/nektos/act/master/install.sh | sudo bash -s -- -b /usr/bin "${ACT_VERSION}"
         env:
-          ACT_VERSION: ${{ env.ACT_VERSION }}
+          ACT_VERSION: v${{ env.ACT_VERSION }}
           GH_TOKEN: ${{ github.token }}
         shell: bash
 
       - name: Setup Go
-        uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
+        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
         with:
           go-version-file: tests/act/go.mod
           cache-dependency-path: tests/act/go.sum
