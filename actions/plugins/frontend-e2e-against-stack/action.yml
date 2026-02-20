@@ -62,7 +62,7 @@ runs:
         persist-credentials: false
 
     - name: Setup Node.js environment
-      uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
+      uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
       with:
         node-version: "20"
         cache: "yarn"
@@ -277,7 +277,7 @@ runs:
       shell: bash
 
     - name: Upload E2E report
-      uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+      uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
       if: always()
       with:
         name: ${{ inputs.upload-report-path }}
@@ -285,7 +285,7 @@ runs:
         retention-days: 30
 
     - name: Upload E2E videos
-      uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+      uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
       if: always()
       with:
         name: ${{ inputs.upload-videos-path }}

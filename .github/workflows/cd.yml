@@ -443,14 +443,6 @@ on:
         type: boolean
         required: false
         default: false
-      DO-NOT-USE-gcom-api-url:
-        description: |
-          FOR INTERNAL TESTING ONLY, DO NOT USE.
-          If set, overrides the GCOM API URL for all publish operations.
-          Used for testing with mock GCOM servers.
-        type: string
-        required: false
-        default: ""
 
     outputs:
       # Same outputs as the CI workflow.
@@ -754,7 +746,7 @@ jobs:
       - name: Generate artifact attestation
         if: ${{ inputs.attestation }}
         id: attestation
-        uses: actions/attest-build-provenance@00014ed6ed5efc5b1ab7f7f34a39eb55d41aa4f8 # v3.1.0
+        uses: actions/attest-build-provenance@96278af6caaf10aea03fd8d33a09a777ca52d62f # v3.2.0
         with:
           subject-path: /tmp/dist-artifacts/*.zip
 
@@ -848,7 +840,6 @@ jobs:
           environment: ${{ matrix.environment }}
           gcom-publish-token: ${{ env.GCOM_PUBLISH_TOKEN }}
           gcloud-auth-token: ${{ steps.gcloud.outputs.id_token }}
-          gcom-api-url: ${{ inputs.DO-NOT-USE-gcom-api-url }}
 
       - name: Check artifact ZIP(s)
         id: check-artifact-zips
@@ -867,7 +858,6 @@ jobs:
           gcloud-auth-token: ${{ steps.gcloud.outputs.id_token }}
           ignore-conflicts: ${{ steps.determine-continue.outputs.ignore_conflicts }}
           publish-as-pending: ${{ matrix.environment == 'prod-canary' || inputs.publish-to-catalog-as-pending }}
-          gcom-api-url: ${{ inputs.DO-NOT-USE-gcom-api-url }}
 
       - name: Print publish summary
         run: |

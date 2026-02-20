@@ -161,7 +161,7 @@ func TestCD(t *testing.T) {
 				),
 
 				// Mocks
-				cd.WithMockedGCOM(runner.GCOM),
+				cd.WithMockedGCOM(t, runner.GCOM),
 				cd.MutateAllWorkflows().With(
 					workflow.WithMockedVault(t, mockVault),
 					workflow.WithMockedGitHubAppToken(t),
