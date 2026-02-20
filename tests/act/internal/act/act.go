@@ -147,6 +147,7 @@ func NewRunner(t *testing.T, opts ...RunnerOption) (*Runner, error) {
 	}
 	r := &Runner{
 		t:               t,
+		name:            t.Name(),
 		uuid:            uuid.New(),
 		gitHubToken:     ghToken,
 		inGitHubActions: os.Getenv("GITHUB_ACTIONS") == "true",
