@@ -32,13 +32,14 @@ on:
       # TODO: 'managed' deployment_type will be added here in the future.
       grafana-cloud-deployment-type:
         description: |
-          If set, trigger Argo Workflow to deploy the plugin to the specified environment(s) in Grafana Cloud.
+          The deployment type used by the Argo Workflow to deploy the plugin to the specified environment(s) in Grafana Cloud.
+          `trigger-argo` must also be true for Argo to be triggered.
           `gcs_only` must be false for this to work.
 
           Supported values:
             - provisioned
 
-          Currently, this only works for provisioned plugins that have migrated to grafana_cloud-scoped plugins in the plugins catalog.
+          Currently, this only works for provisioned plugins published to the catalog.
           Default is empty (do not trigger Argo Workflow).
         required: false
         default:
@@ -222,31 +223,49 @@ on:
       # User inputs
       plugin-version-suffix:
         description: |
-          Suffix to append to plugin version before building it, which will be separated by a "+" sign.
-          For example `abcdef` will set the plugin version to `1.2.3+abcdef`.
-          Useful for giving a unique version to the plugin built from a PR.
+          Optional suffix to append to plugin version before building it, which will be separated by a "+" sign.
+          For example `abcdef` will set the plugin version to `<VERSION_IN_PLUGIN_JSON>+abcdef` (e.g.: `1.2.3+abcdef`).
+          This can be used for giving a unique version value to the plugin.
+          This is necessary because the plugins catalog requires each plugin version to be a unique value.
+          Otherwise, publishing the plugin will fail if the same version is already present in the catalog.
 
-          If not set (empty):
-          - On `main` inputs.branch, the version will be the same as the one in plugin.json.
-          - On other branches, the version of the final plugin will the `<VERSION_IN_PLUGIN_JSON>+<HEAD_COMMIT_SHA>`.
+          The suffix can be any string, but it's usually a Git commit SHA.
+
+          Some common use cases:
+          - Deploying PRs to `dev` or `ops` catalogs: the PR's build will have the head commit SHA as suffix, ensuring uniqueness.
+          - Continuously deploying each commit of the `main` branch to `dev` or `ops` catalogs: each commit will publish a version with its own SHA suffix.
+
+          If not set (empty), the following applies, in order of precedence:
+          1. If targeting the `prod-canary` environment, the suffix will be the head commit SHA
+            (version = `<VERSION_IN_PLUGIN_JSON>+<HEAD_COMMIT_SHA>`).
+            This ensures the prod-canary deployment is treated as a "pre-release", separate from a full `prod` release, which can
+            happen later on without the commit SHA suffix.
+          2. If `branch` input matches the release reference regex (defined by the `release-reference-regex` input, by default: `main`),
+            the suffix will be empty: the version will be the same as the one in plugin.json.
+            This ensures the suffix is not added when cutting a manual release.
+          3. On other branches that do not match the `release-reference-regex` input, the suffix will be the head commit SHA
+            (version = `<VERSION_IN_PLUGIN_JSON>+<HEAD_COMMIT_SHA>`).
+            This allows publishing PRs to `dev` or `ops` catalogs with unique versions.
         type: string
         required: false
       environment:
         description: |
           Environment(s) to publish to.
-          This will decide which environment(s) are used to publish to:
-          - The plugins catalog
-          - Grafana Cloud (if configured)
+          This will decide which environment(s) are used to:
+          - Publish the plugin version to the plugins catalog
+          - Deploy the plugin version to Grafana Cloud, via Argo Workflows (if enabled via the `trigger-argo` input)
 
           Allowed values:
-          - `none` (or empty string): Skip deployment (run only CI)
-          - `dev`: Deploy to dev catalog
-          - `ops` or `staging`: Deploy to ops catalog
-          - `prod-canary`: Deploy to subset of prod instances - free and on instant wave
-          - `prod`: Deploy to dev AND ops AND prod-canary AND prod
+          - `none` (or empty string): Skip catalog publishing and deployment (run only CI)
+          - `dev`: Publish to `dev` catalog and (if `trigger-argo` is true) deploy to all `dev` instances in Grafana Cloud
+          - `ops` or `staging`: Publish to `ops` catalog and (if `trigger-argo` is true) deploy to all `ops` instances in Grafana Cloud
+          - `prod-canary`: Publish to `prod` catalog and (if `trigger-argo` is true) deploy to subset of `prod` instances (free and on instant wave) in Grafana Cloud
+          - `prod`:
+              - If the `prod-targets-all` input is true (default), publish to ALL catalogs and (if `trigger-argo` is true) deploy to ALL instances in Grafana Cloud (`dev`, `ops`, `prod-canary`, `prod`)
+              - If the `prod-targets-all` input is false, publish ONLY to `prod` catalog and (if `trigger-argo` is true) deploy ONLY to `prod` instances in Grafana Cloud
           - A comma separated combination of the values above. E.g.: `dev,ops`
 
-          Docs will only be published to the website when targeting `prod`.
+          Note: Docs can only be published to the website when targeting `prod`.
         required: true
         type: string
       docs-only:
@@ -269,21 +288,6 @@ on:
           Disable docs publishing to the website.
         default: false
         type: boolean
-      argo-workflow-slack-channel:
-        description: |
-          Slack channel to use for Argo Workflow deployment notifications.
-          This is only used when deploying to Grafana Cloud.
-          Default is '#grafana-plugins-platform-ci'.
-        default: "#grafana-plugins-platform-ci"
-        type: string
-      auto-merge-environments:
-        description: |
-          Comma separated list of environments to auto-merge when deploying to Grafana Cloud via Argo.
-          Supported values are 'dev' and 'ops' (or 'staging').
-          'prod-canary' and 'prod' will never be auto-merged.
-          Default is 'dev'.
-        default: dev
-        type: string
       frontend-secrets:
         description: The secrets to use within frontend steps
         type: string
@@ -301,13 +305,94 @@ on:
           Default is false.
         default: false
         type: boolean
-      # Useful if you want to publish to catalog (e.g. dev) but _not_ trigger Argo
+
+      # Argo Workflow options
       trigger-argo:
         description: |
-          Trigger Argo after publish to catalog
+          Whether to trigger the Argo Workflow after publish to catalog.
+          Set to `false` to disable Argo.
+          When set to `true`, Argo is triggered and will deploy the provisioned plugin to Grafana Cloud,
+          in the environment(s) specified in the `environment` input.
+
+          Setting it to `false` is useful if you want to publish to catalog (e.g. dev) but _not_ trigger Argo.
+          For example, if you want to test a PR in the dev catalog on _one_ Grafana Cloud instance via stack overrides,
+          rather than deploying the PR's build to all instances in Grafana Cloud via Argo.
         default: true
         required: false
         type: boolean
+      argo-workflow-slack-channel:
+        description: |
+          Slack channel to use for Argo Workflow deployment notifications.
+          This is only used when Argo is triggered (when `trigger-argo` is true).
+          Default is '#grafana-plugins-platform-ci'.
+          This should be changed to a Slack channel specific to your team.
+        default: "#grafana-plugins-platform-ci"
+        type: string
+      auto-merge-environments:
+        description: |
+          Comma separated list of environments whose deployment_tools PRs will be auto-merged when
+          deploying to Grafana Cloud via Argo, once CI has passed for the deployment_tools PR.
+          Supported values are `dev`, `ops`, `prod-canary` and `prod`.
+          Also see the `auto-approve-durations` input to further customize where and when the deployment approval is required.
+
+          The default is `dev,ops,prod-canary,prod`, meaning the PRs will be auto-merged for all environments.
+          Combined with the default value of `auto-approve-durations` input, this means the deployment approvals happen in Argo ONLY by default,
+          and all deployment_tools PRs will be merged automatically as soon as CI passes.
+        default: dev,ops,prod-canary,prod
+        type: string
+      auto-approve-durations:
+        description: |
+          JSON object defining how the approvals work in Argo for each environment.
+          Keys are environment names (`dev`, `ops`, `prod-canary`, `prod`).
+          Values are either:
+            - string durations: the deployment to that environment will be auto-approved in Argo after the specified duration
+              (e.g.: "30m", "1h", "72h"). NOTE: the "d" suffix (days) is not supported, use "h" instead.
+            - "0" (or 0): the deployment to that environment will be auto-approved in Argo immediately
+            - null (or environment not present): the deployment to that environment requires a manual approval in Argo UI, via the "Resume" button
+
+          This input can be combined with `auto-merge-environments` to customize where the approval
+          happens (Argo, GitHub or both) and when it happens (immediate, automatic with a delay, or manual).
+
+          By default:
+            - `dev` and `ops` are auto-approved immediately (0)
+            - `prod-canary` and `prod` require manual approval in Argo (null)
+
+          Another example: `{"dev": "0", "ops": "1h", "prod-canary": null, "prod": "72h"}`
+          Meaning:
+            1. auto-approve the `dev` deployment immediately
+            2. progress to `ops` 1 hour after the `dev` deployment
+            3. require manual approval for `prod-canary` after the `ops` deployment
+            4. progress to `prod` 72 hours after the `prod-canary` deployment
+          The `environment` input determines which environments are targeted by Argo.
+          Since this is a JSON string, make sure to properly escape it in the yaml file.
+          For example:
+          
+          ```
+          # The `|-` and new line is very important, otherwise it gets interpreted as a map
+          auto-approve-environments: |-
+            {"dev": "0", "ops": "1h", "prod-canary": null, "prod": "72h"}
+          ```
+        default: |-
+          {"dev": 0, "ops": 0, "prod-canary": null, "prod": null}
+        type: string
+      prod-targets-all:
+        description: |
+          Determines whether the `prod` environment targets just `prod` or all environments when deploying to Grafana Cloud via Argo.
+
+          If true (default):
+            The Argo workflow will deploy to all environments (`dev`, `ops`, `prod-canary`, `prod`) when deploying to `prod`.
+            This can be used to ensure the plugin version is synced across all environments.
+          If false:
+            When deploying to `prod`, the Argo workflow will only deploy to `prod`, skipping the previous environments (`dev`, `ops`, `prod-canary`).
+            This can be useful if the `prod` deployment is delayed (via `auto-approve-environments` input)
+            and `dev` (and/or `ops`) are continuously updated with the latest commit from `main`.
+            Setting this input to false ensures that the `prod` deployment doesn't "roll-back" the plugin version
+            to an older one, if any commits have been made to `main` in the meantime.
+
+          Default is true.
+        default: true
+        type: boolean
+        
 
       branch:
         description: |
@@ -814,16 +899,21 @@ jobs:
           # Replace commas with '+' for list-like parameters.
           # This is required because the trigger-argo-workflow shared action
           # doesn't handle parameters with commas in them properly, so we replace them with '+'.
-          echo "environment=${ENVIRONMENT//,/+}" >> "$GITHUB_OUTPUT"
-          echo "auto_merge_environments=${AUTO_MERGE_ENVIRONMENTS//,/+}" >> "$GITHUB_OUTPUT"
+          {
+            echo "environment=${ENVIRONMENT//,/+}"
+            echo "auto_merge_environments=${AUTO_MERGE_ENVIRONMENTS//,/+}"
+            # Minify the JSON so it can be passed as a single line string parameter
+            echo "auto_approve_durations=$(echo "${AUTO_APPROVE_DURATIONS}" | jq -cM)"
+          } >> "$GITHUB_OUTPUT"
         env:
           ENVIRONMENT: ${{ inputs.environment }}
           AUTO_MERGE_ENVIRONMENTS: ${{ inputs.auto-merge-environments }}
+          AUTO_APPROVE_DURATIONS: ${{ inputs.auto-approve-durations }}
         shell: bash
 
       - name: Trigger Argo Workflow
         id: trigger-argo-workflow
-        uses: grafana/shared-workflows/actions/trigger-argo-workflow@e100806688f1209051080dfea5719fbbd1d18cc0 # trigger-argo-workflow/v1.2.1
+        uses: grafana/shared-workflows/actions/trigger-argo-workflow@trigger-argo-workflow/v1.2.2
         with:
           namespace: grafana-plugins-cd
           workflow_template: grafana-plugins-deploy
@@ -835,6 +925,8 @@ jobs:
             commit=${{ github.sha }}
             commit_link=${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}
             auto_merge_environments=${{ steps.argo-parameters.outputs.auto_merge_environments }}
+            auto_approve_durations=${{ steps.argo-parameters.outputs.auto_approve_durations }}
+            prod_targets_all=${{ inputs.prod-targets-all }}
 
       - name: Print job summary
         run: |
