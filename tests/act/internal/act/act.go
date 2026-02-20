@@ -460,6 +460,14 @@ func (r *Runner) processStream(reader io.Reader, runResult *RunResult) error {
 // recognized command, it is ignored.
 // Warning and verbose messages are always printed immediately to stdout.
 func (r *Runner) parseGHACommand(data logLine, runResult *RunResult) {
+	// Intercept custom "act-debug" command and treat it as a normal debug annotation.
+	// Normally, debug annotations are very verbose and not shown in act output unless --verbose is provided.
+	// We use this custom "act" command to selectively log debug information in our workflows whenever we need to,
+	// and then we assert on these annotations.
+	if data.Command == "act-debug" {
+		data.Command = "debug"
+	}
+
 	switch data.Command {
 	case "set-output":
 		if data.Name == "" {

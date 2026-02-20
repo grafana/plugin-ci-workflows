@@ -40,8 +40,9 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
-	// Skip cache warm-up in short mode
-	if !testing.Short() {
+	// Skip cache warm-up in short mode or if env var is set to skip warm-up
+	skipWarmupEnv := strings.ToLower(strings.TrimSpace(os.Getenv("SKIP_ACT_CACHE_WARMUP")))
+	if !testing.Short() && skipWarmupEnv != "1" && skipWarmupEnv != "true" {
 		// Read ci.yml to get the default tooling versions, so we can warm up the cache
 		ciWf, err := workflow.NewBaseWorkflowFromFile(filepath.Join(".github", "workflows", "ci.yml"))
 		if err != nil {
