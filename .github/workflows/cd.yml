@@ -899,10 +899,12 @@ jobs:
           # Replace commas with '+' for list-like parameters.
           # This is required because the trigger-argo-workflow shared action
           # doesn't handle parameters with commas in them properly, so we replace them with '+'.
-          echo "environment=${ENVIRONMENT//,/+}" >> "$GITHUB_OUTPUT"
-          echo "auto_merge_environments=${AUTO_MERGE_ENVIRONMENTS//,/+}" >> "$GITHUB_OUTPUT"
-          # Minify the JSON so it can be passed as a single line string parameter
-          echo "auto_approve_durations=$(echo ${AUTO_APPROVE_DURATIONS} | jq -cM)" >> "$GITHUB_OUTPUT"
+          {
+            echo "environment=${ENVIRONMENT//,/+}"
+            echo "auto_merge_environments=${AUTO_MERGE_ENVIRONMENTS//,/+}"
+            # Minify the JSON so it can be passed as a single line string parameter
+            echo "auto_approve_durations=$(echo "${AUTO_APPROVE_DURATIONS}" | jq -cM)"
+          } >> "$GITHUB_OUTPUT"
         env:
           ENVIRONMENT: ${{ inputs.environment }}
           AUTO_MERGE_ENVIRONMENTS: ${{ inputs.auto-merge-environments }}
