@@ -128,7 +128,7 @@ runs:
       if: ${{ steps.cache.outputs.cache-hit != 'true' }}
       shell: bash
       run: |
-        go install github.com/magefile/mage@${MAGE_VERSION}
+        go install github.com/magefile/mage@v${MAGE_VERSION}
       env:
         MAGE_VERSION: ${{ inputs.mage-version }}
 
