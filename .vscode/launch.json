@@ -10,6 +10,9 @@
             "request": "launch",
             "mode": "auto",
             "program": "${workspaceFolder}/tests/act/main.go",
+            "env": {
+                "SKIP_ACT_CACHE_WARMUP": "1"
+            }
         }
     ]
 }
