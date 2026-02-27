@@ -308,7 +308,7 @@ env:
 jobs:
   check-for-release-channel:
     name: Check for release channel
-    uses: grafana/plugin-ci-workflows/.github/workflows/check-release-channel.yml@main
+    uses: grafana/plugin-ci-workflows/.github/workflows/check-release-channel.yml@plugins-version-bump-changelog/v1.1.1
     with:
       DO-NOT-USE-allow-pinned-commit-hashes: ${{ inputs.DO-NOT-USE-allow-pinned-commit-hashes }}
 
@@ -415,7 +415,7 @@ jobs:
 
       - name: Setup
         id: setup
-        uses: grafana/plugin-ci-workflows/actions/internal/plugins/setup@main
+        uses: grafana/plugin-ci-workflows/actions/internal/plugins/setup@plugins-version-bump-changelog/v1.1.1
         with:
           plugin-directory: ${{ inputs.plugin-directory }}
           node-version: ${{ fromJson(steps.tooling-versions.outputs.result).nodeVersion }}
@@ -489,7 +489,7 @@ jobs:
 
       - name: Test and build frontend
         id: frontend
-        uses: grafana/plugin-ci-workflows/actions/internal/plugins/frontend@main
+        uses: grafana/plugin-ci-workflows/actions/internal/plugins/frontend@plugins-version-bump-changelog/v1.1.1
         with:
           plugin-directory: ${{ inputs.plugin-directory }}
           secrets: ${{ (fromJson(steps.workflow-context.outputs.result).isTrusted && inputs.frontend-secrets != '') && inputs.frontend-secrets || '' }}
@@ -498,7 +498,7 @@ jobs:
       - name: Test and build backend
         id: backend
         if: ${{ steps.check-for-backend.outputs.has-backend == 'true' }}
-        uses: grafana/plugin-ci-workflows/actions/internal/plugins/backend@main
+        uses: grafana/plugin-ci-workflows/actions/internal/plugins/backend@plugins-version-bump-changelog/v1.1.1
         with:
           github-token: ${{ steps.generate-github-token.outputs.token }}
           plugin-directory: ${{ inputs.plugin-directory }}
@@ -506,7 +506,7 @@ jobs:
 
       - name: Package universal ZIP
         id: universal-zip
-        uses: grafana/plugin-ci-workflows/actions/internal/plugins/package@main
+        uses: grafana/plugin-ci-workflows/actions/internal/plugins/package@plugins-version-bump-changelog/v1.1.1
         with:
           universal: "true"
           dist-folder: ${{ inputs.plugin-directory }}/dist
@@ -517,7 +517,7 @@ jobs:
 
       - name: Package os/arch ZIPs
         id: os-arch-zips
-        uses: grafana/plugin-ci-workflows/actions/internal/plugins/package@main
+        uses: grafana/plugin-ci-workflows/actions/internal/plugins/package@plugins-version-bump-changelog/v1.1.1
         with:
           universal: "false"
           dist-folder: ${{ inputs.plugin-directory }}/dist
@@ -528,7 +528,7 @@ jobs:
 
       - name: Trufflehog secrets scanning
         if: ${{ inputs.run-trufflehog == true }}
-        uses: grafana/plugin-ci-workflows/actions/internal/plugins/trufflehog@main
+        uses: grafana/plugin-ci-workflows/actions/internal/plugins/trufflehog@plugins-version-bump-changelog/v1.1.1
         with:
           trufflehog-version: ${{ inputs.trufflehog-version || env.DEFAULT_TRUFFLEHOG_VERSION }}
           folder: ${{ inputs.plugin-directory }}/dist-artifacts
@@ -676,11 +676,11 @@ jobs:
         shell: bash
 
       - name: Test docs
-        uses: grafana/plugin-ci-workflows/actions/internal/plugins/docs/test@main
+        uses: grafana/plugin-ci-workflows/actions/internal/plugins/docs/test@plugins-version-bump-changelog/v1.1.1
 
   playwright:
     name: Playwright E2E tests
-    uses: grafana/plugin-ci-workflows/.github/workflows/playwright.yml@main
+    uses: grafana/plugin-ci-workflows/.github/workflows/playwright.yml@plugins-version-bump-changelog/v1.1.1
     if: ${{ inputs.run-playwright == true }}
     needs:
       - test-and-build
@@ -703,7 +703,7 @@ jobs:
 
   playwright-docker:
     name: Plugins - Dockerized Playwright E2E tests
-    uses: grafana/plugin-ci-workflows/.github/workflows/playwright-docker.yml@main
+    uses: grafana/plugin-ci-workflows/.github/workflows/playwright-docker.yml@plugins-version-bump-changelog/v1.1.1
     if: ${{ inputs.run-playwright-docker == true }}
     needs:
       - test-and-build
