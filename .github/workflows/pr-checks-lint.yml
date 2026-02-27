@@ -16,7 +16,7 @@ permissions:
 
 env:
   ACTIONLINT_VERSION: "1.7.10"
-  GOLANGCI_LINT_VERSION: "2.8.0"
+  GOLANGCI_LINT_VERSION: "2.9.0"
 
 jobs:
   actionlint:
