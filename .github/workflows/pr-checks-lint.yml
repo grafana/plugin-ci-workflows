@@ -15,7 +15,7 @@ permissions:
   contents: read
 
 env:
-  ACTIONLINT_VERSION: "1.7.10"
+  ACTIONLINT_VERSION: "1.7.11"
   GOLANGCI_LINT_VERSION: "2.9.0"
 
 jobs:
