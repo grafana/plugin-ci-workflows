@@ -314,7 +314,7 @@ on:
           Branch or tag to publish from.
           Can be used to deploy PRs to dev.
           Can also be used to deploy specific branches (e.g.: release branches) or tags (e.g.: release tags) to any target environment.
-          In order to deploy to `prod` or `prod-canary`, where PRs or unreleased changes should not be deployed, 
+          In order to deploy to `prod` or `prod-canary`, where PRs or unreleased changes should not be deployed,
           the branch or tag must match the `release-reference-regex`, otherwise the workflow will fail.
           Defaults to `main`.
         default: main
@@ -888,10 +888,14 @@ jobs:
         shell: bash
 
       - name: Login to Google Cloud
+        id: gcloud
         uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
         with:
           workload_identity_provider: "projects/304398677251/locations/global/workloadIdentityPools/github/providers/github-provider"
           service_account: github-plugin-ci-workflows@grafanalabs-workload-identity.iam.gserviceaccount.com
+          token_format: id_token
+          id_token_audience: 194555723165-aftshfqa32nig79trcrh96ha94ta46jd.apps.googleusercontent.com
+          id_token_include_email: true
 
       - name: "Set up Cloud SDK"
         id: gcloud-sdk
@@ -927,15 +931,28 @@ jobs:
 
       # Fail early if this version is already published in the Grafana catalog.
       # If the version exists in GCOM, re-publishing would conflict; the plugin version must be bumped.
-      # If the version is not in GCOM (e.g. a previous publish was rejected with a validation error),
+      # If the version is not in GCOM (e.g. a previous publish was rejected with a validation error or new version),
       # we proceed so the fixed artifact can be re-uploaded to GCS and re-submitted to GCOM.
+      # The highest target environment is used as the GCOM source of truth:
+      #   prod  → grafana.com       (public, no IAP)
+      #   ops   → grafana-ops.com   (IAP)
+      #   dev   → grafana-dev.com   (IAP)
       - name: Check if version is already published in Grafana catalog
         id: gcom_version_exists
         run: |
-          gcom_url="https://grafana.com/api/plugins/${PLUGIN_ID}/versions/${PLUGIN_VERSION}"
-          echo "Checking GCOM for existing version: $gcom_url"
+          if echo "${ENVIRONMENTS}" | jq -e 'contains(["prod"])' > /dev/null; then
+            gcom_url="https://grafana.com/api/plugins/${PLUGIN_ID}/versions/${PLUGIN_VERSION}"
+            curl_args=()
+          elif echo "${ENVIRONMENTS}" | jq -e 'contains(["ops"])' > /dev/null; then
+            gcom_url="https://grafana-ops.com/api/plugins/${PLUGIN_ID}/versions/${PLUGIN_VERSION}"
+            curl_args=(-H "Authorization: Bearer ${GCLOUD_ID_TOKEN}")
+          else
+            gcom_url="https://grafana-dev.com/api/plugins/${PLUGIN_ID}/versions/${PLUGIN_VERSION}"
+            curl_args=(-H "Authorization: Bearer ${GCLOUD_ID_TOKEN}")
+          fi
 
-          http_status=$(curl -sSo /dev/null -w "%{http_code}" "$gcom_url")
+          echo "Checking GCOM for existing version: $gcom_url"
+          http_status=$(curl -sSo /dev/null -w "%{http_code}" "${curl_args[@]}" "$gcom_url")
 
           if [ "$http_status" = "200" ]; then
             echo "❌ Plugin ${PLUGIN_ID} version ${PLUGIN_VERSION} is already published in the Grafana catalog."
@@ -948,6 +965,8 @@ jobs:
         env:
           PLUGIN_ID: ${{ fromJSON(needs.ci.outputs.plugin).id }}
           PLUGIN_VERSION: ${{ fromJSON(needs.ci.outputs.plugin).version }}
+          ENVIRONMENTS: ${{ needs.setup.outputs.environments }}
+          GCLOUD_ID_TOKEN: ${{ steps.gcloud.outputs.id_token }}
         shell: bash
 
       # if an artifact already exists we don't want to overwrite it
