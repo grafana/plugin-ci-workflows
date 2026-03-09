@@ -925,6 +925,31 @@ jobs:
           GCS_UNIVERSAL_ZIP_URL_COMMIT: ${{ needs.ci.outputs.gcs-universal-zip-url-commit }}
         shell: bash
 
+      # Fail early if this version is already published in the Grafana catalog.
+      # If the version exists in GCOM, re-publishing would conflict; the plugin version must be bumped.
+      # If the version is not in GCOM (e.g. a previous publish was rejected with a validation error),
+      # we proceed so the fixed artifact can be re-uploaded to GCS and re-submitted to GCOM.
+      - name: Check if version is already published in Grafana catalog
+        id: gcom_version_exists
+        run: |
+          gcom_url="https://grafana.com/api/plugins/${PLUGIN_ID}/versions/${PLUGIN_VERSION}"
+          echo "Checking GCOM for existing version: $gcom_url"
+
+          http_status=$(curl -sSo /dev/null -w "%{http_code}" "$gcom_url")
+
+          if [ "$http_status" = "200" ]; then
+            echo "❌ Plugin ${PLUGIN_ID} version ${PLUGIN_VERSION} is already published in the Grafana catalog."
+            echo "Please bump the plugin version before re-publishing."
+            exit 1
+          else
+            echo "✅ Version ${PLUGIN_VERSION} not yet published in GCOM (HTTP ${http_status}), proceeding."
+            echo "gcom_version_exists=false" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          PLUGIN_ID: ${{ fromJSON(needs.ci.outputs.plugin).id }}
+          PLUGIN_VERSION: ${{ fromJSON(needs.ci.outputs.plugin).version }}
+        shell: bash
+
       # if an artifact already exists we don't want to overwrite it
       # this creates conflicts with checksums and will break the release
       # all environments use the same artifacts
@@ -949,7 +974,7 @@ jobs:
         shell: bash
 
       - name: Upload GCS release artifact (tag)
-        if: ${{ steps.gcs_artifacts_exist.outputs.gcs_artifacts_exist == 'false' }}
+        if: ${{ steps.gcs_artifacts_exist.outputs.gcs_artifacts_exist == 'false' || steps.gcom_version_exists.outputs.gcom_version_exists == 'false' }}
         uses: google-github-actions/upload-cloud-storage@6397bd7208e18d13ba2619ee21b9873edc94427a # v3.0.0
         with:
           path: /tmp/dist-artifacts
@@ -959,7 +984,7 @@ jobs:
           process_gcloudignore: false
 
       - name: Upload GCS release artifact (latest)
-        if: ${{ steps.gcs_artifacts_exist.outputs.gcs_artifacts_exist == 'false' }}
+        if: ${{ steps.gcs_artifacts_exist.outputs.gcs_artifacts_exist == 'false' || steps.gcom_version_exists.outputs.gcom_version_exists == 'false' }}
         uses: google-github-actions/upload-cloud-storage@6397bd7208e18d13ba2619ee21b9873edc94427a # v3.0.0
         with:
           path: /tmp/dist-artifacts-latest
@@ -969,7 +994,7 @@ jobs:
           process_gcloudignore: false
 
       - name: Upload GCS release artifacts (latest, any)
-        if: ${{ matrix.platform == 'any' && steps.gcs_artifacts_exist.outputs.gcs_artifacts_exist == 'false' }}
+        if: ${{ matrix.platform == 'any' && (steps.gcs_artifacts_exist.outputs.gcs_artifacts_exist == 'false' || steps.gcom_version_exists.outputs.gcom_version_exists == 'false') }}
         uses: google-github-actions/upload-cloud-storage@6397bd7208e18d13ba2619ee21b9873edc94427a # v3.0.0
         with:
           path: /tmp/dist-artifacts-latest/${{ fromJSON(needs.ci.outputs.plugin).id }}-latest.zip
