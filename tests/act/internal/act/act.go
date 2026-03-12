@@ -178,11 +178,13 @@ func NewRunner(t *testing.T, opts ...RunnerOption) (*Runner, error) {
 }
 
 // args returns the CLI arguments to pass to act for the given workflow and event payload files.
-func (r *Runner) args(eventKind EventKind, actor string, workflowFile string, payloadFile string) ([]string, error) {
+// It also returns a listener holding the artifact server port open to avoid TOCTOU races.
+// The caller must close the listener before starting the act process.
+func (r *Runner) args(eventKind EventKind, actor string, workflowFile string, payloadFile string) ([]string, *net.TCPListener, error) {
 	// Get a unique free port for the act artifact server, so multiple act instances can run in parallel
-	artifactServerPort, err := getFreePort()
+	artifactServerPort, portListener, err := getFreePort()
 	if err != nil {
-		return nil, fmt.Errorf("get free port for artifact server: %w", err)
+		return nil, nil, fmt.Errorf("get free port for artifact server: %w", err)
 	}
 
 	args := []string{
@@ -209,7 +211,7 @@ func (r *Runner) args(eventKind EventKind, actor string, workflowFile string, pa
 		// Do not pre-populate the cache if we are using the shared cache (cache warmup).
 		if r.actionsCachePath != TemplateActionsCachePath {
 			if err := copyDir(TemplateActionsCachePath, r.actionsCachePath); err != nil {
-				return nil, fmt.Errorf("copy action cache: %w", err)
+				return nil, nil, fmt.Errorf("copy action cache: %w", err)
 			}
 		}
 		args = append(args, "--action-cache-path", r.actionsCachePath)
@@ -221,7 +223,7 @@ func (r *Runner) args(eventKind EventKind, actor string, workflowFile string, pa
 	// Map local all possible references of plugin-ci-workflows to the local repository
 	localRepoArgs, err := r.localRepositoryArgs()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	args = append(args, localRepoArgs...)
 	if actor != "" {
@@ -237,7 +239,7 @@ func (r *Runner) args(eventKind EventKind, actor string, workflowFile string, pa
 	for _, label := range selfHostedRunnerLabels {
 		args = append(args, "-P", label+"="+nektosActRunnerImage)
 	}
-	return args, nil
+	return args, portListener, nil
 }
 
 // localRepositoryArgs returns act CLI arguments to map local references of plugin-ci-workflows
@@ -322,7 +324,7 @@ func (r *Runner) Run(workflow workflow.Workflow, event Event) (runResult *RunRes
 		}
 	}()
 
-	args, err := r.args(event.Kind, event.Actor, workflowFile, payloadFile)
+	args, portListener, err := r.args(event.Kind, event.Actor, workflowFile, payloadFile)
 	if err != nil {
 		return nil, fmt.Errorf("get act args: %w", err)
 	}
@@ -361,6 +363,12 @@ func (r *Runner) Run(workflow workflow.Workflow, event Event) (runResult *RunRes
 		wg.Wait()
 		_ = mergedW.Close()
 	}()
+
+	// Release the port listener right before starting act so the port is free for act to bind.
+	// This minimizes the TOCTOU window where another process could grab the same port.
+	if err := portListener.Close(); err != nil {
+		return nil, fmt.Errorf("close port listener: %w", err)
+	}
 
 	// Run act in the background
 	if err := cmd.Start(); err != nil {
@@ -665,17 +673,15 @@ func getDockerHostIP() string {
 }
 
 // getFreePort asks the kernel for a free open port that is ready to use.
-func getFreePort() (port int, err error) {
+// It returns the port number and the listener that is holding the port open.
+// The caller must close the listener when it is ready to use the port
+// (e.g., right before starting the process that will bind to it).
+// This avoids TOCTOU races where parallel tests get the same port.
+func getFreePort() (port int, listener *net.TCPListener, err error) {
 	var a *net.TCPAddr
 	if a, err = net.ResolveTCPAddr("tcp", "localhost:0"); err == nil {
-		var l *net.TCPListener
-		if l, err = net.ListenTCP("tcp", a); err == nil {
-			defer func() {
-				if closeErr := l.Close(); closeErr != nil && err == nil {
-					err = closeErr
-				}
-			}()
-			return l.Addr().(*net.TCPAddr).Port, nil
+		if listener, err = net.ListenTCP("tcp", a); err == nil {
+			return listener.Addr().(*net.TCPAddr).Port, listener, nil
 		}
 	}
 	return
