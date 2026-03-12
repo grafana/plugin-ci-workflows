@@ -556,22 +556,24 @@ jobs:
         run: |
           if [ -n "${PLUGIN_VALIDATOR_CONFIG}" ]; then
             # User-provided configuration content
-            echo "Using provided plugin-validator configuration content."
+            PLUGIN_VALIDATOR_CONFIG_SOURCE="custom"
             PLUGIN_VALIDATOR_CONFIG_PATH=$(mktemp)
             echo "${PLUGIN_VALIDATOR_CONFIG}" > "${PLUGIN_VALIDATOR_CONFIG_PATH}"
           elif [ -n "${PLUGIN_VALIDATOR_CONFIG_PATH}" ]; then
             # User-provided configuration file path
-            echo "Using plugin-validator configuration file at path: ${PLUGIN_VALIDATOR_CONFIG_PATH}"
+            PLUGIN_VALIDATOR_CONFIG_SOURCE="file"
             if [ ! -f "${PLUGIN_VALIDATOR_CONFIG_PATH}" ]; then
               echo "::error title=plugin-validator: missing config file::${PLUGIN_VALIDATOR_CONFIG_PATH} configuration file is missing."
               exit 1
             fi
           else
             # Default configuration
-            echo "No plugin-validator configuration provided. Using default configuration."
+            PLUGIN_VALIDATOR_CONFIG_SOURCE="default"
             PLUGIN_VALIDATOR_CONFIG_PATH=$(mktemp)
             echo "${DEFAULT_PLUGIN_VALIDATOR_CONFIG}" > "${PLUGIN_VALIDATOR_CONFIG_PATH}"
           fi
+
+          printf '::act-debug::msg="%s" source=%s\n' "plugin-validator configuration" "${PLUGIN_VALIDATOR_CONFIG_SOURCE}"
 
           echo "Using configuration:"
           cat "${PLUGIN_VALIDATOR_CONFIG_PATH}"
