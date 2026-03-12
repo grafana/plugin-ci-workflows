@@ -1,0 +1,233 @@
+# Description:
+# Run Playwright E2E tests against a shared Grafana Cloud instance using Grafana Bench.
+# Unlike the standard playwright workflow, no local Grafana container is started — tests run
+# against the live Cloud instance at the provided grafana-url.
+# Datasource-specific secrets are fetched from Vault and forwarded into the Bench container.
+
+name: Plugins - Playwright E2E tests against Grafana Cloud
+
+on:
+  workflow_call:
+    inputs:
+      pdc-network-name:
+        description: |
+          Private Data Source Connect network name.
+          Find this on https://datasources.grafana.net/ for the provisioned datasource.
+          If set, tests should enable/select PDC; if unset, tests should skip PDC config.
+        type: string
+        required: false
+      grafana-url:
+        description: |
+          Grafana Cloud instance URL to run tests against.
+        type: string
+        required: false
+        default: "https://datasourcese2e.grafana-dev.net"
+      repo-secrets:
+        description: |
+          Datasource-specific Vault secrets, in get-vault-secrets repo_secrets format.
+          Each line: ENV_VAR_NAME=vault-path:field
+          All listed env vars are injected into the Bench container and forwarded to Playwright.
+        type: string
+        required: false
+      bench-prepare-cmd:
+        description: Shell command Bench runs to prepare the test environment (install deps and browsers).
+        type: string
+        required: false
+        default: "npm ci --no-audit --fund=false; npx playwright install"
+      bench-execute-cmd:
+        description: Shell command Bench runs to execute the Playwright tests.
+        type: string
+        required: false
+        default: "npm run e2e"
+      bench-version:
+        description: |
+          Grafana Bench image version to use (e.g. 1.0.0).
+          Override to pin a specific version or test against a newer release.
+        type: string
+        required: false
+        default: "1.0.0"
+      grafana-readiness-timeout:
+        description: |
+          How long (in seconds) to wait for the Grafana Cloud instance to become reachable before failing.
+          Increase if your instance is known to be slow after maintenance windows.
+        type: number
+        required: false
+        default: 600
+      service-version:
+        description: Service version label reported to Grafana Bench (e.g. rrc-fast, nightly).
+        type: string
+        required: false
+        default: "rrc-fast"
+
+defaults:
+  run:
+    shell: bash
+
+# Prevent duplicate runs — if a new run starts for the same ref, cancel the in-progress one.
+concurrency:
+  group: playwright-cloud-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  # Private Data Source Connect network name
+  DS_PDC_NETWORK_NAME: ${{ inputs.pdc-network-name }}
+
+  # Grafana URL for the Cloud instance under test
+  GRAFANA_URL: ${{ inputs.grafana-url }}
+
+jobs:
+  bench-tests:
+    name: Run E2E Tests with Grafana Bench
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+
+    # Never run on forks — they lack the required Vault secrets regardless of trigger
+    if: ${{ github.repository_owner == 'grafana' }}
+
+    # This job needs OIDC to fetch Vault secrets via the shared action
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          # Avoid leaving a token in the repo checkout; prefer explicit auth for publishing steps
+          persist-credentials: false
+
+      - name: Get secrets from Vault
+        id: get-secrets
+        uses: grafana/shared-workflows/actions/get-vault-secrets@f1614b210386ac420af6807a997ac7f6d96e477a # get-vault-secrets/v1.3.1
+        with:
+          # Grafana auth (used by @grafana/plugin-e2e)
+          # + Prometheus creds for Bench metrics reporting
+          common_secrets: |
+            PLAYWRIGHT_GRAFANA_PASSWORD=data-sources/e2e:grafana-pw
+            PLAYWRIGHT_GRAFANA_USERNAME=data-sources/e2e:grafana-username
+            PROMETHEUS_PASSWORD=grafana-bench:prometheus_token
+            PROMETHEUS_URL=grafana-bench:prometheus_url
+            PROMETHEUS_USER=grafana-bench:prometheus_user
+
+          # Repo-specific backend secrets (naming and paths vary by datasource)
+          repo_secrets: ${{ inputs.repo-secrets }}
+
+          # Keep secrets in step output; we'll pass them into the container explicitly
+          export_env: false
+
+      - name: Export repo secrets to runner environment
+        # Parse the repo-secrets keys and write each secret value to GITHUB_ENV
+        # so the docker run step can forward them into the container via -e flags.
+        if: inputs.repo-secrets != ''
+        env:
+          SECRETS_JSON: ${{ steps.get-secrets.outputs.secrets }}
+          REPO_SECRETS_INPUT: ${{ inputs.repo-secrets }}
+        run: |
+          set -euo pipefail
+          while IFS= read -r line; do
+            key="${line%%=*}"
+            key="${key// /}"        # trim any whitespace
+            [[ -z "$key" ]] && continue
+            value=$(printf '%s' "$SECRETS_JSON" | jq -r --arg k "$key" '.[$k]')
+            # Use the delimiter syntax so values containing newlines don't corrupt GITHUB_ENV
+            delimiter=$(openssl rand -hex 16)
+            printf '%s<<%s\n%s\n%s\n' "$key" "$delimiter" "$value" "$delimiter" >> "$GITHUB_ENV"
+          done <<< "$REPO_SECRETS_INPUT"
+
+      - name: Wait for Grafana to be reachable
+        # Wait until the Cloud instance is responding before starting tests
+        uses: grafana/plugin-actions/wait-for-grafana@c8ad89b7d81f8cb9967bb65e444d85f5b3d7c674 # wait-for-grafana/v1.0.2
+        with:
+          # Use /login so "reachable" also implies the app is up
+          url: "${{ env.GRAFANA_URL }}/login"
+          timeout: ${{ inputs.grafana-readiness-timeout }}
+          interval: 10 # 10 seconds
+
+      - name: Run Grafana Bench tests
+        env:
+          # Grafana admin credentials used by @grafana/plugin-e2e auth/storage state
+          GRAFANA_ADMIN_PASSWORD: ${{ fromJSON(steps.get-secrets.outputs.secrets).PLAYWRIGHT_GRAFANA_PASSWORD }}
+          GRAFANA_ADMIN_USER: ${{ fromJSON(steps.get-secrets.outputs.secrets).PLAYWRIGHT_GRAFANA_USERNAME }}
+
+          # Bench Prometheus reporting credentials (for metrics + strict lint)
+          PROMETHEUS_PASSWORD: ${{ fromJSON(steps.get-secrets.outputs.secrets).PROMETHEUS_PASSWORD }}
+          PROMETHEUS_URL: ${{ fromJSON(steps.get-secrets.outputs.secrets).PROMETHEUS_URL }}
+          PROMETHEUS_USER: ${{ fromJSON(steps.get-secrets.outputs.secrets).PROMETHEUS_USER }}
+
+          # PDC network name comes from the workflow-level env above
+          DS_PDC_NETWORK_NAME: ${{ env.DS_PDC_NETWORK_NAME }}
+
+          # Bench command inputs passed via env to avoid template-injection in the run script
+          BENCH_IMAGE: us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench-playwright:v${{ inputs.bench-version }}
+          BENCH_PREPARE_CMD: ${{ inputs.bench-prepare-cmd }}
+          BENCH_EXECUTE_CMD: ${{ inputs.bench-execute-cmd }}
+          BENCH_SERVICE_VERSION: ${{ inputs.service-version }}
+          BENCH_SUITE_NAME: ${{ github.repository }}/e2e
+
+          # repo-secrets keys for dynamic flag generation; values are already in GITHUB_ENV
+          REPO_SECRETS_INPUT: ${{ inputs.repo-secrets }}
+        run: |
+          set -euo pipefail
+
+          # Build dynamic -e and --test-env flags from the repo-secrets input keys.
+          # Values were exported to GITHUB_ENV in the previous step, so docker inherits them.
+          REPO_SECRET_DOCKER_FLAGS=""
+          REPO_SECRET_TEST_ENV_FLAGS=""
+          if [[ -n "${REPO_SECRETS_INPUT:-}" ]]; then
+            while IFS= read -r line; do
+              key="${line%%=*}"
+              key="${key// /}"
+              [[ -z "$key" ]] && continue
+              REPO_SECRET_DOCKER_FLAGS+=" -e $key"
+              REPO_SECRET_TEST_ENV_FLAGS+=" --test-env $key"
+            done <<< "$REPO_SECRETS_INPUT"
+          fi
+
+          # Run Bench in a container. Bench bootstraps Playwright deps (prepare)
+          # and executes your repo's e2e script (execute) with standardized reporting.
+          #
+          # Flags grouped by purpose:
+          #   Container setup  : --network, --rm, --volume
+          #   Backend secrets  : dynamic $REPO_SECRET_DOCKER_FLAGS (from repo-secrets input)
+          #   Grafana auth     : -e GRAFANA_ADMIN_*, -e GRAFANA_URL
+          #   Bench Prometheus : -e PROMETHEUS_*
+          #   PDC              : -e DS_PDC_NETWORK_NAME
+          #   Bench reporting  : --report-output, --run-stage, --service-*, --suite-*
+          #   Test env         : --test-env (forwarded into the Playwright process)
+          #   Runner           : --test-runner, --test-verbose
+          # shellcheck disable=SC2086
+          docker run \
+            --network=host \
+            --rm \
+            --volume "$PWD:/tests" \
+            $REPO_SECRET_DOCKER_FLAGS \
+            -e DS_PDC_NETWORK_NAME \
+            -e GRAFANA_ADMIN_PASSWORD \
+            -e GRAFANA_ADMIN_USER \
+            -e GRAFANA_URL \
+            -e PROMETHEUS_PASSWORD \
+            -e PROMETHEUS_URL \
+            -e PROMETHEUS_USER \
+            us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench-playwright:v1.0.0 test \
+            --prometheus-metrics \
+            --prometheus-strict-lint \
+            --pw-prepare "$BENCH_PREPARE_CMD" \
+            --pw-execute "$BENCH_EXECUTE_CMD" \
+            --report-output log \
+            --run-stage ci \
+            --service ${GITHUB_REPOSITORY#grafana/} \
+            --service-url ${GRAFANA_URL} \
+            --service-version "$BENCH_SERVICE_VERSION" \
+            --suite-name "$BENCH_SUITE_NAME" \
+            --suite-path /tests \
+            --test-env CI=true \
+            $REPO_SECRET_TEST_ENV_FLAGS \
+            --test-env DS_PDC_NETWORK_NAME \
+            --test-env GRAFANA_ADMIN_PASSWORD \
+            --test-env GRAFANA_ADMIN_USER \
+            --test-env GRAFANA_URL \
+            --test-runner playwright \
+            --test-verbose
