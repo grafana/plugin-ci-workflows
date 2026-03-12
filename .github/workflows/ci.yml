@@ -296,9 +296,10 @@ env:
   # Default versions for tooling
   DEFAULT_NODE_VERSION: "24"
   DEFAULT_GO_VERSION: "1.25"
-  DEFAULT_GOLANGCI_LINT_VERSION: "2.8.0"
-  DEFAULT_TRUFFLEHOG_VERSION: "3.92.5"
-  DEFAULT_MAGE_VERSION: "v1.15.0"
+  DEFAULT_GOLANGCI_LINT_VERSION: "2.9.0"
+  DEFAULT_TRUFFLEHOG_VERSION: "3.93.4"
+  DEFAULT_MAGE_VERSION: "1.15.0"
+  DEFAULT_PLUGIN_VALIDATOR_VERSION: "0.37.1"
 
   GCS_ARTIFACTS_BUCKET: integration-artifacts
   VAULT_INSTANCE: ops
@@ -427,7 +428,7 @@ jobs:
       - name: Get secrets from Vault
         id: get-secrets
         if: ${{ fromJson(steps.workflow-context.outputs.result).isTrusted }}
-        uses: grafana/shared-workflows/actions/get-vault-secrets@a37de51f3d713a30a9e4b21bcdfbd38170020593 # get-vault-secrets/v1.3.0
+        uses: grafana/shared-workflows/actions/get-vault-secrets@f1614b210386ac420af6807a997ac7f6d96e477a # get-vault-secrets/v1.3.1
         with:
           vault_instance: ${{ env.VAULT_INSTANCE }}
           common_secrets: |
@@ -580,9 +581,10 @@ jobs:
           # We cannot use a volume mount here if we are using act on Mac OS, so
           # we need to copy the workspace to a new tempdir and then start the container.
           # Also, do not run clamav because it takes too long
+          printf '::act-debug::msg="%s" version=%s\n' "Running plugin-validator" "${PLUGIN_VALIDATOR_VERSION}"
           docker create --name="plugin-validator-${UUID}" --pull=always --platform=linux/amd64 \
             -e SKIP_CLAMAV=1 \
-            grafana/plugin-validator-cli \
+            "grafana/plugin-validator-cli:${PLUGIN_VALIDATOR_VERSION}" \
             -ghaOutput \
             -config=/workspace/.plugin-validator.yaml \
             -sourceCodeUri=file:///workspace \
@@ -593,6 +595,7 @@ jobs:
           docker rm "plugin-validator-${UUID}"
           exit "$EXIT_CODE"
         env:
+          PLUGIN_VALIDATOR_VERSION: v${{ env.DEFAULT_PLUGIN_VALIDATOR_VERSION }}
           UNIVERSAL_ZIP: ${{ steps.universal-zip.outputs.zip }}
           PLUGIN_VALIDATOR_CONFIG: ${{ inputs.plugin-validator-config }}
           PLUGIN_VALIDATOR_CONFIG_PATH: ${{ inputs.plugin-validator-config-path }}

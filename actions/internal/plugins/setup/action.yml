@@ -103,7 +103,7 @@ runs:
 
     - name: Go
       id: go
-      uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+      uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
       with:
         go-version: "${{ inputs.go-version }}"
         go-version-file: "${{ inputs.go-version-file }}"
@@ -128,7 +128,7 @@ runs:
       if: ${{ steps.cache.outputs.cache-hit != 'true' }}
       shell: bash
       run: |
-        go install github.com/magefile/mage@${MAGE_VERSION}
+        go install github.com/magefile/mage@v${MAGE_VERSION}
       env:
         MAGE_VERSION: ${{ inputs.mage-version }}
 

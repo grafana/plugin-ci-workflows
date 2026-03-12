@@ -172,12 +172,6 @@ func TestCD(t *testing.T) {
 				cd.MutateCDWorkflow().With(
 					// Mock GCS artifacts exist safety check
 					workflow.WithNoOpStep(t, "upload-to-gcs-release", "gcloud-sdk"),
-					workflow.WithReplacedStep(
-						t, "upload-to-gcs-release", "gcs_artifacts_exist",
-						workflow.MockOutputsStep(map[string]string{
-							"gcs_artifacts_exist": "false",
-						}),
-					),
 					workflow.WithNoOpStep(t, "publish-to-catalog", "check-artifact-zips"),
 
 					// Mock IAP token for GCOM API calls
