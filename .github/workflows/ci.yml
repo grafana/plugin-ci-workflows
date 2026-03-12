@@ -302,6 +302,22 @@ env:
   DEFAULT_MAGE_VERSION: "1.15.0"
   DEFAULT_PLUGIN_VALIDATOR_VERSION: "0.37.1"
 
+  # Default plugin-validator configuration, used when no configuration is provided by the caller.
+  # Disables some analyzers that are not relevant for Grafana Labs plugins.
+  DEFAULT_PLUGIN_VALIDATOR_CONFIG: |
+    global:
+      enabled: true
+
+    analyzers:
+      discoverability:
+        enabled: false
+      license:
+        enabled: false
+      org:
+        enabled: false
+      sponsorshiplink:
+        enabled: false
+
   GCS_ARTIFACTS_BUCKET: integration-artifacts
   VAULT_INSTANCE: ops
 
@@ -540,25 +556,24 @@ jobs:
         run: |
           if [ -n "${PLUGIN_VALIDATOR_CONFIG}" ]; then
             # User-provided configuration content
-            echo "Using provided plugin-validator configuration content."
+            PLUGIN_VALIDATOR_CONFIG_SOURCE="custom"
             PLUGIN_VALIDATOR_CONFIG_PATH=$(mktemp)
             echo "${PLUGIN_VALIDATOR_CONFIG}" > "${PLUGIN_VALIDATOR_CONFIG_PATH}"
           elif [ -n "${PLUGIN_VALIDATOR_CONFIG_PATH}" ]; then
             # User-provided configuration file path
-            echo "Using plugin-validator configuration file at path: ${PLUGIN_VALIDATOR_CONFIG_PATH}"
+            PLUGIN_VALIDATOR_CONFIG_SOURCE="file"
             if [ ! -f "${PLUGIN_VALIDATOR_CONFIG_PATH}" ]; then
               echo "::error title=plugin-validator: missing config file::${PLUGIN_VALIDATOR_CONFIG_PATH} configuration file is missing."
               exit 1
             fi
           else
-            # Default hardcoded configuration
-            echo "${PLUGIN_VALIDATOR_CONFIG_PATH} configuration file is missing. Providing a default one as fallback."
+            # Default configuration
+            PLUGIN_VALIDATOR_CONFIG_SOURCE="default"
             PLUGIN_VALIDATOR_CONFIG_PATH=$(mktemp)
-            cat <<EOF > "${PLUGIN_VALIDATOR_CONFIG_PATH}"
-          global:
-            enabled: true
-          EOF
+            echo "${DEFAULT_PLUGIN_VALIDATOR_CONFIG}" > "${PLUGIN_VALIDATOR_CONFIG_PATH}"
           fi
+
+          printf '::act-debug::msg="%s" source=%s\n' "plugin-validator configuration" "${PLUGIN_VALIDATOR_CONFIG_SOURCE}"
 
           echo "Using configuration:"
           cat "${PLUGIN_VALIDATOR_CONFIG_PATH}"
