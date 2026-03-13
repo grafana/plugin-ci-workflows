@@ -916,7 +916,7 @@ jobs:
         uses: grafana/shared-workflows/actions/trigger-argo-workflow@b513eb1dfd9becfa671a41e55063cdd5c0a08031 # trigger-argo-workflow/v1.2.2
         with:
           namespace: grafana-plugins-cd
-          workflow_template: grafana-plugins-deploy-dev
+          workflow_template: grafana-plugins-deploy
           parameters: |
             slug=${{ fromJSON(needs.ci.outputs.plugin).id }}
             version=${{ fromJSON(needs.ci.outputs.plugin).version }}
