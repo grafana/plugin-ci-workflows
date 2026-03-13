@@ -3,6 +3,7 @@ module github.com/grafana/plugin-ci-workflows/tests/act
 go 1.25.4
 
 require (
+	github.com/go-logfmt/logfmt v0.6.1
 	github.com/goccy/go-yaml v1.18.0
 	github.com/google/uuid v1.6.0
 	github.com/spf13/afero v1.15.0

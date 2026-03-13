@@ -103,8 +103,9 @@ type WorkflowInputs struct {
 
 	RunPlaywright *bool
 
-	RunPluginValidator    *bool
-	PluginValidatorConfig *string
+	RunPluginValidator     *bool
+	PluginValidatorConfig  *string
+	PluginValidatorVersion *string
 
 	RunTruffleHog *bool
 
@@ -128,6 +129,7 @@ func SetCIInputs(dst *workflow.Job, inputs WorkflowInputs) {
 	workflow.SetJobInput(dst, "run-playwright", inputs.RunPlaywright)
 
 	workflow.SetJobInput(dst, "run-plugin-validator", inputs.RunPluginValidator)
+	workflow.SetJobInput(dst, "plugin-validator-version", inputs.PluginValidatorVersion)
 	workflow.SetJobInput(dst, "plugin-validator-config", inputs.PluginValidatorConfig)
 
 	workflow.SetJobInput(dst, "run-trufflehog", inputs.RunTruffleHog)

@@ -1,10 +1,11 @@
 package main
 
 import (
-	"slices"
+	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/go-logfmt/logfmt"
 	"github.com/grafana/plugin-ci-workflows/tests/act/internal/act"
 	"github.com/grafana/plugin-ci-workflows/tests/act/internal/workflow"
 	"github.com/grafana/plugin-ci-workflows/tests/act/internal/workflow/ci"
@@ -12,6 +13,13 @@ import (
 )
 
 func TestValidator(t *testing.T) {
+	// Get DEFAULT_PLUGIN_VALIDATOR_VERSION from ci.yml
+	ciWf, err := workflow.NewBaseWorkflowFromFile(filepath.Join(".github", "workflows", "ci.yml"))
+	require.NoError(t, err)
+	defaultPluginValidatorVersion := ciWf.Env["DEFAULT_PLUGIN_VALIDATOR_VERSION"]
+	require.NotEmpty(t, defaultPluginValidatorVersion, "could not find DEFAULT_PLUGIN_VALIDATOR_VERSION env in ci.yml workflow")
+	defaultPluginValidatorVersion = "v" + defaultPluginValidatorVersion
+
 	baseValidatorAnnotations := []act.Annotation{
 		{
 			Level:   act.AnnotationLevelWarning,
@@ -40,28 +48,25 @@ func TestValidator(t *testing.T) {
 		sourceFolder       string
 		packagedDistFolder string
 
-		expSuccess     bool
-		expAnnotations []act.Annotation
+		expSuccess                bool
+		expAnnotations            []act.Annotation
+		expPluginValidatorVersion string
 	}{
 		{
-			name:               "simple-backend succeeds with warnings",
-			sourceFolder:       "simple-backend",
-			packagedDistFolder: "dist-artifacts-unsigned/simple-backend",
-			expSuccess:         true,
-			expAnnotations: append(slices.Clone(baseValidatorAnnotations), []act.Annotation{
-				{
-					Level:   act.AnnotationLevelWarning,
-					Title:   "plugin-validator: Warning: Your Grafana Go SDK is older than 2 months",
-					Message: `Please upgrade your Grafana Go SDK to the latest version by running: "go get -u github.com/grafana/grafana-plugin-sdk-go"`,
-				},
-			}...),
+			name:                      "simple-backend succeeds with warnings",
+			sourceFolder:              "simple-backend",
+			packagedDistFolder:        "dist-artifacts-unsigned/simple-backend",
+			expSuccess:                true,
+			expAnnotations:            baseValidatorAnnotations,
+			expPluginValidatorVersion: defaultPluginValidatorVersion,
 		},
 		{
-			name:               "simple-frontend-yarn succeeds with warnings",
-			sourceFolder:       "simple-frontend-yarn",
-			packagedDistFolder: "dist-artifacts-unsigned/simple-frontend-yarn",
-			expSuccess:         true,
-			expAnnotations:     baseValidatorAnnotations,
+			name:                      "simple-frontend-yarn succeeds with warnings",
+			sourceFolder:              "simple-frontend-yarn",
+			packagedDistFolder:        "dist-artifacts-unsigned/simple-frontend-yarn",
+			expSuccess:                true,
+			expAnnotations:            baseValidatorAnnotations,
+			expPluginValidatorVersion: defaultPluginValidatorVersion,
 		},
 		// Special ZIP where the archive is malformed, used to test plugin-validator error handling
 		{
@@ -88,6 +93,7 @@ func TestValidator(t *testing.T) {
 					Message: `Fix the errors reported by archive before LLM review can run.`,
 				},
 			},
+			expPluginValidatorVersion: defaultPluginValidatorVersion,
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -99,7 +105,12 @@ func TestValidator(t *testing.T) {
 global:
   enabled: true
 analyzers:
+  # Disabled because it takes too much resources and time.
   osv-scanner:
+    enabled: false
+
+  # Warns if backend SDK is too old. Disabled so we don't have to bump it to fix tests.
+  sdkusage:
     enabled: false
 `
 			wf, err := ci.NewWorkflow(
@@ -126,6 +137,16 @@ analyzers:
 				require.True(t, r.Success, "workflow should succeed")
 			} else {
 				require.False(t, r.Success, "workflow should fail")
+			}
+
+			// Check debug annotation with the validator version, if necessary
+			if tc.expPluginValidatorVersion != "" {
+				logFmtMsg, err := logfmt.MarshalKeyvals("msg", "Running plugin-validator", "version", tc.expPluginValidatorVersion)
+				require.NoError(t, err)
+				require.Contains(t, r.Annotations, act.Annotation{
+					Level:   act.AnnotationLevelDebug,
+					Message: string(logFmtMsg),
+				})
 			}
 
 			// Check annotation entries

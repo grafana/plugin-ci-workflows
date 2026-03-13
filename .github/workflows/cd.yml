@@ -399,7 +399,7 @@ on:
           Branch or tag to publish from.
           Can be used to deploy PRs to dev.
           Can also be used to deploy specific branches (e.g.: release branches) or tags (e.g.: release tags) to any target environment.
-          In order to deploy to `prod` or `prod-canary`, where PRs or unreleased changes should not be deployed, 
+          In order to deploy to `prod` or `prod-canary`, where PRs or unreleased changes should not be deployed,
           the branch or tag must match the `release-reference-regex`, otherwise the workflow will fail.
           Defaults to `main`.
         default: main
@@ -746,7 +746,7 @@ jobs:
       - name: Generate artifact attestation
         if: ${{ inputs.attestation }}
         id: attestation
-        uses: actions/attest-build-provenance@96278af6caaf10aea03fd8d33a09a777ca52d62f # v3.2.0
+        uses: actions/attest-build-provenance@e4d4f7c39adfa4c260fb5c147f0622000aa14b99 # v4.0.0
         with:
           subject-path: /tmp/dist-artifacts/*.zip
 
@@ -802,7 +802,7 @@ jobs:
 
       - name: Get secrets from Vault
         id: get-secrets
-        uses: grafana/shared-workflows/actions/get-vault-secrets@a37de51f3d713a30a9e4b21bcdfbd38170020593 # get-vault-secrets/v1.3.0
+        uses: grafana/shared-workflows/actions/get-vault-secrets@f1614b210386ac420af6807a997ac7f6d96e477a # get-vault-secrets/v1.3.1
         with:
           vault_instance: ${{ env.VAULT_INSTANCE }}
           common_secrets: |
@@ -913,7 +913,7 @@ jobs:
 
       - name: Trigger Argo Workflow
         id: trigger-argo-workflow
-        uses: grafana/shared-workflows/actions/trigger-argo-workflow@trigger-argo-workflow/v1.2.2
+        uses: grafana/shared-workflows/actions/trigger-argo-workflow@b513eb1dfd9becfa671a41e55063cdd5c0a08031 # trigger-argo-workflow/v1.2.2
         with:
           namespace: grafana-plugins-cd
           workflow_template: grafana-plugins-deploy-dev
@@ -1017,31 +1017,7 @@ jobs:
           GCS_UNIVERSAL_ZIP_URL_COMMIT: ${{ needs.ci.outputs.gcs-universal-zip-url-commit }}
         shell: bash
 
-      # if an artifact already exists we don't want to overwrite it
-      # this creates conflicts with checksums and will break the release
-      # all environments use the same artifacts
-      - name: Check if artifacts already exist
-        id: gcs_artifacts_exist
-        run: |
-          bucket_path="gs://${GCS_ARTIFACTS_RELEASE_PATH_TAG}/${PLATFORM}/"
-
-          echo "Checking for any existing artifacts in: $bucket_path"
-
-          if gsutil ls "$bucket_path" 2>/dev/null | grep -q "."; then
-            echo "⚠️Existing artifact found, skipping upload"
-            echo "gcs_artifacts_exist=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "✅ No existing artifacts found, proceeding with upload"
-            echo "gcs_artifacts_exist=false" >> "$GITHUB_OUTPUT"
-          fi
-        env:
-          PLATFORM: ${{ matrix.platform }}
-          PLUGIN_VERSION: ${{ fromJSON(needs.ci.outputs.plugin).version }}
-          GCS_ARTIFACTS_RELEASE_PATH_TAG: ${{ steps.paths.outputs.gcs_artifacts_release_path_tag }}
-        shell: bash
-
       - name: Upload GCS release artifact (tag)
-        if: ${{ steps.gcs_artifacts_exist.outputs.gcs_artifacts_exist == 'false' }}
         uses: google-github-actions/upload-cloud-storage@6397bd7208e18d13ba2619ee21b9873edc94427a # v3.0.0
         with:
           path: /tmp/dist-artifacts
@@ -1051,7 +1027,6 @@ jobs:
           process_gcloudignore: false
 
       - name: Upload GCS release artifact (latest)
-        if: ${{ steps.gcs_artifacts_exist.outputs.gcs_artifacts_exist == 'false' }}
         uses: google-github-actions/upload-cloud-storage@6397bd7208e18d13ba2619ee21b9873edc94427a # v3.0.0
         with:
           path: /tmp/dist-artifacts-latest
@@ -1061,7 +1036,7 @@ jobs:
           process_gcloudignore: false
 
       - name: Upload GCS release artifacts (latest, any)
-        if: ${{ matrix.platform == 'any' && steps.gcs_artifacts_exist.outputs.gcs_artifacts_exist == 'false' }}
+        if: ${{ matrix.platform == 'any' }}
         uses: google-github-actions/upload-cloud-storage@6397bd7208e18d13ba2619ee21b9873edc94427a # v3.0.0
         with:
           path: /tmp/dist-artifacts-latest/${{ fromJSON(needs.ci.outputs.plugin).id }}-latest.zip
@@ -1154,7 +1129,7 @@ jobs:
 
       - name: Get secrets from Vault
         id: get-secrets
-        uses: grafana/shared-workflows/actions/get-vault-secrets@a37de51f3d713a30a9e4b21bcdfbd38170020593 # get-vault-secrets/v1.3.0
+        uses: grafana/shared-workflows/actions/get-vault-secrets@f1614b210386ac420af6807a997ac7f6d96e477a # get-vault-secrets/v1.3.1
         with:
           vault_instance: ${{ env.VAULT_INSTANCE }}
           common_secrets: |
