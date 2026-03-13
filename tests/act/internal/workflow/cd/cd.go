@@ -124,6 +124,8 @@ type WorkflowInputs struct {
 	TriggerArgo                *bool
 	AutoMergeEnvironments      *string
 	ArgoWorkflowSlackChannel   *string
+	AutoApproveDurations       *string
+	ProdTargetsAll             *bool
 
 	ReleaseReferenceRegex    *string
 	DocsOnly                 *bool
@@ -143,6 +145,8 @@ func WithWorkflowInputs(inputs WorkflowInputs) WorkflowOption {
 		workflow.SetJobInput(job, "disable-github-release", inputs.DisableGitHubRelease)
 		workflow.SetJobInput(job, "trigger-argo", inputs.TriggerArgo)
 		workflow.SetJobInput(job, "auto-merge-environments", inputs.AutoMergeEnvironments)
+		workflow.SetJobInput(job, "auto-approve-durations", inputs.AutoApproveDurations)
+		workflow.SetJobInput(job, "prod-targets-all", inputs.ProdTargetsAll)
 		workflow.SetJobInput(job, "argo-workflow-slack-channel", inputs.ArgoWorkflowSlackChannel)
 		workflow.SetJobInput(job, "release-reference-regex", inputs.ReleaseReferenceRegex)
 		workflow.SetJobInput(job, "docs-only", inputs.DocsOnly)
