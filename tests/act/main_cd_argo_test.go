@@ -89,7 +89,7 @@ func TestCD_Argo(t *testing.T) {
 				"auto_merge_environments": "dev",
 				"auto_approve_durations":  `{"dev":0,"ops":0,"prod-canary":null,"prod":null}`,
 				"prod_targets_all":        "true",
-				"argo_silent":             "false",
+				"slack_silent":            "false",
 			},
 		},
 		{
