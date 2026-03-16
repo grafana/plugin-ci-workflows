@@ -1,5 +1,38 @@
 # Changelog
 
+## [7.0.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v6.1.1...ci-cd-workflows/v7.0.0) (2026-03-16)
+
+
+### ⚠ BREAKING CHANGES
+
+* **deps:** remove "v" prefix from mage-version input ([#576](https://github.com/grafana/plugin-ci-workflows/issues/576))
+
+### 🎉 Features
+
+* **cd:** argo: support per-environment auto-approval durations, add input to deploy only to prod when targeting prod (rather than all envs) ([#544](https://github.com/grafana/plugin-ci-workflows/issues/544)) ([07d2504](https://github.com/grafana/plugin-ci-workflows/commit/07d25041deb4a00813685550ae7fa873f4e2bdff))
+* **plugin-validator:** provide a better default plugin-validator config ([#600](https://github.com/grafana/plugin-ci-workflows/issues/600)) ([2a407c4](https://github.com/grafana/plugin-ci-workflows/commit/2a407c4dad85dcc4b32b6ea33c8a8add091f1b8a))
+
+
+### 🐛 Bug Fixes
+
+* remove gcs artifact exists step ([#590](https://github.com/grafana/plugin-ci-workflows/issues/590)) ([264b037](https://github.com/grafana/plugin-ci-workflows/commit/264b037fc27f296d3168238821543fcbc44d2f28))
+
+
+### 🔧 Chores
+
+* **deps:** remove "v" prefix from mage-version input ([#576](https://github.com/grafana/plugin-ci-workflows/issues/576)) ([093ef76](https://github.com/grafana/plugin-ci-workflows/commit/093ef76b792e1f0d19cb235af18a5e92497b1c5e))
+* **deps:** update actions/attest-build-provenance action to v4 ([#597](https://github.com/grafana/plugin-ci-workflows/issues/597)) ([d41630f](https://github.com/grafana/plugin-ci-workflows/commit/d41630f33fbb92aad6347d814d2e42fc9c424127))
+* **deps:** update actions/attest-build-provenance action to v4.1.0 ([#604](https://github.com/grafana/plugin-ci-workflows/issues/604)) ([847aaf6](https://github.com/grafana/plugin-ci-workflows/commit/847aaf6f895bf002cdfbf646ecf3415a0332e403))
+* **deps:** update actions/setup-go action to v6.3.0 ([#596](https://github.com/grafana/plugin-ci-workflows/issues/596)) ([b5d1276](https://github.com/grafana/plugin-ci-workflows/commit/b5d1276eee6801186f5ed52490702ef1be53b9a8))
+* **deps:** update dependency actionlint to v1.7.11 ([#578](https://github.com/grafana/plugin-ci-workflows/issues/578)) ([35f5b60](https://github.com/grafana/plugin-ci-workflows/commit/35f5b603f4ecd88e59e92399c81f7eb518f8663a))
+* **deps:** update dependency golangci-lint to v2.10.1 ([#584](https://github.com/grafana/plugin-ci-workflows/issues/584)) ([e6e0e96](https://github.com/grafana/plugin-ci-workflows/commit/e6e0e96b10950992e970a96f3156be1f0f14b800))
+* **deps:** update dependency trufflehog to v3.93.4 ([#586](https://github.com/grafana/plugin-ci-workflows/issues/586)) ([97dbc0b](https://github.com/grafana/plugin-ci-workflows/commit/97dbc0b7aac58c84b52e54a96919d163f0373d8c))
+* **deps:** update dependency trufflehog to v3.93.5 ([#603](https://github.com/grafana/plugin-ci-workflows/issues/603)) ([3ece790](https://github.com/grafana/plugin-ci-workflows/commit/3ece7907683b9882be6fae57e26ab2934e070dde))
+* **deps:** update dependency trufflehog to v3.93.6 ([#606](https://github.com/grafana/plugin-ci-workflows/issues/606)) ([bc2067b](https://github.com/grafana/plugin-ci-workflows/commit/bc2067be793dedc276ca7e5532746391650bd3d7))
+* **deps:** update grafana/shared-workflows/get-vault-secrets action to v1.3.1 ([#587](https://github.com/grafana/plugin-ci-workflows/issues/587)) ([331d439](https://github.com/grafana/plugin-ci-workflows/commit/331d439bf063c73583d6aa9d094d971bdbf1ae46))
+* **deps:** update grafana/shared-workflows/trigger-argo-workflow action to v1.2.2 ([#585](https://github.com/grafana/plugin-ci-workflows/issues/585)) ([60f35d3](https://github.com/grafana/plugin-ci-workflows/commit/60f35d3b7acb02e083a0cf6d7d120ce6cf48cf01))
+* **deps:** update step-security/harden-runner action to v2.15.0 ([#595](https://github.com/grafana/plugin-ci-workflows/issues/595)) ([1783a6d](https://github.com/grafana/plugin-ci-workflows/commit/1783a6dc6b432e6af7b829f17ef2a9e9de46a2db))
+
 ## [6.1.1](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v6.1.0...ci-cd-workflows/v6.1.1) (2026-02-27)
 
 
