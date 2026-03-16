@@ -328,6 +328,16 @@ on:
           This should be changed to a Slack channel specific to your team.
         default: "#grafana-plugins-platform-ci"
         type: string
+      argo-workflow-slack-silent:
+        description: |
+          If true, the Argo Workflow will not send Slack notifications for the deployment.
+          This is only used when Argo is triggered (when `trigger-argo` is true).
+          Workflow failures will still send notifications to the Slack channel specified in `argo-workflow-slack-channel`.
+          Default is false.
+          This can be set to true if you want to reduce noise in Slack, especially if you have many deployments
+          (e.g.: CD from main to dev). In this case, can conditionally set this value to true with a GHA expression.
+        default: false
+        type: boolean
       auto-merge-environments:
         description: |
           Comma separated list of environments whose deployment_tools PRs will be auto-merged when
@@ -927,6 +937,7 @@ jobs:
             auto_merge_environments=${{ steps.argo-parameters.outputs.auto_merge_environments }}
             auto_approve_durations=${{ steps.argo-parameters.outputs.auto_approve_durations }}
             prod_targets_all=${{ inputs.prod-targets-all }}
+            slack_silent=${{ inputs.argo-workflow-slack-silent }}
 
       - name: Print job summary
         run: |
