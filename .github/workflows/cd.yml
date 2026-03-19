@@ -330,14 +330,14 @@ on:
         type: string
       argo-workflow-slack-silent:
         description: |
-          Whether the Argo Workflow should send deployment notifications to Slack
+          Determines if the Argo Workflow sends deployment notifications to Slack
           to the channel specified in `argo-workflow-slack-channel`.
 
           If the workflow fails, a notification will be sent regardless.
 
-          This can be set to true if you want to reduce noise in Slack,
-          especially if you have many deployments (e.g.: CD from main to dev).
-          In this case, you can conditionally set this value to true with a GHA expression.
+          Set it to `true` if you want to reduce noise in Slack, especially if you have many deployments.
+          For example, if you have CD from main to dev, you can conditionally 
+          et this value to `true` with a GHA expression.
 
           Default is `false`.
         default: false
