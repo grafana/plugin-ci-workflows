@@ -337,7 +337,7 @@ on:
 
           Set it to `true` if you want to reduce noise in Slack, especially if you have many deployments.
           For example, if you have CD from main to dev, you can conditionally 
-          et this value to `true` with a GHA expression.
+          set this value to `true` with a GHA expression.
 
           Default is `false`.
         default: false
