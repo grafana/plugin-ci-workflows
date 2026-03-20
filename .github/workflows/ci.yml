@@ -924,7 +924,7 @@ jobs:
           namespace: grafana-datasources-cd
 
           # Use plugin ID as the WorkflowTemplate name in Argo
-          workflow_template: ${{ fromJSON(needs.test-and-build.outputs.plugin).id }}
+          workflow_template: ${{ fromJSON(needs.test-and-build.outputs.plugin).id }}-dev
 
           # dockertag matches the version published by publish-to-dev-catalog above
           parameters: |
