@@ -25,7 +25,7 @@ cd website
 
 docs_folder="content/docs/plugins/$plugin_id/v$plugin_version"
 mkdir -p "$docs_folder"
-cp -a "$GITHUB_WORKSPACE/docs/sources/." "$docs_folder/"
+rsync -a --quiet --delete "$GITHUB_WORKSPACE/docs/sources/" "$docs_folder"
 
 git add "$docs_folder"
 git config user.name "144369747+grafana-plugins-platform-bot[bot]@users.noreply.github.com"
