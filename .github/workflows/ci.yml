@@ -297,9 +297,9 @@ env:
   DEFAULT_NODE_VERSION: "24"
   DEFAULT_GO_VERSION: "1.25"
   DEFAULT_GOLANGCI_LINT_VERSION: "2.11.2"
-  DEFAULT_TRUFFLEHOG_VERSION: "3.93.7"
+  DEFAULT_TRUFFLEHOG_VERSION: "3.93.8"
   DEFAULT_MAGE_VERSION: "1.15.0"
-  DEFAULT_PLUGIN_VALIDATOR_VERSION: "0.37.1"
+  DEFAULT_PLUGIN_VALIDATOR_VERSION: "0.38.0"
 
   # Default plugin-validator configuration, used when no configuration is provided by the caller.
   # Disables some analyzers that are not relevant for Grafana Labs plugins.
