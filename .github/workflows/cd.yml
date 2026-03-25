@@ -328,6 +328,22 @@ on:
           This should be changed to a Slack channel specific to your team.
         default: "#grafana-plugins-platform-ci"
         type: string
+      argo-workflow-slack-silent:
+        description: |
+          Determines if the Argo Workflow sends deployment notifications to Slack
+          to the channel specified in `argo-workflow-slack-channel`.
+
+          If the workflow fails, a notification will be sent regardless.
+
+          Allowed values:                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
+          - `true`: Suppress successful deployment notifications                                                                                                                                                                                   
+          - `false` (default): Send all deployment notifications
+
+          Set it to `true` if you want to reduce noise in Slack, especially if you have many deployments.
+          For example, if you have CD from main to dev, you can conditionally 
+          set this value to `true` with a GHA expression.
+        default: false
+        type: boolean
       auto-merge-environments:
         description: |
           Comma separated list of environments whose deployment_tools PRs will be auto-merged when
@@ -927,6 +943,7 @@ jobs:
             auto_merge_environments=${{ steps.argo-parameters.outputs.auto_merge_environments }}
             auto_approve_durations=${{ steps.argo-parameters.outputs.auto_approve_durations }}
             prod_targets_all=${{ inputs.prod-targets-all }}
+            slack_silent=${{ inputs.argo-workflow-slack-silent }}
 
       - name: Print job summary
         run: |

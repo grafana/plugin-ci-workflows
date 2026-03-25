@@ -43,6 +43,7 @@ func TestCD_Argo(t *testing.T) {
 				"auto_merge_environments": "dev+ops+prod-canary+prod",
 				"auto_approve_durations":  `{"dev":0,"ops":0,"prod-canary":null,"prod":null}`,
 				"prod_targets_all":        "true",
+				"slack_silent":            "false",
 			},
 		},
 		{
@@ -65,6 +66,7 @@ func TestCD_Argo(t *testing.T) {
 				"auto_merge_environments": "dev",
 				"auto_approve_durations":  `{"dev":0,"ops":0,"prod-canary":null,"prod":null}`,
 				"prod_targets_all":        "true",
+				"slack_silent":            "false",
 			},
 		},
 		{
@@ -87,6 +89,7 @@ func TestCD_Argo(t *testing.T) {
 				"auto_merge_environments": "dev",
 				"auto_approve_durations":  `{"dev":0,"ops":0,"prod-canary":null,"prod":null}`,
 				"prod_targets_all":        "true",
+				"slack_silent":            "false",
 			},
 		},
 		{
@@ -109,6 +112,7 @@ func TestCD_Argo(t *testing.T) {
 				"auto_merge_environments": "dev+ops",
 				"auto_approve_durations":  `{"dev":0,"ops":0,"prod-canary":null,"prod":null}`,
 				"prod_targets_all":        "true",
+				"slack_silent":            "false",
 			},
 		},
 		{
@@ -131,6 +135,7 @@ func TestCD_Argo(t *testing.T) {
 				"auto_merge_environments": "dev+ops+prod-canary+prod",
 				"auto_approve_durations":  `{"dev":0,"ops":0,"prod-canary":null,"prod":null}`,
 				"prod_targets_all":        "false",
+				"slack_silent":            "false",
 			},
 		},
 		{
@@ -155,6 +160,30 @@ func TestCD_Argo(t *testing.T) {
 				"auto_merge_environments": "dev+ops",
 				"auto_approve_durations":  `{"dev":0,"ops":"1h","prod-canary":"24h","prod":"72h"}`,
 				"prod_targets_all":        "false",
+				"slack_silent":            "false",
+			},
+		},
+		{
+			name: "provisioned plugin with silent slack notifications",
+			inputs: cd.WorkflowInputs{
+				TriggerArgo:                workflow.Input(true),
+				GrafanaCloudDeploymentType: workflow.Input("provisioned"),
+				Environment:                workflow.Input("dev"),
+				ArgoWorkflowSlackChannel:   workflow.Input("#some-slack-channel"),
+				ArgoWorkflowSlackSilent:    workflow.Input(true),
+			},
+			expArgoShouldBeTriggered: true,
+			expArgoInputs: map[string]string{
+				"slug":                    "simple-frontend",
+				"version":                 "1.0.0",
+				"environment":             "dev",
+				"slack_channel":           "#some-slack-channel",
+				"commit":                  gitSha,
+				"commit_link":             "https://github.com/grafana/plugin-ci-workflows/commit/" + gitSha,
+				"auto_merge_environments": "dev+ops+prod-canary+prod",
+				"auto_approve_durations":  `{"dev":0,"ops":0,"prod-canary":null,"prod":null}`,
+				"prod_targets_all":        "true",
+				"slack_silent":            "true",
 			},
 		},
 
