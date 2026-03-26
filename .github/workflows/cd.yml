@@ -166,23 +166,6 @@ on:
         required: false
         default: ""
 
-      # Dev Catalog publishing + Argo deployment (for Cloud E2E)
-      run-publish-to-dev-catalog:
-        description: |
-          Whether to publish the plugin to the internal dev Plugin Catalog after a successful build.
-          Only runs on pushes to the main branch. Intended for use with Cloud E2E tests.
-        type: boolean
-        required: false
-        default: false
-      run-trigger-argo-workflow:
-        description: |
-          Whether to trigger an Argo workflow after publishing to the dev catalog.
-          Only runs on pushes to the main branch. Requires run-publish-to-dev-catalog to also be true
-          for the published version to be available when the Argo workflow runs.
-        type: boolean
-        required: false
-        default: false
-
       # Trufflehog
       run-trufflehog:
         description: Whether to run Trufflehog secrets scanning.
@@ -740,9 +723,6 @@ jobs:
       playwright-config: ${{ inputs.playwright-config }}
       playwright-grafana-url: ${{ inputs.playwright-grafana-url }}
       playwright-secrets: ${{ inputs.playwright-secrets }}
-
-      run-publish-to-dev-catalog: ${{ inputs.run-publish-to-dev-catalog }}
-      run-trigger-argo-workflow: ${{ inputs.run-trigger-argo-workflow }}
 
       run-trufflehog: ${{ inputs.run-trufflehog }}
       trufflehog-version: ${{ inputs.trufflehog-version }}

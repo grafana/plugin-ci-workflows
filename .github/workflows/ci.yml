@@ -142,22 +142,6 @@ on:
         required: false
         default: ""
 
-      # Dev Catalog publishing + Argo deployment (for Cloud E2E)
-      run-publish-to-dev-catalog:
-        description: |
-          Whether to publish the plugin to the internal dev Plugin Catalog after a successful build.
-          Only runs on pushes to the main branch. Intended for use with Cloud E2E tests.
-        type: boolean
-        required: false
-        default: false
-      run-trigger-argo-workflow:
-        description: |
-          Whether to trigger an Argo workflow after publishing to the dev catalog.
-          Only runs on pushes to the main branch. Requires run-publish-to-dev-catalog to also be true
-          for the published version to be available when the Argo workflow runs.
-        type: boolean
-        required: false
-        default: false
       # Trufflehog
       run-trufflehog:
         description: Whether to run Trufflehog secrets scanning.
@@ -862,72 +846,3 @@ jobs:
           UNIVERSAL_ZIP: ${{ needs.test-and-build.outputs.universal-zip }}
         shell: bash
 
-  publish-to-dev-catalog:
-    name: Publish to Dev Catalog
-    # Main-only: publish the latest build to the internal Plugin Catalog (dev), for Cloud E2E
-    if: ${{ inputs.run-publish-to-dev-catalog == true && github.ref == 'refs/heads/main' }}
-    needs:
-      - test-and-build
-    uses: grafana/plugin-ci-workflows/.github/workflows/cd.yml@main
-    permissions:
-      attestations: write
-      contents: write   # Required to publish artifacts
-      id-token: write   # OIDC for Vault / signing
-    with:
-      # This is a "publish latest" flow, not a full release
-      disable-docs-publishing: true
-      disable-github-release: true
-
-      # Target the dev catalog environment
-      environment: "dev"
-
-      # Keep toolchain consistent with the CI job above
-      go-version: ${{ inputs.go-version }}
-      golangci-lint-version: ${{ inputs.golangci-lint-version }}
-      plugin-directory: ${{ inputs.plugin-directory }}
-
-      # Suffix artifact with commit SHA for traceability and uniqueness
-      plugin-version-suffix: ${{ github.sha }}
-
-      # Avoid re-running Playwright here (the CI job above already covers E2E)
-      run-playwright: false
-
-      # Restrict publishing scope to the Cloud E2E instance
-      scopes: grafana_cloud_instance_datasourcese2e
-
-  trigger-argo-workflow:
-    name: Trigger Argo Workflow
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-
-    # Main-only: trigger downstream deployment after the dev catalog publish succeeds
-    if: ${{ inputs.run-trigger-argo-workflow == true && github.ref == 'refs/heads/main' }}
-
-    needs:
-      - test-and-build
-      - publish-to-dev-catalog
-
-    permissions:
-      contents: read
-      id-token: write   # Required by trigger-argo-workflow action for OIDC
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          persist-credentials: false
-
-      - name: Trigger workflow
-        uses: grafana/shared-workflows/actions/trigger-argo-workflow@b513eb1dfd9becfa671a41e55063cdd5c0a08031 # trigger-argo-workflow/v1.2.2
-        with:
-          instance: ops
-          namespace: grafana-datasources-cd
-
-          # Use plugin ID as the WorkflowTemplate name in Argo
-          workflow_template: ${{ fromJSON(needs.test-and-build.outputs.plugin).id }}-dev
-
-          # dockertag matches the version published by publish-to-dev-catalog above
-          parameters: |
-            dockertag=${{ fromJSON(needs.test-and-build.outputs.plugin).version }}+${{ github.sha }}
-            prCommentContext=triggered-by-push-to-main datasource=${{ fromJSON(needs.test-and-build.outputs.plugin).id }}
-            commit_author=grafana-delivery-bot
