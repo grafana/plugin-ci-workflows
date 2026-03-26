@@ -119,6 +119,7 @@ jobs:
           export_env: false
 
       - name: Export repo secrets to runner environment
+        id: export-repo-secrets
         # Parse the repo-secrets keys and write each secret value to GITHUB_ENV
         # so the docker run step can forward them into the container via -e flags.
         if: inputs.repo-secrets != ''
@@ -138,6 +139,7 @@ jobs:
           done <<< "$REPO_SECRETS_INPUT"
 
       - name: Wait for Grafana to be reachable
+        id: wait-for-grafana
         # Wait until the Cloud instance is responding before starting tests
         uses: grafana/plugin-actions/wait-for-grafana@c8ad89b7d81f8cb9967bb65e444d85f5b3d7c674 # wait-for-grafana/v1.0.2
         with:
@@ -147,6 +149,7 @@ jobs:
           interval: 10 # 10 seconds
 
       - name: Run Grafana Bench tests
+        id: run-bench-tests
         env:
           # Grafana admin credentials used by @grafana/plugin-e2e auth/storage state
           GRAFANA_ADMIN_PASSWORD: ${{ fromJSON(steps.get-secrets.outputs.secrets).PLAYWRIGHT_GRAFANA_PASSWORD }}
