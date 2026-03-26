@@ -17,9 +17,10 @@ plugin_version="$2"
 tmp=$(mktemp -d)
 cd "$tmp"
 git config --global --add safe.directory .
+git config --global url."https://x-access-token:${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
 git clone \
     --depth 1 --single-branch --no-tags \
-    https://$GITHUB_TOKEN@github.com/grafana/website.git
+    https://github.com/grafana/website.git
 
 cd website
 
