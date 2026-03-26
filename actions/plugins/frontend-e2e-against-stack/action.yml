@@ -166,7 +166,12 @@ runs:
         echo "Parsing and setting plugin environment variables..."
         echo "$SECRETS_JSON" | jq -r 'to_entries[] | "\(.key)=\(.value)"' | while IFS='=' read -r key value; do
           echo "::add-mask::$value"
-          echo "$key=$value" >> "$GITHUB_ENV"
+          delimiter="ghadelim_$(openssl rand -hex 8)"
+          {
+            echo "$key<<$delimiter"
+            echo "$value"
+            echo "$delimiter"
+          } >> "$GITHUB_ENV"
         done
         echo "Plugin environment variables set."
 
