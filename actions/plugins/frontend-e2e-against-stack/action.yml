@@ -149,13 +149,6 @@ runs:
           HG_TOKEN=hg-ci:token
         export_env: false
 
-    - name: Mask common secrets
-      shell: bash
-      env:
-        HG_TOKEN: ${{ fromJSON(steps.get-common-secrets.outputs.secrets).HG_TOKEN }}
-      run: |
-        echo "::add-mask::$HG_TOKEN"
-
     - name: Set plugin secrets as environment variables
       id: set-env-vars
       if: ${{ inputs.plugin-secrets != '' }}
