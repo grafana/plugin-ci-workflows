@@ -84,6 +84,20 @@ func WithForkPR(forkRepo ...string) EventOption {
 	}
 }
 
+// WithNonGrafanaOwner overrides the repository owner in the event payload to simulate
+// a repository not owned by the grafana org. Useful for testing conditional logic gated
+// on github.repository_owner == 'grafana'.
+func WithNonGrafanaOwner() EventOption {
+	return func(e *Event) {
+		if e.Payload["repository"] == nil {
+			e.Payload["repository"] = map[string]any{}
+		}
+		repo := e.Payload["repository"].(map[string]any)
+		repo["full_name"] = "non-grafana/plugin-ci-workflows"
+		repo["owner"] = map[string]any{"login": "non-grafana"}
+	}
+}
+
 // NewEventPayload creates a new EventPayload with the given data.
 // It always includes an "act": true key-value pair.
 func NewEventPayload(kind EventKind, data map[string]any, opts ...EventOption) Event {

@@ -301,7 +301,7 @@ func MockVaultSecretsStep(originalStep Step, secrets VaultSecrets) (Step, error)
 	if v, ok := originalStep.With["common_secrets"].(string); ok {
 		commonSecretsInput = v
 	}
-	if v, ok := originalStep.With["repo_secrets"].(string); ok {
+	if v, ok := originalStep.With["repo_secrets"].(string); ok && !strings.HasPrefix(strings.TrimSpace(v), "${{") {
 		repoSecretsInput = v
 	}
 	exportEnvInput := true

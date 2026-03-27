@@ -24,6 +24,7 @@ var knownWorkflows = []workflowEntry{
 	{path: "ci.yml", internal: false},
 	{path: "cd.yml", internal: false},
 	{path: "playwright.yml", internal: false},
+	{path: "playwright-cloud.yml", internal: false},
 	{path: "playwright-docker.yml", internal: false},
 	{path: "check-release-channel.yml", internal: false},
 
