@@ -36,6 +36,7 @@ runs:
         common_secrets: |
           GITHUB_APP_ID=plugins-platform-bot-app:app-id
           GITHUB_APP_PRIVATE_KEY=plugins-platform-bot-app:private-key
+        export_env: false
 
     - name: Generate GitHub token
       id: generate-github-token
