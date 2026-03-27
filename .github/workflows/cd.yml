@@ -828,24 +828,29 @@ jobs:
           export_env: false
 
       - name: Determine which token to use
+        id: gcom-token
         run: |
           if [ "${ENVIRONMENT}" == 'dev' ]; then
             echo "Picked dev token"
-            token="${{ fromJSON(steps.get-secrets.outputs.secrets).GCOM_PUBLISH_TOKEN_DEV }}"
+            token="${GCOM_TOKEN_DEV}"
           elif [ "${ENVIRONMENT}" == 'ops' ]; then
             echo "Picked ops token"
-            token="${{ fromJSON(steps.get-secrets.outputs.secrets).GCOM_PUBLISH_TOKEN_OPS }}"
+            token="${GCOM_TOKEN_OPS}"
           elif [[ "${ENVIRONMENT}" == 'prod-canary' || "${ENVIRONMENT}" == 'prod' ]]; then
             echo "Picked prod token"
-            token="${{ fromJSON(steps.get-secrets.outputs.secrets).GCOM_PUBLISH_TOKEN_PROD }}"
+            token="${GCOM_TOKEN_PROD}"
           else
             echo "Invalid environment: ${ENVIRONMENT}"
             exit 1
           fi
-          echo "GCOM_PUBLISH_TOKEN=$token" >> "$GITHUB_ENV"
+          echo "::add-mask::$token"
+          echo "GCOM_PUBLISH_TOKEN=$token" >> "$GITHUB_OUTPUT"
         shell: bash
         env:
           ENVIRONMENT: ${{ matrix.environment }}
+          GCOM_TOKEN_DEV: ${{ fromJSON(steps.get-secrets.outputs.secrets).GCOM_PUBLISH_TOKEN_DEV }}
+          GCOM_TOKEN_OPS: ${{ fromJSON(steps.get-secrets.outputs.secrets).GCOM_PUBLISH_TOKEN_OPS }}
+          GCOM_TOKEN_PROD: ${{ fromJSON(steps.get-secrets.outputs.secrets).GCOM_PUBLISH_TOKEN_PROD }}
 
       - name: Check and create stub
         id: check-and-create-stub
@@ -854,7 +859,7 @@ jobs:
         with:
           plugin-id: ${{ fromJSON(needs.ci.outputs.plugin).id }}
           environment: ${{ matrix.environment }}
-          gcom-publish-token: ${{ env.GCOM_PUBLISH_TOKEN }}
+          gcom-publish-token: ${{ steps.gcom-token.outputs.GCOM_PUBLISH_TOKEN }}
           gcloud-auth-token: ${{ steps.gcloud.outputs.id_token }}
 
       - name: Check artifact ZIP(s)
@@ -870,7 +875,7 @@ jobs:
           zips: ${{ needs.upload-to-gcs-release.outputs.gcs-zip-urls }}
           environment: ${{ matrix.environment == 'prod-canary' && 'prod' || matrix.environment }}
           scopes: ${{ inputs.scopes }}
-          gcom-publish-token: ${{ env.GCOM_PUBLISH_TOKEN }}
+          gcom-publish-token: ${{ steps.gcom-token.outputs.GCOM_PUBLISH_TOKEN }}
           gcloud-auth-token: ${{ steps.gcloud.outputs.id_token }}
           ignore-conflicts: ${{ steps.determine-continue.outputs.ignore_conflicts }}
           publish-as-pending: ${{ matrix.environment == 'prod-canary' || inputs.publish-to-catalog-as-pending }}
