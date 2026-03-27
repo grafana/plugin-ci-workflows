@@ -124,7 +124,7 @@ jobs:
       # This is to ensure that the tag is completely hermetic.
       - name: Switch references (actions and workflows)
         id: switch-references
-        uses: grafana/plugin-ci-workflows/actions/internal/switch-references@main
+        uses: grafana/plugin-ci-workflows/actions/internal/switch-references@54e4c0970bbcb4925dfaed840a92a3a79d4f8d88 # main
         with:
           repository: grafana/plugin-ci-workflows
           ref: ${{ steps.component-name.outputs.component }}/v${{ steps.get-version.outputs.version }}
@@ -140,7 +140,7 @@ jobs:
       # This way we update only the examples relevant to the new component being released.
       - name: Switch references (examples)
         id: switch-references-examples
-        uses: grafana/plugin-ci-workflows/actions/internal/switch-references@main
+        uses: grafana/plugin-ci-workflows/actions/internal/switch-references@54e4c0970bbcb4925dfaed840a92a3a79d4f8d88 # main
         with:
           repository: grafana/plugin-ci-workflows
           # Prefix to update only the relevant examples
@@ -152,7 +152,7 @@ jobs:
       - name: Get bot user info
         id: get-bot-user
         if: steps.switch-references.outputs.changed == 'true' || steps.switch-references-examples.outputs.changed == 'true'
-        uses: grafana/plugin-ci-workflows/actions/internal/get-bot-user@main
+        uses: grafana/plugin-ci-workflows/actions/internal/get-bot-user@54e4c0970bbcb4925dfaed840a92a3a79d4f8d88 # main
         with:
           app-slug: ${{ steps.generate-github-token.outputs.app-slug }}
           token: ${{ steps.generate-github-token.outputs.token }}
