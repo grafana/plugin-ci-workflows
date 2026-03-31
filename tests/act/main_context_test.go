@@ -256,4 +256,64 @@ func TestContext(t *testing.T) {
 			require.Equalf(t, tc.expIsForkPR, context.IsForkPR, "pull_request_target should not be detected as fork PR")
 		})
 	}
+
+	// Test release events - should be trusted when coming from a trusted actor
+	for _, tc := range []struct {
+		name         string
+		actor        string
+		testingInput bool
+		expIsTrusted bool
+	}{
+		// Release events are trusted (like push), so trust depends on actor + testing mode
+		{name: "release from regular user", actor: "regular-user", testingInput: false, expIsTrusted: true},
+		{name: "release from regular user (testing)", actor: "regular-user", testingInput: true, expIsTrusted: false},
+		{name: "release from trusted bot", actor: "dependabot[bot]", testingInput: false, expIsTrusted: true},
+		{name: "release from trusted bot (testing)", actor: "dependabot[bot]", testingInput: true, expIsTrusted: false},
+		{name: "release from untrusted bot", actor: "hacker[bot]", testingInput: false, expIsTrusted: false},
+		{name: "release from untrusted bot (testing)", actor: "hacker[bot]", testingInput: true, expIsTrusted: false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			runner, err := act.NewRunner(t)
+			require.NoError(t, err)
+
+			wf, err := ci.NewWorkflow(
+				ci.WithWorkflowInputs(ci.WorkflowInputs{
+					PluginDirectory:     workflow.Input(filepath.Join("tests", "simple-frontend")),
+					DistArtifactsPrefix: workflow.Input("simple-frontend-"),
+					Testing:             workflow.Input(tc.testingInput),
+				}),
+				ci.MutateCIWorkflow().With(
+					workflow.WithOnlyOneJob(t, testAndBuild, false),
+					workflow.WithRemoveAllStepsAfter(t, testAndBuild, workflowContext),
+				),
+				ci.MutateTestingWorkflow().With(
+					workflow.WithReleaseTrigger([]string{"published"}),
+				),
+			)
+			require.NoError(t, err)
+
+			releaseEvent := act.NewEventPayload(act.EventKindRelease, map[string]any{
+				"action": "published",
+				"release": map[string]any{
+					"tag_name": "v1.0.0",
+				},
+			}, act.WithEventActor(tc.actor))
+
+			r, err := runner.Run(wf, releaseEvent)
+			require.NoError(t, err)
+			require.True(t, r.Success, "workflow should succeed")
+
+			contextPayload, ok := r.Outputs.Get(testAndBuild, workflowContext, "result")
+			require.True(t, ok, "output result should be present")
+			var context struct {
+				IsTrusted bool `json:"isTrusted"`
+				IsForkPR  bool `json:"isForkPR"`
+			}
+			require.NoError(t, json.Unmarshal([]byte(contextPayload), &context))
+			require.Equalf(t, tc.expIsTrusted, context.IsTrusted, "release event trust status mismatch")
+			require.False(t, context.IsForkPR, "release event should not be a fork PR")
+		})
+	}
 }
