@@ -253,6 +253,7 @@ type On struct {
 	Push              OnPush              `yaml:"push,omitempty"`
 	PullRequest       OnPullRequest       `yaml:"pull_request,omitempty"`
 	PullRequestTarget OnPullRequestTarget `yaml:"pull_request_target,omitempty"`
+	Release           OnRelease           `yaml:"release,omitempty"`
 	WorkflowCall      OnWorkflowCall      `yaml:"workflow_call,omitempty"`
 	WorkflowDispatch  OnWorkflowDispatch  `yaml:"workflow_dispatch,omitempty"`
 }
@@ -270,6 +271,11 @@ type OnPullRequest struct {
 // OnPullRequestTarget is the YAML representation of GitHub Actions pull_request_target event trigger.
 type OnPullRequestTarget struct {
 	Branches []string `yaml:"branches,omitempty"`
+}
+
+// OnRelease is the YAML representation of GitHub Actions release event trigger.
+type OnRelease struct {
+	Types []string `yaml:"types,omitempty"`
 }
 
 // OnWorkflowCall is the YAML representation of GitHub Actions workflow_call event trigger.

@@ -19,6 +19,7 @@ const (
 	EventKindPush              EventKind = "push"
 	EventKindPullRequest       EventKind = "pull_request"
 	EventKindPullRequestTarget EventKind = "pull_request_target"
+	EventKindRelease           EventKind = "release"
 	EventKindWorkflowDispatch  EventKind = "workflow_dispatch"
 )
 

@@ -382,6 +382,18 @@ func WithPullRequestTargetTrigger(branches []string) TestingWorkflowOption {
 	}
 }
 
+// WithReleaseTrigger is a TestingWorkflowOption that sets a release trigger to the workflow.
+// This can be used to test workflows that respond to release events.
+func WithReleaseTrigger(types []string) TestingWorkflowOption {
+	return func(t *TestingWorkflow) {
+		t.On = On{
+			Release: OnRelease{
+				Types: types,
+			},
+		}
+	}
+}
+
 // WithWorkflowDispatchTrigger is a TestingWorkflowOption that sets a workflow_dispatch trigger to the workflow.
 // This can be used to test workflows that are manually triggered via the GitHub UI or API.
 func WithWorkflowDispatchTrigger(inputs map[string]WorkflowCallInput) TestingWorkflowOption {
