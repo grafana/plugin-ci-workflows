@@ -26,7 +26,7 @@ jobs:
 
       - name: Switch references
         id: switch-references
-        uses: grafana/plugin-ci-workflows/actions/internal/switch-references@main
+        uses: grafana/plugin-ci-workflows/actions/internal/switch-references@de0a247aba77975fc2ce327d89c22dd7b614acea # main
         with:
           repository: grafana/plugin-ci-workflows
           ref: main
