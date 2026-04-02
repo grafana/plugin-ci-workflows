@@ -1,5 +1,36 @@
 # Changelog
 
+## [7.1.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v7.0.0...ci-cd-workflows/v7.1.0) (2026-04-02)
+
+
+### 🎉 Features
+
+* **cd:** add argo-workflows-slack-silent parameter to silence Argo Slack notifications ([#608](https://github.com/grafana/plugin-ci-workflows/issues/608)) ([eb7d1dd](https://github.com/grafana/plugin-ci-workflows/commit/eb7d1ddc074e4c78268cf683ae3e96001f7fc157))
+* **ci:** consider "release" event as trusted ([#639](https://github.com/grafana/plugin-ci-workflows/issues/639)) ([de0a247](https://github.com/grafana/plugin-ci-workflows/commit/de0a247aba77975fc2ce327d89c22dd7b614acea))
+
+
+### ♻️ Code Refactoring
+
+* **security:** change GCOM_TOKEN to be an output rather than a workflow-level env var ([#624](https://github.com/grafana/plugin-ci-workflows/issues/624)) ([e10bfe1](https://github.com/grafana/plugin-ci-workflows/commit/e10bfe191e002355ac00654ba4b7b7dfd6446240))
+* **security:** mask and unexport secrets when necessary ([#625](https://github.com/grafana/plugin-ci-workflows/issues/625)) ([54e4c09](https://github.com/grafana/plugin-ci-workflows/commit/54e4c0970bbcb4925dfaed840a92a3a79d4f8d88))
+
+
+### 🔧 Chores
+
+* **deps:** update actions/create-github-app-token action to v3 ([#632](https://github.com/grafana/plugin-ci-workflows/issues/632)) ([6ff19d7](https://github.com/grafana/plugin-ci-workflows/commit/6ff19d747fc0f8e1c22828dcec87ddeaef1788e1))
+* **deps:** update actions/setup-node action to v6.3.0 ([#609](https://github.com/grafana/plugin-ci-workflows/issues/609)) ([ad3390e](https://github.com/grafana/plugin-ci-workflows/commit/ad3390e35aadd8be6e4d54e203d17a0cd80987c1))
+* **deps:** update dependency golangci-lint to v2.11.2 ([#615](https://github.com/grafana/plugin-ci-workflows/issues/615)) ([cacc155](https://github.com/grafana/plugin-ci-workflows/commit/cacc155d234bb6cb2385261fba7fcf458f3f37c0))
+* **deps:** update dependency golangci-lint to v2.11.3 ([#620](https://github.com/grafana/plugin-ci-workflows/issues/620)) ([562df76](https://github.com/grafana/plugin-ci-workflows/commit/562df76c63540750c7f484521d815a2612b78a90))
+* **deps:** update dependency mage to v1.16.0 ([#616](https://github.com/grafana/plugin-ci-workflows/issues/616)) ([af41523](https://github.com/grafana/plugin-ci-workflows/commit/af41523360ec4bd75afb23c433b48e58a250686c))
+* **deps:** update dependency plugin-validator to v0.38.0 ([#618](https://github.com/grafana/plugin-ci-workflows/issues/618)) ([27cbc36](https://github.com/grafana/plugin-ci-workflows/commit/27cbc36a38fbb893606ae305c88853cad6d0cbdd))
+* **deps:** update dependency plugin-validator to v0.38.1 ([#621](https://github.com/grafana/plugin-ci-workflows/issues/621)) ([960f98e](https://github.com/grafana/plugin-ci-workflows/commit/960f98ea72a5716cf0b550e5c63967b7de102c60))
+* **deps:** update dependency plugin-validator to v0.38.2 ([#628](https://github.com/grafana/plugin-ci-workflows/issues/628)) ([9063847](https://github.com/grafana/plugin-ci-workflows/commit/9063847bac6ea35265122f7ea6f117230a8e085f))
+* **deps:** update dependency trufflehog to v3.93.7 ([#611](https://github.com/grafana/plugin-ci-workflows/issues/611)) ([7031cfa](https://github.com/grafana/plugin-ci-workflows/commit/7031cfafbcefa04b236d5c36034efbc943d32ad4))
+* **deps:** update dependency trufflehog to v3.93.8 ([#617](https://github.com/grafana/plugin-ci-workflows/issues/617)) ([ae7a0e3](https://github.com/grafana/plugin-ci-workflows/commit/ae7a0e35a5603d2c98942f40acb970b20aca8559))
+* **deps:** update pnpm/action-setup action to v4.3.0 ([#622](https://github.com/grafana/plugin-ci-workflows/issues/622)) ([b663db6](https://github.com/grafana/plugin-ci-workflows/commit/b663db61bb9ea48a6a84f442b85ac0fe34b2550c))
+* **deps:** update step-security/harden-runner action to v2.15.1 ([#614](https://github.com/grafana/plugin-ci-workflows/issues/614)) ([d3e262a](https://github.com/grafana/plugin-ci-workflows/commit/d3e262a88a5fd2b36aab8fcfed65d873ec022755))
+* **deps:** update step-security/harden-runner action to v2.16.0 ([#634](https://github.com/grafana/plugin-ci-workflows/issues/634)) ([e5f674e](https://github.com/grafana/plugin-ci-workflows/commit/e5f674ee0d55d016b913883f7f6a49a0d9ddb919))
+
 ## [7.0.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v6.1.1...ci-cd-workflows/v7.0.0) (2026-03-16)
 
 
