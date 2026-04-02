@@ -344,6 +344,28 @@ on:
           set this value to `true` with a GHA expression.
         default: false
         type: boolean
+      argo-workflow-slack-mention-trigger-user:
+        description: |
+          If true, the Argo Workflow will mention the user who triggered the workflow in the
+          Slack notification when the deployment starts.
+        default: true
+        type: boolean
+      argo-workflow-slack-extra-mentions:
+        description: |
+          Optional, comma-separated list of Slack handles that the Argo Workflow will mention
+          in the Slack notification when the deployment starts.
+          For triggering a user: `<@ID>`
+          For triggering a group: `<!subteam^ID>`
+
+          To get the IDs:
+          1. open the user/group in the Slack app sidebar
+          2. click the three dots icon in the sidebar
+          3. click "Copy member ID" / "Copy group ID"
+          4. Populate the input with the correct value: `<@ID>` for users, `<!subteam^ID>` for groups.
+
+          Example: `<!subteam^S02ND0RCSE7>,<@U045M4H659T>`
+        default: ""
+        type: string
       auto-merge-environments:
         description: |
           Comma separated list of environments whose deployment_tools PRs will be auto-merged when
@@ -949,6 +971,8 @@ jobs:
             auto_approve_durations=${{ steps.argo-parameters.outputs.auto_approve_durations }}
             prod_targets_all=${{ inputs.prod-targets-all }}
             slack_silent=${{ inputs.argo-workflow-slack-silent }}
+            slack_mention_trigger_user=${{ inputs.argo-workflow-slack-mention-trigger-user }}
+            slack_extra_mentions=${{ inputs.argo-workflow-slack-extra-mentions }}
 
       - name: Print job summary
         run: |
