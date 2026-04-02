@@ -124,9 +124,11 @@ type WorkflowInputs struct {
 	TriggerArgo                *bool
 	AutoMergeEnvironments      *string
 	ArgoWorkflowSlackChannel   *string
-	ArgoWorkflowSlackSilent    *bool
-	AutoApproveDurations       *string
-	ProdTargetsAll             *bool
+	ArgoWorkflowSlackSilent            *bool
+	ArgoWorkflowSlackMentionTriggerUser *bool
+	ArgoWorkflowSlackExtraMentions     *string
+	AutoApproveDurations               *string
+	ProdTargetsAll                     *bool
 
 	ReleaseReferenceRegex    *string
 	DocsOnly                 *bool
@@ -150,6 +152,8 @@ func WithWorkflowInputs(inputs WorkflowInputs) WorkflowOption {
 		workflow.SetJobInput(job, "prod-targets-all", inputs.ProdTargetsAll)
 		workflow.SetJobInput(job, "argo-workflow-slack-channel", inputs.ArgoWorkflowSlackChannel)
 		workflow.SetJobInput(job, "argo-workflow-slack-silent", inputs.ArgoWorkflowSlackSilent)
+		workflow.SetJobInput(job, "argo-workflow-slack-mention-trigger-user", inputs.ArgoWorkflowSlackMentionTriggerUser)
+		workflow.SetJobInput(job, "argo-workflow-slack-extra-mentions", inputs.ArgoWorkflowSlackExtraMentions)
 		workflow.SetJobInput(job, "release-reference-regex", inputs.ReleaseReferenceRegex)
 		workflow.SetJobInput(job, "docs-only", inputs.DocsOnly)
 		workflow.SetJobInput(job, "allow-publishing-prs-to-prod", inputs.AllowPublishingPRsToProd)
