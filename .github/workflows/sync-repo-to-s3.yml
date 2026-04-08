@@ -1,0 +1,376 @@
+# Description:
+#  Syncs repository contents to an S3 bucket.
+#  This workflow can be used to sync documentation, static sites, or other artifacts to S3.
+#
+#  Authentication options:
+#  - AWS OIDC (recommended): Use workload identity federation via `aws-role-arn` input
+#  - IAM credentials: Use `aws-access-key-id` and `aws-secret-access-key` inputs
+#
+#  Usage example:
+#    jobs:
+#      sync:
+#        uses: grafana/plugin-ci-workflows/.github/workflows/sync-repo-to-s3.yml@main
+#        permissions:
+#          contents: read
+#          id-token: write  # Required for OIDC
+#        with:
+#          s3-bucket: my-bucket
+#          aws-region: us-east-1
+#          aws-role-arn: arn:aws:iam::123456789012:role/my-role
+
+name: Sync repo to S3
+
+on:
+  workflow_call:
+    inputs:
+      # Required inputs
+      s3-bucket:
+        description: |
+          The name of the S3 bucket to sync to.
+          Example: my-bucket
+        required: true
+        type: string
+      aws-region:
+        description: |
+          The AWS region where the S3 bucket is located.
+          Example: us-east-1
+        required: true
+        type: string
+
+      # AWS Authentication options
+      aws-role-arn:
+        description: |
+          The ARN of the IAM role to assume via OIDC.
+          Required if not using aws-access-key-id and aws-secret-access-key.
+          Example: arn:aws:iam::123456789012:role/my-role
+        required: false
+        type: string
+      aws-role-session-name:
+        description: |
+          The session name to use when assuming the IAM role via OIDC.
+          Default: github-actions-sync-repo-to-s3
+        required: false
+        type: string
+        default: github-actions-sync-repo-to-s3
+      aws-role-duration-seconds:
+        description: |
+          The duration in seconds for the assumed role session.
+          Default: 3600 (1 hour)
+        required: false
+        type: number
+        default: 3600
+
+      # Source configuration
+      source-directory:
+        description: |
+          The directory within the repository to sync.
+          Use '.' for the entire repository.
+          Default: '.'
+        required: false
+        type: string
+        default: "."
+      branch:
+        description: |
+          The branch to checkout and sync from.
+          Default: main
+        required: false
+        type: string
+        default: main
+
+      # S3 destination configuration
+      s3-prefix:
+        description: |
+          The prefix (path) within the S3 bucket where files will be synced.
+          Example: 'docs/' or 'static/assets/'
+          Default: '' (root of bucket)
+        required: false
+        type: string
+        default: ""
+
+      # Sync options
+      delete:
+        description: |
+          If true, files in the S3 bucket that don't exist in the source will be deleted.
+          Default: false
+        required: false
+        type: boolean
+        default: false
+      exclude-patterns:
+        description: |
+          Comma-separated list of glob patterns to exclude from syncing.
+          Example: '.git/*,.github/*,*.md'
+          Default: '.git/*,.github/*'
+        required: false
+        type: string
+        default: ".git/*,.github/*"
+      include-patterns:
+        description: |
+          Comma-separated list of glob patterns to include in syncing.
+          If specified, only files matching these patterns will be synced.
+          Example: '*.html,*.css,*.js'
+        required: false
+        type: string
+        default: ""
+      acl:
+        description: |
+          The ACL to apply to synced objects.
+          Options: private, public-read, public-read-write, authenticated-read, aws-exec-read, bucket-owner-read, bucket-owner-full-control
+          Default: private
+        required: false
+        type: string
+        default: "private"
+      cache-control:
+        description: |
+          The Cache-Control header to apply to synced objects.
+          Example: 'max-age=31536000,public'
+        required: false
+        type: string
+        default: ""
+      content-type:
+        description: |
+          Override content-type for all synced objects.
+          Leave empty to auto-detect based on file extension.
+        required: false
+        type: string
+        default: ""
+      storage-class:
+        description: |
+          The storage class to use for synced objects.
+          Options: STANDARD, REDUCED_REDUNDANCY, STANDARD_IA, ONEZONE_IA, INTELLIGENT_TIERING, GLACIER, DEEP_ARCHIVE, GLACIER_IR
+          Default: STANDARD
+        required: false
+        type: string
+        default: "STANDARD"
+      dry-run:
+        description: |
+          If true, perform a dry run without actually syncing files.
+          Useful for testing the workflow configuration.
+          Default: false
+        required: false
+        type: boolean
+        default: false
+
+      # Runner configuration
+      runs-on:
+        description: |
+          The runner to use for the job.
+          Default: ubuntu-latest
+        required: false
+        type: string
+        default: "ubuntu-latest"
+
+    secrets:
+      aws-access-key-id:
+        description: |
+          AWS Access Key ID for IAM authentication.
+          Required if not using aws-role-arn for OIDC authentication.
+        required: false
+      aws-secret-access-key:
+        description: |
+          AWS Secret Access Key for IAM authentication.
+          Required if not using aws-role-arn for OIDC authentication.
+        required: false
+
+    outputs:
+      synced-files-count:
+        description: The number of files synced to S3
+        value: ${{ jobs.sync.outputs.synced-files-count }}
+      s3-destination:
+        description: The full S3 destination path
+        value: ${{ jobs.sync.outputs.s3-destination }}
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  sync:
+    name: Sync to S3
+    runs-on: ${{ inputs.runs-on }}
+
+    outputs:
+      synced-files-count: ${{ steps.sync.outputs.synced-files-count }}
+      s3-destination: ${{ steps.sync.outputs.s3-destination }}
+
+    steps:
+      - name: Validate inputs
+        run: |
+          # Validate that either OIDC or IAM credentials are provided
+          if [ -z "${AWS_ROLE_ARN}" ] && [ -z "${AWS_ACCESS_KEY_ID}" ]; then
+            echo "::error::Either 'aws-role-arn' input or 'aws-access-key-id' and 'aws-secret-access-key' secrets must be provided for AWS authentication."
+            exit 1
+          fi
+
+          if [ -n "${AWS_ACCESS_KEY_ID}" ] && [ -z "${AWS_SECRET_ACCESS_KEY}" ]; then
+            echo "::error::'aws-secret-access-key' secret is required when using 'aws-access-key-id'."
+            exit 1
+          fi
+
+          echo "✅ Input validation passed"
+        env:
+          AWS_ROLE_ARN: ${{ inputs.aws-role-arn }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.aws-access-key-id }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.aws-secret-access-key }}
+        shell: bash
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch }}
+          persist-credentials: false
+
+      - name: Configure AWS credentials (OIDC)
+        if: ${{ inputs.aws-role-arn != '' }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ inputs.aws-role-arn }}
+          role-session-name: ${{ inputs.aws-role-session-name }}
+          role-duration-seconds: ${{ inputs.aws-role-duration-seconds }}
+          aws-region: ${{ inputs.aws-region }}
+
+      - name: Configure AWS credentials (IAM)
+        if: ${{ inputs.aws-role-arn == '' }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.aws-access-key-id }}
+          aws-secret-access-key: ${{ secrets.aws-secret-access-key }}
+          aws-region: ${{ inputs.aws-region }}
+
+      - name: Build sync command
+        id: build-command
+        run: |
+          # Build the base sync command
+          S3_DESTINATION="s3://${S3_BUCKET}"
+          if [ -n "${S3_PREFIX}" ]; then
+            # Ensure prefix doesn't start with / but ends with /
+            S3_PREFIX="${S3_PREFIX#/}"
+            S3_PREFIX="${S3_PREFIX%/}/"
+            S3_DESTINATION="${S3_DESTINATION}/${S3_PREFIX}"
+          fi
+
+          echo "s3-destination=${S3_DESTINATION}" >> "$GITHUB_OUTPUT"
+
+          # Build the AWS CLI command arguments
+          SYNC_ARGS=""
+
+          # Add delete flag
+          if [ "${DELETE}" == "true" ]; then
+            SYNC_ARGS="${SYNC_ARGS} --delete"
+          fi
+
+          # Add exclude patterns
+          if [ -n "${EXCLUDE_PATTERNS}" ]; then
+            IFS=',' read -ra EXCLUDES <<< "${EXCLUDE_PATTERNS}"
+            for pattern in "${EXCLUDES[@]}"; do
+              pattern=$(echo "${pattern}" | xargs)  # trim whitespace
+              SYNC_ARGS="${SYNC_ARGS} --exclude \"${pattern}\""
+            done
+          fi
+
+          # Add include patterns
+          if [ -n "${INCLUDE_PATTERNS}" ]; then
+            IFS=',' read -ra INCLUDES <<< "${INCLUDE_PATTERNS}"
+            for pattern in "${INCLUDES[@]}"; do
+              pattern=$(echo "${pattern}" | xargs)  # trim whitespace
+              SYNC_ARGS="${SYNC_ARGS} --include \"${pattern}\""
+            done
+          fi
+
+          # Add ACL
+          if [ -n "${ACL}" ] && [ "${ACL}" != "private" ]; then
+            SYNC_ARGS="${SYNC_ARGS} --acl ${ACL}"
+          fi
+
+          # Add cache-control
+          if [ -n "${CACHE_CONTROL}" ]; then
+            SYNC_ARGS="${SYNC_ARGS} --cache-control \"${CACHE_CONTROL}\""
+          fi
+
+          # Add content-type
+          if [ -n "${CONTENT_TYPE}" ]; then
+            SYNC_ARGS="${SYNC_ARGS} --content-type \"${CONTENT_TYPE}\""
+          fi
+
+          # Add storage class
+          if [ -n "${STORAGE_CLASS}" ] && [ "${STORAGE_CLASS}" != "STANDARD" ]; then
+            SYNC_ARGS="${SYNC_ARGS} --storage-class ${STORAGE_CLASS}"
+          fi
+
+          # Add dry-run flag
+          if [ "${DRY_RUN}" == "true" ]; then
+            SYNC_ARGS="${SYNC_ARGS} --dryrun"
+          fi
+
+          echo "sync-args=${SYNC_ARGS}" >> "$GITHUB_OUTPUT"
+        env:
+          S3_BUCKET: ${{ inputs.s3-bucket }}
+          S3_PREFIX: ${{ inputs.s3-prefix }}
+          DELETE: ${{ inputs.delete }}
+          EXCLUDE_PATTERNS: ${{ inputs.exclude-patterns }}
+          INCLUDE_PATTERNS: ${{ inputs.include-patterns }}
+          ACL: ${{ inputs.acl }}
+          CACHE_CONTROL: ${{ inputs.cache-control }}
+          CONTENT_TYPE: ${{ inputs.content-type }}
+          STORAGE_CLASS: ${{ inputs.storage-class }}
+          DRY_RUN: ${{ inputs.dry-run }}
+        shell: bash
+
+      - name: Sync to S3
+        id: sync
+        run: |
+          S3_DESTINATION="${{ steps.build-command.outputs.s3-destination }}"
+          SYNC_ARGS="${{ steps.build-command.outputs.sync-args }}"
+
+          echo "📦 Syncing '${SOURCE_DIRECTORY}' to '${S3_DESTINATION}'"
+          echo "   Arguments: ${SYNC_ARGS}"
+
+          # Run the sync command and capture output
+          SYNC_OUTPUT=$(eval "aws s3 sync \"${SOURCE_DIRECTORY}\" \"${S3_DESTINATION}\" ${SYNC_ARGS}" 2>&1) || {
+            echo "::error::S3 sync failed"
+            echo "${SYNC_OUTPUT}"
+            exit 1
+          }
+
+          echo "${SYNC_OUTPUT}"
+
+          # Count synced files (lines that start with upload: or copy:)
+          SYNCED_COUNT=$(echo "${SYNC_OUTPUT}" | grep -cE "^(upload:|copy:)" || echo "0")
+
+          echo "synced-files-count=${SYNCED_COUNT}" >> "$GITHUB_OUTPUT"
+          echo "s3-destination=${S3_DESTINATION}" >> "$GITHUB_OUTPUT"
+
+          if [ "${DRY_RUN}" == "true" ]; then
+            echo "🔍 Dry run completed. No files were actually synced."
+          else
+            echo "✅ Successfully synced ${SYNCED_COUNT} file(s) to ${S3_DESTINATION}"
+          fi
+        env:
+          SOURCE_DIRECTORY: ${{ inputs.source-directory }}
+          DRY_RUN: ${{ inputs.dry-run }}
+        shell: bash
+
+      - name: Print summary
+        run: |
+          if [ "${DRY_RUN}" == "true" ]; then
+            echo "## 🔍 S3 Sync (Dry Run)
+
+          - **Source**: \`${SOURCE_DIRECTORY}\`
+          - **Destination**: \`${S3_DESTINATION}\`
+          - **Files that would be synced**: ${SYNCED_COUNT}
+
+          > This was a dry run. No files were actually synced.
+          " >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "## 📦 S3 Sync Complete
+
+          - **Source**: \`${SOURCE_DIRECTORY}\`
+          - **Destination**: \`${S3_DESTINATION}\`
+          - **Files synced**: ${SYNCED_COUNT}
+          " >> "$GITHUB_STEP_SUMMARY"
+          fi
+        env:
+          SOURCE_DIRECTORY: ${{ inputs.source-directory }}
+          S3_DESTINATION: ${{ steps.sync.outputs.s3-destination }}
+          SYNCED_COUNT: ${{ steps.sync.outputs.synced-files-count }}
+          DRY_RUN: ${{ inputs.dry-run }}
+        shell: bash
