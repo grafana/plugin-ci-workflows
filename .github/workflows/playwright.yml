@@ -16,8 +16,6 @@ on:
         type: string
         required: true
       gar-registry:
-        description: |
-          Address of the private GAR registry (e.g.: us-docker.pkg.dev) to authenticate to for pulling images in the docker-compose setup, if needed
         type: string
         required: false
       plugin-directory:

@@ -17,9 +17,7 @@ on:
         description: Plugin version
         type: string
         required: true
-      private-gar-registry:
-        description: |
-          Address of the private GAR registry (e.g.: us-docker.pkg.dev) to authenticate to for pulling images in the docker-compose setup, if needed
+      gar-registry:
         type: string
         required: false
       # https://github.com/grafana/plugin-actions/blob/main/e2e-version/action.yml
@@ -140,10 +138,10 @@ jobs:
 
       # Log in to GAR to allow pulling private Docker images in the docker-compose setup if needed
       - name: Log in to GAR
-        if: inputs.private-gar-registry != ''
+        if: inputs.gar-registry!= ''
         uses: grafana/shared-workflows/actions/login-to-gar@c7ad5f57693ac858c698d95783685a9cbfd91223 # login-to-gar/v1.0.1
         with:
-          registry: ${{ inputs.private-gar-registry }}
+          registry: ${{ inputs.gar-registry}}
 
       - name: Start Grafana
         # add the -f argument only if "inputs.grafana-compose-file" is defined
