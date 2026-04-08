@@ -207,27 +207,6 @@ require.Contains(t, r.Annotations, act.Annotation{
 })
 ```
 
-**Keeping act tests fast — skip irrelevant jobs and steps:**
-
-Act tests run real workflows in Docker, so they are slow by default. Always scope tests to the minimum necessary work using `MutateCIWorkflow().With(...)`:
-
-```go
-ci.MutateCIWorkflow().With(
-    // Keep only the job under test; strip all other jobs and clear its `needs`
-    workflow.WithOnlyOneJob(t, "test-and-build", true),
-    // No-op steps that are irrelevant to what you're testing (e.g. frontend build)
-    workflow.WithNoOpStep(t, "test-and-build", "frontend"),
-    // Drop all steps after the one you care about (e.g. packaging, signing, GCS upload)
-    workflow.WithRemoveAllStepsAfter(t, "test-and-build", "backend"),
-),
-```
-
-- `WithOnlyOneJob(t, jobID, removeDependencies)` — removes all jobs except `jobID`. Pass `true` to also clear its `needs` so it can run standalone.
-- `WithNoOpStep(t, jobID, stepID)` — replaces a step with a shell no-op (`:`), leaving the step ID intact so subsequent steps that depend on its outputs don't break wiring.
-- `WithRemoveAllStepsAfter(t, jobID, stepID)` — drops every step that comes after `stepID` in the job, cutting packaging, signing, upload, etc.
-
-When you only need to test backend behaviour, combine all three: skip the frontend step, stop after the backend step, and run only the `test-and-build` job.
-
 **Adding a new CI workflow input:**
 
 1. Add the input to `WorkflowInputs` in [internal/workflow/ci/ci.go](tests/act/internal/workflow/ci/ci.go) and wire it in `SetCIInputs`.
