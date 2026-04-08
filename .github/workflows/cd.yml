@@ -298,6 +298,11 @@ on:
         type: string
         required: false
         default: ""
+      backend-build-target:
+        description: Custom mage target to use for building the backend. Defaults to "buildAll". Useful for building for custom architectures not supported in the SDK yet, such as s390x or Windows ARM64.
+        type: string
+        required: false
+        default: ""
       publish-to-catalog-as-pending:
         description: |
           If true, the plugin will be published as pending in the plugins catalog.
@@ -731,6 +736,7 @@ jobs:
 
       frontend-secrets: ${{ inputs.frontend-secrets }}
       backend-secrets: ${{ inputs.backend-secrets }}
+      backend-build-target: ${{ inputs.backend-build-target }}
 
       environment: ${{ inputs.environment }}
 
