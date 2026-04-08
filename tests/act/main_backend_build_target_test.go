@@ -27,7 +27,14 @@ func TestBackendBuildTarget(t *testing.T) {
 		inputs := baseInputs
 		inputs.BackendBuildTarget = workflow.Input("buildCustom")
 
-		wf, err := ci.NewWorkflow(ci.WithWorkflowInputs(inputs))
+		wf, err := ci.NewWorkflow(
+			ci.WithWorkflowInputs(inputs),
+			ci.MutateCIWorkflow().With(
+				workflow.WithOnlyOneJob(t, "test-and-build", true),
+				workflow.WithNoOpStep(t, "test-and-build", "frontend"),
+				workflow.WithRemoveAllStepsAfter(t, "test-and-build", "backend"),
+			),
+		)
 		require.NoError(t, err)
 
 		r, err := runner.Run(wf, act.NewPushEventPayload("main"))
@@ -51,7 +58,14 @@ func TestBackendBuildTarget(t *testing.T) {
 		inputs := baseInputs
 		inputs.BackendBuildTarget = workflow.Input("buildNonExistentTarget")
 
-		wf, err := ci.NewWorkflow(ci.WithWorkflowInputs(inputs))
+		wf, err := ci.NewWorkflow(
+			ci.WithWorkflowInputs(inputs),
+			ci.MutateCIWorkflow().With(
+				workflow.WithOnlyOneJob(t, "test-and-build", true),
+				workflow.WithNoOpStep(t, "test-and-build", "frontend"),
+				workflow.WithRemoveAllStepsAfter(t, "test-and-build", "backend"),
+			),
+		)
 		require.NoError(t, err)
 
 		r, err := runner.Run(wf, act.NewPushEventPayload("main"))
