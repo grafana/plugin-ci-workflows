@@ -109,8 +109,9 @@ type WorkflowInputs struct {
 
 	RunTruffleHog *bool
 
-	AllowUnsigned *bool
-	Testing       *bool
+	AllowUnsigned      *bool
+	Testing            *bool
+	BackendBuildTarget *string
 }
 
 // SetCIInputs sets the inputs for the CI workflow.
@@ -136,6 +137,7 @@ func SetCIInputs(dst *workflow.Job, inputs WorkflowInputs) {
 
 	workflow.SetJobInput(dst, "allow-unsigned", inputs.AllowUnsigned)
 	workflow.SetJobInput(dst, "testing", inputs.Testing)
+	workflow.SetJobInput(dst, "backend-build-target", inputs.BackendBuildTarget)
 }
 
 // WithWorkflowInputs sets the inputs for the CI workflow.
