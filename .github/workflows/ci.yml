@@ -60,6 +60,11 @@ on:
         type: string
         required: false
         default: ""
+      backend-build-target:
+        description: Custom mage target to use for building the backend. Defaults to "buildAll". Useful for building for custom architectures not supported in the SDK yet, such as s390x or Windows ARM64.
+        type: string
+        required: false
+        default: ""
       npm-registry-auth:
         description: |
           Whether to authenticate to the npm registry in Google Artifact Registry.
@@ -297,7 +302,7 @@ env:
   DEFAULT_NODE_VERSION: "24"
   DEFAULT_GO_VERSION: "1.25"
   DEFAULT_GOLANGCI_LINT_VERSION: "2.11.4"
-  DEFAULT_TRUFFLEHOG_VERSION: "3.94.0"
+  DEFAULT_TRUFFLEHOG_VERSION: "3.94.1"
   DEFAULT_MAGE_VERSION: "1.16.0"
   DEFAULT_PLUGIN_VALIDATOR_VERSION: "0.39.0"
 
@@ -518,6 +523,7 @@ jobs:
           github-token: ${{ steps.generate-github-token.outputs.token }}
           plugin-directory: ${{ inputs.plugin-directory }}
           secrets: ${{ (fromJson(steps.workflow-context.outputs.result).isTrusted && inputs.backend-secrets != '') && inputs.backend-secrets || '' }}
+          build-target: ${{ inputs.backend-build-target }}
 
       - name: Package universal ZIP
         id: universal-zip
