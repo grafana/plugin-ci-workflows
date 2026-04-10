@@ -340,12 +340,12 @@ on:
 
           If the workflow fails, a notification will be sent regardless.
 
-          Allowed values:                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
-          - `true`: Suppress successful deployment notifications                                                                                                                                                                                   
+          Allowed values:
+          - `true`: Suppress successful deployment notifications
           - `false` (default): Send all deployment notifications
 
           Set it to `true` if you want to reduce noise in Slack, especially if you have many deployments.
-          For example, if you have CD from main to dev, you can conditionally 
+          For example, if you have CD from main to dev, you can conditionally
           set this value to `true` with a GHA expression.
         default: false
         type: boolean
@@ -409,7 +409,7 @@ on:
           The `environment` input determines which environments are targeted by Argo.
           Since this is a JSON string, make sure to properly escape it in the yaml file.
           For example:
-          
+
           ```
           # The `|-` and new line is very important, otherwise it gets interpreted as a map
           auto-approve-environments: |-
@@ -435,7 +435,7 @@ on:
           Default is true.
         default: true
         type: boolean
-        
+
 
       branch:
         description: |
@@ -723,7 +723,7 @@ jobs:
     needs:
       - setup
     with:
-      branch: ${{ inputs.branch }}
+      branch: ${{ needs.setup.outputs.commit-sha }}
       plugin-directory: ${{ inputs.plugin-directory }}
       plugin-version-suffix: ${{ needs.setup.outputs.plugin-version-suffix }}
       npm-registry-auth: ${{ inputs.npm-registry-auth }}
@@ -812,7 +812,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           # Force exact ref when running in act (it copies files locally, it breaks if we specify another ref)
-          ref: ${{ !github.event.act && inputs.branch || github.sha }}
+          ref: ${{ !github.event.act && needs.setup.outputs.commit-sha || github.sha }}
           persist-credentials: false
 
       - name: Determine if it should continue the pipeline if a publishing conflict was detected
@@ -1176,7 +1176,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           # Force exact ref when running in act (it copies files locally, it breaks if we specify another ref)
-          ref: ${{ !github.event.act && inputs.branch || github.sha }}
+          ref: ${{ !github.event.act && needs.setup.outputs.commit-sha || github.sha }}
           persist-credentials: false
 
       - name: Get secrets from Vault
@@ -1225,7 +1225,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           # Force exact ref when running in act (it copies files locally, it breaks if we specify another ref)
-          ref: ${{ !github.event.act && inputs.branch || github.sha }}
+          ref: ${{ !github.event.act && needs.setup.outputs.commit-sha || github.sha }}
           persist-credentials: false
 
       - name: Download GitHub artifact
