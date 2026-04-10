@@ -18,6 +18,11 @@ inputs:
     type: boolean
     description: Whether to run the tests with the race detector
     default: false
+  build-target:
+    required: false
+    type: string
+    description: Custom mage target to use for building the backend. Defaults to "buildAll". Useful for building for custom architectures not supported in the SDK yet, such as s390x or Windows ARM64.
+    default: buildAll
 
 runs:
   using: composite
@@ -58,7 +63,9 @@ runs:
         RACE_DETECTOR: ${{ inputs.race-detector }}
 
     - name: Build
-      run: mage -v buildAll
+      run: mage -v ${BUILD_TARGET}
       working-directory: ${{ inputs.plugin-directory }}
       shell: bash
+      env:
+        BUILD_TARGET: ${{ inputs.build-target }}
 
