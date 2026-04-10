@@ -1,5 +1,17 @@
 # Changelog
 
+## [7.2.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v7.1.0...ci-cd-workflows/v7.2.0) (2026-04-10)
+
+
+### 🎉 Features
+
+* **ci:** add `playwright-gar-registry` to authente to GAR Docker registry in e2e tests ([#653](https://github.com/grafana/plugin-ci-workflows/issues/653)) ([609c55b](https://github.com/grafana/plugin-ci-workflows/commit/609c55b44b50919fefcb0f9a7ed42149a0e037c4))
+
+
+### 🐛 Bug Fixes
+
+* **cd:** replace branch usage by commit hash ([#657](https://github.com/grafana/plugin-ci-workflows/issues/657)) ([12762c8](https://github.com/grafana/plugin-ci-workflows/commit/12762c84ee5cfa33ade51ac62c38cc1ecea1c699))
+
 ## [7.1.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v7.0.0...ci-cd-workflows/v7.1.0) (2026-04-10)
 
 
