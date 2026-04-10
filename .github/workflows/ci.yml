@@ -88,6 +88,13 @@ on:
         type: boolean
         required: false
         default: false
+      playwright-gar-registry:
+        description: |
+          Optional address of a private GAR registry (e.g.: us-docker.pkg.dev) to authenticate to for pulling images 
+          in the docker-compose setup for the Playwright E2E tests.
+          If not specified, no authentication will be done.
+        type: string
+        required: false
       # https://github.com/grafana/plugin-actions/blob/main/e2e-version/action.yml
       run-playwright-with-grafana-dependency:
         description: |
@@ -707,6 +714,7 @@ jobs:
     with:
       id: ${{ fromJSON(needs.test-and-build.outputs.plugin).id}}
       version: ${{ fromJSON(needs.test-and-build.outputs.plugin).version}}
+      gar-registry: ${{ inputs.playwright-gar-registry }}
       plugin-directory: ${{ inputs.plugin-directory }}
       grafana-dependency: ${{ inputs.run-playwright-with-grafana-dependency }}
       skip-grafana-dev-image: ${{ inputs.run-playwright-with-skip-grafana-dev-image }}
@@ -730,6 +738,7 @@ jobs:
     with:
       id: ${{ fromJSON(needs.test-and-build.outputs.plugin).id}}
       version: ${{ fromJSON(needs.test-and-build.outputs.plugin).version}}
+      gar-registry: ${{ inputs.playwright-gar-registry }}
       grafana-dependency: ${{ inputs.run-playwright-with-grafana-dependency }}
       skip-grafana-dev-image: ${{ inputs.run-playwright-with-skip-grafana-dev-image }}
       skip-grafana-react-19-preview-image: ${{ inputs.run-playwright-with-skip-grafana-react-19-preview-image }}
