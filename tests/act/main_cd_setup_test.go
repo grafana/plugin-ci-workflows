@@ -385,6 +385,42 @@ func TestCD_Setup(t *testing.T) {
 			},
 		},
 		{
+			name: "is-release-reference",
+			testCases: []testCase{
+				{
+					name:         "true when branch matches release-reference-regex",
+					triggerEvent: newPointer(act.NewPushEventPayload("main")),
+					inputs: cd.WorkflowInputs{
+						Environment: workflow.Input("dev"),
+					},
+					expOutputs: map[string]string{
+						"is-release-reference": "true",
+					},
+				},
+				{
+					name:         "false when branch does not match release-reference-regex",
+					triggerEvent: newPointer(act.NewPushEventPayload("feature-branch")),
+					inputs: cd.WorkflowInputs{
+						Environment: workflow.Input("dev"),
+					},
+					expOutputs: map[string]string{
+						"is-release-reference": "false",
+					},
+				},
+				{
+					name:         "true when branch matches custom release-reference-regex",
+					triggerEvent: newPointer(act.NewPushEventPayload("release/1.2.0")),
+					inputs: cd.WorkflowInputs{
+						Environment:           workflow.Input("dev"),
+						ReleaseReferenceRegex: workflow.Input(`release/.*`),
+					},
+					expOutputs: map[string]string{
+						"is-release-reference": "true",
+					},
+				},
+			},
+		},
+		{
 			name: "docs publishing",
 			testCases: []testCase{
 				{

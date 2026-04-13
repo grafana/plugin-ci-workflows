@@ -259,6 +259,136 @@ func TestCD(t *testing.T) {
 	}
 }
 
+func TestCD_GCSLatest(t *testing.T) {
+	// Tests that "latest" GCS release artifacts are only uploaded for release references,
+	// and can be forced via the upload-gcs-latest input.
+
+	const (
+		pluginVersion = "1.0.0"
+		pluginFolder  = "simple-frontend"
+		pluginSlug    = "grafana-simplefrontend-panel"
+		fakeIapToken  = "dummy-iap-token"
+	)
+
+	mockVault := workflow.VaultSecrets{
+		DefaultValue: newPointer(""),
+		CommonSecrets: map[string]string{
+			"plugins/gcom-publish-token:dev": "dummy-gcom-api-key-dev",
+		},
+	}
+
+	for _, tc := range []struct {
+		name              string
+		branch            string
+		uploadGCSLatest   bool
+		expLatestUploaded bool
+	}{
+		{
+			name:              "does not upload latest for non-release branch",
+			branch:            "feature-branch",
+			uploadGCSLatest:   false,
+			expLatestUploaded: false,
+		},
+		{
+			name:              "uploads latest for non-release branch when upload-gcs-latest is true",
+			branch:            "feature-branch",
+			uploadGCSLatest:   true,
+			expLatestUploaded: true,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			runner, err := act.NewRunner(t)
+			require.NoError(t, err)
+
+			runner.GCOM.HandleFunc("GET /api/plugins/{pluginID}", func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusOK)
+				require.NoError(t, json.NewEncoder(w).Encode(map[string]any{
+					"id":     1,
+					"status": "active",
+					"slug":   pluginSlug,
+				}))
+			})
+			runner.GCOM.HandleFunc("POST /api/plugins", func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusOK)
+				require.NoError(t, json.NewEncoder(w).Encode(map[string]any{
+					"plugin": map[string]any{"id": 1337},
+				}))
+			})
+
+			wf, err := cd.NewWorkflow(
+				cd.WithWorkflowInputs(cd.WorkflowInputs{
+					CI: ci.WorkflowInputs{
+						PluginDirectory:     workflow.Input(filepath.Join("tests", pluginFolder)),
+						DistArtifactsPrefix: workflow.Input(pluginFolder + "-"),
+						Testing:             workflow.Input(false),
+						AllowUnsigned:       workflow.Input(true),
+						RunTruffleHog:       workflow.Input(false),
+						RunPluginValidator:  workflow.Input(false),
+						RunPlaywright:       workflow.Input(false),
+					},
+					DisableDocsPublishing: workflow.Input(true),
+					DisableGitHubRelease:  workflow.Input(true),
+					Environment:           workflow.Input("dev"),
+					Scopes:                workflow.Input("universal"),
+					UploadGCSLatest:       workflow.Input(tc.uploadGCSLatest),
+				}),
+				cd.WithCIOptions(
+					ci.WithMockedPackagedDistArtifacts(
+						t,
+						"dist/"+pluginFolder,
+						"dist-artifacts-unsigned/"+pluginFolder,
+					),
+					ci.WithMockedWorkflowContext(t, ci.Context{IsTrusted: true}),
+				),
+				cd.WithMockedGCOM(t, runner.GCOM),
+				cd.MutateAllWorkflows().With(
+					workflow.WithMockedVault(t, mockVault),
+					workflow.WithMockedGitHubAppToken(t),
+					workflow.WithMockedGCS(t),
+				),
+				cd.MutateCDWorkflow().With(
+					workflow.WithNoOpStep(t, "upload-to-gcs-release", "gcloud-sdk"),
+					workflow.WithNoOpStep(t, "publish-to-catalog", "check-artifact-zips"),
+					workflow.WithReplacedStep(
+						t, "publish-to-catalog", "gcloud",
+						workflow.MockOutputsStep(map[string]string{
+							"id_token": fakeIapToken,
+						}),
+					),
+					workflow.WithMatrix("publish-to-catalog", map[string][]string{
+						"environment": {"dev"},
+					}),
+					workflow.WithMatrix("upload-to-gcs-release", map[string][]string{
+						"platform": {"any"},
+					}),
+				),
+			)
+			require.NoError(t, err)
+
+			r, err := runner.Run(wf, act.NewPushEventPayload(tc.branch))
+			require.NoError(t, err)
+			require.True(t, r.Success, "workflow should succeed")
+
+			// The "latest" release files are the ones under release/latest/ in GCS.
+			// The "any" platform zip has two entries: one in a platform subdirectory and one at the root.
+			latestFiles := []string{
+				filepath.Join("integration-artifacts", pluginSlug, "release", "latest", "any", anyZipFileName(pluginSlug, "latest")),
+				filepath.Join("integration-artifacts", pluginSlug, "release", "latest", anyZipFileName(pluginSlug, "latest")),
+			}
+
+			if tc.expLatestUploaded {
+				err = checkFilesExist(runner.GCS.Fs, latestFiles, checkFilesExistOptions{strict: false})
+				require.NoError(t, err, "release/latest/ GCS files should be present")
+			} else {
+				err = checkFilesDontExist(runner.GCS.Fs, latestFiles)
+				require.NoError(t, err, "release/latest/ GCS files should NOT be uploaded for non-release branches")
+			}
+		})
+	}
+}
+
 func gcsPublishURL(pluginSlug string, version string, platform string) string {
 	return "https://storage.googleapis.com/integration-artifacts/" + pluginSlug + "/release/" + version + "/" + platform + "/" + pluginSlug + "-" + version + ".zip"
 }

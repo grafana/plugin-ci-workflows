@@ -133,6 +133,7 @@ type WorkflowInputs struct {
 	ReleaseReferenceRegex    *string
 	DocsOnly                 *bool
 	AllowPublishingPRsToProd *bool
+	UploadGCSLatest          *bool
 }
 
 // WithWorkflowInputs sets the inputs for the CD workflow.
@@ -157,6 +158,7 @@ func WithWorkflowInputs(inputs WorkflowInputs) WorkflowOption {
 		workflow.SetJobInput(job, "release-reference-regex", inputs.ReleaseReferenceRegex)
 		workflow.SetJobInput(job, "docs-only", inputs.DocsOnly)
 		workflow.SetJobInput(job, "allow-publishing-prs-to-prod", inputs.AllowPublishingPRsToProd)
+		workflow.SetJobInput(job, "upload-gcs-latest", inputs.UploadGCSLatest)
 	}
 }
 

@@ -15,6 +15,14 @@ on:
     inputs:
       # Those inputs can be customized depending on the plugin's needs:
       # Publishing options (GCS and/or catalog)
+      upload-gcs-latest:
+        description: |
+          If true, upload artifacts to the GCS latest path even when triggered from a non-release reference (branch).
+          By default, the latest GCS artifacts are only uploaded when the `branch` input matches the `release-reference-regex`.
+          Set to true to force the upload of latest artifacts from any branch.
+        type: boolean
+        required: false
+        default: false
       gcs-only:
         description: |
           Only publish the plugin to GCS, do not publish the plugin to the Grafana Plugin Catalog.
@@ -547,6 +555,7 @@ jobs:
       publish-docs: ${{ steps.vars.outputs.publish-docs }}
       plugin-version-suffix: ${{ steps.vars.outputs.plugin-version-suffix }}
       platforms: ${{ steps.vars.outputs.platforms }}
+      is-release-reference: ${{ steps.vars.outputs.is-release-reference }}
     steps:
       - name: Checkout specified branch
         id: checkout-specified-branch
@@ -649,6 +658,7 @@ jobs:
               console.log(`No plugin version suffix will be used.`);
             }
             core.setOutput('plugin-version-suffix', pluginVersionSuffix);
+            core.setOutput('is-release-reference', String(isReleaseReference));
 
             // Docs only: skip plugin deployment
             if (!DISABLE_DOCS_PUBLISHING && DOCS_ONLY) {
@@ -1087,6 +1097,7 @@ jobs:
           process_gcloudignore: false
 
       - name: Upload GCS release artifact (latest)
+        if: ${{ inputs.upload-gcs-latest || needs.setup.outputs.is-release-reference == 'true' }}
         uses: google-github-actions/upload-cloud-storage@6397bd7208e18d13ba2619ee21b9873edc94427a # v3.0.0
         with:
           path: /tmp/dist-artifacts-latest
@@ -1096,7 +1107,7 @@ jobs:
           process_gcloudignore: false
 
       - name: Upload GCS release artifacts (latest, any)
-        if: ${{ matrix.platform == 'any' }}
+        if: ${{ (inputs.upload-gcs-latest || needs.setup.outputs.is-release-reference == 'true') && matrix.platform == 'any' }}
         uses: google-github-actions/upload-cloud-storage@6397bd7208e18d13ba2619ee21b9873edc94427a # v3.0.0
         with:
           path: /tmp/dist-artifacts-latest/${{ fromJSON(needs.ci.outputs.plugin).id }}-latest.zip
