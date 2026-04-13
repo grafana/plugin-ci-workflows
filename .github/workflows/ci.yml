@@ -311,7 +311,7 @@ env:
   DEFAULT_GOLANGCI_LINT_VERSION: "2.11.4"
   DEFAULT_TRUFFLEHOG_VERSION: "3.94.1"
   DEFAULT_MAGE_VERSION: "1.17.0"
-  DEFAULT_PLUGIN_VALIDATOR_VERSION: "0.39.1"
+  DEFAULT_PLUGIN_VALIDATOR_VERSION: "0.39.2"
 
   # Default plugin-validator configuration, used when no configuration is provided by the caller.
   # Disables some analyzers that are not relevant for Grafana Labs plugins.
