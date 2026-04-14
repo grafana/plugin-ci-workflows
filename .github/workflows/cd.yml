@@ -360,7 +360,7 @@ on:
         description: |
           If true, the Argo Workflow will mention the user who triggered the workflow in the
           Slack notification when the deployment starts.
-        default: true
+        default: false
         type: boolean
       argo-workflow-slack-extra-mentions:
         description: |
