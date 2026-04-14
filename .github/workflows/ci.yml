@@ -144,7 +144,7 @@ on:
         description: The URL where Grafana is available at when running Playwright tests
         type: string
         required: false
-        default: http://localhost:3000/
+        default: http://localhost:3000/api/health
       playwright-secrets:
         description: |
           The secrets to use for Playwright tests.

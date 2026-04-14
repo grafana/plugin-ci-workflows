@@ -57,7 +57,7 @@ on:
         description: The Grafana URL to wait for before running the tests
         type: string
         required: false
-        default: http://localhost:3000/
+        default: http://localhost:3000/api/health
 
 permissions:
   contents: read
