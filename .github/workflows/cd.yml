@@ -110,6 +110,13 @@ on:
         type: boolean
         required: false
         default: false
+      playwright-gar-registry:
+        description: |
+          Optional address of a private GAR registry (e.g.: us-docker.pkg.dev) to authenticate to for pulling images 
+          in the docker-compose setup for the Playwright E2E tests.
+          If not specified, no authentication will be done.
+        type: string
+        required: false
       # https://github.com/grafana/plugin-actions/blob/main/e2e-version/action.yml
       run-playwright-with-grafana-dependency:
         description: "Optionally, use this input to pass a semver range of supported Grafana versions to test against. This is only used when version-resolver-type is plugin-grafana-dependency. If not provided, the action will try to read grafanaDependency from the plugin.json file."
@@ -298,6 +305,11 @@ on:
         type: string
         required: false
         default: ""
+      backend-build-target:
+        description: Custom mage target to use for building the backend. Defaults to "buildAll". Useful for building for custom architectures not supported in the SDK yet, such as s390x or Windows ARM64.
+        type: string
+        required: false
+        default: ""
       publish-to-catalog-as-pending:
         description: |
           If true, the plugin will be published as pending in the plugins catalog.
@@ -335,15 +347,37 @@ on:
 
           If the workflow fails, a notification will be sent regardless.
 
-          Allowed values:                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
-          - `true`: Suppress successful deployment notifications                                                                                                                                                                                   
+          Allowed values:
+          - `true`: Suppress successful deployment notifications
           - `false` (default): Send all deployment notifications
 
           Set it to `true` if you want to reduce noise in Slack, especially if you have many deployments.
-          For example, if you have CD from main to dev, you can conditionally 
+          For example, if you have CD from main to dev, you can conditionally
           set this value to `true` with a GHA expression.
         default: false
         type: boolean
+      argo-workflow-slack-mention-trigger-user:
+        description: |
+          If true, the Argo Workflow will mention the user who triggered the workflow in the
+          Slack notification when the deployment starts.
+        default: true
+        type: boolean
+      argo-workflow-slack-extra-mentions:
+        description: |
+          Optional, comma-separated list of Slack handles that the Argo Workflow will mention
+          in the Slack notification when the deployment starts.
+          For triggering a user: `<@ID>`
+          For triggering a group: `<!subteam^ID>`
+
+          To get the IDs:
+          1. open the user/group in the Slack app sidebar
+          2. click the three dots icon in the sidebar
+          3. click "Copy member ID" / "Copy group ID"
+          4. Populate the input with the correct value: `<@ID>` for users, `<!subteam^ID>` for groups.
+
+          Example: `<!subteam^S02ND0RCSE7>,<@U045M4H659T>`
+        default: ""
+        type: string
       auto-merge-environments:
         description: |
           Comma separated list of environments whose deployment_tools PRs will be auto-merged when
@@ -382,7 +416,7 @@ on:
           The `environment` input determines which environments are targeted by Argo.
           Since this is a JSON string, make sure to properly escape it in the yaml file.
           For example:
-          
+
           ```
           # The `|-` and new line is very important, otherwise it gets interpreted as a map
           auto-approve-environments: |-
@@ -408,7 +442,7 @@ on:
           Default is true.
         default: true
         type: boolean
-        
+
 
       branch:
         description: |
@@ -696,7 +730,7 @@ jobs:
     needs:
       - setup
     with:
-      branch: ${{ inputs.branch }}
+      branch: ${{ needs.setup.outputs.commit-sha }}
       plugin-directory: ${{ inputs.plugin-directory }}
       plugin-version-suffix: ${{ needs.setup.outputs.plugin-version-suffix }}
       npm-registry-auth: ${{ inputs.npm-registry-auth }}
@@ -723,6 +757,7 @@ jobs:
       playwright-config: ${{ inputs.playwright-config }}
       playwright-grafana-url: ${{ inputs.playwright-grafana-url }}
       playwright-secrets: ${{ inputs.playwright-secrets }}
+      playwright-gar-registry: ${{ inputs.playwright-gar-registry }}
 
       run-trufflehog: ${{ inputs.run-trufflehog }}
       trufflehog-version: ${{ inputs.trufflehog-version }}
@@ -731,6 +766,7 @@ jobs:
 
       frontend-secrets: ${{ inputs.frontend-secrets }}
       backend-secrets: ${{ inputs.backend-secrets }}
+      backend-build-target: ${{ inputs.backend-build-target }}
 
       environment: ${{ inputs.environment }}
 
@@ -784,7 +820,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           # Force exact ref when running in act (it copies files locally, it breaks if we specify another ref)
-          ref: ${{ !github.event.act && inputs.branch || github.sha }}
+          ref: ${{ !github.event.act && needs.setup.outputs.commit-sha || github.sha }}
           persist-credentials: false
 
       - name: Determine if it should continue the pipeline if a publishing conflict was detected
@@ -949,6 +985,8 @@ jobs:
             auto_approve_durations=${{ steps.argo-parameters.outputs.auto_approve_durations }}
             prod_targets_all=${{ inputs.prod-targets-all }}
             slack_silent=${{ inputs.argo-workflow-slack-silent }}
+            slack_mention_trigger_user=${{ inputs.argo-workflow-slack-mention-trigger-user }}
+            slack_extra_mentions=${{ inputs.argo-workflow-slack-extra-mentions }}
 
       - name: Print job summary
         run: |
@@ -1146,7 +1184,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           # Force exact ref when running in act (it copies files locally, it breaks if we specify another ref)
-          ref: ${{ !github.event.act && inputs.branch || github.sha }}
+          ref: ${{ !github.event.act && needs.setup.outputs.commit-sha || github.sha }}
           persist-credentials: false
 
       - name: Get secrets from Vault
@@ -1161,7 +1199,7 @@ jobs:
 
       - name: Generate GitHub token
         id: generate-github-token
-        uses: actions/create-github-app-token@29824e69f54612133e76f7eaac726eef6c875baf # v2.2.1
+        uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859 # v3.0.0
         with:
           app-id: ${{ fromJSON(steps.get-secrets.outputs.secrets).GITHUB_APP_ID }}
           private-key: ${{ fromJSON(steps.get-secrets.outputs.secrets).GITHUB_APP_PRIVATE_KEY }}
@@ -1195,7 +1233,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           # Force exact ref when running in act (it copies files locally, it breaks if we specify another ref)
-          ref: ${{ !github.event.act && inputs.branch || github.sha }}
+          ref: ${{ !github.event.act && needs.setup.outputs.commit-sha || github.sha }}
           persist-credentials: false
 
       - name: Download GitHub artifact
@@ -1237,7 +1275,7 @@ jobs:
           PLUGIN_VERSION: ${{ fromJSON(needs.ci.outputs.plugin).version }}
 
       - name: Create Github release
-        uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
+        uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe # v2.6.1
         with:
           draft: ${{ inputs.github-draft-release }}
           name: ${{ fromJSON(needs.ci.outputs.plugin).id }} v${{ fromJSON(needs.ci.outputs.plugin).version }}

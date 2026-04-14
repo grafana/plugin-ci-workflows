@@ -177,5 +177,60 @@ for _, tc := range []testCase{
 **Workflow testing patterns:** See existing tests for current API usage:
 - [main_smoke_test.go](tests/act/main_smoke_test.go) - Basic CI workflow tests
 - [main_cd_test.go](tests/act/main_cd_test.go) - More complex CD workflow tests, with mocking and test workflow manipulation
+- [main_backend_build_target_test.go](tests/act/main_backend_build_target_test.go) - Example of asserting on custom mage targets via `::act-debug::` annotations
 - [internal/workflow/ci/ci.go](tests/act/internal/workflow/ci/ci.go) - CI workflow helpers
 - [internal/act/act.go](tests/act/internal/act/act.go) - Runner implementation
+
+**Asserting that a specific workflow step, configuration or edge case:**
+
+Use the `::act-debug::` custom GHA command to emit a debug annotation from within a workflow shell step or a mage target. The test framework intercepts these and stores them as `AnnotationLevelDebug` annotations, which you can then assert on with `require.Contains`.
+
+Emit from a workflow step (logfmt format):
+```yaml
+- run: printf '::act-debug::msg="%s" key=%s\n' "my step ran" "${SOME_VAR}"
+  env:
+    SOME_VAR: ${{ inputs.something }}
+```
+
+Emit from a mage target (Go):
+```go
+fmt.Printf("::act-debug::msg=%q\n", "my target was invoked")
+```
+
+Assert in the test:
+```go
+expMsg, err := logfmt.MarshalKeyvals("msg", "my target was invoked")
+require.NoError(t, err)
+require.Contains(t, r.Annotations, act.Annotation{
+    Level:   act.AnnotationLevelDebug,
+    Message: string(expMsg),
+})
+```
+
+**Keeping act tests fast — skip irrelevant jobs and steps:**
+
+Act tests run real workflows in Docker, so they are slow by default. Always scope tests to the minimum necessary work using `MutateCIWorkflow().With(...)`:
+
+```go
+ci.MutateCIWorkflow().With(
+    // Keep only the job under test; strip all other jobs and clear its `needs`
+    workflow.WithOnlyOneJob(t, "test-and-build", true),
+    // No-op steps that are irrelevant to what you're testing (e.g. frontend build)
+    workflow.WithNoOpStep(t, "test-and-build", "frontend"),
+    // Drop all steps after the one you care about (e.g. packaging, signing, GCS upload)
+    workflow.WithRemoveAllStepsAfter(t, "test-and-build", "backend"),
+),
+```
+
+- `WithOnlyOneJob(t, jobID, removeDependencies)` — removes all jobs except `jobID`. Pass `true` to also clear its `needs` so it can run standalone.
+- `WithNoOpStep(t, jobID, stepID)` — replaces a step with a shell no-op (`:`), leaving the step ID intact so subsequent steps that depend on its outputs don't break wiring.
+- `WithRemoveAllStepsAfter(t, jobID, stepID)` — drops every step that comes after `stepID` in the job, cutting packaging, signing, upload, etc.
+
+When you only need to test backend behaviour, combine all three: skip the frontend step, stop after the backend step, and run only the `test-and-build` job.
+
+**Adding a new CI workflow input:**
+
+1. Add the input to `WorkflowInputs` in [internal/workflow/ci/ci.go](tests/act/internal/workflow/ci/ci.go) and wire it in `SetCIInputs`.
+2. Add the input to `.github/workflows/ci.yml` and pass it to the relevant action.
+3. Add the input to `.github/workflows/cd.yml` and pass it through to `ci.yml`.
+4. Add the input to the target composite action in `actions/internal/plugins/`.

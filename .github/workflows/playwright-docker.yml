@@ -17,6 +17,9 @@ on:
         description: Plugin version
         type: string
         required: true
+      gar-registry:
+        type: string
+        required: false
       # https://github.com/grafana/plugin-actions/blob/main/e2e-version/action.yml
       skip-grafana-dev-image:
         default: false
@@ -132,6 +135,13 @@ jobs:
           echo '${{ steps.get-secrets.outputs.secrets }}' | jq -r 'to_entries[] | "\(.key)=\(.value)"' >> .env
         # No support for subdirectories when running with Docker
         # working-directory: ${{ inputs.plugin-directory }}
+
+      # Log in to GAR to allow pulling private Docker images in the docker-compose setup if needed
+      - name: Log in to GAR
+        if: inputs.gar-registry!= ''
+        uses: grafana/shared-workflows/actions/login-to-gar@c7ad5f57693ac858c698d95783685a9cbfd91223 # login-to-gar/v1.0.1
+        with:
+          registry: ${{ inputs.gar-registry}}
 
       - name: Start Grafana
         # add the -f argument only if "inputs.grafana-compose-file" is defined
