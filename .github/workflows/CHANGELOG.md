@@ -1,5 +1,29 @@
 # Changelog
 
+## [7.2.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v7.1.0...ci-cd-workflows/v7.2.0) (2026-04-15)
+
+
+### 🎉 Features
+
+* **cd:** argo-workflow-slack-mention-trigger-user defaults to false ([#665](https://github.com/grafana/plugin-ci-workflows/issues/665)) ([b1289af](https://github.com/grafana/plugin-ci-workflows/commit/b1289af769d099044d799b236a4f6bfdb01a98a2))
+* **ci:** add `playwright-gar-registry` to authente to GAR Docker registry in e2e tests ([#653](https://github.com/grafana/plugin-ci-workflows/issues/653)) ([609c55b](https://github.com/grafana/plugin-ci-workflows/commit/609c55b44b50919fefcb0f9a7ed42149a0e037c4))
+
+
+### 🐛 Bug Fixes
+
+* **cd:** replace branch usage by commit hash ([#657](https://github.com/grafana/plugin-ci-workflows/issues/657)) ([12762c8](https://github.com/grafana/plugin-ci-workflows/commit/12762c84ee5cfa33ade51ac62c38cc1ecea1c699))
+* **cd:** skip latest GCS artifact upload for non-release branches ([#663](https://github.com/grafana/plugin-ci-workflows/issues/663)) ([bb1c5f8](https://github.com/grafana/plugin-ci-workflows/commit/bb1c5f8171839af3329b7dcc22cad9dec23559b7))
+
+
+### 🔧 Chores
+
+* **deps:** update dependency act to v0.2.87 ([#671](https://github.com/grafana/plugin-ci-workflows/issues/671)) ([e91911c](https://github.com/grafana/plugin-ci-workflows/commit/e91911ca695ed4eda0dc88bd0b5d2ea976e6d676))
+* **deps:** update dependency actionlint to v1.7.12 ([#667](https://github.com/grafana/plugin-ci-workflows/issues/667)) ([752f770](https://github.com/grafana/plugin-ci-workflows/commit/752f770d5f32f0b498163f16a5d1b623ae697771))
+* **deps:** update dependency mage to v1.17.1 ([#669](https://github.com/grafana/plugin-ci-workflows/issues/669)) ([fc7275f](https://github.com/grafana/plugin-ci-workflows/commit/fc7275f1998e7e0342c6d3ecc9f52f4309449aa5))
+* **deps:** update dependency plugin-validator to v0.39.2 ([#664](https://github.com/grafana/plugin-ci-workflows/issues/664)) ([953bb0d](https://github.com/grafana/plugin-ci-workflows/commit/953bb0dcb80dc0e973df244b4b1bb7ba859710a9))
+* **deps:** update googleapis/release-please-action action to v4.4.1 ([#666](https://github.com/grafana/plugin-ci-workflows/issues/666)) ([79423d6](https://github.com/grafana/plugin-ci-workflows/commit/79423d674224b48afd5ff81fbe8a2ba5d90c3e5b))
+* **deps:** update step-security/harden-runner action to v2.16.1 ([#668](https://github.com/grafana/plugin-ci-workflows/issues/668)) ([e958609](https://github.com/grafana/plugin-ci-workflows/commit/e958609919438316fb91e1530cba8c91c69b7819))
+
 ## [7.1.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v7.0.0...ci-cd-workflows/v7.1.0) (2026-04-10)
 
 
