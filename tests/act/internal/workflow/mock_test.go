@@ -7,6 +7,36 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestMockOutputsStep(t *testing.T) {
+	t.Run("no outputs", func(t *testing.T) {
+		step := MockOutputsStep(map[string]string{})
+		require.Contains(t, step.Run, `echo "no outputs to set"`)
+		require.Empty(t, step.Env)
+	})
+
+	t.Run("plain key without hyphens", func(t *testing.T) {
+		step := MockOutputsStep(map[string]string{"mykey": "myvalue"})
+		require.Contains(t, step.Run, `echo "mykey=$(printenv 'mykey')" >> "$GITHUB_OUTPUT"`)
+		require.Equal(t, "myvalue", step.Env["mykey"])
+		// Must NOT use ${...} expansion, which breaks for hyphenated names
+		require.NotContains(t, step.Run, `${mykey}`)
+	})
+
+	t.Run("key with single hyphen", func(t *testing.T) {
+		step := MockOutputsStep(map[string]string{"workflow-context": `{"isTrusted":true}`})
+		require.Contains(t, step.Run, `echo "workflow-context=$(printenv 'workflow-context')" >> "$GITHUB_OUTPUT"`)
+		require.Equal(t, `{"isTrusted":true}`, step.Env["workflow-context"])
+		// ${workflow-context} would be misinterpreted as ${workflow:-context} by bash
+		require.NotContains(t, step.Run, `${workflow-context}`)
+	})
+
+	t.Run("key with multiple hyphens", func(t *testing.T) {
+		step := MockOutputsStep(map[string]string{"test-and-build-output": "somevalue"})
+		require.Contains(t, step.Run, `echo "test-and-build-output=$(printenv 'test-and-build-output')" >> "$GITHUB_OUTPUT"`)
+		require.Equal(t, "somevalue", step.Env["test-and-build-output"])
+	})
+}
+
 func TestMockGCSUploadStep(t *testing.T) {
 	t.Run("basic upload without glob", func(t *testing.T) {
 		step := Step{
