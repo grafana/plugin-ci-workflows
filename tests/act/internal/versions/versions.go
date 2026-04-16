@@ -13,13 +13,13 @@ import (
 )
 
 const (
-	nodeReleasesURL = "https://nodejs.org/download/release/index.json"
+	nodeReleasesURL = "https://raw.githubusercontent.com/actions/node-versions/refs/heads/main/versions-manifest.json"
 	goReleasesURL   = "https://golang.org/dl/?mode=json&include=all"
 	httpTimeout     = 30 * time.Second
 )
 
 type nodeRelease struct {
-	Version string `json:"version"` // e.g., "v24.12.0"
+	Version string `json:"version"` // e.g., "24.12.0"
 }
 
 type goRelease struct {
@@ -35,12 +35,13 @@ func LatestNodeVersion(major string) (string, error) {
 		return "", fmt.Errorf("fetch node releases: %w", err)
 	}
 
-	// Match versions like "v24.x.y" for major "24"
-	prefix := "v" + major + "."
+	// Match versions like "24.x.y" for major "24"
+	prefix := major + "."
 	for _, r := range releases {
 		if strings.HasPrefix(r.Version, prefix) {
 			// The releases are sorted newest first, so the first match is the latest
-			return r.Version, nil
+			// Add "v" prefix to match format used by setup-node action
+			return "v" + r.Version, nil
 		}
 	}
 
