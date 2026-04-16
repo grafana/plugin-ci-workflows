@@ -14,7 +14,7 @@ import (
 
 const (
 	nodeReleasesURL = "https://raw.githubusercontent.com/actions/node-versions/refs/heads/main/versions-manifest.json"
-	goReleasesURL   = "https://golang.org/dl/?mode=json&include=all"
+	goReleasesURL   = "https://raw.githubusercontent.com/actions/go-versions/refs/heads/main/versions-manifest.json"
 	httpTimeout     = 30 * time.Second
 )
 
@@ -23,7 +23,7 @@ type nodeRelease struct {
 }
 
 type goRelease struct {
-	Version string `json:"version"` // e.g., "go1.25.6"
+	Version string `json:"version"` // e.g., "1.25.6"
 	Stable  bool   `json:"stable"`
 }
 
@@ -56,17 +56,16 @@ func LatestGoVersion(majorMinor string) (string, error) {
 		return "", fmt.Errorf("fetch go releases: %w", err)
 	}
 
-	prefix := "go" + majorMinor
 	var candidates []string
 
 	for _, r := range releases {
 		if !r.Stable {
 			continue
 		}
-		// Match "go1.25" or "go1.25.x"
-		if r.Version == prefix || strings.HasPrefix(r.Version, prefix+".") {
-			// Convert to semver format: "go1.25.6" -> "v1.25.6"
-			v := "v" + strings.TrimPrefix(r.Version, "go")
+		// Match "1.25" or "1.25.x"
+		if r.Version == majorMinor || strings.HasPrefix(r.Version, majorMinor+".") {
+			// Convert to semver format: "1.25.6" -> "v1.25.6"
+			v := "v" + r.Version
 			candidates = append(candidates, v)
 		}
 	}
