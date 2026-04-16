@@ -42,12 +42,20 @@ inputs:
       Either node-version or node-version-file should be provided.
     required: false
     default: ""
+  frontend-only:
+    description: |
+      If true, skip backend (Go) setup including Go, mage, and golangci-lint installation.
+      Useful for workflows that only need Node.js and the package manager (e.g. Playwright tests).
+    required: false
+    default: "false"
   golangci-lint-version:
     description: golangci-lint version to use.
-    required: true
+    required: false
+    default: ""
   mage-version:
     description: mage version to use.
-    required: true
+    required: false
+    default: ""
 
 outputs:
   node-version:
@@ -62,6 +70,12 @@ outputs:
   node-package-manager-version:
     description: The version of the detected Node.js package manager.
     value: ${{ steps.package-manager.outputs.version }}
+  node-package-manager-frozen-install-cmd:
+    description: The command to install dependencies with a frozen lockfile.
+    value: ${{ steps.package-manager.outputs.frozenInstallCmd }}
+  node-package-manager-exec-local-cmd:
+    description: The command to execute a locally installed package (e.g. npx, yarn dlx, pnpm exec).
+    value: ${{ steps.package-manager.outputs.execLocalCmd }}
 
 runs:
   using: composite
@@ -102,6 +116,7 @@ runs:
         fi
 
     - name: Go
+      if: ${{ inputs.frontend-only != 'true' }}
       id: go
       uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
       with:
@@ -111,11 +126,13 @@ runs:
         cache-dependency-path: ${{ inputs.act-cache-warmup != 'true' && format('{0}/go.sum', inputs.plugin-directory) || '' }}
 
     - name: Determine Go bin directory
+      if: ${{ inputs.frontend-only != 'true' }}
       id: go-bin
       shell: bash
       run: echo "gobin=$(go env GOPATH)/bin" >> "$GITHUB_OUTPUT"
 
     - name: Cache Go tooling
+      if: ${{ inputs.frontend-only != 'true' }}
       id: cache
       uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
       with:
@@ -125,7 +142,7 @@ runs:
         key: go-tools-os=${{ runner.os }}-arch=${{ runner.arch }}-go=${{ steps.go.outputs.go-version }}-mage=${{ inputs.mage-version }}-golangci-lint=${{ inputs.golangci-lint-version }}
 
     - name: Mage
-      if: ${{ steps.cache.outputs.cache-hit != 'true' }}
+      if: ${{ inputs.frontend-only != 'true' && steps.cache.outputs.cache-hit != 'true' }}
       shell: bash
       run: |
         go install github.com/magefile/mage@v${MAGE_VERSION}
@@ -133,7 +150,7 @@ runs:
         MAGE_VERSION: ${{ inputs.mage-version }}
 
     - name: golangci-lint
-      if: ${{ steps.cache.outputs.cache-hit != 'true' }}
+      if: ${{ inputs.frontend-only != 'true' && steps.cache.outputs.cache-hit != 'true' }}
       shell: bash
       run: |
         curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v${GOLANGCI_LINT_VERSION}
