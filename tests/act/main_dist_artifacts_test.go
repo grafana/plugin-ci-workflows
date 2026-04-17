@@ -10,10 +10,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestDistArtifactsUnavailable tests that when the dist-artifacts artifact cannot be
-// downloaded (e.g. because it expired), the workflow fails with a clear error annotation
-// instead of the generic "Artifact not found" message.
-// It also verifies that the dist-artifacts-retention-days input is wired through correctly.
 func TestDistArtifactsUnavailable(t *testing.T) {
 	t.Parallel()
 
@@ -59,35 +55,24 @@ func TestDistArtifactsUnavailable(t *testing.T) {
 					// No-op check-for-release-channel (indirect dependency via test-and-build).
 					workflow.WithNoOpJobWithOutputs(t, "check-for-release-channel", map[string]string{}),
 
-					// Replace test-and-build with a minimal no-op that:
-					//   1. Sets the required outputs for the upload-to-gcs `if:` condition.
-					//   2. Uploads a placeholder artifact so act initializes the run directory.
-					//
-					// workflow.WithNoOpJobWithOutputs cannot be used because MockOutputsStep
-					// reads values via bash ${key} expansion. Hyphenated names like
-					// "workflow-context" are misread as ${param:-default}, so the JSON never
-					// lands in $GITHUB_OUTPUT.
-					//
-					// The placeholder artifact is required because act's artifact server panics
-					// ("no such file or directory") when listArtifacts is called on a run that
-					// has never uploaded anything. The panic causes ECONNRESET before the
-					// download step outcome is recorded, which prevents continue-on-error from
-					// working and our custom error step from running. Uploading any artifact
-					// (even with a different name) creates the directory, so download-artifact
-					// fails cleanly instead.
-					func(twf *workflow.TestingWorkflow) {
-						job := twf.BaseWorkflow.Jobs["test-and-build"]
-						require.NotNil(t, job)
-						job.Uses = ""
-						job.With = nil
-						job.RunsOn = "ubuntu-arm64-small"
-						job.Strategy = workflow.Strategy{}
-						job.Steps = workflow.Steps{
+					// Replace test-and-build with a no-op that sets the required outputs.
+					workflow.WithNoOpJobWithOutputs(t, "test-and-build", map[string]string{
+						"workflow-context": `{"isTrusted":true}`,
+						"plugin":           `{"id":"test-plugin","version":"1.0.0"}`,
+					}),
+
+					// Upload a placeholder artifact so act initializes the run directory.
+					// act's artifact server panics ("no such file or directory") when
+					// listArtifacts is called on a run that has never uploaded anything,
+					// causing ECONNRESET before continue-on-error can be recorded.
+					// Any artifact (even a different name) creates the directory so
+					// download-artifact fails cleanly instead.
+					workflow.WithInjectedSteps(t, "test-and-build", workflow.InjectedStepsOptions{
+						Position:        workflow.InjectedStepsOptionsPositionAfter,
+						InjectionStepID: "set-outputs",
+						Steps: workflow.Steps{
 							{
-								ID: "set-outputs",
-								Run: `echo 'workflow-context={"isTrusted":true}' >> "$GITHUB_OUTPUT"` + "\n" +
-									`echo 'plugin={"id":"test-plugin","version":"1.0.0"}' >> "$GITHUB_OUTPUT"` + "\n" +
-									`mkdir -p /tmp/placeholder-artifact && echo placeholder > /tmp/placeholder-artifact/placeholder.txt`,
+								Run:   `mkdir -p /tmp/placeholder-artifact && echo placeholder > /tmp/placeholder-artifact/placeholder.txt`,
 								Shell: "bash",
 							},
 							{
@@ -98,12 +83,8 @@ func TestDistArtifactsUnavailable(t *testing.T) {
 									"path": "/tmp/placeholder-artifact/",
 								},
 							},
-						}
-						job.Outputs = map[string]string{
-							"workflow-context": "${{ steps.set-outputs.outputs.workflow-context }}",
-							"plugin":           "${{ steps.set-outputs.outputs.plugin }}",
-						}
-					},
+						},
+					}),
 
 					// Mock GCS auth and upload steps. The workflow fails before reaching them,
 					// but mocking avoids authentication errors if the setup changes.
