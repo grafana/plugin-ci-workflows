@@ -73,8 +73,9 @@ func MockOutputsStep(outputs map[string]string) Step {
 	var stepCommands Commands
 	env := make(map[string]string, len(outputs))
 	for k, v := range outputs {
-		stepCommands = append(stepCommands, fmt.Sprintf(`echo "%s=${%s}" >> "$GITHUB_OUTPUT"`, k, k))
-		env[k] = v
+		sk := strings.ReplaceAll(k, "-", "_")
+		stepCommands = append(stepCommands, fmt.Sprintf(`echo "%s=${%s}" >> "$GITHUB_OUTPUT"`, k, sk))
+		env[sk] = v
 	}
 	// If we have no outputs, we must have something in "runs" otherwise the empty string
 	// will break the yaml file (missing "run" key).

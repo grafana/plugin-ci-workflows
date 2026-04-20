@@ -1,11 +1,115 @@
 package workflow
 
 import (
+	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
+
+func TestMockOutputsStep(t *testing.T) {
+	t.Run("no outputs", func(t *testing.T) {
+		step := MockOutputsStep(map[string]string{})
+		require.Contains(t, step.Run, `echo "no outputs to set"`)
+		require.Empty(t, step.Env)
+	})
+
+	t.Run("plain key without hyphens", func(t *testing.T) {
+		step := MockOutputsStep(map[string]string{"mykey": "myvalue"})
+		require.Contains(t, step.Run, `echo "mykey=${mykey}" >> "$GITHUB_OUTPUT"`)
+		require.Equal(t, "myvalue", step.Env["mykey"])
+	})
+
+	t.Run("key with single hyphen", func(t *testing.T) {
+		step := MockOutputsStep(map[string]string{"workflow-context": `{"isTrusted":true}`})
+		// Hyphens are converted to underscores in the env var name to avoid bash misinterpreting
+		// ${workflow-context} as ${workflow:-context}
+		require.Contains(t, step.Run, `echo "workflow-context=${workflow_context}" >> "$GITHUB_OUTPUT"`)
+		require.Equal(t, `{"isTrusted":true}`, step.Env["workflow_context"])
+		require.NotContains(t, step.Run, `${workflow-context}`)
+	})
+
+	t.Run("key with multiple hyphens", func(t *testing.T) {
+		step := MockOutputsStep(map[string]string{"test-and-build-output": "somevalue"})
+		require.Contains(t, step.Run, `echo "test-and-build-output=${test_and_build_output}" >> "$GITHUB_OUTPUT"`)
+		require.Equal(t, "somevalue", step.Env["test_and_build_output"])
+	})
+}
+
+func TestMockOutputsStepGitHubOutput(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		outputs  map[string]string
+		expected []string
+	}{
+		{
+			name:     "plain key",
+			outputs:  map[string]string{"mykey": "myvalue"},
+			expected: []string{"mykey=myvalue"},
+		},
+		{
+			name:     "key with single hyphen",
+			outputs:  map[string]string{"workflow-context": `{"isTrusted":true}`},
+			expected: []string{`workflow-context={"isTrusted":true}`},
+		},
+		{
+			name:     "key with multiple hyphens",
+			outputs:  map[string]string{"test-and-build-output": "somevalue"},
+			expected: []string{"test-and-build-output=somevalue"},
+		},
+		{
+			name: "multiple outputs including hyphenated keys",
+			outputs: map[string]string{
+				"plain":          "value1",
+				"hyphen-key":     "value2",
+				"two-hyphen-key": "value3",
+			},
+			expected: []string{
+				"plain=value1",
+				"hyphen-key=value2",
+				"two-hyphen-key=value3",
+			},
+		},
+		{
+			name:     "no outputs",
+			outputs:  map[string]string{},
+			expected: []string{},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			step := MockOutputsStep(tc.outputs)
+			output := runStepInBash(t, step)
+			for _, exp := range tc.expected {
+				require.Contains(t, output, exp)
+			}
+		})
+	}
+}
+
+// runStepInBash executes step.Run in bash with step.Env set as environment variables
+// and GITHUB_OUTPUT pointing to a temporary file. It returns the contents of that file.
+func runStepInBash(t *testing.T, step Step) string {
+	t.Helper()
+	outputFile := filepath.Join(t.TempDir(), "github_output")
+	require.NoError(t, os.WriteFile(outputFile, nil, 0600))
+
+	env := append(os.Environ(), "GITHUB_OUTPUT="+outputFile)
+	for k, v := range step.Env {
+		env = append(env, k+"="+v)
+	}
+
+	cmd := exec.Command("bash", "-c", step.Run)
+	cmd.Env = env
+	out, err := cmd.CombinedOutput()
+	require.NoError(t, err, "bash output: %s", out)
+
+	content, err := os.ReadFile(outputFile)
+	require.NoError(t, err)
+	return string(content)
+}
 
 func TestMockGCSUploadStep(t *testing.T) {
 	t.Run("basic upload without glob", func(t *testing.T) {

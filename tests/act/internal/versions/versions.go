@@ -13,17 +13,17 @@ import (
 )
 
 const (
-	nodeReleasesURL = "https://nodejs.org/download/release/index.json"
-	goReleasesURL   = "https://golang.org/dl/?mode=json&include=all"
+	nodeReleasesURL = "https://raw.githubusercontent.com/actions/node-versions/refs/heads/main/versions-manifest.json"
+	goReleasesURL   = "https://raw.githubusercontent.com/actions/go-versions/refs/heads/main/versions-manifest.json"
 	httpTimeout     = 30 * time.Second
 )
 
 type nodeRelease struct {
-	Version string `json:"version"` // e.g., "v24.12.0"
+	Version string `json:"version"` // e.g., "24.12.0"
 }
 
 type goRelease struct {
-	Version string `json:"version"` // e.g., "go1.25.6"
+	Version string `json:"version"` // e.g., "1.25.6"
 	Stable  bool   `json:"stable"`
 }
 
@@ -35,12 +35,13 @@ func LatestNodeVersion(major string) (string, error) {
 		return "", fmt.Errorf("fetch node releases: %w", err)
 	}
 
-	// Match versions like "v24.x.y" for major "24"
-	prefix := "v" + major + "."
+	// Match versions like "24.x.y" for major "24"
+	prefix := major + "."
 	for _, r := range releases {
 		if strings.HasPrefix(r.Version, prefix) {
 			// The releases are sorted newest first, so the first match is the latest
-			return r.Version, nil
+			// Add "v" prefix to match format used by setup-node action
+			return "v" + r.Version, nil
 		}
 	}
 
@@ -55,17 +56,16 @@ func LatestGoVersion(majorMinor string) (string, error) {
 		return "", fmt.Errorf("fetch go releases: %w", err)
 	}
 
-	prefix := "go" + majorMinor
 	var candidates []string
 
 	for _, r := range releases {
 		if !r.Stable {
 			continue
 		}
-		// Match "go1.25" or "go1.25.x"
-		if r.Version == prefix || strings.HasPrefix(r.Version, prefix+".") {
-			// Convert to semver format: "go1.25.6" -> "v1.25.6"
-			v := "v" + strings.TrimPrefix(r.Version, "go")
+		// Match "1.25" or "1.25.x"
+		if r.Version == majorMinor || strings.HasPrefix(r.Version, majorMinor+".") {
+			// Convert to semver format: "1.25.6" -> "v1.25.6"
+			v := "v" + r.Version
 			candidates = append(candidates, v)
 		}
 	}
