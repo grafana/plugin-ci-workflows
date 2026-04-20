@@ -90,7 +90,7 @@ on:
         default: false
       playwright-gar-registry:
         description: |
-          Optional address of a private GAR registry (e.g.: us-docker.pkg.dev) to authenticate to for pulling images 
+          Optional address of a private GAR registry (e.g.: us-docker.pkg.dev) to authenticate to for pulling images
           in the docker-compose setup for the Playwright E2E tests.
           If not specified, no authentication will be done.
         type: string
@@ -707,7 +707,7 @@ jobs:
 
   playwright:
     name: Playwright E2E tests
-    uses: grafana/plugin-ci-workflows/.github/workflows/playwright.yml@check-matrix-status-cancelled
+    uses: grafana/plugin-ci-workflows/.github/workflows/playwright.yml@main
     if: ${{ inputs.run-playwright == true }}
     needs:
       - test-and-build
