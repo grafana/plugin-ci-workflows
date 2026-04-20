@@ -44,7 +44,7 @@ inputs:
     default: ""
   frontend-only:
     description: |
-      If true, skip backend (Go) setup including Go, mage, and golangci-lint installation.
+      Accepts the string "true" or "false" (default). If "true", skip backend (Go) setup including Go, mage, and golangci-lint installation.
       Useful for workflows that only need Node.js and the package manager (e.g. Playwright tests).
     required: false
     default: "false"
