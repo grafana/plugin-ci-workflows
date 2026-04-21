@@ -14,8 +14,8 @@ runs:
   steps:
     - name: Check matrix job status
       run: |
-        if [ "${{ contains(inputs.results, 'failure') }}" = "true" ]; then
-          echo "One or more jobs in the matrix failed"
+        if [ "${{ contains(inputs.results, 'failure') || contains(inputs.results, 'cancelled') }}" = "true" ]; then
+          echo "One or more jobs in the matrix failed or were cancelled"
           exit 1
         else
           echo "All jobs in the matrix have succeeded"

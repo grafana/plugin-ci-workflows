@@ -90,7 +90,7 @@ on:
         default: false
       playwright-gar-registry:
         description: |
-          Optional address of a private GAR registry (e.g.: us-docker.pkg.dev) to authenticate to for pulling images 
+          Optional address of a private GAR registry (e.g.: us-docker.pkg.dev) to authenticate to for pulling images
           in the docker-compose setup for the Playwright E2E tests.
           If not specified, no authentication will be done.
         type: string
