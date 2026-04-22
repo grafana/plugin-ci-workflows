@@ -94,6 +94,15 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Read Grafana dependency from plugin.json
+        id: read-grafana-dep
+        if: inputs.plugin-directory != '.' && inputs.grafana-dependency == ''
+        run: |
+          DEP=$(jq -r '.dependencies.grafanaDependency // empty' "${PLUGIN_DIRECTORY}/src/plugin.json")
+          echo "grafana-dependency=${DEP}" >> "$GITHUB_OUTPUT"
+        env:
+          PLUGIN_DIRECTORY: ${{ inputs.plugin-directory }}
+
       - name: Resolve Grafana E2E versions
         id: resolve-versions
         uses: grafana/plugin-actions/e2e-version@e2e-version/v1.2.1
@@ -101,7 +110,7 @@ jobs:
           skip-grafana-dev-image: ${{ inputs.skip-grafana-dev-image }}
           skip-grafana-react-19-preview-image: ${{ inputs.skip-grafana-react-19-preview-image }}
           version-resolver-type: ${{ inputs.version-resolver-type }}
-          grafana-dependency: ${{ inputs.grafana-dependency }}
+          grafana-dependency: ${{ inputs.grafana-dependency || steps.read-grafana-dep.outputs.grafana-dependency }}
 
   playwright-tests:
     needs: resolve-versions
