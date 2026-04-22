@@ -117,25 +117,14 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Detect package manager
-        id: package-manager
-        uses: grafana/plugin-actions/package-manager-detect@package-manager-detect/v1.0.1
+      - name: Setup
+        id: setup
+        uses: grafana/plugin-ci-workflows/actions/internal/plugins/setup@main
         with:
-          working-directory: ${{ inputs.plugin-directory }}
-
-      - name: Install pnpm
-        if: steps.package-manager.outputs.name == 'pnpm'
-        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
-        with:
-          version: ${{ steps.package-manager.outputs.version }}
-
-      - name: Setup Node.js environment
-        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
-        with:
+          plugin-directory: ${{ inputs.plugin-directory }}
           node-version: ${{ inputs.node-version }}
           node-version-file: ${{ inputs.plugin-directory }}/.nvmrc
-          cache: ${{ steps.package-manager.outputs.name }}
-          cache-dependency-path: ${{ steps.package-manager.outputs.lockFilePath }}
+          frontend-only: "true"
 
       - name: Login to Google Cloud
         if: inputs.npm-registry-auth == true
@@ -152,7 +141,7 @@ jobs:
         run: GOOGLE_APPLICATION_CREDENTIALS=${{ env.GOOGLE_APPLICATION_CREDENTIALS }} npx google-artifactregistry-auth --credential-config ./.npmrc
 
       - name: Install npm dependencies
-        run: ${{ steps.package-manager.outputs.frozenInstallCmd }}
+        run: ${{ steps.setup.outputs.node-package-manager-frozen-install-cmd }}
         shell: bash
         working-directory: ${{ inputs.plugin-directory }}
 
@@ -188,7 +177,7 @@ jobs:
           key: playwright-${{ steps.version.outputs.version }}
 
       - name: Install Playwright Browsers
-        run: ${{ steps.package-manager.outputs.execLocalCmd }} playwright install --with-deps chromium
+        run: ${{ steps.setup.outputs.node-package-manager-exec-local-cmd }} playwright install --with-deps chromium
         shell: bash
 
       - name: Download GitHub artifact
@@ -260,7 +249,7 @@ jobs:
 
       - name: Run Playwright tests
         id: run-tests
-        run: ${{ steps.package-manager.outputs.execLocalCmd }} playwright test --config "${PLAYWRIGHT_CONFIG}"
+        run: ${{ steps.setup.outputs.node-package-manager-exec-local-cmd }} playwright test --config "${PLAYWRIGHT_CONFIG}"
         env:
           PLAYWRIGHT_CONFIG: ${{ inputs.playwright-config }}
         working-directory: ${{ inputs.plugin-directory }}
