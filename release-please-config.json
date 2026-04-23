@@ -66,6 +66,7 @@
     },
     ".": {
       "package-name": "ci-cd-workflows",
+      "changelog-path": ".github/workflows/CHANGELOG.md",
       "exclude-paths": [
         "actions/plugins/publish/publish",
         "actions/plugins/version-bump-changelog",
