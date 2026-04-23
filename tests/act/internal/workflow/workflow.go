@@ -219,7 +219,8 @@ type Step struct {
 	Name string `yaml:"name,omitempty"`
 	ID   string `yaml:"id,omitempty"`
 
-	If string `yaml:"if,omitempty"`
+	If              string `yaml:"if,omitempty"`
+	ContinueOnError bool   `yaml:"continue-on-error,omitempty"`
 
 	Uses string         `yaml:"uses,omitempty"`
 	With map[string]any `yaml:"with,omitempty"`
