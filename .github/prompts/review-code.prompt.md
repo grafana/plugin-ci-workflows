@@ -121,7 +121,9 @@ If a new workflow file is added that's part of `ci.yml`/`cd.yml` (like `playwrig
 
 ### New User-Facing Actions
 
-If an action is added to `actions/plugins/`, verify `release-please-config.json` is updated.
+If an action is added to `actions/plugins/`, verify `release-please-config.json` is updated in two places:
+1. A new package entry under `packages` with its `package-name`.
+2. The package path added to the `.` package's `exclude-paths` list (otherwise commits in the new plugin double-count toward the `ci-cd-workflows` release).
 
 ### Examples Directory
 
@@ -173,7 +175,7 @@ For every PR, verify:
 - [ ] No `ubuntu-latest` — using self-hosted runner labels
 - [ ] Same-repo references use `@main`
 - [ ] New shared workflows added to switch-references in all 3 files
-- [ ] New `actions/plugins/` actions added to `release-please-config.json`
+- [ ] New `actions/plugins/` actions added to `release-please-config.json` (both as a new package entry AND in the `.` package's `exclude-paths`)
 - [ ] `make genreadme` run if `examples/base/` modified
 - [ ] `make mockdata` run if `tests/simple-*` modified
 - [ ] Go errors wrapped with context
