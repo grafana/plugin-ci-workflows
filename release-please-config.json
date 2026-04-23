@@ -64,8 +64,15 @@
     "actions/plugins/frontend-e2e-against-stack": {
       "package-name": "plugins-frontend-e2e-against-stack"
     },
-    ".github/workflows": {
-      "package-name": "ci-cd-workflows"
+    ".": {
+      "package-name": "ci-cd-workflows",
+      "exclude-paths": [
+        "actions/plugins/publish/publish",
+        "actions/plugins/version-bump-changelog",
+        "actions/plugins/publish/change-plugin-scope",
+        "actions/plugins/release-please",
+        "actions/plugins/frontend-e2e-against-stack"
+      ]
     }
   },
   "release-type": "simple",
