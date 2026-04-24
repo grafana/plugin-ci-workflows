@@ -136,7 +136,9 @@ When adding a new shared workflow (internal to ci/cd), add its path to the `swit
 - `.github/workflows/release-please-pr-update-tagged-references.yml`
 - `.github/workflows/release-please-restore-rolling-release.yml`
 
-When adding a new user-facing action in `actions/plugins/`, update `release-please-config.json`.
+When adding a new user-facing action in `actions/plugins/`, update `release-please-config.json`:
+1. Add the new package entry under `packages` (with its `package-name`).
+2. Add the package path to the `.` package's `exclude-paths` list. This prevents commits in the new plugin from double-counting toward the `ci-cd-workflows` release.
 
 ## Testing Framework
 
