@@ -11,6 +11,9 @@ if [ -z "$GITHUB_TOKEN" ]; then
     exit 1
 fi
 
+echo "Installing pre-requisites"
+apk add rsync
+
 plugin_id="$1"
 plugin_version="$2"
 
