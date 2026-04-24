@@ -114,8 +114,13 @@ on:
         description: "Optionally, use this input to pass a semver range of supported Grafana versions to test against. This is only used when version-resolver-type is plugin-grafana-dependency. If not provided, the action will try to read grafanaDependency from the plugin.json file."
         type: string
         required: false
+      run-playwright-with-skip-grafana-nightly-image:
+        description: "Optionally, you can skip the Grafana nightly image"
+        type: boolean
+        required: false
+        default: false
       run-playwright-with-skip-grafana-dev-image:
-        description: "Optionally, you can skip the Grafana dev image"
+        description: "Deprecated: use run-playwright-with-skip-grafana-nightly-image instead"
         type: boolean
         required: false
         default: false
@@ -613,7 +618,7 @@ jobs:
       run-playwright: ${{ inputs.run-playwright }}
       run-playwright-docker: ${{ inputs.run-playwright-docker }}
       run-playwright-with-grafana-dependency: ${{ inputs.run-playwright-with-grafana-dependency }}
-      run-playwright-with-skip-grafana-dev-image: ${{ inputs.run-playwright-with-skip-grafana-dev-image }}
+      run-playwright-with-skip-grafana-nightly-image: ${{ inputs.run-playwright-with-skip-grafana-nightly-image || inputs.run-playwright-with-skip-grafana-dev-image }}
       run-playwright-with-skip-grafana-react-19-preview-image: ${{ inputs.run-playwright-with-skip-grafana-react-19-preview-image }}
       run-playwright-with-version-resolver-type: ${{ inputs.run-playwright-with-version-resolver-type }}
       upload-playwright-artifacts: ${{ inputs.upload-playwright-artifacts }}
@@ -1146,7 +1151,34 @@ jobs:
         env:
           PLUGIN_VERSION: ${{ fromJSON(needs.ci.outputs.plugin).version }}
 
+      - name: Check if release exists
+        id: check-release
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          script: |
+            const { PLUGIN_VERSION } = process.env
+            const tag = `v${PLUGIN_VERSION}`
+            try {
+              const release = await github.rest.repos.getReleaseByTag({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag,
+              })
+              const hasAssets = release.data.assets.length > 0
+              if (hasAssets) {
+                core.info(`Release ${tag} already exists with assets: ${release.data.html_url}`)
+                core.setOutput('skip', 'true')
+              } else {
+                core.setFailed(`Release ${tag} exists but has no assets and cannot be updated (immutable). Delete the release at ${release.data.html_url} and re-run.`)
+              }
+            } catch {
+              core.setOutput('skip', 'false')
+            }
+        env:
+          PLUGIN_VERSION: ${{ fromJSON(needs.ci.outputs.plugin).version }}
+
       - name: Create Github release
+        if: steps.check-release.outputs.skip != 'true'
         uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
         with:
           draft: ${{ inputs.github-draft-release }}

@@ -91,8 +91,13 @@ on:
           If not provided, the action will try to read grafanaDependency from the plugin.json file.
         type: string
         required: false
+      run-playwright-with-skip-grafana-nightly-image:
+        description: Optionally, you can skip the Grafana nightly image
+        type: boolean
+        required: false
+        default: false
       run-playwright-with-skip-grafana-dev-image:
-        description: Optionally, you can skip the Grafana dev image
+        description: "Deprecated: use run-playwright-with-skip-grafana-nightly-image instead"
         type: boolean
         required: false
         default: false
@@ -689,7 +694,7 @@ jobs:
       version: ${{ fromJSON(needs.test-and-build.outputs.plugin).version}}
       plugin-directory: ${{ inputs.plugin-directory }}
       grafana-dependency: ${{ inputs.run-playwright-with-grafana-dependency }}
-      skip-grafana-dev-image: ${{ inputs.run-playwright-with-skip-grafana-dev-image }}
+      skip-grafana-nightly-image: ${{ inputs.run-playwright-with-skip-grafana-nightly-image || inputs.run-playwright-with-skip-grafana-dev-image }}
       skip-grafana-react-19-preview-image: ${{ inputs.run-playwright-with-skip-grafana-react-19-preview-image }}
       version-resolver-type: ${{ inputs.run-playwright-with-version-resolver-type }}
       upload-artifacts: ${{ inputs.upload-playwright-artifacts }}
@@ -711,7 +716,7 @@ jobs:
       id: ${{ fromJSON(needs.test-and-build.outputs.plugin).id}}
       version: ${{ fromJSON(needs.test-and-build.outputs.plugin).version}}
       grafana-dependency: ${{ inputs.run-playwright-with-grafana-dependency }}
-      skip-grafana-dev-image: ${{ inputs.run-playwright-with-skip-grafana-dev-image }}
+      skip-grafana-nightly-image: ${{ inputs.run-playwright-with-skip-grafana-nightly-image || inputs.run-playwright-with-skip-grafana-dev-image }}
       skip-grafana-react-19-preview-image: ${{ inputs.run-playwright-with-skip-grafana-react-19-preview-image }}
       version-resolver-type: ${{ inputs.run-playwright-with-version-resolver-type }}
       upload-artifacts: ${{ inputs.upload-playwright-artifacts }}
