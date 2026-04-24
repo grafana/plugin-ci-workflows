@@ -191,10 +191,19 @@ jobs:
         working-directory: ${{ inputs.plugin-directory }}
 
       - name: Download GitHub artifact
+        id: download-dist-artifacts
+        continue-on-error: true
         uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
         with:
           name: dist-artifacts
           path: /tmp/dist-artifacts
+
+      - name: Log unavailable dist-artifacts error
+        if: steps.download-dist-artifacts.outcome == 'failure'
+        run: |
+          echo "::error::The dist-artifacts artifact could not be downloaded. It may have expired. Please re-run the entire workflow from the beginning to rebuild the plugin."
+          exit 1
+        shell: bash
 
       - name: Move dist artifacts
         run: |

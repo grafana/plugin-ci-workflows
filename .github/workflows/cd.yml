@@ -493,6 +493,14 @@ on:
         type: string
         required: false
         default: ""
+      dist-artifacts-retention-days:
+        description: |
+          Number of days to retain the dist-artifacts GitHub artifact.
+          The artifact is used by e2e tests and GCS upload. If a job fails and is re-run after this
+          period, the artifact will be gone and the workflow must be re-run from the beginning.
+        type: number
+        required: false
+        default: 10
       DO-NOT-USE-allow-pinned-commit-hashes:
         description: |
           FOR INTERNAL TESTING ONLY, DO NOT USE.
@@ -784,6 +792,7 @@ jobs:
       signature-type: ${{ inputs.signature-type }}
 
       dist-artifacts-prefix: ${{ inputs.dist-artifacts-prefix }}
+      dist-artifacts-retention-days: ${{ inputs.dist-artifacts-retention-days }}
       DO-NOT-USE-allow-pinned-commit-hashes: ${{ inputs.DO-NOT-USE-allow-pinned-commit-hashes }}
 
   build-attestation:
@@ -800,10 +809,21 @@ jobs:
 
     steps:
       - name: Download GitHub artifact
+        id: download-dist-artifacts
+        continue-on-error: true
         uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
         with:
           name: ${{ inputs.dist-artifacts-prefix }}dist-artifacts
           path: /tmp/dist-artifacts
+
+      - name: Log unavailable dist-artifacts error
+        if: steps.download-dist-artifacts.outcome == 'failure'
+        run: |
+          echo "::error::The dist-artifacts artifact could not be downloaded. It may have expired (retention period: ${RETENTION_DAYS} days). Please re-run the entire workflow from the beginning to rebuild the plugin."
+          exit 1
+        shell: bash
+        env:
+          RETENTION_DAYS: ${{ inputs.dist-artifacts-retention-days }}
 
       - name: Generate artifact attestation
         if: ${{ inputs.attestation }}
@@ -1035,10 +1055,21 @@ jobs:
 
     steps:
       - name: Download GitHub artifact
+        id: download-dist-artifacts
+        continue-on-error: true
         uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
         with:
           name: ${{ inputs.dist-artifacts-prefix }}dist-artifacts
           path: /tmp/dist-artifacts
+
+      - name: Log unavailable dist-artifacts error
+        if: steps.download-dist-artifacts.outcome == 'failure'
+        run: |
+          echo "::error::The dist-artifacts artifact could not be downloaded. It may have expired (retention period: ${RETENTION_DAYS} days). Please re-run the entire workflow from the beginning to rebuild the plugin."
+          exit 1
+        shell: bash
+        env:
+          RETENTION_DAYS: ${{ inputs.dist-artifacts-retention-days }}
 
       - name: Prepare "latest" artifacts
         run: |
@@ -1248,10 +1279,21 @@ jobs:
           persist-credentials: false
 
       - name: Download GitHub artifact
+        id: download-dist-artifacts
+        continue-on-error: true
         uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
         with:
           name: ${{ inputs.dist-artifacts-prefix }}dist-artifacts
           path: /tmp/dist-artifacts
+
+      - name: Log unavailable dist-artifacts error
+        if: steps.download-dist-artifacts.outcome == 'failure'
+        run: |
+          echo "::error::The dist-artifacts artifact could not be downloaded. It may have expired (retention period: ${RETENTION_DAYS} days). Please re-run the entire workflow from the beginning to rebuild the plugin."
+          exit 1
+        shell: bash
+        env:
+          RETENTION_DAYS: ${{ inputs.dist-artifacts-retention-days }}
 
       - name: Parse changelog
         id: changelog

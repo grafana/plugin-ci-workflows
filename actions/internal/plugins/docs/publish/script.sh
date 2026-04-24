@@ -11,13 +11,19 @@ if [ -z "$GITHUB_TOKEN" ]; then
     exit 1
 fi
 
+echo "Installing pre-requisites"
+apk add rsync
+
 plugin_id="$1"
 plugin_version="$2"
 
 tmp=$(mktemp -d)
 cd "$tmp"
 git config --global --add safe.directory .
-git config --global url."https://x-access-token:${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
+# Accept either a raw token or one already prefixed with "x-access-token:"
+# so callers that pass "x-access-token:<token>" keep working.
+github_token="${GITHUB_TOKEN#x-access-token:}"
+git config --global url."https://x-access-token:${github_token}@github.com/".insteadOf "https://github.com/"
 git clone \
     --depth 1 --single-branch --no-tags \
     https://github.com/grafana/website.git
