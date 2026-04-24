@@ -21,10 +21,16 @@ on:
         type: string
         required: false
       # https://github.com/grafana/plugin-actions/blob/main/e2e-version/action.yml
+      skip-grafana-nightly-image:
+        default: false
+        required: false
+        type: boolean
+        description: Optionally, you can skip the Grafana nightly image
       skip-grafana-dev-image:
         default: false
         required: false
         type: boolean
+        description: "Deprecated: use skip-grafana-nightly-image instead"
       skip-grafana-react-19-preview-image:
         default: false
         required: false
@@ -78,9 +84,9 @@ jobs:
 
       - name: Resolve Grafana E2E versions
         id: resolve-versions
-        uses: grafana/plugin-actions/e2e-version@e2e-version/v1.2.1
+        uses: grafana/plugin-actions/e2e-version@73cd57e848b81e75e3c17697e6701c9fa1404bcc # e2e-version/v2.0.0
         with:
-          skip-grafana-dev-image: ${{ inputs.skip-grafana-dev-image }}
+          skip-grafana-nightly-image: ${{ inputs.skip-grafana-nightly-image || inputs.skip-grafana-dev-image }}
           skip-grafana-react-19-preview-image: ${{ inputs.skip-grafana-react-19-preview-image }}
           version-resolver-type: ${{ inputs.version-resolver-type }}
           grafana-dependency: ${{ inputs.grafana-dependency }}
