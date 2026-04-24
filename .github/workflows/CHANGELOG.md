@@ -1,5 +1,12 @@
 # Changelog
 
+## [7.3.1](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v7.3.0...ci-cd-workflows/v7.3.1) (2026-04-24)
+
+
+### 🐛 Bug Fixes
+
+* **cd:** fix docs publishing failing due to missing rsync ([#691](https://github.com/grafana/plugin-ci-workflows/issues/691)) ([39b29b4](https://github.com/grafana/plugin-ci-workflows/commit/39b29b4c87ac0c59b34cf8e431684a34ca1f25f7))
+
 ## [7.3.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v7.2.0...ci-cd-workflows/v7.3.0) (2026-04-24)
 
 
