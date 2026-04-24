@@ -1,0 +1,93 @@
+# Example workflow for syncing repository contents to an S3 bucket.
+# This can be used to sync documentation, static sites, or other artifacts.
+#
+# Prerequisites:
+# - Configure AWS OIDC identity provider in your AWS account
+#   See: https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
+# - Create an IAM role with the appropriate S3 permissions
+# - Add the GitHub repository to the role's trust policy
+#
+# Alternatively, you can use IAM credentials stored as GitHub secrets:
+# - AWS_ACCESS_KEY_ID
+# - AWS_SECRET_ACCESS_KEY
+
+name: Sync to S3
+
+on:
+  # Sync on push to main branch
+  push:
+    branches:
+      - main
+    # Optionally, only sync when specific paths change
+    # paths:
+    #   - 'docs/**'
+    #   - 'static/**'
+
+  # Allow manual triggering
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: 'Perform a dry run without actually syncing'
+        type: boolean
+        default: false
+
+permissions: {}
+
+jobs:
+  # Example 1: Using OIDC authentication (recommended)
+  sync-with-oidc:
+    name: Sync to S3 (OIDC)
+    uses: grafana/plugin-ci-workflows/.github/workflows/sync-repo-to-s3.yml@main
+    permissions:
+      contents: read
+      id-token: write  # Required for OIDC authentication
+    with:
+      # Required: S3 bucket name and AWS region
+      s3-bucket: my-documentation-bucket
+      aws-region: us-east-1
+
+      # Required for OIDC: IAM role ARN
+      aws-role-arn: arn:aws:iam::123456789012:role/GitHubActionsS3SyncRole
+
+      # Optional: Customize what to sync
+      source-directory: docs/  # Only sync the docs directory
+      s3-prefix: website/docs/  # Sync to a specific prefix in the bucket
+
+      # Optional: Sync options
+      delete: true  # Remove files from S3 that don't exist in source
+      exclude-patterns: '.git/*,.github/*,*.draft.md'  # Exclude patterns
+      cache-control: 'max-age=3600,public'  # Set cache headers
+
+      # Optional: Enable dry-run for testing
+      dry-run: ${{ github.event.inputs.dry-run == 'true' }}
+
+  # Example 2: Using IAM credentials from secrets
+  # sync-with-credentials:
+  #   name: Sync to S3 (IAM)
+  #   uses: grafana/plugin-ci-workflows/.github/workflows/sync-repo-to-s3.yml@main
+  #   permissions:
+  #     contents: read
+  #   with:
+  #     s3-bucket: my-static-assets-bucket
+  #     aws-region: eu-west-1
+  #     source-directory: static/
+  #     s3-prefix: assets/
+  #   secrets:
+  #     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  #     aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+  # Example 3: Sync entire repository
+  # sync-full-repo:
+  #   name: Sync Full Repository
+  #   uses: grafana/plugin-ci-workflows/.github/workflows/sync-repo-to-s3.yml@main
+  #   permissions:
+  #     contents: read
+  #     id-token: write
+  #   with:
+  #     s3-bucket: my-backup-bucket
+  #     aws-region: us-west-2
+  #     aws-role-arn: arn:aws:iam::123456789012:role/GitHubActionsS3SyncRole
+  #     source-directory: .
+  #     s3-prefix: repos/${{ github.repository }}/
+  #     exclude-patterns: '.git/*,.github/*,node_modules/*,*.log'
+  #     storage-class: STANDARD_IA  # Use infrequent access for backups
