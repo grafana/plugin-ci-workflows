@@ -130,6 +130,10 @@ on:
         description: "Optionally, use this input to pass a semver range of supported Grafana versions to test against. This is only used when version-resolver-type is plugin-grafana-dependency. If not provided, the action will try to read grafanaDependency from the plugin.json file."
         type: string
         required: false
+      run-playwright-with-plugin-path:
+        description: Path to the plugin root directory containing src/plugin.json. Only used when version-resolver-type is plugin-grafana-dependency and grafana-dependency is not set.
+        type: string
+        required: false
       run-playwright-with-skip-grafana-dev-image:
         description: "Optionally, you can skip the Grafana dev image"
         type: boolean
@@ -766,6 +770,7 @@ jobs:
       run-playwright: ${{ inputs.run-playwright }}
       run-playwright-docker: ${{ inputs.run-playwright-docker }}
       run-playwright-with-grafana-dependency: ${{ inputs.run-playwright-with-grafana-dependency }}
+      run-playwright-with-plugin-path: ${{ inputs.run-playwright-with-plugin-path }}
       run-playwright-with-skip-grafana-dev-image: ${{ inputs.run-playwright-with-skip-grafana-dev-image }}
       run-playwright-with-skip-grafana-react-19-preview-image: ${{ inputs.run-playwright-with-skip-grafana-react-19-preview-image }}
       run-playwright-with-version-resolver-type: ${{ inputs.run-playwright-with-version-resolver-type }}
