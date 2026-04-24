@@ -1,5 +1,30 @@
 # Changelog
 
+## [7.3.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v7.2.0...ci-cd-workflows/v7.3.0) (2026-04-24)
+
+
+### 🎉 Features
+
+* **ci:** Use setup action in playwrite.yml ([#677](https://github.com/grafana/plugin-ci-workflows/issues/677)) ([54785e7](https://github.com/grafana/plugin-ci-workflows/commit/54785e7c064cef43c3b19ec690e837901e945265))
+
+
+### 🐛 Bug Fixes
+
+* **cd:** fix github auth error in "publish docs" job ([#686](https://github.com/grafana/plugin-ci-workflows/issues/686)) ([90b0bb2](https://github.com/grafana/plugin-ci-workflows/commit/90b0bb22a22d1a481b122f56ff620a792160a119))
+* **ci:** increase default artifact retention and allow config ([#674](https://github.com/grafana/plugin-ci-workflows/issues/674)) ([6e7a020](https://github.com/grafana/plugin-ci-workflows/commit/6e7a02080347dbff12d44438068796c0072b9e89))
+* fail check-playwright-status on e2e tests timeout ([#676](https://github.com/grafana/plugin-ci-workflows/issues/676)) ([bc53186](https://github.com/grafana/plugin-ci-workflows/commit/bc531869a91c8a041689edc23cdde3a11d927e09))
+* **test:** allow hyphenated output keys to be mocked ([#673](https://github.com/grafana/plugin-ci-workflows/issues/673)) ([0a0c6be](https://github.com/grafana/plugin-ci-workflows/commit/0a0c6bec8997ac8ff1ba39a231dc9c419c509f76))
+* **tests:** fix setup-node and setup-go act tests ([#678](https://github.com/grafana/plugin-ci-workflows/issues/678)) ([6e77bd8](https://github.com/grafana/plugin-ci-workflows/commit/6e77bd8304e8d14ec0b291216f97dde8a9cd23e3))
+
+
+### 🔧 Chores
+
+* **deps:** update dependency trufflehog to v3.94.2 ([#675](https://github.com/grafana/plugin-ci-workflows/issues/675)) ([249c66d](https://github.com/grafana/plugin-ci-workflows/commit/249c66dea4da5140978f011eb1367bcba52c9271))
+* **deps:** update dependency trufflehog to v3.94.3 ([#684](https://github.com/grafana/plugin-ci-workflows/issues/684)) ([8ae83de](https://github.com/grafana/plugin-ci-workflows/commit/8ae83deb32b0e3291845e454bd6e02065db51dd8))
+* **deps:** update step-security/harden-runner action to v2.17.0 ([#685](https://github.com/grafana/plugin-ci-workflows/issues/685)) ([668f015](https://github.com/grafana/plugin-ci-workflows/commit/668f015a48b7f6066c6e0633c554e4c4ada54b45))
+* fix release-please paths for ci-cd-workflows component ([#687](https://github.com/grafana/plugin-ci-workflows/issues/687)) ([e1a891f](https://github.com/grafana/plugin-ci-workflows/commit/e1a891f5e92dc9a5a4d27fa742b33927033c605d))
+* use go version from go.mod ([#680](https://github.com/grafana/plugin-ci-workflows/issues/680)) ([546f82f](https://github.com/grafana/plugin-ci-workflows/commit/546f82f5bbc7c81ff5e55323be4d73a1a2d92999))
+
 ## [7.2.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v7.1.0...ci-cd-workflows/v7.2.0) (2026-04-15)
 
 
