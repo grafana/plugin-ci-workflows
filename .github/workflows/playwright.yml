@@ -188,6 +188,7 @@ jobs:
       - name: Install Playwright Browsers
         run: ${{ steps.setup.outputs.node-package-manager-exec-local-cmd }} playwright install --with-deps chromium
         shell: bash
+        working-directory: ${{ inputs.plugin-directory }}
 
       - name: Download GitHub artifact
         uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
