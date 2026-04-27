@@ -36,10 +36,6 @@ on:
       grafana-dependency:
         required: false
         type: string
-      plugin-path:
-        required: false
-        type: string
-        description: Path to the plugin root directory containing src/plugin.json. Only used when version-resolver-type is plugin-grafana-dependency and grafana-dependency is not set.
       upload-artifacts:
         required: false
         type: boolean
@@ -103,7 +99,7 @@ jobs:
           skip-grafana-react-19-preview-image: ${{ inputs.skip-grafana-react-19-preview-image }}
           version-resolver-type: ${{ inputs.version-resolver-type }}
           grafana-dependency: ${{ inputs.grafana-dependency }}
-          plugin-path: ${{ inputs.plugin-path }}
+          plugin-directory: ${{ inputs.plugin-directory }}
 
   playwright-tests:
     needs: resolve-versions

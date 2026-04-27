@@ -91,10 +91,7 @@ on:
           If not provided, the action will try to read grafanaDependency from the plugin.json file.
         type: string
         required: false
-      run-playwright-with-plugin-path:
-        description: Path to the plugin root directory containing src/plugin.json. Only used when version-resolver-type is plugin-grafana-dependency and grafana-dependency is not set.
-        type: string
-        required: false
+
       run-playwright-with-skip-grafana-dev-image:
         description: Optionally, you can skip the Grafana dev image
         type: boolean
@@ -693,7 +690,6 @@ jobs:
       version: ${{ fromJSON(needs.test-and-build.outputs.plugin).version}}
       plugin-directory: ${{ inputs.plugin-directory }}
       grafana-dependency: ${{ inputs.run-playwright-with-grafana-dependency }}
-      plugin-path: ${{ inputs.run-playwright-with-plugin-path }}
       skip-grafana-dev-image: ${{ inputs.run-playwright-with-skip-grafana-dev-image }}
       skip-grafana-react-19-preview-image: ${{ inputs.run-playwright-with-skip-grafana-react-19-preview-image }}
       version-resolver-type: ${{ inputs.run-playwright-with-version-resolver-type }}
@@ -716,7 +712,7 @@ jobs:
       id: ${{ fromJSON(needs.test-and-build.outputs.plugin).id}}
       version: ${{ fromJSON(needs.test-and-build.outputs.plugin).version}}
       grafana-dependency: ${{ inputs.run-playwright-with-grafana-dependency }}
-      plugin-path: ${{ inputs.run-playwright-with-plugin-path }}
+      plugin-directory: ${{ inputs.plugin-directory }}
       skip-grafana-dev-image: ${{ inputs.run-playwright-with-skip-grafana-dev-image }}
       skip-grafana-react-19-preview-image: ${{ inputs.run-playwright-with-skip-grafana-react-19-preview-image }}
       version-resolver-type: ${{ inputs.run-playwright-with-version-resolver-type }}
