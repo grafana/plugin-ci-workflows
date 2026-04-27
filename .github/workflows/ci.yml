@@ -91,7 +91,6 @@ on:
           If not provided, the action will try to read grafanaDependency from the plugin.json file.
         type: string
         required: false
-
       run-playwright-with-skip-grafana-dev-image:
         description: Optionally, you can skip the Grafana dev image
         type: boolean
