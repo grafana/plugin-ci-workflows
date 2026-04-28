@@ -5,7 +5,7 @@ if [[ "$RUNNER_DEBUG" == "1" ]]; then
 fi
 
 usage() {
-    echo "Usage: $0 --environment <dev|ops|staging|prod> [--scopes <comma_separated_scopes>] [--publish-as-pending] [--dry-run]  <plugin_zip_urls...>"
+    echo "Usage: $0 --environment <dev|ops|staging|prod> [--scopes <comma_separated_scopes>] [--publish-as-pending] [--provenance-attestation <attestation_reference>] [--dry-run]  <plugin_zip_urls...>"
 }
 
 json_obj() {
@@ -16,12 +16,14 @@ gcs_zip_urls=()
 scopes=''
 dry_run=false
 publish_as_pending=false
+provenance_attestation=''
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         --environment) gcom_env=$2; shift 2;;
         --scopes) scopes=$(echo $2 | jq -Rc 'split(",")'); shift 2;;
         --dry-run) dry_run=true; shift;;
         --publish-as-pending) publish_as_pending=true; shift;;
+        --provenance-attestation) provenance_attestation=$2; shift 2;;
         --help)
             usage
             exit 0
@@ -137,7 +139,8 @@ json_payload=$(jq -c -n \
     --arg commit "$sha" \
     --argjson scopes "$scopes" \
     --argjson pending "$pending_param" \
-    '$ARGS.named'
+    --arg provenanceAttestation "$provenance_attestation" \
+    '$ARGS.named | if .provenanceAttestation == "" then del(.provenanceAttestation) else . end'
 )
 echo $json_payload | jq
 if [ "$dry_run" = true ]; then
