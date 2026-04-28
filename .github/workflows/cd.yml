@@ -1004,7 +1004,14 @@ jobs:
     needs:
       - ci
       - publish-to-catalog
-    if: ${{ inputs.grafana-cloud-deployment-type != '' && inputs.trigger-argo }}
+    if: >-
+      ${{
+        !cancelled()
+        && needs.ci.result == 'success'
+        && needs.publish-to-catalog.result == 'success'
+        && inputs.grafana-cloud-deployment-type != ''
+        && inputs.trigger-argo
+      }}
 
     steps:
       - name: Check deployment type
