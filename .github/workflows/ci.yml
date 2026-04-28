@@ -763,11 +763,21 @@ jobs:
     name: Upload to GCS
     runs-on: ubuntu-arm64-small
 
-    # Skip the GCS upload (no access to the bucket) for PRs when run in non-trusted context (forks)
-    if: ${{ fromJson(needs.test-and-build.outputs.workflow-context).isTrusted }}
+    # Skip the GCS upload (no access to the bucket) for PRs when run in non-trusted context (forks).
+    # If Playwright is enabled, only upload after the corresponding Playwright job succeeds.
+    if: >-
+      ${{
+        !cancelled()
+        && needs.test-and-build.result == 'success'
+        && fromJson(needs.test-and-build.outputs.workflow-context).isTrusted
+        && (!inputs.run-playwright || needs.playwright.result == 'success')
+        && (!inputs.run-playwright-docker || needs.playwright-docker.result == 'success')
+      }}
 
     needs:
       - test-and-build
+      - playwright
+      - playwright-docker
 
     outputs:
       zip-urls-latest: ${{ steps.outputs.outputs.zip_urls_latest }}

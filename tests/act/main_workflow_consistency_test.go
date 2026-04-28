@@ -97,6 +97,32 @@ func TestCDWorkflowCIJobPassesAllInputs(t *testing.T) {
 	})
 }
 
+func TestCIUploadToGCSWaitsForEnabledPlaywrightJobs(t *testing.T) {
+	t.Parallel()
+
+	ciWf, err := workflow.NewBaseWorkflowFromFile(filepath.Join(".github", "workflows", "ci.yml"))
+	require.NoError(t, err)
+
+	uploadToGCSJob := ciWf.Jobs["upload-to-gcs"]
+	require.NotNil(t, uploadToGCSJob, "ci.yml should have an 'upload-to-gcs' job")
+
+	require.ElementsMatch(t, []string{
+		"test-and-build",
+		"playwright",
+		"playwright-docker",
+	}, uploadToGCSJob.Needs)
+
+	for _, condition := range []string{
+		"!cancelled()",
+		"needs.test-and-build.result == 'success'",
+		"fromJson(needs.test-and-build.outputs.workflow-context).isTrusted",
+		"(!inputs.run-playwright || needs.playwright.result == 'success')",
+		"(!inputs.run-playwright-docker || needs.playwright-docker.result == 'success')",
+	} {
+		require.Contains(t, uploadToGCSJob.If, condition)
+	}
+}
+
 func TestExportedWorkflowsInSyncWithReleasePlease(t *testing.T) {
 	t.Parallel()
 
