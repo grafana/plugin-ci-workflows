@@ -115,25 +115,26 @@ type WorkflowInputs struct {
 	// CI options (shared between CI and CD)
 	CI ci.WorkflowInputs
 
-	Environment                *string
-	Branch                     *string
-	Scopes                     *string
-	GrafanaCloudDeploymentType *string
-	DisableDocsPublishing      *bool
-	DisableGitHubRelease       *bool
-	TriggerArgo                *bool
-	AutoMergeEnvironments      *string
-	ArgoWorkflowSlackChannel   *string
-	ArgoWorkflowSlackSilent            *bool
+	Environment                         *string
+	Branch                              *string
+	Scopes                              *string
+	GrafanaCloudDeploymentType          *string
+	DisableDocsPublishing               *bool
+	DisableGitHubRelease                *bool
+	TriggerArgo                         *bool
+	AutoMergeEnvironments               *string
+	ArgoWorkflowSlackChannel            *string
+	ArgoWorkflowSlackSilent             *bool
 	ArgoWorkflowSlackMentionTriggerUser *bool
-	ArgoWorkflowSlackExtraMentions     *string
-	AutoApproveDurations               *string
-	ProdTargetsAll                     *bool
+	ArgoWorkflowSlackExtraMentions      *string
+	AutoApproveDurations                *string
+	ProdTargetsAll                      *bool
 
 	ReleaseReferenceRegex    *string
 	DocsOnly                 *bool
 	AllowPublishingPRsToProd *bool
 	UploadGCSLatest          *bool
+	Attestation              *bool
 }
 
 // WithWorkflowInputs sets the inputs for the CD workflow.
@@ -159,6 +160,7 @@ func WithWorkflowInputs(inputs WorkflowInputs) WorkflowOption {
 		workflow.SetJobInput(job, "docs-only", inputs.DocsOnly)
 		workflow.SetJobInput(job, "allow-publishing-prs-to-prod", inputs.AllowPublishingPRsToProd)
 		workflow.SetJobInput(job, "upload-gcs-latest", inputs.UploadGCSLatest)
+		workflow.SetJobInput(job, "attestation", inputs.Attestation)
 	}
 }
 

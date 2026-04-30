@@ -46,6 +46,12 @@ inputs:
       Default is "false".
     required: false
     default: "false"
+  provenance-attestation:
+    description: |
+      Optional provenance attestation reference to include when publishing the plugin.
+      Expected format: github#<owner>#sha256:<zip-sha256>.
+    required: false
+    default: ""
   gcom-api-url:
     description: |
       FOR INTERNAL TESTING ONLY.
@@ -75,6 +81,10 @@ runs:
           publish_args+=(--publish-as-pending)
         fi
 
+        if [ -n "${PROVENANCE_ATTESTATION}" ]; then
+          publish_args+=(--provenance-attestation "${PROVENANCE_ATTESTATION}")
+        fi
+
         ${{ github.action_path }}/publish.sh \
           "${publish_args[@]}" \
           "${args[@]}"
@@ -90,4 +100,5 @@ runs:
 
         IGNORE_CONFLICTS: ${{ inputs.ignore-conflicts }}
         PUBLISH_AS_PENDING: ${{ inputs.publish-as-pending }}
+        PROVENANCE_ATTESTATION: ${{ inputs.provenance-attestation }}
       shell: bash
