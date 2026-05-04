@@ -1,5 +1,13 @@
 # Changelog
 
+## [7.3.2](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v7.3.1...ci-cd-workflows/v7.3.2) (2026-05-04)
+
+
+### 🐛 Bug Fixes
+
+* **cd:** pass provenance attestation to catalog publish ([#704](https://github.com/grafana/plugin-ci-workflows/issues/704)) ([d99acfa](https://github.com/grafana/plugin-ci-workflows/commit/d99acfa1db91cf3f344d999f0ac57f97e3e8f1ca))
+* **ci:** gate GCS upload on Playwright success ([#705](https://github.com/grafana/plugin-ci-workflows/issues/705)) ([a9fc9e9](https://github.com/grafana/plugin-ci-workflows/commit/a9fc9e918852bacd6dfec39d1a4aea574df4ae11))
+
 ## [7.3.1](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v7.3.0...ci-cd-workflows/v7.3.1) (2026-04-24)
 
 
