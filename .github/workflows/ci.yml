@@ -380,6 +380,7 @@ jobs:
             const trustedBots = [
               'dependabot[bot]',
               'renovate-sh-app[bot]',
+              'cursor[bot]',
               // Used by other shared workflows such as the version bump workflow
               'grafana-plugins-platform-bot[bot]'
             ].map((s) => s.toLowerCase());
