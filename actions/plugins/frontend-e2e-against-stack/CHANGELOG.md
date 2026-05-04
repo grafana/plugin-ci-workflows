@@ -1,5 +1,42 @@
 # Changelog
 
+## [1.0.2](https://github.com/grafana/plugin-ci-workflows/compare/plugins-frontend-e2e-against-stack/v1.0.1...plugins-frontend-e2e-against-stack/v1.0.2) (2026-05-04)
+
+
+### ♻️ Code Refactoring
+
+* **security:** mask and unexport secrets when necessary ([#625](https://github.com/grafana/plugin-ci-workflows/issues/625)) ([54e4c09](https://github.com/grafana/plugin-ci-workflows/commit/54e4c0970bbcb4925dfaed840a92a3a79d4f8d88))
+
+
+### 🔧 Chores
+
+* **deps:** lock file maintenance ([#579](https://github.com/grafana/plugin-ci-workflows/issues/579)) ([45e5501](https://github.com/grafana/plugin-ci-workflows/commit/45e55017bac313b7a7179e2a52d931b11da6a476))
+* **deps:** lock file maintenance ([#662](https://github.com/grafana/plugin-ci-workflows/issues/662)) ([44ade85](https://github.com/grafana/plugin-ci-workflows/commit/44ade85af4389fe96f1b39bd57915c92866d1abf))
+* **deps:** update actions/checkout action to v6.0.2 ([#529](https://github.com/grafana/plugin-ci-workflows/issues/529)) ([352ce11](https://github.com/grafana/plugin-ci-workflows/commit/352ce11438654fcca4c009130595750fa979903c))
+* **deps:** update actions/setup-node action to v6 ([#362](https://github.com/grafana/plugin-ci-workflows/issues/362)) ([69022ab](https://github.com/grafana/plugin-ci-workflows/commit/69022ab90ecdfe03890fa825bb3337d9625aac4f))
+* **deps:** update actions/setup-node action to v6.3.0 ([#610](https://github.com/grafana/plugin-ci-workflows/issues/610)) ([50f2f7e](https://github.com/grafana/plugin-ci-workflows/commit/50f2f7e405ecb6890a52c138432d5bb2f36e42a3))
+* **deps:** update actions/upload-artifact action to v6 ([#535](https://github.com/grafana/plugin-ci-workflows/issues/535)) ([1b6d9e8](https://github.com/grafana/plugin-ci-workflows/commit/1b6d9e872062d18bdcfe584934f7c5dc5f081244))
+* **deps:** update actions/upload-artifact action to v7 ([#599](https://github.com/grafana/plugin-ci-workflows/issues/599)) ([8081d18](https://github.com/grafana/plugin-ci-workflows/commit/8081d182e418a46136e89f9125c32561b84a439e))
+* **deps:** update dependency @types/bun to v1.3.10 ([#588](https://github.com/grafana/plugin-ci-workflows/issues/588)) ([5ec5cec](https://github.com/grafana/plugin-ci-workflows/commit/5ec5cec0613725d2654f53a67b3f540865c13937))
+* **deps:** update dependency @types/bun to v1.3.5 ([#476](https://github.com/grafana/plugin-ci-workflows/issues/476)) ([71d014e](https://github.com/grafana/plugin-ci-workflows/commit/71d014ef05b80befa30cb55a9ab39a863e00bb50))
+* **deps:** update dependency eslint to v10.0.1 ([#573](https://github.com/grafana/plugin-ci-workflows/issues/573)) ([52b5525](https://github.com/grafana/plugin-ci-workflows/commit/52b5525f32a2f6ec694ce47f8012b64efc3ec670))
+* **deps:** update dependency eslint to v10.0.3 ([#592](https://github.com/grafana/plugin-ci-workflows/issues/592)) ([73f0962](https://github.com/grafana/plugin-ci-workflows/commit/73f096213297738bd86946a0495251a1e71ff3a2))
+* **deps:** update dependency eslint to v10.2.1 ([#681](https://github.com/grafana/plugin-ci-workflows/issues/681)) ([7aed3a7](https://github.com/grafana/plugin-ci-workflows/commit/7aed3a7d32d37c5b924225da9f0dbe436bfd251e))
+* **deps:** update dependency eslint-plugin-jest to v29.12.1 ([#479](https://github.com/grafana/plugin-ci-workflows/issues/479)) ([05ed571](https://github.com/grafana/plugin-ci-workflows/commit/05ed5711bbb54f3aa5a3cafe36bcba84071f6ade))
+* **deps:** update dependency typescript to v6 ([#627](https://github.com/grafana/plugin-ci-workflows/issues/627)) ([f29585e](https://github.com/grafana/plugin-ci-workflows/commit/f29585ec5af5b9083812b0ae8338db6d91abc811))
+* **deps:** update dependency typescript-eslint to v8.51.0 ([#480](https://github.com/grafana/plugin-ci-workflows/issues/480)) ([80958a9](https://github.com/grafana/plugin-ci-workflows/commit/80958a9b3f4faff6f2cc738652ef070f63851e7c))
+* **deps:** update dependency typescript-eslint to v8.57.0 ([#605](https://github.com/grafana/plugin-ci-workflows/issues/605)) ([a96786c](https://github.com/grafana/plugin-ci-workflows/commit/a96786cc0785a8546a61d2a0963703451110016e))
+* **deps:** update frontend-e2e-against-stack dependencies ([#534](https://github.com/grafana/plugin-ci-workflows/issues/534)) ([91c2c04](https://github.com/grafana/plugin-ci-workflows/commit/91c2c04f52eed34da3e245c9e283406f7f45a08a))
+* **deps:** update frontend-e2e-against-stack dependencies ([#542](https://github.com/grafana/plugin-ci-workflows/issues/542)) ([c7cfa25](https://github.com/grafana/plugin-ci-workflows/commit/c7cfa25728c4dc5c41b2de7b801f3048d3ce3eac))
+* **deps:** update frontend-e2e-against-stack dependencies ([#558](https://github.com/grafana/plugin-ci-workflows/issues/558)) ([f1ad141](https://github.com/grafana/plugin-ci-workflows/commit/f1ad14118ae7f41f37907ddfda60533e4d953293))
+* **deps:** update frontend-e2e-against-stack dependencies ([#570](https://github.com/grafana/plugin-ci-workflows/issues/570)) ([d9c8c19](https://github.com/grafana/plugin-ci-workflows/commit/d9c8c19ef84ec30a76a89de3b5c324406c7a3d75))
+* **deps:** update frontend-e2e-against-stack dependencies ([#577](https://github.com/grafana/plugin-ci-workflows/issues/577)) ([231a519](https://github.com/grafana/plugin-ci-workflows/commit/231a5196f9bff8f39b6702be5382d5a03aa98139))
+* **deps:** update frontend-e2e-against-stack dependencies ([#613](https://github.com/grafana/plugin-ci-workflows/issues/613)) ([cbea7c6](https://github.com/grafana/plugin-ci-workflows/commit/cbea7c652482f9aa18bccf714b9010bcb36673bd))
+* **deps:** update frontend-e2e-against-stack dependencies ([#626](https://github.com/grafana/plugin-ci-workflows/issues/626)) ([b1d785a](https://github.com/grafana/plugin-ci-workflows/commit/b1d785af583353afe3acc3feb330ed2c96b19e02))
+* **deps:** update frontend-e2e-against-stack dependencies ([#645](https://github.com/grafana/plugin-ci-workflows/issues/645)) ([b041e7e](https://github.com/grafana/plugin-ci-workflows/commit/b041e7e836e15b14c452a358312cc89aace2c469))
+* **deps:** update frontend-e2e-against-stack dependencies ([#661](https://github.com/grafana/plugin-ci-workflows/issues/661)) ([2752d7d](https://github.com/grafana/plugin-ci-workflows/commit/2752d7d72fab97f1add1bc4b796d10217ea6491b))
+* **deps:** update frontend-e2e-against-stack dependencies to v10 (major) ([#556](https://github.com/grafana/plugin-ci-workflows/issues/556)) ([88b865e](https://github.com/grafana/plugin-ci-workflows/commit/88b865ee7e14114f79f577126630f2db08e16677))
+
 ## [1.0.1](https://github.com/grafana/plugin-ci-workflows/compare/plugins-frontend-e2e-against-stack/v1.0.0...plugins-frontend-e2e-against-stack/v1.0.1) (2025-12-19)
 
 
