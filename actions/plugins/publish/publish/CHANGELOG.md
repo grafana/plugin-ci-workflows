@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.0.2](https://github.com/grafana/plugin-ci-workflows/compare/plugins-publish-publish/v2.0.1...plugins-publish-publish/v2.0.2) (2026-05-04)
+
+
+### 🐛 Bug Fixes
+
+* **cd:** pass provenance attestation to catalog publish ([#704](https://github.com/grafana/plugin-ci-workflows/issues/704)) ([d99acfa](https://github.com/grafana/plugin-ci-workflows/commit/d99acfa1db91cf3f344d999f0ac57f97e3e8f1ca))
+
+
+### ✅ Tests
+
+* **act:** add gcom mock, cd.yml changes for testing ([#501](https://github.com/grafana/plugin-ci-workflows/issues/501)) ([e3f1779](https://github.com/grafana/plugin-ci-workflows/commit/e3f1779be66d8a2c7051adb0a42beb73184c5bea))
+
 ## [2.0.1](https://github.com/grafana/plugin-ci-workflows/compare/plugins-publish-publish/v2.0.0...plugins-publish-publish/v2.0.1) (2025-11-04)
 
 
