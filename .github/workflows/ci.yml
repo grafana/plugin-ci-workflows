@@ -229,6 +229,13 @@ on:
         type: boolean
         required: false
         default: false
+      allow-unsigned-in-dev:
+        description: |
+          Escape hatch: when true, restore the pre-v8 behaviour of auto-allowing unsigned dev builds in untrusted contexts.
+          Defaults to false (untrusted dev builds hard-fail). PR/fork builds (env=`none`|`''`) keep the fallback either way.
+        type: boolean
+        required: false
+        default: false
       signature-type:
         description: Specify signature type to use when signing the plugin
         type: string
@@ -381,7 +388,9 @@ jobs:
               'dependabot[bot]',
               'renovate-sh-app[bot]',
               // Used by other shared workflows such as the version bump workflow
-              'grafana-plugins-platform-bot[bot]'
+              'grafana-plugins-platform-bot[bot]',
+              // Only the actor on post-merge pushes from the queue, which already required maintainer approval.
+              'github-merge-queue[bot]'
             ].map((s) => s.toLowerCase());
 
             const isPR = context.eventName === 'pull_request';
@@ -540,6 +549,8 @@ jobs:
           secrets: ${{ (fromJson(steps.workflow-context.outputs.result).isTrusted && inputs.backend-secrets != '') && inputs.backend-secrets || '' }}
           build-target: ${{ inputs.backend-build-target }}
 
+      # Auto-allow-unsigned applies only to untrusted contexts AND envs where shipping unsigned is acceptable:
+      # `none`/`''` (CI-only) and, opt-in via `allow-unsigned-in-dev`, `dev`. Untrusted dev otherwise hard-fails here.
       - name: Package universal ZIP
         id: universal-zip
         uses: grafana/plugin-ci-workflows/actions/internal/plugins/package@main
@@ -548,7 +559,7 @@ jobs:
           dist-folder: ${{ inputs.plugin-directory }}/dist
           output-folder: ${{ inputs.plugin-directory }}/dist-artifacts
           access-policy-token: ${{ fromJson(steps.workflow-context.outputs.result).isTrusted && fromJSON(steps.get-secrets.outputs.secrets).SIGN_PLUGIN_ACCESS_POLICY_TOKEN || '' }}
-          allow-unsigned: ${{ ((inputs.environment == 'dev' || inputs.environment == '' || inputs.environment == 'none') && !(fromJson(steps.workflow-context.outputs.result).isTrusted)) || inputs.allow-unsigned }}
+          allow-unsigned: ${{ ((inputs.environment == '' || inputs.environment == 'none' || (inputs.environment == 'dev' && inputs.allow-unsigned-in-dev)) && !(fromJson(steps.workflow-context.outputs.result).isTrusted)) || inputs.allow-unsigned }}
           signature-type: ${{ inputs.signature-type }}
 
       - name: Package os/arch ZIPs
@@ -559,7 +570,7 @@ jobs:
           dist-folder: ${{ inputs.plugin-directory }}/dist
           output-folder: ${{ inputs.plugin-directory }}/dist-artifacts
           access-policy-token: ${{ fromJson(steps.workflow-context.outputs.result).isTrusted && fromJSON(steps.get-secrets.outputs.secrets).SIGN_PLUGIN_ACCESS_POLICY_TOKEN || '' }}
-          allow-unsigned: ${{ ((inputs.environment == 'dev' || inputs.environment == '' || inputs.environment == 'none') && !(fromJson(steps.workflow-context.outputs.result).isTrusted)) || inputs.allow-unsigned }}
+          allow-unsigned: ${{ ((inputs.environment == '' || inputs.environment == 'none' || (inputs.environment == 'dev' && inputs.allow-unsigned-in-dev)) && !(fromJson(steps.workflow-context.outputs.result).isTrusted)) || inputs.allow-unsigned }}
           signature-type: ${{ inputs.signature-type }}
 
       - name: Trufflehog secrets scanning
