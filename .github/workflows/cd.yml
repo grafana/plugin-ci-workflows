@@ -771,7 +771,8 @@ jobs:
       run-playwright: ${{ inputs.run-playwright }}
       run-playwright-docker: ${{ inputs.run-playwright-docker }}
       run-playwright-with-grafana-dependency: ${{ inputs.run-playwright-with-grafana-dependency }}
-      run-playwright-with-skip-grafana-nightly-image: ${{ inputs.run-playwright-with-skip-grafana-nightly-image || inputs.run-playwright-with-skip-grafana-dev-image }}
+      run-playwright-with-skip-grafana-nightly-image: ${{ inputs.run-playwright-with-skip-grafana-nightly-image }}
+      run-playwright-with-skip-grafana-dev-image: ${{ inputs.run-playwright-with-skip-grafana-dev-image }}
       run-playwright-with-skip-grafana-react-19-preview-image: ${{ inputs.run-playwright-with-skip-grafana-react-19-preview-image }}
       run-playwright-with-version-resolver-type: ${{ inputs.run-playwright-with-version-resolver-type }}
       upload-playwright-artifacts: ${{ inputs.upload-playwright-artifacts }}
