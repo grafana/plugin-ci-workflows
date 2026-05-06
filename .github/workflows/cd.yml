@@ -172,6 +172,12 @@ on:
         type: string
         required: false
         default: http://localhost:3000/
+      playwright-max-parallel:
+        description: |
+          Maximum number of Playwright matrix jobs to run in parallel.
+        required: false
+        type: number
+        default: 256
       playwright-secrets:
         description: |
           The secrets to use for Playwright tests.
@@ -450,7 +456,6 @@ on:
           Default is true.
         default: true
         type: boolean
-
 
       branch:
         description: |
@@ -774,6 +779,7 @@ jobs:
       playwright-docker-compose-file: ${{ inputs.playwright-docker-compose-file }}
       playwright-config: ${{ inputs.playwright-config }}
       playwright-grafana-url: ${{ inputs.playwright-grafana-url }}
+      playwright-max-parallel: ${{ inputs.playwright-max-parallel }}
       playwright-secrets: ${{ inputs.playwright-secrets }}
       playwright-gar-registry: ${{ inputs.playwright-gar-registry }}
 

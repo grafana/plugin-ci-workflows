@@ -66,6 +66,14 @@ on:
         type: string
         required: false
         default: http://localhost:3000/
+      max-parallel:
+        description: |
+          Maximum number of matrix jobs to run in parallel.
+          Defaults to 256 effectively unbounded. Lower values stagger Docker image pulls and Grafana
+          startup across runners, which can avoid wait-for-grafana flakes.
+        required: false
+        type: number
+        default: 256
       node-version:
         description: Node.js version to use
         type: string
@@ -108,6 +116,7 @@ jobs:
     timeout-minutes: 60
     strategy:
       fail-fast: false
+      max-parallel: ${{ inputs.max-parallel }}
       matrix:
         GRAFANA_IMAGE: ${{fromJson(needs.resolve-versions.outputs.matrix)}}
     name: e2e ${{ matrix.GRAFANA_IMAGE.name }}@${{ matrix.GRAFANA_IMAGE.VERSION }}
@@ -243,9 +252,24 @@ jobs:
           DOCKER_COMPOSE_FILE: ${{ inputs.docker-compose-file }}
 
       - name: Wait for Grafana to start
+        id: wait-for-grafana
         uses: grafana/plugin-actions/wait-for-grafana@wait-for-grafana/v1.0.2
         with:
           url: "${{ inputs.grafana-url }}"
+
+      - name: Capture Grafana logs on startup failure
+        if: ${{ failure() && steps.wait-for-grafana.outcome == 'failure' }}
+        shell: bash
+        working-directory: ${{ inputs.plugin-directory }}
+        run: |
+          echo "::group::docker compose ps"
+          docker compose ${DOCKER_COMPOSE_FILE:+-f "$DOCKER_COMPOSE_FILE"} ps -a || true
+          echo "::endgroup::"
+          echo "::group::docker compose logs"
+          docker compose ${DOCKER_COMPOSE_FILE:+-f "$DOCKER_COMPOSE_FILE"} logs --no-color --tail 500 || true
+          echo "::endgroup::"
+        env:
+          DOCKER_COMPOSE_FILE: ${{ inputs.docker-compose-file }}
 
       - name: Run Playwright tests
         id: run-tests
