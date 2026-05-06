@@ -231,7 +231,7 @@ on:
         default: false
       allow-unsigned-in-dev:
         description: |
-          Escape hatch: when true, restore the pre-v8 behaviour of auto-allowing unsigned dev builds in untrusted contexts.
+          Escape hatch: when true, allow unsigned dev builds in untrusted contexts.
           Defaults to false (untrusted dev builds hard-fail). PR/fork builds (env=`none`|`''`) keep the fallback either way.
         type: boolean
         required: false
