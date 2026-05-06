@@ -66,6 +66,14 @@ on:
         type: string
         required: false
         default: http://localhost:3000/
+      grafana-startup-timeout:
+        description: |
+          Seconds to wait for Grafana to respond with the expected status code
+          before failing the job. Increase this on contended runner pools where
+          Grafana may take longer than 60 seconds to start accepting requests.
+        type: number
+        required: false
+        default: 60
       max-parallel:
         description: |
           Maximum number of matrix jobs to run in parallel.
@@ -256,6 +264,7 @@ jobs:
         uses: grafana/plugin-actions/wait-for-grafana@wait-for-grafana/v1.0.2
         with:
           url: "${{ inputs.grafana-url }}"
+          timeout: "${{ inputs.grafana-startup-timeout }}"
 
       - name: Capture Grafana logs on startup failure
         if: ${{ failure() && steps.wait-for-grafana.outcome == 'failure' }}
