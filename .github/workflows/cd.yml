@@ -756,7 +756,7 @@ jobs:
 
   ci:
     name: CI
-    uses: grafana/plugin-ci-workflows/.github/workflows/ci.yml@main
+    uses: grafana/plugin-ci-workflows/.github/workflows/ci.yml@l2d2/feat-playwright-concurrency
     needs:
       - setup
     with:
