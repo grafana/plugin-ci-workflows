@@ -735,7 +735,7 @@ jobs:
 
   playwright:
     name: Playwright E2E tests
-    uses: grafana/plugin-ci-workflows/.github/workflows/playwright.yml@l2d2/feat-playwright-concurrency
+    uses: grafana/plugin-ci-workflows/.github/workflows/playwright.yml@main
     if: ${{ inputs.run-playwright == true }}
     needs:
       - test-and-build
