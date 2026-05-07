@@ -9,7 +9,9 @@ description: |
     - `release-please-config.json` (config file)
 
   **Usage:**
-  Trigger with workflow_dispatch.
+  Trigger on push to main (to detect merged release PRs and create tags)
+  and optionally on workflow_dispatch. The calling workflow needs
+  `id-token: write` permission for Vault OIDC authentication.
 
   **Version Bumping:**
   Release-please automatically updates the npm version based on commit message prefixes.
