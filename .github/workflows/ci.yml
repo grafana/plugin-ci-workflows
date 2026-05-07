@@ -145,10 +145,17 @@ on:
         type: string
         required: false
         default: http://localhost:3000/
+      playwright-grafana-timeout:
+        description: |
+          Seconds to wait for the Grafana endpoint check in Playwright jobs.
+          Default is 60.
+        required: false
+        type: number
+        default: 60
       playwright-grafana-startup-timeout:
         description: |
-          Seconds to wait for Grafana to respond in Playwright jobs before failing.
-          Default is 60.
+          Seconds to wait for Grafana startup before endpoint checks begin in
+          Playwright jobs. Default is 60.
         required: false
         type: number
         default: 60
@@ -746,6 +753,7 @@ jobs:
       playwright-config: ${{ inputs.playwright-config }}
       report-path: ${{ inputs.playwright-report-path }}
       grafana-url: ${{ inputs.playwright-grafana-url }}
+      grafana-timeout: ${{ inputs.playwright-grafana-timeout }}
       grafana-startup-timeout: ${{ inputs.playwright-grafana-startup-timeout }}
       max-parallel: ${{ inputs.playwright-max-parallel }}
       secrets: ${{ (fromJson(needs.test-and-build.outputs.workflow-context).isTrusted && inputs.playwright-secrets != '') && inputs.playwright-secrets || '' }}

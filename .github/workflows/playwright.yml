@@ -66,11 +66,17 @@ on:
         type: string
         required: false
         default: http://localhost:3000/
+      grafana-timeout:
+        description: |
+          Seconds to wait for the HTTP endpoint check before timing out.
+          This maps to wait-for-grafana's `timeout` input.
+        type: number
+        required: false
+        default: 60
       grafana-startup-timeout:
         description: |
-          Seconds to wait for Grafana to respond with the expected status code
-          before failing the job. Increase this on contended runner pools where
-          Grafana may take longer than 60 seconds to start accepting requests.
+          Seconds to wait for Grafana startup before beginning endpoint checks.
+          This maps to wait-for-grafana's `startupTimeout` input.
         type: number
         required: false
         default: 60
@@ -261,10 +267,11 @@ jobs:
 
       - name: Wait for Grafana to start
         id: wait-for-grafana
-        uses: grafana/plugin-actions/wait-for-grafana@wait-for-grafana/v1.0.2
+        uses: grafana/plugin-actions/wait-for-grafana@wait-for-grafana/v1.0.3
         with:
           url: "${{ inputs.grafana-url }}"
-          timeout: "${{ inputs.grafana-startup-timeout }}"
+          timeout: "${{ inputs.grafana-timeout }}"
+          startupTimeout: "${{ inputs.grafana-startup-timeout }}"
 
       - name: Capture Grafana logs on startup failure
         if: ${{ failure() && steps.wait-for-grafana.outcome == 'failure' }}
