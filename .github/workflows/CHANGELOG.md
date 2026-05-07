@@ -1,5 +1,33 @@
 # Changelog
 
+## [8.0.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v7.3.1...ci-cd-workflows/v8.0.0) (2026-05-07)
+
+
+### ⚠ BREAKING CHANGES
+
+* **playwright:** bump e2e-version to v2.0.0 ([#695](https://github.com/grafana/plugin-ci-workflows/issues/695))
+
+### 🎉 Features
+
+* **playwright:** bump e2e-version to v2.0.0 ([#695](https://github.com/grafana/plugin-ci-workflows/issues/695)) ([e4d529b](https://github.com/grafana/plugin-ci-workflows/commit/e4d529bb30db26ad7da0ed4880e63535be2e59e8))
+
+
+### 🐛 Bug Fixes
+
+* **cd:** pass provenance attestation to catalog publish ([#704](https://github.com/grafana/plugin-ci-workflows/issues/704)) ([d99acfa](https://github.com/grafana/plugin-ci-workflows/commit/d99acfa1db91cf3f344d999f0ac57f97e3e8f1ca))
+* **ci:** gate GCS upload on Playwright success ([#705](https://github.com/grafana/plugin-ci-workflows/issues/705)) ([a9fc9e9](https://github.com/grafana/plugin-ci-workflows/commit/a9fc9e918852bacd6dfec39d1a4aea574df4ae11))
+
+
+### 📝 Documentation
+
+* improve release-please example and action description ([#710](https://github.com/grafana/plugin-ci-workflows/issues/710)) ([f4af5b2](https://github.com/grafana/plugin-ci-workflows/commit/f4af5b22a36a52882782c308bf482f6e712a0a4a))
+
+
+### 🔧 Chores
+
+* **deps:** update dependency plugin-validator to v0.39.3 ([#709](https://github.com/grafana/plugin-ci-workflows/issues/709)) ([7a45217](https://github.com/grafana/plugin-ci-workflows/commit/7a452171fc62a0eb439e96a48e21f8c7bddde1e6))
+* **deps:** update peter-evans/create-pull-request action to v8.1.1 ([#697](https://github.com/grafana/plugin-ci-workflows/issues/697)) ([a360005](https://github.com/grafana/plugin-ci-workflows/commit/a3600051f2d4905e72ec273f7330512934e3320e))
+
 ## [7.3.1](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v7.3.0...ci-cd-workflows/v7.3.1) (2026-04-24)
 
 
