@@ -83,6 +83,15 @@ on:
         type: boolean
         required: false
         default: false
+      node-package-manager-allow-scripts:
+        description: |
+          Allow npm/yarn/pnpm lifecycle scripts (preinstall, install, postinstall, prepare, etc.)
+          to run during dependency installation.
+          Disabled by default for security. Only enable as a last resort if a plugin truly
+          requires install-time scripts and cannot work without them.
+        type: boolean
+        required: false
+        default: false
 permissions:
   contents: read
   id-token: write
@@ -146,8 +155,34 @@ jobs:
         working-directory: ${{ inputs.plugin-directory }}
         run: GOOGLE_APPLICATION_CREDENTIALS=${{ env.GOOGLE_APPLICATION_CREDENTIALS }} npx google-artifactregistry-auth --credential-config ./.npmrc
 
+      - name: Configure package manager script policy
+        id: install-cmd
+        shell: bash
+        run: |
+          INSTALL_CMD="${FROZEN_INSTALL_CMD}"
+          if [ "${ALLOW_SCRIPTS}" != "true" ]; then
+            # Yarn Berry does not support --ignore-scripts on the CLI (it errors with YN0050).
+            # For Yarn Berry, scripts are suppressed via the YARN_ENABLE_SCRIPTS env var.
+            # npm, pnpm, and Yarn Classic (agent=yarn) all accept --ignore-scripts on the CLI.
+            if [ "${PACKAGE_MANAGER_AGENT}" != "yarnBerry" ]; then
+              INSTALL_CMD="${INSTALL_CMD} --ignore-scripts"
+            fi
+            # Belt-and-suspenders: also export env vars so that scripts are blocked even if a
+            # wrapper or sub-process re-invokes the package manager without our CLI flags.
+            # npm and pnpm both honour NPM_CONFIG_IGNORE_SCRIPTS.
+            # Yarn Berry honours YARN_ENABLE_SCRIPTS (its env-var form of enableScripts config).
+            # Yarn Classic also honours npm_config_ignore_scripts.
+            echo "NPM_CONFIG_IGNORE_SCRIPTS=true" >> "$GITHUB_ENV"
+            echo "YARN_ENABLE_SCRIPTS=false" >> "$GITHUB_ENV"
+          fi
+          echo "cmd=${INSTALL_CMD}" >> "$GITHUB_OUTPUT"
+        env:
+          FROZEN_INSTALL_CMD: ${{ steps.setup.outputs.node-package-manager-frozen-install-cmd }}
+          PACKAGE_MANAGER_AGENT: ${{ steps.setup.outputs.node-package-manager-agent }}
+          ALLOW_SCRIPTS: ${{ inputs.node-package-manager-allow-scripts }}
+
       - name: Install npm dependencies
-        run: ${{ steps.setup.outputs.node-package-manager-frozen-install-cmd }}
+        run: ${{ steps.install-cmd.outputs.cmd }}
         shell: bash
         working-directory: ${{ inputs.plugin-directory }}
 
