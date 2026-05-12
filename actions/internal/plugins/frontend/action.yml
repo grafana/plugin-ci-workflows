@@ -74,8 +74,14 @@ runs:
           # Yarn Classic also honours npm_config_ignore_scripts.
           echo "NPM_CONFIG_IGNORE_SCRIPTS=true" >> "$GITHUB_ENV"
           echo "YARN_ENABLE_SCRIPTS=false" >> "$GITHUB_ENV"
+          printf '::act-debug::msg="npm-config-ignore-scripts" value=true\n'
+          printf '::act-debug::msg="yarn-enable-scripts" value=false\n'
+        else
+          printf '::act-debug::msg="npm-config-ignore-scripts" value=not-set\n'
+          printf '::act-debug::msg="yarn-enable-scripts" value=not-set\n'
         fi
         echo "cmd=${INSTALL_CMD}" >> "$GITHUB_OUTPUT"
+        printf '::act-debug::msg="install-cmd" cmd=%s\n' "${INSTALL_CMD}"
       env:
         FROZEN_INSTALL_CMD: ${{ steps.package-manager.outputs.frozenInstallCmd }}
         PACKAGE_MANAGER_AGENT: ${{ steps.package-manager.outputs.agent }}
