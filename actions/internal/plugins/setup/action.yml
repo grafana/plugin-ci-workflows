@@ -76,6 +76,9 @@ outputs:
   node-package-manager-exec-local-cmd:
     description: The command to execute a locally installed package (e.g. npx, yarn dlx, pnpm exec).
     value: ${{ steps.package-manager.outputs.execLocalCmd }}
+  node-package-manager-agent:
+    description: The agent identifier for the detected Node.js package manager (e.g. npm, pnpm, yarn, yarnBerry).
+    value: ${{ steps.package-manager.outputs.agent }}
 
 runs:
   using: composite
