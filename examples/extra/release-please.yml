@@ -1,16 +1,61 @@
-name: release please
+# Opens (or updates) a release PR with the next version bump and CHANGELOG entries
+# based on conventional commits since the last tag.
+#
+# Merging the release PR creates a v* tag, which triggers the release workflow
+# (GitHub Release with signed plugin artifacts).
+#
+# IMPORTANT: This workflow requires the `grafana-plugins-platform-bot` GitHub App
+# to have permissions on your repository. Before using it, request permissions
+# by following the instructions here:
+#   https://enghub.grafana-ops.net/docs/default/component/grafana-plugins-platform/plugins-ci-github-actions/035-github-app-permissions/#updating-permissions-for-the-github-app
+# Skipping this step will cause this workflow to fail.
+#
+# Required repo files:
+#   .release-please-manifest.json  — e.g. { ".": "1.0.0" }
+#   release-please-config.json     — see below
+#
+# Recommended release-please-config.json for repos that have a separate
+# release.yml workflow (build-plugin creates the GitHub Release with signed
+# artifacts):
+#
+#   {
+#     "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+#     "include-v-in-tag": true,
+#     "include-component-in-tag": false,
+#     "packages": {
+#       ".": {
+#         "release-type": "node",
+#         "package-name": "my-plugin"
+#       }
+#     }
+#   }
+#
+# - include-component-in-tag: false — ensures tags are v1.2.3, not my-plugin-v1.2.3
+#
+# Note: do NOT use skip-github-release — it prevents tag creation and breaks
+# release-please state tracking. build-plugin (via softprops/action-gh-release)
+# safely updates the release that release-please already created.
+#
+# For more information, see
+# https://github.com/grafana/plugin-ci-workflows/tree/main/actions/plugins/release-please
+
+name: Release Please
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
   contents: write
   pull-requests: write
+  id-token: write
 
 jobs:
-  run-release-please:
+  release-please:
     runs-on: ubuntu-latest
 
     steps:
-      - name: release please version bump changelog
+      - name: Run release-please
         uses: grafana/plugin-ci-workflows/actions/plugins/release-please@plugins-release-please/v1.0.1
