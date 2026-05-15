@@ -177,6 +177,26 @@ on:
         type: string
         required: false
         default: http://localhost:3000/
+      playwright-grafana-timeout:
+        description: |
+          Seconds to wait for the Grafana endpoint check in Playwright jobs.
+          Default is 60.
+        required: false
+        type: number
+        default: 60
+      playwright-grafana-startup-timeout:
+        description: |
+          Seconds to wait for Grafana startup before endpoint checks begin in
+          Playwright jobs. Default is 60.
+        required: false
+        type: number
+        default: 60
+      playwright-max-parallel:
+        description: |
+          Maximum number of Playwright matrix jobs to run in parallel.
+        required: false
+        type: number
+        default: 256
       playwright-secrets:
         description: |
           The secrets to use for Playwright tests.
@@ -455,7 +475,6 @@ on:
           Default is true.
         default: true
         type: boolean
-
 
       branch:
         description: |
@@ -780,6 +799,9 @@ jobs:
       playwright-docker-compose-file: ${{ inputs.playwright-docker-compose-file }}
       playwright-config: ${{ inputs.playwright-config }}
       playwright-grafana-url: ${{ inputs.playwright-grafana-url }}
+      playwright-grafana-timeout: ${{ inputs.playwright-grafana-timeout }}
+      playwright-grafana-startup-timeout: ${{ inputs.playwright-grafana-startup-timeout }}
+      playwright-max-parallel: ${{ inputs.playwright-max-parallel }}
       playwright-secrets: ${{ inputs.playwright-secrets }}
       playwright-gar-registry: ${{ inputs.playwright-gar-registry }}
 
