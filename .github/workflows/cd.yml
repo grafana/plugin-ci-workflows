@@ -177,6 +177,11 @@ on:
         type: string
         required: false
         default: http://localhost:3000/
+      playwright-grafana-timeout:
+        description: Timeout in seconds when waiting for Grafana to start before Playwright tests
+        type: number
+        required: false
+        default: 90
       playwright-secrets:
         description: |
           The secrets to use for Playwright tests.
@@ -780,6 +785,7 @@ jobs:
       playwright-docker-compose-file: ${{ inputs.playwright-docker-compose-file }}
       playwright-config: ${{ inputs.playwright-config }}
       playwright-grafana-url: ${{ inputs.playwright-grafana-url }}
+      playwright-grafana-timeout: ${{ inputs.playwright-grafana-timeout }}
       playwright-secrets: ${{ inputs.playwright-secrets }}
       playwright-gar-registry: ${{ inputs.playwright-gar-registry }}
 

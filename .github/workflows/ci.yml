@@ -150,6 +150,11 @@ on:
         type: string
         required: false
         default: http://localhost:3000/
+      playwright-grafana-timeout:
+        description: Timeout in seconds when waiting for Grafana to start before Playwright tests
+        type: number
+        required: false
+        default: 90
       playwright-secrets:
         description: |
           The secrets to use for Playwright tests.
@@ -738,6 +743,7 @@ jobs:
       playwright-config: ${{ inputs.playwright-config }}
       report-path: ${{ inputs.playwright-report-path }}
       grafana-url: ${{ inputs.playwright-grafana-url }}
+      grafana-timeout: ${{ inputs.playwright-grafana-timeout }}
       secrets: ${{ (fromJson(needs.test-and-build.outputs.workflow-context).isTrusted && inputs.playwright-secrets != '') && inputs.playwright-secrets || '' }}
       node-version: ${{ inputs.node-version }}
       npm-registry-auth: ${{ inputs.npm-registry-auth }}
