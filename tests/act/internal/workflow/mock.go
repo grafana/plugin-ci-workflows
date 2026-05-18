@@ -15,7 +15,8 @@ const (
 	VaultSecretsAction = "grafana/shared-workflows/actions/get-vault-secrets"
 	ArgoWorkflowAction = "grafana/shared-workflows/actions/trigger-argo-workflow"
 
-	GitHubAppTokenAction = "actions/create-github-app-token"
+	GitHubAppTokenAction       = "grafana/shared-workflows/actions/create-github-app-token"
+	GitHubAppTokenLegacyAction = "actions/create-github-app-token"
 )
 
 // MockStepWithHTTPSpy creates a mocked step that POSTs the original step's inputs to an HTTPSpy server
@@ -390,8 +391,8 @@ func MockArgoWorkflowStep(originalStep Step, mockServerURL string) (Step, error)
 //
 // The mocked step outputs the `token` output expected by subsequent steps.
 func MockGitHubAppTokenStep(originalStep Step, token string) (Step, error) {
-	if !strings.HasPrefix(originalStep.Uses, GitHubAppTokenAction) {
-		return Step{}, fmt.Errorf("cannot mock github app token for a step that uses %q action, must be %q", originalStep.Uses, GitHubAppTokenAction)
+	if !strings.HasPrefix(originalStep.Uses, GitHubAppTokenAction) && !strings.HasPrefix(originalStep.Uses, GitHubAppTokenLegacyAction) {
+		return Step{}, fmt.Errorf("cannot mock github app token for a step that uses %q action, must be %q or %q", originalStep.Uses, GitHubAppTokenAction, GitHubAppTokenLegacyAction)
 	}
 	return Step{
 		Run: Commands{

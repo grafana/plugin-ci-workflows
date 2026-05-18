@@ -459,7 +459,7 @@ func WithMockedVault(t *testing.T, secrets VaultSecrets) TestingWorkflowOption {
 }
 
 // WithMockedGitHubAppToken modifies the workflow to mock the GitHub app token creation step
-// (which use the actions/create-github-app-token action)
+// (which use either the grafana/shared-workflows/actions/create-github-app-token or the actions/create-github-app-token action)
 // to instead return the provided mock token.
 // This allows testing GitHub app token creation functionality without actually creating a GitHub app.
 // Since GitHub app tokens are only used in trusted contexts, callers should most likely also use WithMockedWorkflowContext.
@@ -468,9 +468,11 @@ func WithMockedGitHubAppToken(t *testing.T, token ...string) TestingWorkflowOpti
 		token = []string{"MOCK_GITHUB_APP_TOKEN"}
 	}
 	return func(twf *TestingWorkflow) {
-		err := twf.MockAllStepsUsingAction(GitHubAppTokenAction, func(originalStep Step) (Step, error) {
-			return MockGitHubAppTokenStep(originalStep, token[0])
-		})
-		require.NoError(t, err)
+		for _, action := range []string{GitHubAppTokenAction, GitHubAppTokenLegacyAction} {
+			err := twf.MockAllStepsUsingAction(action, func(originalStep Step) (Step, error) {
+				return MockGitHubAppTokenStep(originalStep, token[0])
+			})
+			require.NoError(t, err)
+		}
 	}
 }
