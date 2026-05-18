@@ -6,6 +6,7 @@ on:
     branches:
       - main
   workflow_dispatch: # TEMP: for diagnosing release-please failure. Remove after.
+  pull_request: # TEMP: for diagnosing release-please failure. Remove after.
 
 permissions:
   contents: read
@@ -74,6 +75,7 @@ jobs:
 
       - uses: googleapis/release-please-action@5c625bfb5d1ff62eadeeb3772007f7f66fdcf071 # v4.4.1
         id: release
+        if: github.event_name == 'push' # TEMP: skip on PR while diagnosing. Restore after.
         with:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
