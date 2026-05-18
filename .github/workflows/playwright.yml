@@ -72,6 +72,11 @@ on:
         type: string
         required: false
         default: http://localhost:3000/
+      grafana-timeout:
+        description: Timeout in seconds when waiting for Grafana to start
+        type: number
+        required: false
+        default: 90
       node-version:
         description: Node.js version to use
         type: string
@@ -252,6 +257,7 @@ jobs:
         uses: grafana/plugin-actions/wait-for-grafana@wait-for-grafana/v1.0.2
         with:
           url: "${{ inputs.grafana-url }}"
+          timeout: ${{ inputs.grafana-timeout }}
 
       - name: Run Playwright tests
         id: run-tests
