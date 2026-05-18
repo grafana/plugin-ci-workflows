@@ -5,6 +5,8 @@
 > [!WARNING]
 >
 > Please [read the docs](https://enghub.grafana-ops.net/docs/default/component/grafana-plugins-platform/plugins-ci-github-actions/010-plugins-ci-github-actions) before using any of these workflows in your repository.
+>
+> If you intend to publish docs to the [Grafana website](https://github.com/grafana/website/tree/master/content/docs/plugins) (the CD workflow does this automatically when targeting `prod` and your repo has docs), or to depend on private `grafana` org repositories from your plugin's `go.mod`, you must first request `grafana-plugins-platform-bot` GitHub App permissions for your repo. See [GitHub App permissions](https://enghub.grafana-ops.net/docs/default/component/grafana-plugins-platform/plugins-ci-github-actions/035-github-app-permissions/#updating-permissions-for-the-github-app) for instructions.
 
 This folder contains some examples on how to use the shared workflows (CI and CD) in various scenarios.
 
