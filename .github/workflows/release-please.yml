@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch: # TEMP: for diagnosing release-please failure. Remove after.
 
 permissions:
   contents: read
@@ -33,6 +34,43 @@ jobs:
         uses: step-security/harden-runner@f808768d1510423e83855289c910610ca9b43176 # v2.17.0
         with:
           egress-policy: audit
+
+      # TEMP DIAGNOSTIC: probe whether the App token can write under
+      # `.github/workflows/` via the Git Trees API. Remove after diagnosing.
+      - name: Diagnose token permissions
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          github-token: ${{ steps.generate-github-token.outputs.token }}
+          script: |
+            const branch = await github.rest.repos.getBranch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              branch: 'main',
+            });
+            const baseTree = branch.data.commit.commit.tree.sha;
+
+            const probe = async (label, path) => {
+              try {
+                const res = await github.rest.git.createTree({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  base_tree: baseTree,
+                  tree: [{
+                    path,
+                    mode: '100644',
+                    type: 'blob',
+                    content: '# probe\n',
+                  }],
+                });
+                core.info(`[${label}] createTree OK at ${path}: ${res.data.sha}`);
+              } catch (e) {
+                core.error(`[${label}] createTree FAILED at ${path}: ${e.status} ${e.message}`);
+                core.error(`response: ${JSON.stringify(e.response?.data, null, 2)}`);
+              }
+            };
+
+            await probe('inside-workflows', '.github/workflows/CHANGELOG.md');
+            await probe('outside-workflows', 'CHANGELOG-probe.md');
 
       - uses: googleapis/release-please-action@5c625bfb5d1ff62eadeeb3772007f7f66fdcf071 # v4.4.1
         id: release
