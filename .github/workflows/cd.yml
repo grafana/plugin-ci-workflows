@@ -95,6 +95,14 @@ on:
         type: boolean
         required: false
         default: false
+      go-private-git-auth:
+        description: |
+          Whether to authenticate to GitHub when running Go commands, in case the plugin's Go modules include private GitHub repositories.
+          If true, the workflow will generate a GitHub token using the `grafana-plugins-platform-bot` GitHub App and use it to authenticate to GitHub when running Go commands.
+          This is only necessary if the plugin has a backend and uses private GitHub repositories in its Go modules.
+        type: boolean
+        required: false
+        default: false
       allow-unsigned:
         description: |
           Allow to publish unsigned plugins.
@@ -757,6 +765,7 @@ jobs:
       plugin-directory: ${{ inputs.plugin-directory }}
       plugin-version-suffix: ${{ needs.setup.outputs.plugin-version-suffix }}
       npm-registry-auth: ${{ inputs.npm-registry-auth }}
+      go-private-git-auth: ${{ inputs.go-private-git-auth }}
 
       go-version: ${{ inputs.go-version }}
       go-setup-caching: ${{ inputs.go-setup-caching }}

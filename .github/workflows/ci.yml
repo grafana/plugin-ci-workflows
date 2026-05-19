@@ -72,6 +72,14 @@ on:
         type: boolean
         required: false
         default: false
+      go-private-git-auth:
+        description: |
+          Whether to authenticate to GitHub when running Go commands, in case the plugin's Go modules include private GitHub repositories.
+          If true, the workflow will generate a GitHub token using the `grafana-plugins-platform-bot` GitHub App and use it to authenticate to GitHub when running Go commands.
+          This is only necessary if the plugin has a backend and uses private GitHub repositories in its Go modules.
+        type: boolean
+        required: false
+        default: false
 
       # Playwright
       run-playwright:
@@ -466,6 +474,15 @@ jobs:
           golangci-lint-version: ${{ inputs.golangci-lint-version || env.DEFAULT_GOLANGCI_LINT_VERSION }}
           mage-version: ${{ inputs.mage-version || env.DEFAULT_MAGE_VERSION }}
 
+      - name: Check for backend
+        id: check-for-backend
+        run: |
+          r=false
+          [ -f "Magefile.go" ] && r=true
+          echo "has-backend=$r" >> "$GITHUB_OUTPUT"
+        shell: bash
+        working-directory: ${{ inputs.plugin-directory }}
+
       - name: Get secrets from Vault
         id: get-secrets
         if: ${{ fromJson(steps.workflow-context.outputs.result).isTrusted }}
@@ -478,7 +495,7 @@ jobs:
 
       - name: Generate GitHub token
         id: generate-github-token
-        if: ${{ fromJson(steps.workflow-context.outputs.result).isTrusted }}
+        if: ${{ fromJson(steps.workflow-context.outputs.result).isTrusted && steps.check-for-backend.outputs.has-backend == 'true' && inputs.go-private-git-auth }}
         uses: grafana/shared-workflows/actions/create-github-app-token@259ba21cb3ff07724f331e26d926d655d24b317b # create-github-app-token/v0.2.3
         with:
           github_app: plugins-platform-bot-app
@@ -514,15 +531,6 @@ jobs:
           PLUGIN_DIRECTORY: ${{ inputs.plugin-directory }}
           PLUGIN_VERSION_SUFFIX: ${{ inputs.plugin-version-suffix }}
         shell: bash
-
-      - name: Check for backend
-        id: check-for-backend
-        run: |
-          r=false
-          [ -f "Magefile.go" ] && r=true
-          echo "has-backend=$r" >> "$GITHUB_OUTPUT"
-        shell: bash
-        working-directory: ${{ inputs.plugin-directory }}
 
       - name: Test and build frontend
         id: frontend
