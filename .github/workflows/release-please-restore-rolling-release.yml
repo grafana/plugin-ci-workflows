@@ -38,7 +38,7 @@ jobs:
         id: generate-github-token
         uses: grafana/shared-workflows/actions/create-github-app-token@259ba21cb3ff07724f331e26d926d655d24b317b # create-github-app-token/v0.2.3
         with:
-          github_app: grafana-plugins-platform-bot
+          github_app: plugins-platform-bot-app
 
       - name: Checkout main branch
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -69,7 +69,7 @@ jobs:
         if: steps.switch-references.outputs.changed == 'true'
         uses: grafana/plugin-ci-workflows/actions/internal/get-bot-user@main
         with:
-          app-slug: grafana-plugins-platform-bot
+          app-slug: plugins-platform-bot-app
           token: ${{ steps.generate-github-token.outputs.token }}
 
       - name: Create PR
