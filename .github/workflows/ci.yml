@@ -495,7 +495,7 @@ jobs:
 
       - name: Generate GitHub token
         id: generate-github-token
-        if: ${{ fromJson(steps.workflow-context.outputs.result).isTrusted && steps.check-for-backend.outputs.has-backend == 'true' && inputs.go-private-git-auth }}
+        if: ${{ fromJson(steps.workflow-context.outputs.result).isTrusted && steps.check-for-backend.outputs.has-backend == 'true' && inputs.go-private-git-auth == 'true' }}
         uses: grafana/shared-workflows/actions/create-github-app-token@259ba21cb3ff07724f331e26d926d655d24b317b # create-github-app-token/v0.2.3
         with:
           github_app: plugins-platform-bot-app
@@ -545,7 +545,7 @@ jobs:
         if: ${{ steps.check-for-backend.outputs.has-backend == 'true' }}
         uses: grafana/plugin-ci-workflows/actions/internal/plugins/backend@main
         with:
-          github-token: ${{ steps.generate-github-token.outputs.token }}
+          github-token: ${{ steps.generate-github-token.outputs.token || '' }}
           plugin-directory: ${{ inputs.plugin-directory }}
           secrets: ${{ (fromJson(steps.workflow-context.outputs.result).isTrusted && inputs.backend-secrets != '') && inputs.backend-secrets || '' }}
           build-target: ${{ inputs.backend-build-target }}
