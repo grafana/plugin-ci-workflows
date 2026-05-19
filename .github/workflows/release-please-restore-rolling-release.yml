@@ -69,7 +69,7 @@ jobs:
         if: steps.switch-references.outputs.changed == 'true'
         uses: grafana/plugin-ci-workflows/actions/internal/get-bot-user@main
         with:
-          app-slug: plugins-platform-bot-app
+          app-slug: grafana-plugins-platform-bot
           token: ${{ steps.generate-github-token.outputs.token }}
 
       - name: Create PR
