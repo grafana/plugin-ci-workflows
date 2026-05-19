@@ -493,13 +493,13 @@ jobs:
             SIGN_PLUGIN_ACCESS_POLICY_TOKEN=plugins/sign-plugin-access-policy-token:token
           export_env: false
 
-      - name: Generate GitHub token
+      - name: Generate GitHub token (private backend dependencies)
         id: generate-github-token
         if: ${{ fromJson(steps.workflow-context.outputs.result).isTrusted && steps.check-for-backend.outputs.has-backend == 'true' && inputs.go-private-git-auth == 'true' }}
         uses: grafana/shared-workflows/actions/create-github-app-token@259ba21cb3ff07724f331e26d926d655d24b317b # create-github-app-token/v0.2.3
         with:
           github_app: plugins-platform-bot-app
-          permission_set: plugin-repo
+          permission_set: go-private-dependencies
 
       - name: Spellcheck
         run: |
