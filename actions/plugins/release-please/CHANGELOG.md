@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.1](https://github.com/grafana/plugin-ci-workflows/compare/plugins-release-please/v2.0.0...plugins-release-please/v2.0.1) (2026-05-20)
+
+
+### 🐛 Bug Fixes
+
+* fix GATB app name in release-please workflow ([#732](https://github.com/grafana/plugin-ci-workflows/issues/732)) ([86c9535](https://github.com/grafana/plugin-ci-workflows/commit/86c9535c0b206c45990f53ece10840230e21b471))
+
 ## [2.0.0](https://github.com/grafana/plugin-ci-workflows/compare/plugins-release-please/v1.0.1...plugins-release-please/v2.0.0) (2026-05-20)
 
 
