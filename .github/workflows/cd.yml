@@ -95,6 +95,15 @@ on:
         type: boolean
         required: false
         default: false
+      node-package-manager-allow-scripts:
+        description: |
+          Allow npm/yarn/pnpm lifecycle scripts (preinstall, install, postinstall, prepare, etc.)
+          to run during dependency installation.
+          Disabled by default for security. Only enable as a last resort if a plugin truly
+          requires install-time scripts and cannot work without them.
+        type: boolean
+        required: false
+        default: false
       allow-unsigned:
         description: |
           Allow to publish unsigned plugins.
@@ -757,6 +766,7 @@ jobs:
       plugin-directory: ${{ inputs.plugin-directory }}
       plugin-version-suffix: ${{ needs.setup.outputs.plugin-version-suffix }}
       npm-registry-auth: ${{ inputs.npm-registry-auth }}
+      node-package-manager-allow-scripts: ${{ inputs.node-package-manager-allow-scripts }}
 
       go-version: ${{ inputs.go-version }}
       go-setup-caching: ${{ inputs.go-setup-caching }}

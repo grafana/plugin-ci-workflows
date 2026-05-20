@@ -72,6 +72,15 @@ on:
         type: boolean
         required: false
         default: false
+      node-package-manager-allow-scripts:
+        description: |
+          Allow npm/yarn/pnpm lifecycle scripts (preinstall, install, postinstall, prepare, etc.)
+          to run during dependency installation.
+          Disabled by default for security. Only enable as a last resort if a plugin truly
+          requires install-time scripts and cannot work without them.
+        type: boolean
+        required: false
+        default: false
 
       # Playwright
       run-playwright:
@@ -490,7 +499,7 @@ jobs:
       - name: Spellcheck
         run: |
           if [ -f "./cspell.config.json" ]; then
-            npx --yes cspell@6.13.3 -c cspell.config.json "**/*.{ts,tsx,js,go,md,mdx,yml,yaml,json,scss,css}"
+            npx --yes --ignore-scripts cspell@6.13.3 -c cspell.config.json "**/*.{ts,tsx,js,go,md,mdx,yml,yaml,json,scss,css}"
           else
             echo "❌ Spellcheck is not configured."
           fi
@@ -534,6 +543,7 @@ jobs:
           plugin-directory: ${{ inputs.plugin-directory }}
           secrets: ${{ (fromJson(steps.workflow-context.outputs.result).isTrusted && inputs.frontend-secrets != '') && inputs.frontend-secrets || '' }}
           npm-registry-auth: ${{ inputs.npm-registry-auth }}
+          allow-scripts: ${{ inputs.node-package-manager-allow-scripts }}
 
       - name: Test and build backend
         id: backend
@@ -741,6 +751,7 @@ jobs:
       secrets: ${{ (fromJson(needs.test-and-build.outputs.workflow-context).isTrusted && inputs.playwright-secrets != '') && inputs.playwright-secrets || '' }}
       node-version: ${{ inputs.node-version }}
       npm-registry-auth: ${{ inputs.npm-registry-auth }}
+      node-package-manager-allow-scripts: ${{ inputs.node-package-manager-allow-scripts }}
 
   playwright-docker:
     name: Plugins - Dockerized Playwright E2E tests
