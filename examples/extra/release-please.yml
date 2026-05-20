@@ -58,4 +58,4 @@ jobs:
 
     steps:
       - name: Run release-please
-        uses: grafana/plugin-ci-workflows/actions/plugins/release-please@plugins-release-please/v2.0.0
+        uses: grafana/plugin-ci-workflows/actions/plugins/release-please@plugins-release-please/v2.0.1
