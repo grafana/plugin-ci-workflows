@@ -1290,6 +1290,9 @@ jobs:
           ref: ${{ !github.event.act && needs.setup.outputs.commit-sha || github.sha }}
           persist-credentials: false
 
+      - name: Install jq
+        run: apt-get install -y jq
+
       - name: Generate GitHub token
         id: generate-github-token
         uses: grafana/shared-workflows/actions/create-github-app-token@259ba21cb3ff07724f331e26d926d655d24b317b # create-github-app-token/v0.2.3
