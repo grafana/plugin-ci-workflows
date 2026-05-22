@@ -125,7 +125,7 @@ jobs:
 
       - name: Setup
         id: setup
-        uses: grafana/plugin-ci-workflows/actions/internal/plugins/setup@ci-cd-workflows/v8.0.1
+        uses: grafana/plugin-ci-workflows/actions/internal/plugins/setup@main
         with:
           plugin-directory: ${{ inputs.plugin-directory }}
           node-version: ${{ inputs.node-version }}
@@ -275,6 +275,6 @@ jobs:
     if: always()
     steps:
       - name: Check matrix job status
-        uses: grafana/plugin-ci-workflows/actions/internal/check-matrix-status@ci-cd-workflows/v8.0.1
+        uses: grafana/plugin-ci-workflows/actions/internal/check-matrix-status@main
         with:
           results: ${{ needs.playwright-tests.result }}
