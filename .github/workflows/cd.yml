@@ -95,6 +95,14 @@ on:
         type: boolean
         required: false
         default: false
+      go-private-git-auth:
+        description: |
+          Whether to authenticate to GitHub when running Go commands, in case the plugin's Go modules include private GitHub repositories.
+          If true, the workflow will generate a GitHub token using the `grafana-plugins-platform-bot` GitHub App and use it to authenticate to GitHub when running Go commands.
+          This is only necessary if the plugin has a backend and uses private GitHub repositories in its Go modules.
+        type: boolean
+        required: false
+        default: false
       allow-unsigned:
         description: |
           Allow to publish unsigned plugins.
@@ -762,6 +770,7 @@ jobs:
       plugin-directory: ${{ inputs.plugin-directory }}
       plugin-version-suffix: ${{ needs.setup.outputs.plugin-version-suffix }}
       npm-registry-auth: ${{ inputs.npm-registry-auth }}
+      go-private-git-auth: ${{ inputs.go-private-git-auth }}
 
       go-version: ${{ inputs.go-version }}
       go-setup-caching: ${{ inputs.go-setup-caching }}
@@ -1287,23 +1296,20 @@ jobs:
           ref: ${{ !github.event.act && needs.setup.outputs.commit-sha || github.sha }}
           persist-credentials: false
 
-      - name: Get secrets from Vault
-        id: get-secrets
-        uses: grafana/shared-workflows/actions/get-vault-secrets@f1614b210386ac420af6807a997ac7f6d96e477a # get-vault-secrets/v1.3.1
-        with:
-          vault_instance: ${{ env.VAULT_INSTANCE }}
-          common_secrets: |
-            GITHUB_APP_ID=plugins-platform-bot-app:app-id
-            GITHUB_APP_PRIVATE_KEY=plugins-platform-bot-app:private-key
-          export_env: false
+      # TEMPORARY: grafana/docs-base (alpine + node) doesn't ship jq, which
+      # the create-github-app-token action's bash scripts depend on.
+      # Remove this step once grafana/shared-workflows#1948 is released and
+      # the create-github-app-token ref above is bumped past it.
+      - name: Install jq (docs-base workaround)
+        shell: sh
+        run: apk add --no-cache jq
 
       - name: Generate GitHub token
         id: generate-github-token
-        uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859 # v3.0.0
+        uses: grafana/shared-workflows/actions/create-github-app-token@259ba21cb3ff07724f331e26d926d655d24b317b # create-github-app-token/v0.2.3
         with:
-          app-id: ${{ fromJSON(steps.get-secrets.outputs.secrets).GITHUB_APP_ID }}
-          private-key: ${{ fromJSON(steps.get-secrets.outputs.secrets).GITHUB_APP_PRIVATE_KEY }}
-          owner: ${{ github.repository_owner }}
+          github_app: grafana-plugins-platform-bot
+          permission_set: website-docs
 
       - name: Publish docs
         uses: grafana/plugin-ci-workflows/actions/internal/plugins/docs/publish@main
