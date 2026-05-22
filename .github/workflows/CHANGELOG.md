@@ -1,5 +1,17 @@
 # Changelog
 
+## [8.0.1](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v8.0.0...ci-cd-workflows/v8.0.1) (2026-05-22)
+
+
+### 🐛 Bug Fixes
+
+* **cd:** install jq via apk in publish-docs (docs-base is alpine) ([#741](https://github.com/grafana/plugin-ci-workflows/issues/741)) ([58f76d0](https://github.com/grafana/plugin-ci-workflows/commit/58f76d0c28b82728429b8a6cabc0dee85cfddd5e))
+
+
+### 🔧 Chores
+
+* **setup:** bump `pnpm/action-setup` from v5.0.0 to v6.0.8 ([#738](https://github.com/grafana/plugin-ci-workflows/issues/738)) ([8df9930](https://github.com/grafana/plugin-ci-workflows/commit/8df9930bfc0bc7467101222b790d95cecd490647))
+
 ## [8.0.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v7.3.1...ci-cd-workflows/v8.0.0) (2026-05-20)
 
 
