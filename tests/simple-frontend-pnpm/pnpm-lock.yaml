@@ -12,19 +12,19 @@ importers:
         specifier: 11.10.6
         version: 11.10.6
       '@grafana/data':
-        specifier: ^12.2.0
+        specifier: 12.2.1
         version: 12.2.1(eslint@9.39.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@5.5.4)
       '@grafana/i18n':
-        specifier: ^12.2.0
+        specifier: 12.2.1
         version: 12.2.1(eslint@9.39.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@5.5.4)
       '@grafana/runtime':
-        specifier: ^12.2.0
+        specifier: 12.2.1
         version: 12.2.1(@types/react@19.2.2)(eslint@9.39.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@5.5.4)
       '@grafana/schema':
-        specifier: ^12.2.0
+        specifier: 12.2.1
         version: 12.2.1
       '@grafana/ui':
-        specifier: ^12.2.0
+        specifier: 12.2.1
         version: 12.2.1(@types/react@19.2.2)(eslint@9.39.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@5.5.4)
       react:
         specifier: 18.2.0
@@ -34,28 +34,28 @@ importers:
         version: 18.2.0(react@18.2.0)
     devDependencies:
       '@grafana/eslint-config':
-        specifier: ^8.2.0
+        specifier: 8.2.0
         version: 8.2.0(@stylistic/eslint-plugin-ts@2.13.0(eslint@9.39.0)(typescript@5.5.4))(@typescript-eslint/eslint-plugin@8.46.2(@typescript-eslint/parser@8.46.2(eslint@9.39.0)(typescript@5.5.4))(eslint@9.39.0)(typescript@5.5.4))(@typescript-eslint/parser@8.46.2(eslint@9.39.0)(typescript@5.5.4))(eslint-config-prettier@8.10.2(eslint@9.39.0))(eslint-plugin-jsdoc@51.4.1(eslint@9.39.0))(eslint-plugin-react-hooks@5.2.0(eslint@9.39.0))(eslint-plugin-react@7.37.5(eslint@9.39.0))(eslint@9.39.0)(typescript@5.5.4)
       '@grafana/plugin-e2e':
-        specifier: ^3.0.3
+        specifier: 3.0.3
         version: 3.0.3(@playwright/test@1.56.1)
       '@grafana/tsconfig':
-        specifier: ^2.0.0
+        specifier: 2.0.1
         version: 2.0.1
       '@playwright/test':
-        specifier: ^1.52.0
+        specifier: 1.56.1
         version: 1.56.1
       '@stylistic/eslint-plugin-ts':
-        specifier: ^2.9.0
+        specifier: 2.13.0
         version: 2.13.0(eslint@9.39.0)(typescript@5.5.4)
       '@swc/core':
-        specifier: ^1.14.0
+        specifier: 1.14.0
         version: 1.14.0(@swc/helpers@0.5.17)
       '@swc/helpers':
-        specifier: ^0.5.0
+        specifier: 0.5.17
         version: 0.5.17
       '@swc/jest':
-        specifier: ^0.2.26
+        specifier: 0.2.39
         version: 0.2.39(@swc/core@1.14.0(@swc/helpers@0.5.17))
       '@testing-library/jest-dom':
         specifier: 6.1.4
@@ -64,70 +64,70 @@ importers:
         specifier: 14.0.0
         version: 14.0.0(@types/react@19.2.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
       '@types/jest':
-        specifier: ^29.5.0
+        specifier: 29.5.14
         version: 29.5.14
       '@types/node':
-        specifier: ^20.8.7
+        specifier: 20.19.24
         version: 20.19.24
       '@types/react':
-        specifier: ^19.2.2
+        specifier: 19.2.2
         version: 19.2.2
       '@types/testing-library__jest-dom':
         specifier: 5.14.8
         version: 5.14.8
       '@typescript-eslint/eslint-plugin':
-        specifier: ^8.3.0
+        specifier: 8.46.2
         version: 8.46.2(@typescript-eslint/parser@8.46.2(eslint@9.39.0)(typescript@5.5.4))(eslint@9.39.0)(typescript@5.5.4)
       '@typescript-eslint/parser':
-        specifier: ^8.3.0
+        specifier: 8.46.2
         version: 8.46.2(eslint@9.39.0)(typescript@5.5.4)
       copy-webpack-plugin:
-        specifier: ^11.0.0
+        specifier: 11.0.0
         version: 11.0.0(webpack@5.102.1)
       css-loader:
-        specifier: ^6.7.3
+        specifier: 6.11.0
         version: 6.11.0(webpack@5.102.1)
       eslint:
-        specifier: ^9.0.0
+        specifier: 9.39.0
         version: 9.39.0
       eslint-config-prettier:
-        specifier: ^8.8.0
+        specifier: 8.10.2
         version: 8.10.2(eslint@9.39.0)
       eslint-plugin-jsdoc:
-        specifier: ^51.2.3
+        specifier: 51.4.1
         version: 51.4.1(eslint@9.39.0)
       eslint-plugin-react:
-        specifier: ^7.37.5
+        specifier: 7.37.5
         version: 7.37.5(eslint@9.39.0)
       eslint-plugin-react-hooks:
-        specifier: ^5.2.0
+        specifier: 5.2.0
         version: 5.2.0(eslint@9.39.0)
       eslint-webpack-plugin:
-        specifier: ^5.0.0
+        specifier: 5.0.2
         version: 5.0.2(eslint@9.39.0)(webpack@5.102.1)
       fork-ts-checker-webpack-plugin:
-        specifier: ^8.0.0
+        specifier: 8.0.0
         version: 8.0.0(typescript@5.5.4)(webpack@5.102.1)
       glob:
-        specifier: ^11.1.0
+        specifier: 11.1.0
         version: 11.1.0
       identity-obj-proxy:
         specifier: 3.0.0
         version: 3.0.0
       imports-loader:
-        specifier: ^5.0.0
+        specifier: 5.0.0
         version: 5.0.0(webpack@5.102.1)
       jest:
-        specifier: ^29.5.0
+        specifier: 29.7.0
         version: 29.7.0(@types/node@20.19.24)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.14.0(@swc/helpers@0.5.17))(@types/node@20.19.24)(typescript@5.5.4))
       jest-environment-jsdom:
-        specifier: ^29.5.0
+        specifier: 29.7.0
         version: 29.7.0
       prettier:
-        specifier: ^2.8.7
+        specifier: 2.8.8
         version: 2.8.8
       replace-in-file-webpack-plugin:
-        specifier: ^1.0.6
+        specifier: 1.0.6
         version: 1.0.6
       sass:
         specifier: 1.63.2
@@ -136,37 +136,37 @@ importers:
         specifier: 13.3.1
         version: 13.3.1(sass@1.63.2)(webpack@5.102.1)
       semver:
-        specifier: ^7.6.3
+        specifier: 7.7.3
         version: 7.7.3
       style-loader:
         specifier: 3.3.3
         version: 3.3.3(webpack@5.102.1)
       swc-loader:
-        specifier: ^0.2.3
+        specifier: 0.2.6
         version: 0.2.6(@swc/core@1.14.0(@swc/helpers@0.5.17))(webpack@5.102.1)
       terser-webpack-plugin:
-        specifier: ^5.3.10
+        specifier: 5.3.14
         version: 5.3.14(@swc/core@1.14.0(@swc/helpers@0.5.17))(webpack@5.102.1)
       ts-node:
-        specifier: ^10.9.2
+        specifier: 10.9.2
         version: 10.9.2(@swc/core@1.14.0(@swc/helpers@0.5.17))(@types/node@20.19.24)(typescript@5.5.4)
       typescript:
         specifier: 5.5.4
         version: 5.5.4
       webpack:
-        specifier: ^5.94.0
+        specifier: 5.102.1
         version: 5.102.1(@swc/core@1.14.0(@swc/helpers@0.5.17))(webpack-cli@5.1.4)
       webpack-cli:
-        specifier: ^5.1.4
+        specifier: 5.1.4
         version: 5.1.4(webpack@5.102.1)
       webpack-livereload-plugin:
-        specifier: ^3.0.2
+        specifier: 3.0.2
         version: 3.0.2(webpack@5.102.1)
       webpack-subresource-integrity:
-        specifier: ^5.1.0
+        specifier: 5.1.0
         version: 5.1.0(webpack@5.102.1)
       webpack-virtual-modules:
-        specifier: ^0.6.2
+        specifier: 0.6.2
         version: 0.6.2
 
 packages:
@@ -2384,7 +2384,7 @@ packages:
 
   glob@7.2.3:
     resolution: {integrity: sha512-nFR0zLpU2YCaRxwoCJvL6UvCH2JFyFVIvwTLsIf21AuHlMskA1hhTdk+LlYJtOlYt9v6dvszD2BGRqBL+iQK9Q==}
-    deprecated: Glob versions prior to v9 are no longer supported
+    deprecated: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
 
   globals@14.0.0:
     resolution: {integrity: sha512-oahGvuMGQlPw/ivIYBjVSrWAfWLBeku5tpPE2fOPLi+WHffIWbuh2tCjhyQhTBPMf5E9jDEH4FOmTYgYwbKwtQ==}
@@ -3462,6 +3462,7 @@ packages:
   raw-body@1.1.7:
     resolution: {integrity: sha512-WmJJU2e9Y6M5UzTOkHaM7xJGAPQD8PNzx3bAd2+uhZAim6wDk6dAZxPVYLF67XhbR4hmKGh33Lpmh4XWrCH5Mg==}
     engines: {node: '>= 0.8.0'}
+    deprecated: No longer maintained. Please upgrade to a stable version.
 
   rbush@4.0.1:
     resolution: {integrity: sha512-IP0UpfeWQujYC8Jg162rMNc01Rf0gWMMAb2Uxus/Q0qOFw4lCcq6ZnQEZwUoJqWyUGJ9th7JjwI4yIWo+uvoAQ==}
@@ -4476,6 +4477,7 @@ packages:
   whatwg-encoding@2.0.0:
     resolution: {integrity: sha512-p41ogyeMUrw3jWclHWTQg1k05DSVXPLcVxRTYsXUk+ZooOCZLcoYgPZ/HL/D/N+uQPOtcp1me1WhBEaX02mhWg==}
     engines: {node: '>=12'}
+    deprecated: Use @exodus/bytes instead for a more spec-conformant and faster implementation
 
   whatwg-mimetype@3.0.0:
     resolution: {integrity: sha512-nt+N2dzIutVRxARx1nghPKGv1xHikU7HKdfafKkLNLindmPU/ch3U31NOCGGA/dmPcmb1VlofO0vnKAcsm0o/Q==}
@@ -5607,7 +5609,7 @@ snapshots:
     dependencies:
       '@react-aria/interactions': 3.25.6(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
       '@react-aria/overlays': 3.28.0(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
-      '@react-aria/utils': 3.30.0(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
+      '@react-aria/utils': 3.31.0(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
       '@react-types/dialog': 3.5.22(react@18.2.0)
       '@react-types/shared': 3.32.1(react@18.2.0)
       '@swc/helpers': 0.5.17
@@ -5617,7 +5619,7 @@ snapshots:
   '@react-aria/focus@3.21.0(react-dom@18.2.0(react@18.2.0))(react@18.2.0)':
     dependencies:
       '@react-aria/interactions': 3.25.6(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
-      '@react-aria/utils': 3.30.0(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
+      '@react-aria/utils': 3.31.0(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
       '@react-types/shared': 3.32.1(react@18.2.0)
       '@swc/helpers': 0.5.17
       clsx: 2.1.1
@@ -5653,7 +5655,7 @@ snapshots:
       '@react-aria/i18n': 3.12.13(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
       '@react-aria/interactions': 3.25.6(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
       '@react-aria/ssr': 3.9.10(react@18.2.0)
-      '@react-aria/utils': 3.30.0(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
+      '@react-aria/utils': 3.31.0(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
       '@react-aria/visually-hidden': 3.8.28(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
       '@react-stately/overlays': 3.6.20(react@18.2.0)
       '@react-types/button': 3.14.1(react@18.2.0)
