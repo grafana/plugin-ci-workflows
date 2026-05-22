@@ -72,6 +72,14 @@ on:
         type: boolean
         required: false
         default: false
+      go-private-git-auth:
+        description: |
+          Whether to authenticate to GitHub when running Go commands, in case the plugin's Go modules include private GitHub repositories.
+          If true, the workflow will generate a GitHub token using the `grafana-plugins-platform-bot` GitHub App and use it to authenticate to GitHub when running Go commands.
+          This is only necessary if the plugin has a backend and uses private GitHub repositories in its Go modules.
+        type: boolean
+        required: false
+        default: false
 
       # Playwright
       run-playwright:
@@ -486,6 +494,15 @@ jobs:
           golangci-lint-version: ${{ inputs.golangci-lint-version || env.DEFAULT_GOLANGCI_LINT_VERSION }}
           mage-version: ${{ inputs.mage-version || env.DEFAULT_MAGE_VERSION }}
 
+      - name: Check for backend
+        id: check-for-backend
+        run: |
+          r=false
+          [ -f "Magefile.go" ] && r=true
+          echo "has-backend=$r" >> "$GITHUB_OUTPUT"
+        shell: bash
+        working-directory: ${{ inputs.plugin-directory }}
+
       - name: Get secrets from Vault
         id: get-secrets
         if: ${{ fromJson(steps.workflow-context.outputs.result).isTrusted }}
@@ -494,18 +511,15 @@ jobs:
           vault_instance: ${{ env.VAULT_INSTANCE }}
           common_secrets: |
             SIGN_PLUGIN_ACCESS_POLICY_TOKEN=plugins/sign-plugin-access-policy-token:token
-            GITHUB_APP_ID=plugins-platform-bot-app:app-id
-            GITHUB_APP_PRIVATE_KEY=plugins-platform-bot-app:private-key
           export_env: false
 
-      - name: Generate GitHub token
+      - name: Generate GitHub token (private backend dependencies)
         id: generate-github-token
-        uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859 # v3.0.0
-        if: ${{ fromJson(steps.workflow-context.outputs.result).isTrusted }}
+        if: ${{ fromJson(steps.workflow-context.outputs.result).isTrusted && steps.check-for-backend.outputs.has-backend == 'true' && inputs.go-private-git-auth == true }}
+        uses: grafana/shared-workflows/actions/create-github-app-token@259ba21cb3ff07724f331e26d926d655d24b317b # create-github-app-token/v0.2.3
         with:
-          app-id: ${{ fromJSON(steps.get-secrets.outputs.secrets).GITHUB_APP_ID }}
-          private-key: ${{ fromJSON(steps.get-secrets.outputs.secrets).GITHUB_APP_PRIVATE_KEY }}
-          owner: ${{ github.repository_owner }}
+          github_app: grafana-plugins-platform-bot
+          permission_set: go-private-dependencies
 
       - name: Spellcheck
         run: |
@@ -538,15 +552,6 @@ jobs:
           PLUGIN_VERSION_SUFFIX: ${{ inputs.plugin-version-suffix }}
         shell: bash
 
-      - name: Check for backend
-        id: check-for-backend
-        run: |
-          r=false
-          [ -f "Magefile.go" ] && r=true
-          echo "has-backend=$r" >> "$GITHUB_OUTPUT"
-        shell: bash
-        working-directory: ${{ inputs.plugin-directory }}
-
       - name: Test and build frontend
         id: frontend
         uses: grafana/plugin-ci-workflows/actions/internal/plugins/frontend@main
@@ -560,7 +565,7 @@ jobs:
         if: ${{ steps.check-for-backend.outputs.has-backend == 'true' }}
         uses: grafana/plugin-ci-workflows/actions/internal/plugins/backend@main
         with:
-          github-token: ${{ steps.generate-github-token.outputs.token }}
+          github-token: ${{ steps.generate-github-token.outputs.token || '' }}
           plugin-directory: ${{ inputs.plugin-directory }}
           secrets: ${{ (fromJson(steps.workflow-context.outputs.result).isTrusted && inputs.backend-secrets != '') && inputs.backend-secrets || '' }}
           build-target: ${{ inputs.backend-build-target }}
