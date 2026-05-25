@@ -4,3 +4,7 @@ allowBuilds:
 onlyBuiltDependencies:
   - '@swc/core'
   - protobufjs
+# @grafana/ui@13.0.1 transitively depends on react-data-grid resolved from a
+# git repository. Since pnpm 10.26 (blockExoticSubdeps), exotic subdependencies
+# are blocked by default. Disable that here so installs succeed.
+blockExoticSubdeps: false
