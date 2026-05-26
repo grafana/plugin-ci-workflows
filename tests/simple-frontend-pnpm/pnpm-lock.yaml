@@ -31,10 +31,10 @@ importers:
         specifier: 13.0.1
         version: 13.0.1(@react-spectrum/provider@3.11.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@types/react@19.2.2)(eslint@9.39.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.5.4)
       react:
-        specifier: ^18.3.0
+        specifier: 18.3.1
         version: 18.3.1
       react-dom:
-        specifier: ^18.3.0
+        specifier: 18.3.1
         version: 18.3.1(react@18.3.1)
     devDependencies:
       '@grafana/eslint-config':
@@ -77,7 +77,7 @@ importers:
         specifier: 19.2.2
         version: 19.2.2
       '@types/react-dom':
-        specifier: ^18.3.0
+        specifier: 18.3.7
         version: 18.3.7(@types/react@19.2.2)
       '@typescript-eslint/eslint-plugin':
         specifier: 8.46.2
