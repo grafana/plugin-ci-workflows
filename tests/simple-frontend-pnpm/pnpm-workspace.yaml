@@ -8,15 +8,6 @@ onlyBuiltDependencies:
 # git repository. Since pnpm 10.26 (blockExoticSubdeps), exotic subdependencies
 # are blocked by default. Disable that here so installs succeed.
 blockExoticSubdeps: false
-minimumReleaseAgeExclude:
-  - webpack@5.104.1
-  - webpack@5.104.0
-  - serialize-javascript@7.0.3
-  - dompurify@3.3.4
-  - dompurify@3.4.0
-  - serialize-javascript@7.0.5
-  - uuid@11.1.1
-  - js-cookie@3.0.6
 overrides:
   serialize-javascript: '>=7.0.5'
   js-cookie: '>=3.0.6'
