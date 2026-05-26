@@ -32,7 +32,7 @@
     "@types/react-dom": "^18.3.0",
     "@typescript-eslint/eslint-plugin": "8.46.0",
     "@typescript-eslint/parser": "8.46.0",
-    "copy-webpack-plugin": "11.0.0",
+    "copy-webpack-plugin": "14.0.0",
     "css-loader": "6.11.0",
     "eslint": "^9.0.0",
     "eslint-config-prettier": "8.10.2",
@@ -75,5 +75,9 @@
     "react": "^18.3.0",
     "react-dom": "^18.3.0"
   },
-  "packageManager": "npm@10.9.0"
+  "packageManager": "npm@10.9.0",
+  "overrides": {
+    "js-cookie": ">=3.0.6",
+    "serialize-javascript": ">=7.0.5"
+  }
 }
