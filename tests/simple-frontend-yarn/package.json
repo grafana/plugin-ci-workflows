@@ -56,7 +56,7 @@
     "terser-webpack-plugin": "5.3.14",
     "ts-node": "10.9.2",
     "typescript": "5.5.4",
-    "webpack": "5.102.1",
+    "webpack": "5.107.1",
     "webpack-cli": "5.1.4",
     "webpack-livereload-plugin": "3.0.2",
     "webpack-subresource-integrity": "5.1.0",
@@ -67,13 +67,19 @@
   },
   "dependencies": {
     "@emotion/css": "11.10.6",
-    "@grafana/data": "13.0.1",
-    "@grafana/i18n": "13.0.1",
-    "@grafana/runtime": "13.0.1",
-    "@grafana/schema": "13.0.1",
-    "@grafana/ui": "13.0.1",
+    "@grafana/data": "13.1.0-25893932881",
+    "@grafana/i18n": "13.1.0-25893932881",
+    "@grafana/runtime": "13.1.0-25893932881",
+    "@grafana/schema": "13.1.0-25893932881",
+    "@grafana/ui": "13.1.0-25893932881",
     "react": "18.3.1",
     "react-dom": "18.3.1"
   },
-  "packageManager": "yarn@1.22.21+sha512.ca75da26c00327d26267ce33536e5790f18ebd53266796fbb664d2a4a5116308042dd8ee7003b276a20eace7d3c5561c3577bdd71bcb67071187af124779620a"
+  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e",
+  "resolutions": {
+    "uuid": ">=11.1.1",
+    "js-cookie": ">=3.0.7",
+    "serialize-javascript": ">=7.0.5",
+    "brace-expansion": ">=2.0.3"
+  }
 }
