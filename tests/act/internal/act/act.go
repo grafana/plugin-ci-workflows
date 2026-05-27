@@ -179,7 +179,7 @@ func NewRunner(t *testing.T, opts ...RunnerOption) (*Runner, error) {
 
 // args returns the CLI arguments to pass to act for the given workflow and event payload files.
 // It also returns the port number holding the artifact server port open.
-// The caller must call closeFreePort with the returned port value to mark the port as free again after running act.
+// The caller must call markPortAsFree with the returned port value to mark the port as free again after running act.
 func (r *Runner) args(eventKind EventKind, actor string, workflowFile string, payloadFile string) ([]string, int, error) {
 	// Get a unique free port for the act artifact server, so multiple act instances can run in parallel
 	artifactServerPort, err := getFreePort()
