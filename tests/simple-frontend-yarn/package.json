@@ -67,13 +67,18 @@
   },
   "dependencies": {
     "@emotion/css": "11.10.6",
-    "@grafana/data": "13.0.1",
-    "@grafana/i18n": "13.0.1",
-    "@grafana/runtime": "13.0.1",
-    "@grafana/schema": "13.0.1",
-    "@grafana/ui": "13.0.1",
+    "@grafana/data": "13.1.0-25893932881",
+    "@grafana/i18n": "13.1.0-25893932881",
+    "@grafana/runtime": "13.1.0-25893932881",
+    "@grafana/schema": "13.1.0-25893932881",
+    "@grafana/ui": "13.1.0-25893932881",
     "react": "18.3.1",
     "react-dom": "18.3.1"
   },
-  "packageManager": "yarn@4.15.0+sha512.07ec708ac11e2eaa4ea2b04cfbb272812f7e74a753f1595eaef4486c663a98306a30cca3e6fc40f7a0b168dcfb3a2490b6a5e0501e20fb69cc36f563dd161c53"
+  "packageManager": "yarn@4.15.0+sha512.07ec708ac11e2eaa4ea2b04cfbb272812f7e74a753f1595eaef4486c663a98306a30cca3e6fc40f7a0b168dcfb3a2490b6a5e0501e20fb69cc36f563dd161c53",
+  "resolutions": {
+    "uuid": ">=11.1.1",
+    "js-cookie": ">=3.0.7",
+    "serialize-javascript": ">=7.0.5"
+  }
 }
