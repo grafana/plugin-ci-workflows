@@ -685,19 +685,23 @@ func getFreePort() (int, error) {
 		}
 		listener, err := net.ListenTCP("tcp", addr)
 		if err != nil {
-			// TODO: log error
+			fmt.Fprintf(os.Stderr, "getFreePort: listen on TCP: %v\n", err)
 			continue
 		}
-		// TODO: log error
-		defer listener.Close()
-
 		port := listener.Addr().(*net.TCPAddr).Port
-		// TOCTOU check. Map entry is deleted by markPortAsFree
+		defer func() {
+			if err := listener.Close(); err != nil {
+				fmt.Fprintf(os.Stderr, "getFreePort: close listener on port %d: %v\n", port, err)
+			}
+		}()
+		// TOCTOU check. Map entry is deleted by markPortAsFree.
+		// The listener is held open until the function returns to keep the port
+		// reserved by the OS while we register it in the map.
 		if _, ok := takenPorts.LoadOrStore(port, struct{}{}); ok {
 			// Port already taken, try again
 			continue
 		}
-		return port, err
+		return port, nil
 	}
 	return 0, fmt.Errorf("could not find a free port after retrying %d times", maxRetries)
 }
