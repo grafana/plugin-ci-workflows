@@ -54,7 +54,7 @@ inputs:
     default: ""
 
   playwright-config:
-    description: "Path to a custom Playwright config file, relative to the plugin directory. If empty (the default), Playwright resolves its own config (playwright.config.ts in the working dir). Useful when a repo has multiple Playwright configs and the stack tests need to target a specific one."
+    description: "Path to a custom Playwright config file, relative to the plugin directory. If empty (the default), Playwright resolves its own config (playwright.config.ts in the working dir)."
     required: false
     default: ""
 
