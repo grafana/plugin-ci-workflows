@@ -282,7 +282,12 @@ runs:
       env:
         NODE_ENV: production
         PLAYWRIGHT_CONFIG: ${{ inputs.playwright-config }}
-      run: npx playwright test ${PLAYWRIGHT_CONFIG:+--config="$PLAYWRIGHT_CONFIG"}
+      run: |
+        if [[ -n "$PLAYWRIGHT_CONFIG" ]]; then
+          npx playwright test --config="$PLAYWRIGHT_CONFIG"
+        else
+          npx playwright test
+        fi
       working-directory: ${{ inputs.plugin-directory }}
 
     - name: Stop grafana docker
