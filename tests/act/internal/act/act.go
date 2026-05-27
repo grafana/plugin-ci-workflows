@@ -178,13 +178,13 @@ func NewRunner(t *testing.T, opts ...RunnerOption) (*Runner, error) {
 }
 
 // args returns the CLI arguments to pass to act for the given workflow and event payload files.
-// It also returns a listener holding the artifact server port open to avoid TOCTOU races.
-// The caller must close the listener before starting the act process.
-func (r *Runner) args(eventKind EventKind, actor string, workflowFile string, payloadFile string) ([]string, *net.TCPListener, error) {
+// It also returns the port number holding the artifact server port open.
+// The caller must call closeFreePort with the returned port value to mark the port as free again after running act.
+func (r *Runner) args(eventKind EventKind, actor string, workflowFile string, payloadFile string) ([]string, int, error) {
 	// Get a unique free port for the act artifact server, so multiple act instances can run in parallel
-	artifactServerPort, portListener, err := getFreePort()
+	artifactServerPort, err := getFreePort()
 	if err != nil {
-		return nil, nil, fmt.Errorf("get free port for artifact server: %w", err)
+		return nil, 0, fmt.Errorf("get free port for artifact server: %w", err)
 	}
 
 	args := []string{
@@ -211,7 +211,7 @@ func (r *Runner) args(eventKind EventKind, actor string, workflowFile string, pa
 		// Do not pre-populate the cache if we are using the shared cache (cache warmup).
 		if r.actionsCachePath != TemplateActionsCachePath {
 			if err := copyDir(TemplateActionsCachePath, r.actionsCachePath); err != nil {
-				return nil, nil, fmt.Errorf("copy action cache: %w", err)
+				return nil, 0, fmt.Errorf("copy action cache: %w", err)
 			}
 		}
 		args = append(args, "--action-cache-path", r.actionsCachePath)
@@ -223,7 +223,7 @@ func (r *Runner) args(eventKind EventKind, actor string, workflowFile string, pa
 	// Map local all possible references of plugin-ci-workflows to the local repository
 	localRepoArgs, err := r.localRepositoryArgs()
 	if err != nil {
-		return nil, nil, err
+		return nil, 0, err
 	}
 	args = append(args, localRepoArgs...)
 	if actor != "" {
@@ -239,7 +239,7 @@ func (r *Runner) args(eventKind EventKind, actor string, workflowFile string, pa
 	for _, label := range selfHostedRunnerLabels {
 		args = append(args, "-P", label+"="+nektosActRunnerImage)
 	}
-	return args, portListener, nil
+	return args, artifactServerPort, nil
 }
 
 // localRepositoryArgs returns act CLI arguments to map local references of plugin-ci-workflows
@@ -324,10 +324,11 @@ func (r *Runner) Run(workflow workflow.Workflow, event Event) (runResult *RunRes
 		}
 	}()
 
-	args, portListener, err := r.args(event.Kind, event.Actor, workflowFile, payloadFile)
+	args, artifactServerPort, err := r.args(event.Kind, event.Actor, workflowFile, payloadFile)
 	if err != nil {
 		return nil, fmt.Errorf("get act args: %w", err)
 	}
+	defer markPortAsFree(artifactServerPort)
 
 	// TODO: escape args to avoid shell injection
 	actCmd := "act " + strings.Join(args, " ")
@@ -363,12 +364,6 @@ func (r *Runner) Run(workflow workflow.Workflow, event Event) (runResult *RunRes
 		wg.Wait()
 		_ = mergedW.Close()
 	}()
-
-	// Release the port listener right before starting act so the port is free for act to bind.
-	// This minimizes the TOCTOU window where another process could grab the same port.
-	if err := portListener.Close(); err != nil {
-		return nil, fmt.Errorf("close port listener: %w", err)
-	}
 
 	// Run act in the background
 	if err := cmd.Start(); err != nil {
@@ -672,19 +667,44 @@ func getDockerHostIP() string {
 	return "172.17.0.1"
 }
 
+// takenPorts keeps track of ports that have been given out by getFreePort and not yet marked as free by markPortAsFree.
+var takenPorts sync.Map
+
 // getFreePort asks the kernel for a free open port that is ready to use.
-// It returns the port number and the listener that is holding the port open.
-// The caller must close the listener when it is ready to use the port
-// (e.g., right before starting the process that will bind to it).
+// The returned port is registered locally and will be considered taken by other calls
+// to getFreePort until markPortAsFree is called with the port number.
 // This avoids TOCTOU races where parallel tests get the same port.
-func getFreePort() (port int, listener *net.TCPListener, err error) {
-	var a *net.TCPAddr
-	if a, err = net.ResolveTCPAddr("tcp", "localhost:0"); err == nil {
-		if listener, err = net.ListenTCP("tcp", a); err == nil {
-			return listener.Addr().(*net.TCPAddr).Port, listener, nil
+// The port can be used right away: no listener will be bound to that port when the function returns.
+// The caller must call markPortAsFree with the returned value to mark the port as free again, when it's no longer needed.
+func getFreePort() (int, error) {
+	const maxRetries = 10
+	for retry := 0; retry < maxRetries; retry++ {
+		addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
+		if err != nil {
+			continue
 		}
+		listener, err := net.ListenTCP("tcp", addr)
+		if err != nil {
+			// TODO: log error
+			continue
+		}
+		// TODO: log error
+		defer listener.Close()
+
+		port := listener.Addr().(*net.TCPAddr).Port
+		// TOCTOU check. Map entry is deleted by markPortAsFree
+		if _, ok := takenPorts.LoadOrStore(port, struct{}{}); ok {
+			// Port already taken, try again
+			continue
+		}
+		return port, err
 	}
-	return
+	return 0, fmt.Errorf("could not find a free port after retrying %d times", maxRetries)
+}
+
+// markPortAsFree marks the given port as free again by deleting it from the takenPorts map.
+func markPortAsFree(port int) {
+	takenPorts.Delete(port)
 }
 
 // copyDir recursively copies a directory tree from src to dst.
