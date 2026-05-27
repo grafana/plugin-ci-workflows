@@ -56,7 +56,7 @@
     "terser-webpack-plugin": "5.3.14",
     "ts-node": "10.9.2",
     "typescript": "5.5.4",
-    "webpack": "5.102.0",
+    "webpack": "5.107.1",
     "webpack-cli": "5.1.4",
     "webpack-livereload-plugin": "3.0.2",
     "webpack-subresource-integrity": "5.1.0",
@@ -67,17 +67,18 @@
   },
   "dependencies": {
     "@emotion/css": "11.10.6",
-    "@grafana/data": "13.0.1",
-    "@grafana/i18n": "13.0.1",
-    "@grafana/runtime": "13.0.1",
-    "@grafana/schema": "13.0.1",
-    "@grafana/ui": "13.0.1",
+    "@grafana/data": "13.1.0-25893932881",
+    "@grafana/i18n": "13.1.0-25893932881",
+    "@grafana/runtime": "13.1.0-25893932881",
+    "@grafana/schema": "13.1.0-25893932881",
+    "@grafana/ui": "13.1.0-25893932881",
     "react": "18.3.1",
     "react-dom": "18.3.1"
   },
-  "packageManager": "npm@10.9.0",
+  "packageManager": "npm@11.15.0+sha512.fa4d2d93b9519e93143e70bb913b94ff2ad5fe69c5a0f84943be557cbb59e9fc1bcce55768fb1313f225f4f9f50c78b8f366f2332aa41effd7b10efa98d8d72f",
   "overrides": {
     "js-cookie": ">=3.0.6",
-    "serialize-javascript": ">=7.0.5"
+    "serialize-javascript": ">=7.0.5",
+    "uuid": ">=11.1.1"
   }
 }
