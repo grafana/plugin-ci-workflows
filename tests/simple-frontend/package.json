@@ -76,7 +76,7 @@
     "react": "18.3.1",
     "react-dom": "18.3.1"
   },
-  "packageManager": "npm@10.9.0",
+  "packageManager": "npm@10.9.0+sha512.65a9c38a8172948f617a53619762cd77e12b9950fe1f9239debcb8d62c652f2081824b986fee7c0af6c0a7df615becebe4bf56e17ec27214a87aa29d9e038b4b",
   "overrides": {
     "js-cookie": "3.0.7"
   }
