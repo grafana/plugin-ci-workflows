@@ -53,6 +53,11 @@ inputs:
     required: false
     default: ""
 
+  playwright-config:
+    description: "Path to a custom Playwright config file, relative to the plugin directory. If empty (the default), Playwright resolves its own config (playwright.config.ts in the working dir)."
+    required: false
+    default: ""
+
 runs:
   using: "composite"
   steps:
@@ -276,7 +281,13 @@ runs:
       shell: bash
       env:
         NODE_ENV: production
-      run: npx playwright test
+        PLAYWRIGHT_CONFIG: ${{ inputs.playwright-config }}
+      run: |
+        if [[ -n "$PLAYWRIGHT_CONFIG" ]]; then
+          npx playwright test --config="$PLAYWRIGHT_CONFIG"
+        else
+          npx playwright test
+        fi
       working-directory: ${{ inputs.plugin-directory }}
 
     - name: Stop grafana docker
