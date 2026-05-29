@@ -108,12 +108,10 @@ runs:
       if: ${{ env.ACT }}
       shell: bash
       run: |
-        # Double-check if yarn is installed, as it may be installed by another test
-        # running in parallel and sharing the same act-toolcache volume.
-        # If try to install yarn twice, we get an "ENOTEMPTY: directory not empty" error.
-        if ! command -v yarn >/dev/null 2>&1; then
-          npm install -g yarn
-        fi
+        # Enable corepack so that yarn (v4+) can be resolved via the packageManager
+        # field in package.json. Corepack ships with Node.js 16.9+ and is the
+        # recommended way to manage Yarn Berry versions.
+        corepack enable
 
     - name: Go
       if: ${{ inputs.frontend-only != 'true' }}
