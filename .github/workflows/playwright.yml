@@ -113,14 +113,6 @@ on:
         type: boolean
         required: false
         default: false
-      playwright-multi-browser-blocking:
-        description: |
-          When false, failures in the additional browser install steps (Firefox, WebKit)
-          are non-blocking — the job continues and the plugin config skips browsers that
-          didn't install. Set to true if additional browsers must succeed or fail the build.
-        type: boolean
-        required: false
-        default: false
 permissions:
   contents: read
   id-token: write
@@ -227,13 +219,13 @@ jobs:
 
       - name: Install Playwright Firefox
         if: inputs.playwright-multi-browser
-        continue-on-error: ${{ inputs.playwright-multi-browser-blocking == false }}
         run: ${{ steps.setup.outputs.node-package-manager-exec-local-cmd }} playwright install --with-deps firefox
         shell: bash
 
+      # WebKit needs system libs that may be missing on self-hosted runners; install is best-effort.
       - name: Install Playwright WebKit
         if: inputs.playwright-multi-browser
-        continue-on-error: ${{ inputs.playwright-multi-browser-blocking == false }}
+        continue-on-error: true
         run: ${{ steps.setup.outputs.node-package-manager-exec-local-cmd }} playwright install --with-deps webkit
         shell: bash
 

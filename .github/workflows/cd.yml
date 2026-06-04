@@ -212,14 +212,6 @@ on:
         type: boolean
         required: false
         default: false
-      playwright-multi-browser-blocking:
-        description: |
-          When true, failures in additional browser installs (Firefox, WebKit) fail the build.
-          When false (default), those installs are best-effort and the plugin config skips
-          any browser that didn't install.
-        type: boolean
-        required: false
-        default: false
       playwright-secrets:
         description: |
           The secrets to use for Playwright tests.
@@ -829,7 +821,6 @@ jobs:
       playwright-secrets: ${{ inputs.playwright-secrets }}
       playwright-gar-registry: ${{ inputs.playwright-gar-registry }}
       playwright-multi-browser: ${{ inputs.playwright-multi-browser }}
-      playwright-multi-browser-blocking: ${{ inputs.playwright-multi-browser-blocking }}
 
       run-trufflehog: ${{ inputs.run-trufflehog }}
       trufflehog-version: ${{ inputs.trufflehog-version }}
