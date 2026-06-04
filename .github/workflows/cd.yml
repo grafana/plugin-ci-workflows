@@ -205,6 +205,12 @@ on:
         required: false
         type: number
         default: 256
+      playwright-browsers:
+        description: |
+          Space-separated browsers for `playwright install --with-deps` in Playwright E2E jobs.
+        type: string
+        required: false
+        default: chromium
       playwright-secrets:
         description: |
           The secrets to use for Playwright tests.
@@ -813,6 +819,7 @@ jobs:
       playwright-max-parallel: ${{ inputs.playwright-max-parallel }}
       playwright-secrets: ${{ inputs.playwright-secrets }}
       playwright-gar-registry: ${{ inputs.playwright-gar-registry }}
+      playwright-browsers: ${{ inputs.playwright-browsers }}
 
       run-trufflehog: ${{ inputs.run-trufflehog }}
       trufflehog-version: ${{ inputs.trufflehog-version }}

@@ -178,6 +178,12 @@ on:
         required: false
         type: number
         default: 256
+      playwright-browsers:
+        description: |
+          Space-separated browsers for `playwright install --with-deps` in Playwright E2E jobs.
+        type: string
+        required: false
+        default: chromium
       playwright-secrets:
         description: |
           The secrets to use for Playwright tests.
@@ -769,6 +775,7 @@ jobs:
       secrets: ${{ (fromJson(needs.test-and-build.outputs.workflow-context).isTrusted && inputs.playwright-secrets != '') && inputs.playwright-secrets || '' }}
       node-version: ${{ inputs.node-version }}
       npm-registry-auth: ${{ inputs.npm-registry-auth }}
+      playwright-browsers: ${{ inputs.playwright-browsers }}
 
   playwright-docker:
     name: Plugins - Dockerized Playwright E2E tests

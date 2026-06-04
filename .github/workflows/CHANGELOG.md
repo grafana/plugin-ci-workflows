@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- `playwright-browsers` input on `cd.yml`, `ci.yml`, and `playwright.yml` so plugins can install browsers beyond Chromium (e.g. `chromium firefox` for multi-browser E2E).
+
 ## [9.0.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v8.0.1...ci-cd-workflows/v9.0.0) (2026-05-28)
 
 

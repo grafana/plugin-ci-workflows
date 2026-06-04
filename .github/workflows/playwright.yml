@@ -105,6 +105,13 @@ on:
         type: boolean
         required: false
         default: false
+      playwright-browsers:
+        description: |
+          Space-separated browsers passed to `playwright install --with-deps`.
+          Match the browser projects in the plugin's playwright.config.ts (e.g. `chromium firefox`).
+        type: string
+        required: false
+        default: chromium
 permissions:
   contents: read
   id-token: write
@@ -206,7 +213,7 @@ jobs:
           key: playwright-${{ steps.version.outputs.version }}
 
       - name: Install Playwright Browsers
-        run: ${{ steps.setup.outputs.node-package-manager-exec-local-cmd }} playwright install --with-deps chromium
+        run: ${{ steps.setup.outputs.node-package-manager-exec-local-cmd }} playwright install --with-deps ${{ inputs.playwright-browsers }}
         shell: bash
 
       - name: Download GitHub artifact
