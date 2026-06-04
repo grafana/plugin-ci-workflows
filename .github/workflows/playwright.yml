@@ -105,13 +105,22 @@ on:
         type: boolean
         required: false
         default: false
-      playwright-browsers:
+      playwright-multi-browser:
         description: |
-          Space-separated browsers passed to `playwright install --with-deps`.
-          Match the browser projects in the plugin's playwright.config.ts (e.g. `chromium firefox`).
-        type: string
+          When true, install additional browsers (Firefox and WebKit) alongside Chromium.
+          Enable when the plugin runs non-Chromium browser projects on CI.
+          Which browsers actually run is controlled by the plugin's playwright.config.ts.
+        type: boolean
         required: false
-        default: chromium
+        default: false
+      playwright-multi-browser-blocking:
+        description: |
+          When false, failures in the additional browser install steps (Firefox, WebKit)
+          are non-blocking — the job continues and the plugin config skips browsers that
+          didn't install. Set to true if additional browsers must succeed or fail the build.
+        type: boolean
+        required: false
+        default: false
 permissions:
   contents: read
   id-token: write
@@ -212,8 +221,20 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-${{ steps.version.outputs.version }}
 
-      - name: Install Playwright Browsers
-        run: ${{ steps.setup.outputs.node-package-manager-exec-local-cmd }} playwright install --with-deps ${{ inputs.playwright-browsers }}
+      - name: Install Playwright Chromium
+        run: ${{ steps.setup.outputs.node-package-manager-exec-local-cmd }} playwright install --with-deps chromium
+        shell: bash
+
+      - name: Install Playwright Firefox
+        if: inputs.playwright-multi-browser
+        continue-on-error: ${{ inputs.playwright-multi-browser-blocking == false }}
+        run: ${{ steps.setup.outputs.node-package-manager-exec-local-cmd }} playwright install --with-deps firefox
+        shell: bash
+
+      - name: Install Playwright WebKit
+        if: inputs.playwright-multi-browser
+        continue-on-error: ${{ inputs.playwright-multi-browser-blocking == false }}
+        run: ${{ steps.setup.outputs.node-package-manager-exec-local-cmd }} playwright install --with-deps webkit
         shell: bash
 
       - name: Download GitHub artifact

@@ -178,12 +178,21 @@ on:
         required: false
         type: number
         default: 256
-      playwright-browsers:
+      playwright-multi-browser:
         description: |
-          Space-separated browsers for `playwright install --with-deps` in Playwright E2E jobs.
-        type: string
+          When true, Playwright E2E jobs install additional browsers beyond Chromium.
+          Enable when the plugin runs non-Chromium browser projects on CI.
+        type: boolean
         required: false
-        default: chromium
+        default: false
+      playwright-multi-browser-blocking:
+        description: |
+          When true, failures in additional browser installs (Firefox, WebKit) fail the build.
+          When false (default), those installs are best-effort and the plugin config skips
+          any browser that didn't install.
+        type: boolean
+        required: false
+        default: false
       playwright-secrets:
         description: |
           The secrets to use for Playwright tests.
@@ -775,7 +784,8 @@ jobs:
       secrets: ${{ (fromJson(needs.test-and-build.outputs.workflow-context).isTrusted && inputs.playwright-secrets != '') && inputs.playwright-secrets || '' }}
       node-version: ${{ inputs.node-version }}
       npm-registry-auth: ${{ inputs.npm-registry-auth }}
-      playwright-browsers: ${{ inputs.playwright-browsers }}
+      playwright-multi-browser: ${{ inputs.playwright-multi-browser }}
+      playwright-multi-browser-blocking: ${{ inputs.playwright-multi-browser-blocking }}
 
   playwright-docker:
     name: Plugins - Dockerized Playwright E2E tests
