@@ -4,7 +4,7 @@
 
 ### Added
 
-- `playwright-multi-browser` boolean input on `cd.yml`, `ci.yml`, and `playwright.yml`. When true, installs Firefox and WebKit alongside Chromium for multi-browser E2E. WebKit install is best-effort (`continue-on-error`) when system deps are unavailable on runners.
+- `playwright-browsers` input on `cd.yml`, `ci.yml`, and `playwright.yml`. Space-, newline-, or semicolon-separated list of browsers to install before Playwright E2E (default `chromium`). Values are validated against an allowlist (`chromium`, `firefox`, `webkit`) via env — no workflow input is interpolated into shell. WebKit install is best-effort when listed. Example consumer usage: `playwright-browsers: chromium firefox` in the plugin's `ci-cd.yml`.
 
 ## [9.0.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v8.0.1...ci-cd-workflows/v9.0.0) (2026-05-28)
 

@@ -105,14 +105,16 @@ on:
         type: boolean
         required: false
         default: false
-      playwright-multi-browser:
+      playwright-browsers:
         description: |
-          When true, install additional browsers (Firefox and WebKit) alongside Chromium.
-          Enable when the plugin runs non-Chromium browser projects on CI.
-          Which browsers actually run is controlled by the plugin's playwright.config.ts.
-        type: boolean
+          Browsers to install before Playwright E2E tests. Space-, newline-, or semicolon-separated.
+          Allowed values: chromium, firefox, webkit. Defaults to chromium (unchanged behaviour).
+          Only controls install; which browsers actually run is set in the plugin's playwright.config.ts.
+          Enable when CI runs non-Chromium Playwright projects. Example: `chromium firefox` or `chromium;firefox`.
+          WebKit install is best-effort when listed (system deps may be missing on self-hosted runners).
+        type: string
         required: false
-        default: false
+        default: chromium
 permissions:
   contents: read
   id-token: write
@@ -213,21 +215,39 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-${{ steps.version.outputs.version }}
 
-      - name: Install Playwright Chromium
-        run: ${{ steps.setup.outputs.node-package-manager-exec-local-cmd }} playwright install --with-deps chromium
+      - name: Install Playwright browsers
         shell: bash
-
-      - name: Install Playwright Firefox
-        if: inputs.playwright-multi-browser
-        run: ${{ steps.setup.outputs.node-package-manager-exec-local-cmd }} playwright install --with-deps firefox
-        shell: bash
-
-      # WebKit needs system libs that may be missing on self-hosted runners; install is best-effort.
-      - name: Install Playwright WebKit
-        if: inputs.playwright-multi-browser
-        continue-on-error: true
-        run: ${{ steps.setup.outputs.node-package-manager-exec-local-cmd }} playwright install --with-deps webkit
-        shell: bash
+        env:
+          PLAYWRIGHT_BROWSERS: ${{ inputs.playwright-browsers }}
+          NPM_EXEC_CMD: ${{ steps.setup.outputs.node-package-manager-exec-local-cmd }}
+        run: |
+          # Input is passed via PLAYWRIGHT_BROWSERS env; each token is validated against the allowlist below.
+          set -euo pipefail
+          allowed="chromium firefox webkit"
+          normalized=$(printf '%s' "$PLAYWRIGHT_BROWSERS" | tr ';\r\n\t,' ' ' | sed 's/  */ /g' | xargs)
+          if [ -z "$normalized" ]; then
+            normalized="chromium"
+          fi
+          seen=""
+          for token in $normalized; do
+            case " $allowed " in
+              *" $token "*) ;;
+              *)
+                echo "::error::Unsupported Playwright browser '$token'. Allowed: chromium, firefox, webkit"
+                exit 1
+                ;;
+            esac
+            case " $seen " in
+              *" $token "*) continue ;;
+            esac
+            seen="$seen $token"
+            if [ "$token" = "webkit" ]; then
+              # WebKit needs system libs that may be missing on self-hosted runners.
+              $NPM_EXEC_CMD playwright install --with-deps webkit || echo "::warning::WebKit install failed; continuing"
+            else
+              $NPM_EXEC_CMD playwright install --with-deps "$token"
+            fi
+          done
 
       - name: Download GitHub artifact
         id: download-dist-artifacts
