@@ -4,7 +4,7 @@
 
 ### Added
 
-- `playwright-browsers` input on `cd.yml`, `ci.yml`, and `playwright.yml`. Space-, newline-, or semicolon-separated list of browsers to install before Playwright E2E (default `chromium`). Values are validated against an allowlist (`chromium`, `firefox`, `webkit`) via env — no workflow input is interpolated into shell. WebKit install is best-effort when listed. Example consumer usage: `playwright-browsers: chromium firefox` in the plugin's `ci-cd.yml`.
+- `playwright-browsers` input on `cd.yml`, `ci.yml`, and `playwright.yml` to choose which Playwright browsers to install before E2E (default `chromium`; `chromium`, `firefox`, `webkit`).
 
 ## [9.0.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v8.0.1...ci-cd-workflows/v9.0.0) (2026-05-28)
 
