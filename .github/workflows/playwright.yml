@@ -208,18 +208,11 @@ jobs:
         env:
           PLUGIN_DIRECTORY: ${{ inputs.plugin-directory }}
 
-      - name: Cache Playwright
-        id: cache
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ steps.version.outputs.version }}
-
-      - name: Install Playwright browsers
+      - name: Resolve Playwright browsers
+        id: browsers
         shell: bash
         env:
           PLAYWRIGHT_BROWSERS: ${{ inputs.playwright-browsers }}
-          NPM_EXEC_CMD: ${{ steps.setup.outputs.node-package-manager-exec-local-cmd }}
         run: |
           # Input is passed via PLAYWRIGHT_BROWSERS env; each token is validated against the allowlist below.
           set -euo pipefail
@@ -241,6 +234,26 @@ jobs:
               *" $token "*) continue ;;
             esac
             seen="$seen $token"
+          done
+          list=$(echo "$seen" | xargs)
+          cache_key=$(echo "$list" | tr ' ' '\n' | sort | paste -sd '-' -)
+          echo "list=$list" >> "$GITHUB_OUTPUT"
+          echo "cache-key=$cache_key" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright
+        id: cache
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ steps.version.outputs.version }}-${{ steps.browsers.outputs.cache-key }}
+
+      - name: Install Playwright browsers
+        shell: bash
+        env:
+          NPM_EXEC_CMD: ${{ steps.setup.outputs.node-package-manager-exec-local-cmd }}
+        run: |
+          set -euo pipefail
+          for token in ${{ steps.browsers.outputs.list }}; do
             if [ "$token" = "webkit" ]; then
               # WebKit needs system libs that may be missing on self-hosted runners.
               $NPM_EXEC_CMD playwright install --with-deps webkit || echo "::warning::WebKit install failed; continuing"
