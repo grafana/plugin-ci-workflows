@@ -1,6 +1,14 @@
 # Bumps the npm version, creates a git tag and optionally generates a changelog
 # entry using conventional commits.
 #
+# Direct commit to main (create-pr: false) is only suitable for private Grafana
+# repositories. Public Grafana repositories have a branch ruleset on main that
+# requires a pull request — use create-pr: true for those repos.
+#
+# When create-pr is true, changes are committed to a release branch and opened
+# as a PR instead of pushing directly to main. The tag-release job creates the
+# git tag automatically when that PR is merged.
+#
 # IMPORTANT: This workflow requires the `grafana-plugins-platform-bot` GitHub App
 # to have permissions on your repository and GATB (GitHub App Token Broker) setup in deployment_tools.
 # Before using it, request permissions by following the instructions here:
@@ -25,6 +33,14 @@ on:
         required: false
         type: boolean
         default: true
+      create-pr:
+        description: "Open a release PR instead of committing directly to main (required for public Grafana repos)"
+        required: false
+        type: boolean
+        default: false
+  pull_request:
+    types: [closed]
+    branches: [main]
 
 permissions:
   contents: read
@@ -32,7 +48,13 @@ permissions:
 
 jobs:
   bump-version:
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-x64-small
+
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: write
 
     steps:
       - name: Version bump
@@ -40,3 +62,61 @@ jobs:
         with:
           generate-changelog: ${{ inputs.generate-changelog }}
           version: ${{ inputs.version }}
+          create-pr: ${{ inputs.create-pr }}
+
+  tag-release:
+    if: >-
+      github.event_name == 'pull_request'
+      && github.event.pull_request.merged == true
+      && startsWith(github.event.pull_request.head.ref, 'release/')
+      && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-x64-small
+
+    permissions:
+      contents: write
+      id-token: write
+
+    steps:
+      - name: Generate GitHub token
+        id: generate-github-token
+        uses: grafana/shared-workflows/actions/create-github-app-token@259ba21cb3ff07724f331e26d926d655d24b317b # create-github-app-token/v0.2.3
+        with:
+          github_app: grafana-plugins-platform-bot
+          permission_set: version-bump-changelog
+
+      - name: Checkout merge commit
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          token: ${{ steps.generate-github-token.outputs.token }}
+          persist-credentials: true
+
+      - name: Setup Git
+        shell: bash
+        run: |
+          git config user.name 'grafana-plugins-platform-bot[bot]'
+          git config user.email '144369747+grafana-plugins-platform-bot[bot]@users.noreply.github.com'
+
+      - name: Get version
+        id: version
+        shell: bash
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Create tag
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        continue-on-error: true
+        with:
+          github-token: ${{ steps.generate-github-token.outputs.token }}
+          script: |
+            const version = process.env.PLUGIN_VERSION;
+            await github.rest.git.createRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: `refs/tags/v${version}`,
+              sha: process.env.MERGE_COMMIT_SHA,
+            });
+        env:
+          PLUGIN_VERSION: ${{ steps.version.outputs.version }}
+          MERGE_COMMIT_SHA: ${{ github.event.pull_request.merge_commit_sha }}

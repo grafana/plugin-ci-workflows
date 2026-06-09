@@ -1,6 +1,13 @@
-name: Generate changelog version bump changelog
+name: Generate version bump changelog
 description: |
-  Bump npm version, create a git tag and optionally generate a changelog on main using the generate-changelog npm package.
+  Bump npm version, create a git tag and optionally generate a changelog using the generate-changelog npm package.
+
+  By default, changes are committed and pushed to main with a new git tag.
+  This direct-to-main flow is only suitable for private Grafana repositories; public Grafana repositories
+  have a branch ruleset on main that requires a pull request, so use create-pr: true for those repos.
+
+  When create-pr is true, changes are committed to a release branch and a pull request is opened instead;
+  the calling workflow should tag on merge (see examples/extra/version-bump-changelog.yml).
 
 inputs:
   version:
@@ -16,11 +23,24 @@ inputs:
     required: false
     type: boolean
     default: true
+  create-pr:
+    description: "Open a release PR instead of committing directly to main (required for public Grafana repos)"
+    required: false
+    type: boolean
+    default: false
   exclude-from-changelog:
     description: "List of commit types to exclude from CHANGELOG"
     required: false
     type: string
     default: "skip,no-changelog"
+
+outputs:
+  new-version:
+    description: The new semver version (with v prefix)
+    value: ${{ steps.bump.outputs.new-version }}
+  pull-request-url:
+    description: URL of the created PR (only when create-pr is true)
+    value: ${{ steps.create-pr.outputs.url }}
 
 runs:
   using: composite
@@ -91,7 +111,8 @@ runs:
         NEW_VERSION: ${{ steps.bump.outputs.new-version }}
         EXCLUDE_STRING: ${{ inputs.exclude-from-changelog }}
 
-    - name: Commit changes
+    - name: Commit and push to main
+      if: ${{ inputs.create-pr != 'true' }}
       shell: bash
       run: |
         git add package.json
@@ -103,7 +124,48 @@ runs:
         GITHUB_TOKEN: ${{ steps.generate-github-token.outputs.token }}
         NEW_VERSION: ${{ steps.bump.outputs.new-version }}
 
+    - name: Commit and push release branch
+      if: ${{ inputs.create-pr == 'true' }}
+      id: release-branch
+      shell: bash
+      run: |
+        RELEASE_VERSION="${NEW_VERSION#v}"
+        RELEASE_BRANCH="release/${RELEASE_VERSION}"
+        git checkout -b "${RELEASE_BRANCH}"
+        git add package.json
+        git add package-lock.json || true
+        git add CHANGELOG.md || true  # No-op if changelog not generated
+        git commit -m "chore(version): bump version to ${NEW_VERSION}"
+        git push origin "${RELEASE_BRANCH}"
+        echo "branch=${RELEASE_BRANCH}" >> "$GITHUB_OUTPUT"
+      env:
+        GITHUB_TOKEN: ${{ steps.generate-github-token.outputs.token }}
+        NEW_VERSION: ${{ steps.bump.outputs.new-version }}
+
+    - name: Create pull request
+      if: ${{ inputs.create-pr == 'true' }}
+      id: create-pr
+      shell: bash
+      run: |
+        if [[ "${GENERATE_CHANGELOG}" == "true" ]] && [[ -f CHANGELOG.md ]]; then
+          awk '/^## / { if (section) exit; section=1 } section { print }' CHANGELOG.md > /tmp/pr-body.md
+        else
+          printf "Version bump to %s\n" "${NEW_VERSION}" > /tmp/pr-body.md
+        fi
+        PR_URL=$(gh pr create \
+          --base main \
+          --head "${RELEASE_BRANCH}" \
+          --title "chore(version): release ${NEW_VERSION}" \
+          --body-file /tmp/pr-body.md)
+        echo "url=${PR_URL}" >> "$GITHUB_OUTPUT"
+      env:
+        GH_TOKEN: ${{ steps.generate-github-token.outputs.token }}
+        GENERATE_CHANGELOG: ${{ inputs.generate-changelog }}
+        NEW_VERSION: ${{ steps.bump.outputs.new-version }}
+        RELEASE_BRANCH: ${{ steps.release-branch.outputs.branch }}
+
     - name: Create git tag
+      if: ${{ inputs.create-pr != 'true' }}
       shell: bash
       run: |
         git tag -a ${NEW_VERSION} -m "Release version ${NEW_VERSION}"
@@ -111,5 +173,6 @@ runs:
         NEW_VERSION: ${{ steps.bump.outputs.new-version }}
 
     - name: Push tags
+      if: ${{ inputs.create-pr != 'true' }}
       shell: bash
       run: git push origin --tags
