@@ -250,10 +250,11 @@ jobs:
       - name: Install Playwright browsers
         shell: bash
         env:
+          PLAYWRIGHT_BROWSERS_LIST: ${{ steps.browsers.outputs.list }}
           NPM_EXEC_CMD: ${{ steps.setup.outputs.node-package-manager-exec-local-cmd }}
         run: |
           set -euo pipefail
-          for token in ${{ steps.browsers.outputs.list }}; do
+          for token in $PLAYWRIGHT_BROWSERS_LIST; do
             if [ "$token" = "webkit" ]; then
               # WebKit needs system libs that may be missing on self-hosted runners.
               $NPM_EXEC_CMD playwright install --with-deps webkit || echo "::warning::WebKit install failed; continuing"
