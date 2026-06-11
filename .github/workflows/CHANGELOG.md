@@ -6,6 +6,28 @@
 
 - `playwright-browsers` input on `cd.yml`, `ci.yml`, and `playwright.yml` to choose which Playwright browsers to install before E2E (default `chromium`; `chromium`, `firefox`, `webkit`).
 
+## [9.1.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v9.0.0...ci-cd-workflows/v9.1.0) (2026-06-11)
+
+
+### 🎉 Features
+
+* **playwright:** add playwright-browsers input for E2E installs ([#772](https://github.com/grafana/plugin-ci-workflows/issues/772)) ([d2b067d](https://github.com/grafana/plugin-ci-workflows/commit/d2b067d7de846d90d7455629f80ddf86d9db6849))
+
+
+### 🐛 Bug Fixes
+
+* **tests:** improve TOCTOU checks in getFreePort ([#753](https://github.com/grafana/plugin-ci-workflows/issues/753)) ([15245d9](https://github.com/grafana/plugin-ci-workflows/commit/15245d99fdf155ed1e9c3ef31a4e8959d38af453))
+
+
+### 🔧 Chores
+
+* **deps:** update actions/cache action to v5.0.5 ([#756](https://github.com/grafana/plugin-ci-workflows/issues/756)) ([3bdb5e0](https://github.com/grafana/plugin-ci-workflows/commit/3bdb5e0cee32485d94140e7083b465908bd4da40))
+* **deps:** update dependency act to v0.2.88 ([#757](https://github.com/grafana/plugin-ci-workflows/issues/757)) ([b76244e](https://github.com/grafana/plugin-ci-workflows/commit/b76244ebba663cdbbad9c86d336dd9e7f2d6a509))
+* **deps:** update dependency plugin-validator to v0.41.0 ([#762](https://github.com/grafana/plugin-ci-workflows/issues/762)) ([98fe2aa](https://github.com/grafana/plugin-ci-workflows/commit/98fe2aa0e34546fca40e13a2a92861aa979ff42b))
+* **deps:** update dependency trufflehog to v3.95.3 ([#763](https://github.com/grafana/plugin-ci-workflows/issues/763)) ([b588633](https://github.com/grafana/plugin-ci-workflows/commit/b58863375b6edf0bc42d72d2335e4472535c7137))
+* **deps:** update softprops/action-gh-release action to v2.6.2 ([#760](https://github.com/grafana/plugin-ci-workflows/issues/760)) ([06f4772](https://github.com/grafana/plugin-ci-workflows/commit/06f4772b9780502f3773c6dd57b78511b9ceb41b))
+* **tests:** migrate simple-frontend-yarn test plugin to yarn v4 ([#750](https://github.com/grafana/plugin-ci-workflows/issues/750)) ([bf5f4a9](https://github.com/grafana/plugin-ci-workflows/commit/bf5f4a95ae6be27ac90daa3848bba652862e1969))
+
 ## [9.0.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v8.0.1...ci-cd-workflows/v9.0.0) (2026-05-28)
 
 
