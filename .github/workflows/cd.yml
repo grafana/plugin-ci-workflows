@@ -785,7 +785,7 @@ jobs:
 
   ci:
     name: CI
-    uses: grafana/plugin-ci-workflows/.github/workflows/ci.yml@main
+    uses: grafana/plugin-ci-workflows/.github/workflows/ci.yml@d2b067d7de846d90d7455629f80ddf86d9db6849 # main
     needs:
       - setup
     with:
@@ -1005,7 +1005,7 @@ jobs:
 
       - name: Check and create stub
         id: check-and-create-stub
-        uses: grafana/plugin-ci-workflows/actions/internal/plugins/publish/check-and-create-stub@main
+        uses: grafana/plugin-ci-workflows/actions/internal/plugins/publish/check-and-create-stub@d2b067d7de846d90d7455629f80ddf86d9db6849 # main
         if: ${{ matrix.environment != 'prod' && matrix.environment != 'prod-canary' }}
         with:
           plugin-id: ${{ fromJSON(needs.ci.outputs.plugin).id }}
@@ -1015,13 +1015,13 @@ jobs:
 
       - name: Check artifact ZIP(s)
         id: check-artifact-zips
-        uses: grafana/plugin-ci-workflows/actions/internal/plugins/publish/check-artifacts@main
+        uses: grafana/plugin-ci-workflows/actions/internal/plugins/publish/check-artifacts@d2b067d7de846d90d7455629f80ddf86d9db6849 # main
         with:
           zips: ${{ needs.upload-to-gcs-release.outputs.gcs-zip-urls }}
           plugin-id: ${{ fromJSON(needs.ci.outputs.plugin).id }}
 
       - name: Publish to catalog
-        uses: grafana/plugin-ci-workflows/actions/plugins/publish/publish@main
+        uses: grafana/plugin-ci-workflows/actions/plugins/publish/publish@d2b067d7de846d90d7455629f80ddf86d9db6849 # main
         with:
           zips: ${{ needs.upload-to-gcs-release.outputs.gcs-zip-urls }}
           environment: ${{ matrix.environment == 'prod-canary' && 'prod' || matrix.environment }}
@@ -1338,7 +1338,7 @@ jobs:
           permission_set: website-docs
 
       - name: Publish docs
-        uses: grafana/plugin-ci-workflows/actions/internal/plugins/docs/publish@main
+        uses: grafana/plugin-ci-workflows/actions/internal/plugins/docs/publish@d2b067d7de846d90d7455629f80ddf86d9db6849 # main
         with:
           id: ${{ fromJSON(needs.ci.outputs.plugin).id }}
           version: ${{ fromJSON(needs.ci.outputs.plugin).version }}
@@ -1387,7 +1387,7 @@ jobs:
 
       - name: Parse changelog
         id: changelog
-        uses: grafana/plugin-ci-workflows/actions/internal/plugins/changelog@main
+        uses: grafana/plugin-ci-workflows/actions/internal/plugins/changelog@d2b067d7de846d90d7455629f80ddf86d9db6849 # main
         with:
           changelog-path: ${{ inputs.plugin-directory }}/CHANGELOG.md
 

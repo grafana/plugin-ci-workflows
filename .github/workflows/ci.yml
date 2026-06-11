@@ -385,7 +385,7 @@ env:
 jobs:
   check-for-release-channel:
     name: Check for release channel
-    uses: grafana/plugin-ci-workflows/.github/workflows/check-release-channel.yml@main
+    uses: grafana/plugin-ci-workflows/.github/workflows/check-release-channel.yml@d2b067d7de846d90d7455629f80ddf86d9db6849 # main
     with:
       DO-NOT-USE-allow-pinned-commit-hashes: ${{ inputs.DO-NOT-USE-allow-pinned-commit-hashes }}
 
@@ -492,7 +492,7 @@ jobs:
 
       - name: Setup
         id: setup
-        uses: grafana/plugin-ci-workflows/actions/internal/plugins/setup@main
+        uses: grafana/plugin-ci-workflows/actions/internal/plugins/setup@d2b067d7de846d90d7455629f80ddf86d9db6849 # main
         with:
           plugin-directory: ${{ inputs.plugin-directory }}
           node-version: ${{ fromJson(steps.tooling-versions.outputs.result).nodeVersion }}
@@ -563,7 +563,7 @@ jobs:
 
       - name: Test and build frontend
         id: frontend
-        uses: grafana/plugin-ci-workflows/actions/internal/plugins/frontend@main
+        uses: grafana/plugin-ci-workflows/actions/internal/plugins/frontend@d2b067d7de846d90d7455629f80ddf86d9db6849 # main
         with:
           plugin-directory: ${{ inputs.plugin-directory }}
           secrets: ${{ (fromJson(steps.workflow-context.outputs.result).isTrusted && inputs.frontend-secrets != '') && inputs.frontend-secrets || '' }}
@@ -572,7 +572,7 @@ jobs:
       - name: Test and build backend
         id: backend
         if: ${{ steps.check-for-backend.outputs.has-backend == 'true' }}
-        uses: grafana/plugin-ci-workflows/actions/internal/plugins/backend@main
+        uses: grafana/plugin-ci-workflows/actions/internal/plugins/backend@d2b067d7de846d90d7455629f80ddf86d9db6849 # main
         with:
           github-token: ${{ steps.generate-github-token.outputs.token || '' }}
           plugin-directory: ${{ inputs.plugin-directory }}
@@ -581,7 +581,7 @@ jobs:
 
       - name: Package universal ZIP
         id: universal-zip
-        uses: grafana/plugin-ci-workflows/actions/internal/plugins/package@main
+        uses: grafana/plugin-ci-workflows/actions/internal/plugins/package@d2b067d7de846d90d7455629f80ddf86d9db6849 # main
         with:
           universal: "true"
           dist-folder: ${{ inputs.plugin-directory }}/dist
@@ -592,7 +592,7 @@ jobs:
 
       - name: Package os/arch ZIPs
         id: os-arch-zips
-        uses: grafana/plugin-ci-workflows/actions/internal/plugins/package@main
+        uses: grafana/plugin-ci-workflows/actions/internal/plugins/package@d2b067d7de846d90d7455629f80ddf86d9db6849 # main
         with:
           universal: "false"
           dist-folder: ${{ inputs.plugin-directory }}/dist
@@ -603,7 +603,7 @@ jobs:
 
       - name: Trufflehog secrets scanning
         if: ${{ inputs.run-trufflehog == true }}
-        uses: grafana/plugin-ci-workflows/actions/internal/plugins/trufflehog@main
+        uses: grafana/plugin-ci-workflows/actions/internal/plugins/trufflehog@d2b067d7de846d90d7455629f80ddf86d9db6849 # main
         with:
           trufflehog-version: ${{ inputs.trufflehog-version || env.DEFAULT_TRUFFLEHOG_VERSION }}
           folder: ${{ inputs.plugin-directory }}/dist-artifacts
@@ -750,11 +750,11 @@ jobs:
         shell: bash
 
       - name: Test docs
-        uses: grafana/plugin-ci-workflows/actions/internal/plugins/docs/test@main
+        uses: grafana/plugin-ci-workflows/actions/internal/plugins/docs/test@d2b067d7de846d90d7455629f80ddf86d9db6849 # main
 
   playwright:
     name: Playwright E2E tests
-    uses: grafana/plugin-ci-workflows/.github/workflows/playwright.yml@main
+    uses: grafana/plugin-ci-workflows/.github/workflows/playwright.yml@d2b067d7de846d90d7455629f80ddf86d9db6849 # main
     if: ${{ inputs.run-playwright == true }}
     needs:
       - test-and-build
@@ -782,7 +782,7 @@ jobs:
 
   playwright-docker:
     name: Plugins - Dockerized Playwright E2E tests
-    uses: grafana/plugin-ci-workflows/.github/workflows/playwright-docker.yml@main
+    uses: grafana/plugin-ci-workflows/.github/workflows/playwright-docker.yml@d2b067d7de846d90d7455629f80ddf86d9db6849 # main
     if: ${{ inputs.run-playwright-docker == true }}
     needs:
       - test-and-build
