@@ -124,7 +124,13 @@ runs:
           const ws = process.env.GITHUB_WORKSPACE;
           const ref = 'heads/main';
           const message = process.env.COMMIT_MESSAGE;
-          const allowedFiles = new Set(['package.json', 'package-lock.json', 'CHANGELOG.md']);
+          const allowedFiles = new Set([
+            'package.json',
+            'package-lock.json',
+            'yarn.lock',
+            'pnpm-lock.yaml',
+            'CHANGELOG.md',
+          ]);
 
           const changed = execSync('git diff --name-only', { cwd: ws, encoding: 'utf8' })
             .trim()
@@ -188,6 +194,21 @@ runs:
         else
           printf "Version bump to %s\n" "${NEW_VERSION}" > /tmp/pr-body.md
         fi
+
+        ADD_PATHS="package.json"
+        for lockfile in package-lock.json yarn.lock pnpm-lock.yaml; do
+          if [[ -f "${lockfile}" ]]; then
+            ADD_PATHS="${ADD_PATHS}"$'\n'"${lockfile}"
+          fi
+        done
+        if [[ "${GENERATE_CHANGELOG}" == "true" ]] && [[ -f CHANGELOG.md ]]; then
+          ADD_PATHS="${ADD_PATHS}"$'\n'"CHANGELOG.md"
+        fi
+        {
+          echo 'add-paths<<EOF'
+          printf '%s\n' "${ADD_PATHS}"
+          echo 'EOF'
+        } >> "$GITHUB_OUTPUT"
       env:
         GENERATE_CHANGELOG: ${{ inputs.generate-changelog }}
         NEW_VERSION: ${{ steps.bump.outputs.new-version }}
@@ -201,10 +222,7 @@ runs:
         sign-commits: true
         branch: ${{ steps.release-branch.outputs.branch }}
         base: main
-        add-paths: |
-          package.json
-          package-lock.json
-          CHANGELOG.md
+        add-paths: ${{ steps.release-branch.outputs.add-paths }}
         commit-message: "chore(version): bump version to ${{ steps.bump.outputs.new-version }}"
         title: "chore(version): release ${{ steps.bump.outputs.new-version }}"
         body-path: /tmp/pr-body.md
