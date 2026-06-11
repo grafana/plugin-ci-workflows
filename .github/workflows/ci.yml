@@ -178,6 +178,15 @@ on:
         required: false
         type: number
         default: 256
+      playwright-browsers:
+        description: |
+          Browsers to install before Playwright E2E tests. Space-, newline-, or semicolon-separated.
+          Allowed values: chromium, firefox, webkit. Defaults to chromium (unchanged behaviour).
+          Set when the plugin runs non-Chromium browser projects on CI. Example: `chromium firefox`.
+          Which browsers actually run remains configured in the plugin's playwright.config.ts.
+        type: string
+        required: false
+        default: chromium
       playwright-secrets:
         description: |
           The secrets to use for Playwright tests.
@@ -769,6 +778,7 @@ jobs:
       secrets: ${{ (fromJson(needs.test-and-build.outputs.workflow-context).isTrusted && inputs.playwright-secrets != '') && inputs.playwright-secrets || '' }}
       node-version: ${{ inputs.node-version }}
       npm-registry-auth: ${{ inputs.npm-registry-auth }}
+      playwright-browsers: ${{ inputs.playwright-browsers }}
 
   playwright-docker:
     name: Plugins - Dockerized Playwright E2E tests
