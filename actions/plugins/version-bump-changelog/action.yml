@@ -9,6 +9,9 @@ description: |
   When create-pr is true, changes are committed to a release branch and a pull request is opened instead;
   the calling workflow should tag on merge (see examples/extra/version-bump-changelog.yml).
 
+  Direct-to-main commits are created as verified GitHub App commits via the GitHub Git Data API.
+  Release PRs use peter-evans/create-pull-request with sign-commits for verified bot commits.
+
 inputs:
   version:
     description: "Semver type of new version (major / minor / patch)"
@@ -40,7 +43,7 @@ outputs:
     value: ${{ steps.bump.outputs.new-version }}
   pull-request-url:
     description: URL of the created PR (only when create-pr is true)
-    value: ${{ steps.create-pr.outputs.url }}
+    value: ${{ steps.create-pr.outputs.pull-request-url }}
 
 runs:
   using: composite
@@ -57,12 +60,6 @@ runs:
         token: ${{ steps.generate-github-token.outputs.token }}
         persist-credentials: true
         fetch-depth: 0
-
-    - name: Setup Git
-      shell: bash
-      run: |
-        git config user.name 'grafana-plugins-platform-bot[bot]'
-        git config user.email '144369747+grafana-plugins-platform-bot[bot]@users.noreply.github.com'
 
     - name: Get previous tag before bumping
       id: previous-tag
@@ -113,66 +110,160 @@ runs:
 
     - name: Commit and push to main
       if: ${{ inputs.create-pr != 'true' }}
-      shell: bash
-      run: |
-        git add package.json
-        git add package-lock.json || true
-        git add CHANGELOG.md || true  # No-op if changelog not generated
-        git commit -m "chore(version): bump version to ${NEW_VERSION}"
-        git push origin main
-      env:
-        GITHUB_TOKEN: ${{ steps.generate-github-token.outputs.token }}
-        NEW_VERSION: ${{ steps.bump.outputs.new-version }}
+      id: commit-main
+      uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+      with:
+        github-token: ${{ steps.generate-github-token.outputs.token }}
+        script: |
+          const fs = require('fs');
+          const path = require('path');
+          const { execSync } = require('child_process');
 
-    - name: Commit and push release branch
+          const owner = context.repo.owner;
+          const repo = context.repo.repo;
+          const ws = process.env.GITHUB_WORKSPACE;
+          const ref = 'heads/main';
+          const message = process.env.COMMIT_MESSAGE;
+          const allowedFiles = new Set(['package.json', 'package-lock.json', 'CHANGELOG.md']);
+
+          const changed = execSync('git diff --name-only', { cwd: ws, encoding: 'utf8' })
+            .trim()
+            .split('\n')
+            .filter((file) => file && allowedFiles.has(file));
+
+          if (changed.length === 0) {
+            core.setFailed('No version bump files to commit');
+            return;
+          }
+
+          const { data: baseRef } = await github.rest.git.getRef({ owner, repo, ref });
+          const parentSha = baseRef.object.sha;
+          const { data: parentCommit } = await github.rest.git.getCommit({
+            owner,
+            repo,
+            commit_sha: parentSha,
+          });
+
+          const tree = [];
+          for (const file of changed) {
+            const content = fs.readFileSync(path.join(ws, file));
+            const { data: blob } = await github.rest.git.createBlob({
+              owner,
+              repo,
+              content: content.toString('base64'),
+              encoding: 'base64',
+            });
+            tree.push({ path: file, mode: '100644', type: 'blob', sha: blob.sha });
+          }
+
+          const { data: newTree } = await github.rest.git.createTree({
+            owner,
+            repo,
+            base_tree: parentCommit.tree.sha,
+            tree,
+          });
+
+          const { data: commit } = await github.rest.git.createCommit({
+            owner,
+            repo,
+            message,
+            tree: newTree.sha,
+            parents: [parentSha],
+          });
+
+          await github.rest.git.updateRef({ owner, repo, ref, sha: commit.sha });
+          core.setOutput('commit-sha', commit.sha);
+      env:
+        COMMIT_MESSAGE: "chore(version): bump version to ${{ steps.bump.outputs.new-version }}"
+
+    - name: Prepare pull request
       if: ${{ inputs.create-pr == 'true' }}
       id: release-branch
       shell: bash
       run: |
         RELEASE_VERSION="${NEW_VERSION#v}"
-        RELEASE_BRANCH="release/${RELEASE_VERSION}"
-        git checkout -b "${RELEASE_BRANCH}"
-        git add package.json
-        git add package-lock.json || true
-        git add CHANGELOG.md || true  # No-op if changelog not generated
-        git commit -m "chore(version): bump version to ${NEW_VERSION}"
-        git push origin "${RELEASE_BRANCH}"
-        echo "branch=${RELEASE_BRANCH}" >> "$GITHUB_OUTPUT"
-      env:
-        GITHUB_TOKEN: ${{ steps.generate-github-token.outputs.token }}
-        NEW_VERSION: ${{ steps.bump.outputs.new-version }}
-
-    - name: Create pull request
-      if: ${{ inputs.create-pr == 'true' }}
-      id: create-pr
-      shell: bash
-      run: |
+        echo "branch=release/${RELEASE_VERSION}" >> "$GITHUB_OUTPUT"
         if [[ "${GENERATE_CHANGELOG}" == "true" ]] && [[ -f CHANGELOG.md ]]; then
           awk '/^## / { if (section) exit; section=1 } section { print }' CHANGELOG.md > /tmp/pr-body.md
         else
           printf "Version bump to %s\n" "${NEW_VERSION}" > /tmp/pr-body.md
         fi
-        PR_URL=$(gh pr create \
-          --base main \
-          --head "${RELEASE_BRANCH}" \
-          --title "chore(version): release ${NEW_VERSION}" \
-          --body-file /tmp/pr-body.md)
-        echo "url=${PR_URL}" >> "$GITHUB_OUTPUT"
       env:
-        GH_TOKEN: ${{ steps.generate-github-token.outputs.token }}
         GENERATE_CHANGELOG: ${{ inputs.generate-changelog }}
         NEW_VERSION: ${{ steps.bump.outputs.new-version }}
-        RELEASE_BRANCH: ${{ steps.release-branch.outputs.branch }}
+
+    - name: Create pull request
+      if: ${{ inputs.create-pr == 'true' }}
+      id: create-pr
+      uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+      with:
+        token: ${{ steps.generate-github-token.outputs.token }}
+        sign-commits: true
+        branch: ${{ steps.release-branch.outputs.branch }}
+        base: main
+        add-paths: |
+          package.json
+          package-lock.json
+          CHANGELOG.md
+        commit-message: "chore(version): bump version to ${{ steps.bump.outputs.new-version }}"
+        title: "chore(version): release ${{ steps.bump.outputs.new-version }}"
+        body-path: /tmp/pr-body.md
 
     - name: Create git tag
       if: ${{ inputs.create-pr != 'true' }}
-      shell: bash
-      run: |
-        git tag -a ${NEW_VERSION} -m "Release version ${NEW_VERSION}"
+      uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+      with:
+        github-token: ${{ steps.generate-github-token.outputs.token }}
+        script: |
+          const tag = process.env.NEW_VERSION;
+          const ref = `refs/tags/${tag}`;
+          const sha = process.env.COMMIT_SHA;
+
+          if (!sha) {
+            core.setFailed(
+              `Cannot create tag ${tag}: missing commit SHA from the version bump commit step. ` +
+              `The release tag was not created.`
+            );
+            return;
+          }
+
+          try {
+            await github.rest.git.createRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref,
+              sha,
+            });
+            core.info(`Created tag ${tag} at ${sha}`);
+          } catch (error) {
+            const message = error.response?.data?.message || error.message;
+
+            if (error.status === 422 && message.includes('already exists')) {
+              const { data: existingRef } = await github.rest.git.getRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: `tags/${tag}`,
+              });
+
+              if (existingRef.object.sha === sha) {
+                core.warning(`Tag ${tag} already exists at ${sha}; treating as success.`);
+                return;
+              }
+
+              core.setFailed(
+                `Tag ${tag} already exists at ${existingRef.object.sha}, expected ${sha}. ` +
+                `The version bump commit was created but the tag points to a different commit. ` +
+                `Delete the existing tag or bump to a new version before re-running.`
+              );
+              return;
+            }
+
+            core.setFailed(
+              `Failed to create tag ${tag} at ${sha}: ${message}. ` +
+              `The version bump commit was created but the release tag was not created.`
+            );
+            throw error;
+          }
       env:
         NEW_VERSION: ${{ steps.bump.outputs.new-version }}
-
-    - name: Push tags
-      if: ${{ inputs.create-pr != 'true' }}
-      shell: bash
-      run: git push origin --tags
+        COMMIT_SHA: ${{ steps.commit-main.outputs.commit-sha }}
