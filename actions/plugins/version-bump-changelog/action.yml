@@ -9,8 +9,7 @@ description: |
   When create-pr is true, changes are committed to a release branch and a pull request is opened instead;
   the calling workflow should tag on merge (see examples/extra/version-bump-changelog.yml).
 
-  Direct-to-main commits are created as verified GitHub App commits via the GitHub Git Data API.
-  Release PRs use peter-evans/create-pull-request with sign-commits for verified bot commits.
+  Commits are created as verified GitHub App commits via the GitHub Git Data API.
 
 inputs:
   version:
@@ -194,38 +193,127 @@ runs:
         else
           printf "Version bump to %s\n" "${NEW_VERSION}" > /tmp/pr-body.md
         fi
-
-        ADD_PATHS="package.json"
-        for lockfile in package-lock.json yarn.lock pnpm-lock.yaml; do
-          if [[ -f "${lockfile}" ]]; then
-            ADD_PATHS="${ADD_PATHS}"$'\n'"${lockfile}"
-          fi
-        done
-        if [[ "${GENERATE_CHANGELOG}" == "true" ]] && [[ -f CHANGELOG.md ]]; then
-          ADD_PATHS="${ADD_PATHS}"$'\n'"CHANGELOG.md"
-        fi
-        {
-          echo 'add-paths<<EOF'
-          printf '%s\n' "${ADD_PATHS}"
-          echo 'EOF'
-        } >> "$GITHUB_OUTPUT"
       env:
         GENERATE_CHANGELOG: ${{ inputs.generate-changelog }}
         NEW_VERSION: ${{ steps.bump.outputs.new-version }}
 
+    - name: Commit release branch
+      if: ${{ inputs.create-pr == 'true' }}
+      id: commit-release
+      uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+      with:
+        github-token: ${{ steps.generate-github-token.outputs.token }}
+        script: |
+          const fs = require('fs');
+          const path = require('path');
+          const { execSync } = require('child_process');
+
+          const owner = context.repo.owner;
+          const repo = context.repo.repo;
+          const ws = process.env.GITHUB_WORKSPACE;
+          const ref = `heads/${process.env.RELEASE_BRANCH}`;
+          const parentRef = 'heads/main';
+          const message = process.env.COMMIT_MESSAGE;
+          const allowedFiles = new Set([
+            'package.json',
+            'package-lock.json',
+            'yarn.lock',
+            'pnpm-lock.yaml',
+            'CHANGELOG.md',
+          ]);
+
+          const changed = execSync('git diff --name-only', { cwd: ws, encoding: 'utf8' })
+            .trim()
+            .split('\n')
+            .filter((file) => file && allowedFiles.has(file));
+
+          if (changed.length === 0) {
+            core.setFailed('No version bump files to commit');
+            return;
+          }
+
+          const { data: baseRef } = await github.rest.git.getRef({ owner, repo, ref: parentRef });
+          const parentSha = baseRef.object.sha;
+          const { data: parentCommit } = await github.rest.git.getCommit({
+            owner,
+            repo,
+            commit_sha: parentSha,
+          });
+
+          const tree = [];
+          for (const file of changed) {
+            const content = fs.readFileSync(path.join(ws, file));
+            const { data: blob } = await github.rest.git.createBlob({
+              owner,
+              repo,
+              content: content.toString('base64'),
+              encoding: 'base64',
+            });
+            tree.push({ path: file, mode: '100644', type: 'blob', sha: blob.sha });
+          }
+
+          const { data: newTree } = await github.rest.git.createTree({
+            owner,
+            repo,
+            base_tree: parentCommit.tree.sha,
+            tree,
+          });
+
+          const { data: commit } = await github.rest.git.createCommit({
+            owner,
+            repo,
+            message,
+            tree: newTree.sha,
+            parents: [parentSha],
+          });
+
+          try {
+            await github.rest.git.getRef({ owner, repo, ref });
+            await github.rest.git.updateRef({
+              owner,
+              repo,
+              ref,
+              sha: commit.sha,
+              force: true,
+            });
+          } catch (error) {
+            if (error.status === 404) {
+              await github.rest.git.createRef({
+                owner,
+                repo,
+                ref: `refs/${ref}`,
+                sha: commit.sha,
+              });
+            } else {
+              throw error;
+            }
+          }
+
+          core.setOutput('commit-sha', commit.sha);
+      env:
+        RELEASE_BRANCH: ${{ steps.release-branch.outputs.branch }}
+        COMMIT_MESSAGE: "chore(version): bump version to ${{ steps.bump.outputs.new-version }}"
+
     - name: Create pull request
       if: ${{ inputs.create-pr == 'true' }}
       id: create-pr
-      uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
-      with:
-        token: ${{ steps.generate-github-token.outputs.token }}
-        sign-commits: true
-        branch: ${{ steps.release-branch.outputs.branch }}
-        base: main
-        add-paths: ${{ steps.release-branch.outputs.add-paths }}
-        commit-message: "chore(version): bump version to ${{ steps.bump.outputs.new-version }}"
-        title: "chore(version): release ${{ steps.bump.outputs.new-version }}"
-        body-path: /tmp/pr-body.md
+      shell: bash
+      run: |
+        EXISTING=$(gh pr list --head "${RELEASE_BRANCH}" --base main --state open --json url -q '.[0].url' 2>/dev/null || true)
+        if [[ -n "${EXISTING}" && "${EXISTING}" != "null" ]]; then
+          echo "pull-request-url=${EXISTING}" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+        PR_URL=$(gh pr create \
+          --base main \
+          --head "${RELEASE_BRANCH}" \
+          --title "${PR_TITLE}" \
+          --body-file /tmp/pr-body.md)
+        echo "pull-request-url=${PR_URL}" >> "$GITHUB_OUTPUT"
+      env:
+        GH_TOKEN: ${{ steps.generate-github-token.outputs.token }}
+        RELEASE_BRANCH: ${{ steps.release-branch.outputs.branch }}
+        PR_TITLE: "chore(version): release ${{ steps.bump.outputs.new-version }}"
 
     - name: Create git tag
       if: ${{ inputs.create-pr != 'true' }}
