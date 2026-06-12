@@ -332,12 +332,7 @@ on:
         type: boolean
       github-draft-release:
         description: |
-          Keep the GitHub release as a draft after artifact upload. If disable-github-release is true, this will be ignored.
-
-          Defaults to true (draft). Set to false to publish the release after artifacts are uploaded.
-          On public Grafana repos with immutable releases, artifacts cannot be added to an already-published
-          release — CD always uploads to a draft first, then publishes when this input is false.
-          Do not publish before upload (e.g. via release-please without draft: true) or asset upload will fail.
+          Publish a draft release on GitHub. If disable-github-release is true, this will be ignored.
         default: true
         type: boolean
       disable-github-release:
@@ -1423,12 +1418,9 @@ jobs:
           PLUGIN_VERSION: ${{ fromJSON(needs.ci.outputs.plugin).version }}
 
       - name: Create Github release
-        id: github-release
-        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
+        uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3.0.0
         with:
-          # Always upload assets while the release is still a draft. Immutable-release repos reject
-          # asset uploads to published releases; publish in the follow-up step when requested.
-          draft: true
+          draft: ${{ inputs.github-draft-release }}
           name: ${{ fromJSON(needs.ci.outputs.plugin).id }} v${{ fromJSON(needs.ci.outputs.plugin).version }}
           tag_name: v${{ fromJSON(needs.ci.outputs.plugin).version }}
           files: |
@@ -1436,33 +1428,3 @@ jobs:
             /tmp/dist-artifacts/*.zip.sha1
           fail_on_unmatched_files: true
           body: ${{ steps.changelog.outputs.changelog }}
-
-      - name: Publish Github release
-        if: ${{ inputs.github-draft-release != true }}
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
-        with:
-          script: |
-            const owner = context.repo.owner;
-            const repo = context.repo.repo;
-            const tag = process.env.RELEASE_TAG;
-
-            const { data: release } = await github.rest.repos.getReleaseByTag({
-              owner,
-              repo,
-              tag,
-            });
-
-            if (!release.draft) {
-              core.info(`Release ${tag} is already published; skipping publish step.`);
-              return;
-            }
-
-            await github.rest.repos.updateRelease({
-              owner,
-              repo,
-              release_id: release.id,
-              draft: false,
-            });
-            core.info(`Published release ${tag}`);
-        env:
-          RELEASE_TAG: v${{ fromJSON(needs.ci.outputs.plugin).version }}
