@@ -1,11 +1,14 @@
-# Bumps the npm version, creates a git tag and optionally generates a changelog
+# Creates a PR to bump the npm version, creates a git tag once the PR is merged and optionally generates a changelog
 # entry using conventional commits.
 #
-# This example commits directly to main (create-pr defaults to false). It is only
-# suitable for private repositories without a branch ruleset that requires pull
-# requests to main. Public Grafana repositories, and any repo where main requires
-# a PR, must set create-pr: true and add a pull_request closed trigger so the
-# action creates the git tag when the release PR merges.
+# This example opens a release pull request instead of committing directly to main
+# (create-pr: true). Use this setup for public Grafana repositories, and for any
+# repo with a branch ruleset that requires a pull request before updating main.
+# On workflow_dispatch the action bumps the version and opens a release/* PR; the
+# pull_request closed trigger below creates the git tag when that PR merges. The
+# action no-ops on other closed PRs (no GATB token or checkout).
+#
+# For private repos without a PR requirement on main, see version-bump-changelog.yml.
 #
 # IMPORTANT: This workflow requires the `grafana-plugins-platform-bot` GitHub App
 # to have permissions on your repository and GATB (GitHub App Token Broker) setup in deployment_tools.
@@ -31,13 +34,22 @@ on:
         required: false
         type: boolean
         default: true
+      create-pr:
+        description: "Open a release PR instead of committing directly to main (required for public Grafana repos)"
+        required: false
+        type: boolean
+        default: true
+  pull_request:
+    types: [closed]
+    branches: [main]
 
 permissions:
   contents: read
+  pull-requests: write
   id-token: write
 
 jobs:
-  bump-version:
+  version-bump-changelog:
     runs-on: ubuntu-x64-small
 
     steps:
@@ -46,3 +58,4 @@ jobs:
         with:
           generate-changelog: ${{ inputs.generate-changelog }}
           version: ${{ inputs.version }}
+          create-pr: ${{ inputs.create-pr }}
