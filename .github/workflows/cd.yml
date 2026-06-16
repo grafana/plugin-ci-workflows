@@ -345,15 +345,18 @@ on:
           Disable docs publishing to the website.
         default: false
         type: boolean
-      docs-publish-sign-commits:
+      docs-publish-via-pr:
         description: |
-          When true (default), docs are published to the website using signed,
-          "Verified" commits created via the GitHub API.
+          When true (default), docs are published to the website by opening a
+          pull request: the commit is created via the GitHub API (signed,
+          "Verified") on a new branch and auto-merge is enabled. This avoids
+          pushing directly to a protected branch.
 
           When false, the legacy method is used: a local git commit pushed
-          directly to the website repository, which produces unsigned commits.
-          Avoid the legacy method: it does not comply with the new SDLC policies
-          that require signed commits, and it will be removed in the future.
+          directly to the website repository, which produces unsigned commits
+          and bypasses code review. Avoid the legacy method: it does not comply
+          with the SDLC policies that require signed commits via a PR, and it
+          will be removed in the future.
         default: true
         type: boolean
       frontend-secrets:
@@ -1354,7 +1357,7 @@ jobs:
           id: ${{ fromJSON(needs.ci.outputs.plugin).id }}
           version: ${{ fromJSON(needs.ci.outputs.plugin).version }}
           github-token: x-access-token:${{ steps.generate-github-token.outputs.token }}
-          sign-commits: ${{ inputs.docs-publish-sign-commits }}
+          via-pr: ${{ inputs.docs-publish-via-pr }}
 
   create-github-release:
     name: Create GitHub Release
