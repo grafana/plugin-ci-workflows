@@ -1,11 +1,10 @@
 # Bumps the npm version, creates a git tag and optionally generates a changelog
 # entry using conventional commits.
 #
-# This example commits directly to main (create-pr defaults to false). It is only
-# suitable for private repositories without a branch ruleset that requires pull
-# requests to main. Public Grafana repositories, and any repo where main requires
-# a PR, must set create-pr: true and add a pull_request closed trigger so the
-# action creates the git tag when the release PR merges.
+# This workflow commits directly to main. It is only suitable for private
+# repositories without a branch ruleset that requires a pull request before
+# updating main. Public Grafana repositories, and any repo where main is
+# protected and requires a PR, cannot use this workflow.
 #
 # IMPORTANT: This workflow requires the `grafana-plugins-platform-bot` GitHub App
 # to have permissions on your repository and GATB (GitHub App Token Broker) setup in deployment_tools.
