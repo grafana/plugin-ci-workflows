@@ -11,11 +11,24 @@ inputs:
   github-token:
     description: GitHub token for pushing to the website repository
     required: true
+  sign-commits:
+    description: |
+      When true (default), docs are published to grafana/website using signed,
+      "Verified" commits created via the GitHub API.
+
+      When false, the legacy method is used: a local git commit pushed directly
+      to the website repository, which produces unsigned commits. Avoid the
+      legacy method: it does not comply with the new SDLC policies that require
+      signed commits, and it will be removed in the future.
+    default: "true"
 
 runs:
   using: composite
   steps:
-    - name: Publish docs
+    # Legacy method: local git commit pushed directly to the website repository.
+    # Produces unsigned commits. Kept for backwards compatibility only.
+    - name: Publish docs (legacy, unsigned)
+      if: ${{ inputs.sign-commits == 'false' }}
       run: |
         ${{ github.action_path }}/script.sh ${PLUGIN_ID} ${PLUGIN_VERSION}
       env:
@@ -23,3 +36,73 @@ runs:
         PLUGIN_ID: ${{ inputs.id }}
         PLUGIN_VERSION: ${{ inputs.version }}
       shell: bash
+
+    # Signed method (default): clone the website repo and rsync the docs into
+    # place, then create the commit via the GitHub API so it is signed by GitHub
+    # and shows as "Verified".
+    - name: Prepare docs
+      id: prepare
+      if: ${{ inputs.sign-commits != 'false' }}
+      run: |
+        ${{ github.action_path }}/prepare.sh ${PLUGIN_ID} ${PLUGIN_VERSION}
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        PLUGIN_ID: ${{ inputs.id }}
+        PLUGIN_VERSION: ${{ inputs.version }}
+      shell: bash
+
+    - name: Publish docs (signed)
+      if: ${{ inputs.sign-commits != 'false' }}
+      uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+      with:
+        github-token: ${{ steps.prepare.outputs.token }}
+        script: |
+          const fs = require('fs');
+          const path = require('path');
+
+          const dir = process.env.WEBSITE_DIR;
+          const opts = { cwd: dir };
+
+          // Collect the changes staged by the prepare step.
+          const { stdout: statusOut } = await exec.getExecOutput('git', ['status', '--porcelain'], opts);
+          const additions = [];
+          const deletions = [];
+          for (const line of statusOut.split('\n')) {
+            if (!line.trim()) continue;
+            const status = line.slice(0, 2).trim();
+            const filePath = line.slice(3);
+            if (status === 'D') {
+              deletions.push({ path: filePath });
+            } else {
+              additions.push({ path: filePath, contents: fs.readFileSync(path.join(dir, filePath)).toString('base64') });
+            }
+          }
+          if (additions.length === 0 && deletions.length === 0) {
+            core.info('No changes to commit');
+            return;
+          }
+
+          const { stdout: headOid } = await exec.getExecOutput('git', ['rev-parse', 'HEAD'], opts);
+
+          const result = await github.graphql(
+            `mutation ($input: CreateCommitOnBranchInput!) {
+              createCommitOnBranch(input: $input) {
+                commit { oid url }
+              }
+            }`,
+            {
+              input: {
+                branch: {
+                  repositoryNameWithOwner: 'grafana/website',
+                  branchName: 'master',
+                },
+                expectedHeadOid: headOid.trim(),
+                message: { headline: process.env.COMMIT_MESSAGE },
+                fileChanges: { additions, deletions },
+              },
+            },
+          );
+          core.info(`Created commit: ${result.createCommitOnBranch.commit.url}`);
+      env:
+        WEBSITE_DIR: ${{ steps.prepare.outputs.dir }}
+        COMMIT_MESSAGE: "[plugins] Publish from ${{ github.repository }}:${{ github.ref_name }}/docs/sources"

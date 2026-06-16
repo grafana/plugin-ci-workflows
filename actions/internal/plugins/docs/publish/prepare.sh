@@ -17,12 +17,16 @@ apk add rsync
 plugin_id="$1"
 plugin_version="$2"
 
-tmp=$(mktemp -d)
-cd "$tmp"
-git config --global --add safe.directory .
 # Accept either a raw token or one already prefixed with "x-access-token:"
 # so callers that pass "x-access-token:<token>" keep working.
 github_token="${GITHUB_TOKEN#x-access-token:}"
+# Mask the stripped token and expose it so the API commit step can authenticate.
+echo "::add-mask::${github_token}"
+echo "token=${github_token}" >> "$GITHUB_OUTPUT"
+
+tmp=$(mktemp -d)
+cd "$tmp"
+git config --global --add safe.directory .
 git config --global url."https://x-access-token:${github_token}@github.com/".insteadOf "https://github.com/"
 git clone \
     --depth 1 --single-branch --no-tags \
@@ -34,9 +38,8 @@ docs_folder="content/docs/plugins/$plugin_id/v$plugin_version"
 mkdir -p "$docs_folder"
 rsync -a --quiet --delete "$GITHUB_WORKSPACE/docs/sources/" "$docs_folder"
 
-git add "$docs_folder"
-git config user.name "grafana-plugins-platform-bot[bot]"
-git config user.email "144369747+grafana-plugins-platform-bot[bot]@users.noreply.github.com"
-git commit -m "[plugins] Publish from $GITHUB_REPOSITORY:$GITHUB_REF_NAME/docs/sources"
+# Stage all changes so the API commit step can read them via `git status`.
+git add -A
 
-git push origin master
+# Expose the website clone directory to the API commit step.
+echo "dir=${tmp}/website" >> "$GITHUB_OUTPUT"
