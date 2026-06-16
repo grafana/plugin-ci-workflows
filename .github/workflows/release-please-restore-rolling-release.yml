@@ -52,7 +52,7 @@ jobs:
       # (we want to encourage using tagged releases in docs)
       - name: Switch references
         id: switch-references
-        uses: grafana/plugin-ci-workflows/actions/internal/switch-references@main
+        uses: grafana/plugin-ci-workflows/actions/internal/switch-references@97edac2981cbef759a025e2381f9040313f4787d # main
         with:
           repository: grafana/plugin-ci-workflows
           ref: main
@@ -67,7 +67,7 @@ jobs:
       - name: Get bot user info
         id: get-bot-user
         if: steps.switch-references.outputs.changed == 'true'
-        uses: grafana/plugin-ci-workflows/actions/internal/get-bot-user@main
+        uses: grafana/plugin-ci-workflows/actions/internal/get-bot-user@97edac2981cbef759a025e2381f9040313f4787d # main
         with:
           app-slug: grafana-plugins-platform-bot
           token: ${{ steps.generate-github-token.outputs.token }}
