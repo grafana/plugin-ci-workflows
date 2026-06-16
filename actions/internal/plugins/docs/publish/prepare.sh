@@ -20,26 +20,27 @@ plugin_version="$2"
 # Accept either a raw token or one already prefixed with "x-access-token:"
 # so callers that pass "x-access-token:<token>" keep working.
 github_token="${GITHUB_TOKEN#x-access-token:}"
-# Mask the stripped token and expose it so the API commit step can authenticate.
+# Mask the stripped token and expose it so the create-pull-request step can authenticate.
 echo "::add-mask::${github_token}"
 echo "token=${github_token}" >> "$GITHUB_OUTPUT"
 
-tmp=$(mktemp -d)
-cd "$tmp"
-git config --global --add safe.directory .
+# create-pull-request requires the repository to live under GITHUB_WORKSPACE,
+# so clone it into a subdirectory there rather than a temp dir.
+clone_dir="_website-publish"
+abs_clone_dir="${GITHUB_WORKSPACE}/${clone_dir}"
+rm -rf "$abs_clone_dir"
+
+git config --global --add safe.directory "$abs_clone_dir"
 git config --global url."https://x-access-token:${github_token}@github.com/".insteadOf "https://github.com/"
 git clone \
     --depth 1 --single-branch --no-tags \
-    https://github.com/grafana/website.git
+    https://github.com/grafana/website.git "$abs_clone_dir"
 
-cd website
-
-docs_folder="content/docs/plugins/$plugin_id/v$plugin_version"
+docs_folder="${abs_clone_dir}/content/docs/plugins/$plugin_id/v$plugin_version"
 mkdir -p "$docs_folder"
 rsync -a --quiet --delete "$GITHUB_WORKSPACE/docs/sources/" "$docs_folder"
 
-# Stage all changes so the API commit step can read them via `git status`.
-git add -A
-
-# Expose the website clone directory to the API commit step.
-echo "dir=${tmp}/website" >> "$GITHUB_OUTPUT"
+# Expose the clone directory, relative to GITHUB_WORKSPACE, for the
+# create-pull-request step's `path` input. create-pull-request stages and
+# commits the rsync'd changes itself, so no `git add`/commit here.
+echo "dir=${clone_dir}" >> "$GITHUB_OUTPUT"
