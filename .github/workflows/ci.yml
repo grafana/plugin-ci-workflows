@@ -515,7 +515,6 @@ jobs:
           vault_instance: ${{ env.VAULT_INSTANCE }}
           common_secrets: |
             SIGN_PLUGIN_ACCESS_POLICY_TOKEN=plugins/sign-plugin-access-policy-token:token
-          export_env: false
 
       - name: Generate GitHub token (private backend dependencies)
         id: generate-github-token

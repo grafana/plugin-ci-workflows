@@ -285,9 +285,7 @@ type VaultSecrets struct {
 // If those conditions are not met, an error is returned.
 //
 // The mocked step mimics the behavior of the original step, but instead of fetching secrets from Vault,
-// it outputs the provided secrets in the expected format.
-// If export_env is true, the secrets are exported as environment variables.
-// If export_env is false, the secrets are exported as a JSON object.
+// it outputs the provided secrets as a JSON object (step output named "secrets").
 //
 // If a secret is not found in the provided VaultSecrets:
 //   - If DefaultValue is nil, an error is returned.
@@ -305,10 +303,6 @@ func MockVaultSecretsStep(originalStep Step, secrets VaultSecrets) (Step, error)
 	}
 	if v, ok := originalStep.With["repo_secrets"].(string); ok {
 		repoSecretsInput = v
-	}
-	exportEnvInput := true
-	if v, ok := originalStep.With["export_env"].(bool); ok {
-		exportEnvInput = v
 	}
 	output := map[string]string{}
 	for _, s := range []struct {
@@ -340,24 +334,15 @@ func MockVaultSecretsStep(originalStep Step, secrets VaultSecrets) (Step, error)
 		}
 	}
 
-	step := Step{
-		Env:   map[string]string{},
-		Shell: "bash",
+	secretsJSON, err := json.Marshal(output)
+	if err != nil {
+		return Step{}, fmt.Errorf("marshal vault secrets to json: %w", err)
 	}
 	var stepCommands Commands
-	if exportEnvInput {
-		// Workflow-level env vars output
-		for k, v := range output {
-			stepCommands = append(stepCommands, fmt.Sprintf(`echo "%s=%s" >> "$GITHUB_ENV"`, k, v))
-		}
-	} else {
-		// JSON output
-		secretsJSON, err := json.Marshal(output)
-		if err != nil {
-			return Step{}, fmt.Errorf("marshal vault secrets to json: %w", err)
-		}
-		stepCommands = append(stepCommands, `echo "secrets=${SECRETS_JSON}" >> "$GITHUB_OUTPUT"`)
-		step.Env = map[string]string{"SECRETS_JSON": string(secretsJSON)}
+	stepCommands = append(stepCommands, `echo "secrets=${SECRETS_JSON}" >> "$GITHUB_OUTPUT"`)
+	step := Step{
+		Env:   map[string]string{"SECRETS_JSON": string(secretsJSON)},
+		Shell: "bash",
 	}
 	step.Run = stepCommands.String()
 	return step, nil

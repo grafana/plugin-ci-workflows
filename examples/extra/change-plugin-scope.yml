@@ -71,7 +71,6 @@ jobs:
             GCOM_TOKEN_DEV=plugins/gcom-publish-token:dev
             GCOM_TOKEN_OPS=plugins/gcom-publish-token:ops
             GCOM_TOKEN_PROD=plugins/gcom-publish-token:prod
-          export_env: false
 
       - name: Determine which token to use
         run: |

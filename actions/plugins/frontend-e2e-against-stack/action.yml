@@ -152,7 +152,6 @@ runs:
       with:
         common_secrets: |
           HG_TOKEN=hg-ci:token
-        export_env: false
 
     - name: Set plugin secrets as environment variables
       id: set-env-vars
