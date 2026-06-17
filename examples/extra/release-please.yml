@@ -4,6 +4,12 @@
 # Merging the release PR creates a v* tag, which triggers the release workflow
 # (GitHub Release with signed plugin artifacts).
 #
+# IMPORTANT: This workflow requires the `grafana-plugins-platform-bot` GitHub App
+# to have permissions on your repository and GATB (GitHub App Token Broker) setup in deployment_tools.
+# Before using it, request permissions by following the instructions here:
+#   https://enghub.grafana-ops.net/docs/default/component/grafana-plugins-platform/plugins-ci-github-actions/035-github-app-permissions
+# Skipping this step will cause this workflow to fail.
+#
 # Required repo files:
 #   .release-please-manifest.json  — e.g. { ".": "1.0.0" }
 #   release-please-config.json     — see below
@@ -52,4 +58,4 @@ jobs:
 
     steps:
       - name: Run release-please
-        uses: grafana/plugin-ci-workflows/actions/plugins/release-please@plugins-release-please/v1.0.1
+        uses: grafana/plugin-ci-workflows/actions/plugins/release-please@plugins-release-please/v2.0.1

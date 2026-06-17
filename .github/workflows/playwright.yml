@@ -34,10 +34,6 @@ on:
         required: false
         type: boolean
         description: "Deprecated: use skip-grafana-nightly-image instead"
-      skip-grafana-react-19-preview-image:
-        default: false
-        required: false
-        type: boolean
       version-resolver-type:
         required: false
         type: string
@@ -72,6 +68,28 @@ on:
         type: string
         required: false
         default: http://localhost:3000/
+      grafana-timeout:
+        description: |
+          Seconds to wait for the HTTP endpoint check before timing out.
+          This maps to wait-for-grafana's `timeout` input.
+        type: number
+        required: false
+        default: 60
+      grafana-startup-timeout:
+        description: |
+          Seconds to wait for Grafana startup before beginning endpoint checks.
+          This maps to wait-for-grafana's `startupTimeout` input.
+        type: number
+        required: false
+        default: 60
+      max-parallel:
+        description: |
+          Maximum number of matrix jobs to run in parallel.
+          Defaults to 256 effectively unbounded. Lower values stagger Docker image pulls and Grafana
+          startup across runners, which can avoid wait-for-grafana flakes.
+        required: false
+        type: number
+        default: 256
       node-version:
         description: Node.js version to use
         type: string
@@ -83,6 +101,16 @@ on:
         type: boolean
         required: false
         default: false
+      playwright-browsers:
+        description: |
+          Browsers to install before Playwright E2E tests. Space-, newline-, or semicolon-separated.
+          Allowed values: chromium, firefox, webkit. Defaults to chromium (unchanged behaviour).
+          Only controls install; which browsers actually run is set in the plugin's playwright.config.ts.
+          Enable when CI runs non-Chromium Playwright projects. Example: `chromium firefox` or `chromium;firefox`.
+          WebKit install is best-effort when listed (system deps may be missing on self-hosted runners).
+        type: string
+        required: false
+        default: chromium
 permissions:
   contents: read
   id-token: write
@@ -96,16 +124,15 @@ jobs:
       matrix: ${{ steps.resolve-versions.outputs.matrix }}
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           persist-credentials: false
 
       - name: Resolve Grafana E2E versions
         id: resolve-versions
-        uses: grafana/plugin-actions/e2e-version@73cd57e848b81e75e3c17697e6701c9fa1404bcc # e2e-version/v2.0.0
+        uses: grafana/plugin-actions/e2e-version@8a426248c1477e82122ed56a34d786211c7be334 # e2e-version/v3.0.0
         with:
           skip-grafana-nightly-image: ${{ inputs.skip-grafana-nightly-image || inputs.skip-grafana-dev-image }}
-          skip-grafana-react-19-preview-image: ${{ inputs.skip-grafana-react-19-preview-image }}
           version-resolver-type: ${{ inputs.version-resolver-type }}
           grafana-dependency: ${{ inputs.grafana-dependency }}
 
@@ -114,12 +141,13 @@ jobs:
     timeout-minutes: 60
     strategy:
       fail-fast: false
+      max-parallel: ${{ inputs.max-parallel }}
       matrix:
         GRAFANA_IMAGE: ${{fromJson(needs.resolve-versions.outputs.matrix)}}
     name: e2e ${{ matrix.GRAFANA_IMAGE.name }}@${{ matrix.GRAFANA_IMAGE.VERSION }}
     runs-on: ubuntu-x64-large
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           persist-credentials: false
 
@@ -175,16 +203,60 @@ jobs:
         env:
           PLUGIN_DIRECTORY: ${{ inputs.plugin-directory }}
 
+      - name: Resolve Playwright browsers
+        id: browsers
+        shell: bash
+        env:
+          PLAYWRIGHT_BROWSERS: ${{ inputs.playwright-browsers }}
+        run: |
+          # Input is passed via PLAYWRIGHT_BROWSERS env; each token is validated against the allowlist below.
+          set -euo pipefail
+          allowed="chromium firefox webkit"
+          normalized=$(printf '%s' "$PLAYWRIGHT_BROWSERS" | tr ';\r\n\t,' ' ' | sed 's/  */ /g' | xargs)
+          if [ -z "$normalized" ]; then
+            normalized="chromium"
+          fi
+          seen=""
+          for token in $normalized; do
+            case " $allowed " in
+              *" $token "*) ;;
+              *)
+                echo "::error::Unsupported Playwright browser '$token'. Allowed: chromium, firefox, webkit"
+                exit 1
+                ;;
+            esac
+            case " $seen " in
+              *" $token "*) continue ;;
+            esac
+            seen="$seen $token"
+          done
+          list=$(echo "$seen" | xargs)
+          cache_key=$(echo "$list" | tr ' ' '\n' | sort | paste -sd '-' -)
+          echo "list=$list" >> "$GITHUB_OUTPUT"
+          echo "cache-key=$cache_key" >> "$GITHUB_OUTPUT"
+
       - name: Cache Playwright
         id: cache
-        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-${{ steps.version.outputs.version }}
+          key: playwright-${{ steps.version.outputs.version }}-${{ steps.browsers.outputs.cache-key }}
 
-      - name: Install Playwright Browsers
-        run: ${{ steps.setup.outputs.node-package-manager-exec-local-cmd }} playwright install --with-deps chromium
+      - name: Install Playwright browsers
         shell: bash
+        env:
+          PLAYWRIGHT_BROWSERS_LIST: ${{ steps.browsers.outputs.list }}
+          NPM_EXEC_CMD: ${{ steps.setup.outputs.node-package-manager-exec-local-cmd }}
+        run: |
+          set -euo pipefail
+          for token in $PLAYWRIGHT_BROWSERS_LIST; do
+            if [ "$token" = "webkit" ]; then
+              # WebKit needs system libs that may be missing on self-hosted runners.
+              $NPM_EXEC_CMD playwright install --with-deps webkit || echo "::warning::WebKit install failed; continuing"
+            else
+              $NPM_EXEC_CMD playwright install --with-deps "$token"
+            fi
+          done
 
       - name: Download GitHub artifact
         id: download-dist-artifacts
@@ -236,7 +308,7 @@ jobs:
       # Log in to GAR to allow pulling private Docker images in the docker-compose setup if needed
       - name: Log in to GAR
         if: inputs.gar-registry != ''
-        uses: grafana/shared-workflows/actions/login-to-gar@c7ad5f57693ac858c698d95783685a9cbfd91223 # login-to-gar/v1.0.1
+        uses: grafana/shared-workflows/actions/login-to-gar@1f541877ceb22c7be7667d8a8df04984aeac9f9d # login-to-gar/v1.0.3
         with:
           registry: ${{ inputs.gar-registry }}
 
@@ -249,9 +321,26 @@ jobs:
           DOCKER_COMPOSE_FILE: ${{ inputs.docker-compose-file }}
 
       - name: Wait for Grafana to start
-        uses: grafana/plugin-actions/wait-for-grafana@wait-for-grafana/v1.0.2
+        id: wait-for-grafana
+        uses: grafana/plugin-actions/wait-for-grafana@wait-for-grafana/v1.0.3
         with:
           url: "${{ inputs.grafana-url }}"
+          timeout: "${{ inputs.grafana-timeout }}"
+          startupTimeout: "${{ inputs.grafana-startup-timeout }}"
+
+      - name: Capture Grafana logs on startup failure
+        if: ${{ failure() && steps.wait-for-grafana.outcome == 'failure' }}
+        shell: bash
+        working-directory: ${{ inputs.plugin-directory }}
+        run: |
+          echo "::group::docker compose ps"
+          docker compose ${DOCKER_COMPOSE_FILE:+-f "$DOCKER_COMPOSE_FILE"} ps -a || true
+          echo "::endgroup::"
+          echo "::group::docker compose logs"
+          docker compose ${DOCKER_COMPOSE_FILE:+-f "$DOCKER_COMPOSE_FILE"} logs --no-color --tail 500 || true
+          echo "::endgroup::"
+        env:
+          DOCKER_COMPOSE_FILE: ${{ inputs.docker-compose-file }}
 
       - name: Run Playwright tests
         id: run-tests

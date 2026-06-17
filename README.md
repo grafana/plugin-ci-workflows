@@ -33,7 +33,7 @@ Can be [found here](https://github.com/grafana/plugin-ci-workflows/tree/main/exa
 
 ## 🤝 Contributing
 
-This repository is maintained by the Grafana Plugins Platform team (`@grafana/plugins-platform`).
+This repository is maintained by the Grafana Catalog team (`@grafana/grafana-catalog`).
 
 ### Development Workflow
 

@@ -95,6 +95,14 @@ on:
         type: boolean
         required: false
         default: false
+      go-private-git-auth:
+        description: |
+          Whether to authenticate to GitHub when running Go commands, in case the plugin's Go modules include private GitHub repositories.
+          If true, the workflow will generate a GitHub token using the `grafana-plugins-platform-bot` GitHub App and use it to authenticate to GitHub when running Go commands.
+          This is only necessary if the plugin has a backend and uses private GitHub repositories in its Go modules.
+        type: boolean
+        required: false
+        default: false
       allow-unsigned:
         description: |
           Allow to publish unsigned plugins.
@@ -140,11 +148,6 @@ on:
         type: boolean
         required: false
         default: false
-      run-playwright-with-skip-grafana-react-19-preview-image:
-        description: "Optionally, you can skip the Grafana React 19 preview image"
-        type: boolean
-        required: false
-        default: false
       run-playwright-with-version-resolver-type:
         description: Define which version resolver type to use for Playwright E2E tests.
         type: string
@@ -177,6 +180,35 @@ on:
         type: string
         required: false
         default: http://localhost:3000/
+      playwright-grafana-timeout:
+        description: |
+          Seconds to wait for the Grafana endpoint check in Playwright jobs.
+          Default is 60.
+        required: false
+        type: number
+        default: 60
+      playwright-grafana-startup-timeout:
+        description: |
+          Seconds to wait for Grafana startup before endpoint checks begin in
+          Playwright jobs. Default is 60.
+        required: false
+        type: number
+        default: 60
+      playwright-max-parallel:
+        description: |
+          Maximum number of Playwright matrix jobs to run in parallel.
+        required: false
+        type: number
+        default: 256
+      playwright-browsers:
+        description: |
+          Browsers to install before Playwright E2E tests. Space-, newline-, or semicolon-separated.
+          Allowed values: chromium, firefox, webkit. Defaults to chromium (unchanged behaviour).
+          Set when the plugin runs non-Chromium browser projects on CI. Example: `chromium firefox`.
+          Which browsers actually run remains configured in the plugin's playwright.config.ts.
+        type: string
+        required: false
+        default: chromium
       playwright-secrets:
         description: |
           The secrets to use for Playwright tests.
@@ -456,7 +488,6 @@ on:
         default: true
         type: boolean
 
-
       branch:
         description: |
           Branch or tag to publish from.
@@ -572,7 +603,7 @@ jobs:
     steps:
       - name: Checkout specified branch
         id: checkout-specified-branch
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           # Force exact ref when running in act (it copies files locally, it breaks if we specify another ref)
           ref: ${{ !github.event.act && inputs.branch || github.sha }}
@@ -757,6 +788,7 @@ jobs:
       plugin-directory: ${{ inputs.plugin-directory }}
       plugin-version-suffix: ${{ needs.setup.outputs.plugin-version-suffix }}
       npm-registry-auth: ${{ inputs.npm-registry-auth }}
+      go-private-git-auth: ${{ inputs.go-private-git-auth }}
 
       go-version: ${{ inputs.go-version }}
       go-setup-caching: ${{ inputs.go-setup-caching }}
@@ -773,15 +805,18 @@ jobs:
       run-playwright-with-grafana-dependency: ${{ inputs.run-playwright-with-grafana-dependency }}
       run-playwright-with-skip-grafana-nightly-image: ${{ inputs.run-playwright-with-skip-grafana-nightly-image }}
       run-playwright-with-skip-grafana-dev-image: ${{ inputs.run-playwright-with-skip-grafana-dev-image }}
-      run-playwright-with-skip-grafana-react-19-preview-image: ${{ inputs.run-playwright-with-skip-grafana-react-19-preview-image }}
       run-playwright-with-version-resolver-type: ${{ inputs.run-playwright-with-version-resolver-type }}
       upload-playwright-artifacts: ${{ inputs.upload-playwright-artifacts }}
       playwright-report-path: ${{ inputs.playwright-report-path }}
       playwright-docker-compose-file: ${{ inputs.playwright-docker-compose-file }}
       playwright-config: ${{ inputs.playwright-config }}
       playwright-grafana-url: ${{ inputs.playwright-grafana-url }}
+      playwright-grafana-timeout: ${{ inputs.playwright-grafana-timeout }}
+      playwright-grafana-startup-timeout: ${{ inputs.playwright-grafana-startup-timeout }}
+      playwright-max-parallel: ${{ inputs.playwright-max-parallel }}
       playwright-secrets: ${{ inputs.playwright-secrets }}
       playwright-gar-registry: ${{ inputs.playwright-gar-registry }}
+      playwright-browsers: ${{ inputs.playwright-browsers }}
 
       run-trufflehog: ${{ inputs.run-trufflehog }}
       trufflehog-version: ${{ inputs.trufflehog-version }}
@@ -891,7 +926,7 @@ jobs:
     runs-on: ubuntu-arm64-small
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           # Force exact ref when running in act (it copies files locally, it breaks if we specify another ref)
           ref: ${{ !github.event.act && needs.setup.outputs.commit-sha || github.sha }}
@@ -1275,29 +1310,26 @@ jobs:
         - /home/runner/work/_actions:/home/runner/work/_actions
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           # Force exact ref when running in act (it copies files locally, it breaks if we specify another ref)
           ref: ${{ !github.event.act && needs.setup.outputs.commit-sha || github.sha }}
           persist-credentials: false
 
-      - name: Get secrets from Vault
-        id: get-secrets
-        uses: grafana/shared-workflows/actions/get-vault-secrets@f1614b210386ac420af6807a997ac7f6d96e477a # get-vault-secrets/v1.3.1
-        with:
-          vault_instance: ${{ env.VAULT_INSTANCE }}
-          common_secrets: |
-            GITHUB_APP_ID=plugins-platform-bot-app:app-id
-            GITHUB_APP_PRIVATE_KEY=plugins-platform-bot-app:private-key
-          export_env: false
+      # TEMPORARY: grafana/docs-base (alpine + node) doesn't ship jq, which
+      # the create-github-app-token action's bash scripts depend on.
+      # Remove this step once grafana/shared-workflows#1948 is released and
+      # the create-github-app-token ref above is bumped past it.
+      - name: Install jq (docs-base workaround)
+        shell: sh
+        run: apk add --no-cache jq
 
       - name: Generate GitHub token
         id: generate-github-token
-        uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859 # v3.0.0
+        uses: grafana/shared-workflows/actions/create-github-app-token@259ba21cb3ff07724f331e26d926d655d24b317b # create-github-app-token/v0.2.3
         with:
-          app-id: ${{ fromJSON(steps.get-secrets.outputs.secrets).GITHUB_APP_ID }}
-          private-key: ${{ fromJSON(steps.get-secrets.outputs.secrets).GITHUB_APP_PRIVATE_KEY }}
-          owner: ${{ github.repository_owner }}
+          github_app: grafana-plugins-platform-bot
+          permission_set: website-docs
 
       - name: Publish docs
         uses: grafana/plugin-ci-workflows/actions/internal/plugins/docs/publish@main
@@ -1324,7 +1356,7 @@ jobs:
       }}
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           # Force exact ref when running in act (it copies files locally, it breaks if we specify another ref)
           ref: ${{ !github.event.act && needs.setup.outputs.commit-sha || github.sha }}
@@ -1380,7 +1412,7 @@ jobs:
           PLUGIN_VERSION: ${{ fromJSON(needs.ci.outputs.plugin).version }}
 
       - name: Create Github release
-        uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe # v2.6.1
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
         with:
           draft: ${{ inputs.github-draft-release }}
           name: ${{ fromJSON(needs.ci.outputs.plugin).id }} v${{ fromJSON(needs.ci.outputs.plugin).version }}

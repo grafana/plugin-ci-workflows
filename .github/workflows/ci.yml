@@ -72,6 +72,14 @@ on:
         type: boolean
         required: false
         default: false
+      go-private-git-auth:
+        description: |
+          Whether to authenticate to GitHub when running Go commands, in case the plugin's Go modules include private GitHub repositories.
+          If true, the workflow will generate a GitHub token using the `grafana-plugins-platform-bot` GitHub App and use it to authenticate to GitHub when running Go commands.
+          This is only necessary if the plugin has a backend and uses private GitHub repositories in its Go modules.
+        type: boolean
+        required: false
+        default: false
 
       # Playwright
       run-playwright:
@@ -113,11 +121,6 @@ on:
         type: boolean
         required: false
         default: false
-      run-playwright-with-skip-grafana-react-19-preview-image:
-        description: Optionally, you can skip the Grafana React 19 preview image
-        type: boolean
-        required: false
-        default: false
       run-playwright-with-version-resolver-type:
         description: Define which version resolver type to use for Playwright E2E tests.
         type: string
@@ -150,6 +153,35 @@ on:
         type: string
         required: false
         default: http://localhost:3000/
+      playwright-grafana-timeout:
+        description: |
+          Seconds to wait for the Grafana endpoint check in Playwright jobs.
+          Default is 60.
+        required: false
+        type: number
+        default: 60
+      playwright-grafana-startup-timeout:
+        description: |
+          Seconds to wait for Grafana startup before endpoint checks begin in
+          Playwright jobs. Default is 60.
+        required: false
+        type: number
+        default: 60
+      playwright-max-parallel:
+        description: |
+          Maximum number of Playwright matrix jobs to run in parallel.
+        required: false
+        type: number
+        default: 256
+      playwright-browsers:
+        description: |
+          Browsers to install before Playwright E2E tests. Space-, newline-, or semicolon-separated.
+          Allowed values: chromium, firefox, webkit. Defaults to chromium (unchanged behaviour).
+          Set when the plugin runs non-Chromium browser projects on CI. Example: `chromium firefox`.
+          Which browsers actually run remains configured in the plugin's playwright.config.ts.
+        type: string
+        required: false
+        default: chromium
       playwright-secrets:
         description: |
           The secrets to use for Playwright tests.
@@ -320,11 +352,11 @@ permissions:
 env:
   # Default versions for tooling
   DEFAULT_NODE_VERSION: "24"
-  DEFAULT_GO_VERSION: "1.25"
+  DEFAULT_GO_VERSION: "1.26.3"
   DEFAULT_GOLANGCI_LINT_VERSION: "2.11.4"
-  DEFAULT_TRUFFLEHOG_VERSION: "3.94.3"
+  DEFAULT_TRUFFLEHOG_VERSION: "3.95.5"
   DEFAULT_MAGE_VERSION: "1.17.1"
-  DEFAULT_PLUGIN_VALIDATOR_VERSION: "0.39.3"
+  DEFAULT_PLUGIN_VALIDATOR_VERSION: "0.41.0"
 
   # Default plugin-validator configuration, used when no configuration is provided by the caller.
   # Disables some analyzers that are not relevant for Grafana Labs plugins.
@@ -371,7 +403,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           # Force exact ref when running in act (it copies files locally, it breaks if we specify another ref)
           ref: ${{ !github.event.act && inputs.branch || github.sha }}
@@ -466,6 +498,15 @@ jobs:
           golangci-lint-version: ${{ inputs.golangci-lint-version || env.DEFAULT_GOLANGCI_LINT_VERSION }}
           mage-version: ${{ inputs.mage-version || env.DEFAULT_MAGE_VERSION }}
 
+      - name: Check for backend
+        id: check-for-backend
+        run: |
+          r=false
+          [ -f "Magefile.go" ] && r=true
+          echo "has-backend=$r" >> "$GITHUB_OUTPUT"
+        shell: bash
+        working-directory: ${{ inputs.plugin-directory }}
+
       - name: Get secrets from Vault
         id: get-secrets
         if: ${{ fromJson(steps.workflow-context.outputs.result).isTrusted }}
@@ -474,18 +515,15 @@ jobs:
           vault_instance: ${{ env.VAULT_INSTANCE }}
           common_secrets: |
             SIGN_PLUGIN_ACCESS_POLICY_TOKEN=plugins/sign-plugin-access-policy-token:token
-            GITHUB_APP_ID=plugins-platform-bot-app:app-id
-            GITHUB_APP_PRIVATE_KEY=plugins-platform-bot-app:private-key
           export_env: false
 
-      - name: Generate GitHub token
+      - name: Generate GitHub token (private backend dependencies)
         id: generate-github-token
-        uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859 # v3.0.0
-        if: ${{ fromJson(steps.workflow-context.outputs.result).isTrusted }}
+        if: ${{ fromJson(steps.workflow-context.outputs.result).isTrusted && steps.check-for-backend.outputs.has-backend == 'true' && inputs.go-private-git-auth == true }}
+        uses: grafana/shared-workflows/actions/create-github-app-token@259ba21cb3ff07724f331e26d926d655d24b317b # create-github-app-token/v0.2.3
         with:
-          app-id: ${{ fromJSON(steps.get-secrets.outputs.secrets).GITHUB_APP_ID }}
-          private-key: ${{ fromJSON(steps.get-secrets.outputs.secrets).GITHUB_APP_PRIVATE_KEY }}
-          owner: ${{ github.repository_owner }}
+          github_app: grafana-plugins-platform-bot
+          permission_set: go-private-dependencies
 
       - name: Spellcheck
         run: |
@@ -518,15 +556,6 @@ jobs:
           PLUGIN_VERSION_SUFFIX: ${{ inputs.plugin-version-suffix }}
         shell: bash
 
-      - name: Check for backend
-        id: check-for-backend
-        run: |
-          r=false
-          [ -f "Magefile.go" ] && r=true
-          echo "has-backend=$r" >> "$GITHUB_OUTPUT"
-        shell: bash
-        working-directory: ${{ inputs.plugin-directory }}
-
       - name: Test and build frontend
         id: frontend
         uses: grafana/plugin-ci-workflows/actions/internal/plugins/frontend@main
@@ -540,7 +569,7 @@ jobs:
         if: ${{ steps.check-for-backend.outputs.has-backend == 'true' }}
         uses: grafana/plugin-ci-workflows/actions/internal/plugins/backend@main
         with:
-          github-token: ${{ steps.generate-github-token.outputs.token }}
+          github-token: ${{ steps.generate-github-token.outputs.token || '' }}
           plugin-directory: ${{ inputs.plugin-directory }}
           secrets: ${{ (fromJson(steps.workflow-context.outputs.result).isTrusted && inputs.backend-secrets != '') && inputs.backend-secrets || '' }}
           build-target: ${{ inputs.backend-build-target }}
@@ -701,7 +730,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           # Force exact ref when running in act (it copies files locally, it breaks if we specify another ref)
           ref: ${{ !github.event.act && inputs.branch || github.sha }}
@@ -731,16 +760,19 @@ jobs:
       plugin-directory: ${{ inputs.plugin-directory }}
       grafana-dependency: ${{ inputs.run-playwright-with-grafana-dependency }}
       skip-grafana-nightly-image: ${{ inputs.run-playwright-with-skip-grafana-nightly-image || inputs.run-playwright-with-skip-grafana-dev-image }}
-      skip-grafana-react-19-preview-image: ${{ inputs.run-playwright-with-skip-grafana-react-19-preview-image }}
       version-resolver-type: ${{ inputs.run-playwright-with-version-resolver-type }}
       upload-artifacts: ${{ inputs.upload-playwright-artifacts }}
       docker-compose-file: ${{ inputs.playwright-docker-compose-file }}
       playwright-config: ${{ inputs.playwright-config }}
       report-path: ${{ inputs.playwright-report-path }}
       grafana-url: ${{ inputs.playwright-grafana-url }}
+      grafana-timeout: ${{ inputs.playwright-grafana-timeout }}
+      grafana-startup-timeout: ${{ inputs.playwright-grafana-startup-timeout }}
+      max-parallel: ${{ inputs.playwright-max-parallel }}
       secrets: ${{ (fromJson(needs.test-and-build.outputs.workflow-context).isTrusted && inputs.playwright-secrets != '') && inputs.playwright-secrets || '' }}
       node-version: ${{ inputs.node-version }}
       npm-registry-auth: ${{ inputs.npm-registry-auth }}
+      playwright-browsers: ${{ inputs.playwright-browsers }}
 
   playwright-docker:
     name: Plugins - Dockerized Playwright E2E tests
@@ -754,7 +786,6 @@ jobs:
       gar-registry: ${{ inputs.playwright-gar-registry }}
       grafana-dependency: ${{ inputs.run-playwright-with-grafana-dependency }}
       skip-grafana-nightly-image: ${{ inputs.run-playwright-with-skip-grafana-nightly-image || inputs.run-playwright-with-skip-grafana-dev-image }}
-      skip-grafana-react-19-preview-image: ${{ inputs.run-playwright-with-skip-grafana-react-19-preview-image }}
       version-resolver-type: ${{ inputs.run-playwright-with-version-resolver-type }}
       upload-artifacts: ${{ inputs.upload-playwright-artifacts }}
       grafana-compose-file: ${{ inputs.playwright-docker-compose-file }}

@@ -1,5 +1,91 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- `playwright-browsers` input on `cd.yml`, `ci.yml`, and `playwright.yml` to choose which Playwright browsers to install before E2E (default `chromium`; `chromium`, `firefox`, `webkit`).
+
+## [9.0.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v8.0.1...ci-cd-workflows/v9.0.0) (2026-05-28)
+
+
+### ⚠ BREAKING CHANGES
+
+* **ci:** use `package_json_file` in `pnpm/action-setup` ([#752](https://github.com/grafana/plugin-ci-workflows/issues/752))
+
+### 🎉 Features
+
+* **ci:** use `package_json_file` in `pnpm/action-setup` ([#752](https://github.com/grafana/plugin-ci-workflows/issues/752)) ([919febd](https://github.com/grafana/plugin-ci-workflows/commit/919febdc1eca10453811eaeeab304c35f99fc28f))
+* **playwright:** add max-parallel and customizable timeouts, add docker logs on Grafana startup failure ([#711](https://github.com/grafana/plugin-ci-workflows/issues/711)) ([a879e03](https://github.com/grafana/plugin-ci-workflows/commit/a879e03d59ec00233a141273ad7d10d0fbbff526))
+
+
+### 🔧 Chores
+
+* **deps:** update default Go version to 1.26 ([#745](https://github.com/grafana/plugin-ci-workflows/issues/745)) ([2ba6cdd](https://github.com/grafana/plugin-ci-workflows/commit/2ba6cdd6b3dafd2053500b64ff19951dadf1e208))
+* **security:** test plugins: harden security and update packages ([#746](https://github.com/grafana/plugin-ci-workflows/issues/746)) ([1215545](https://github.com/grafana/plugin-ci-workflows/commit/1215545ec6ab4d35f9a0cd7d1e4ba10cd7de93d6))
+
+## [8.0.1](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v8.0.0...ci-cd-workflows/v8.0.1) (2026-05-22)
+
+
+### 🐛 Bug Fixes
+
+* **cd:** install jq via apk in publish-docs (docs-base is alpine) ([#741](https://github.com/grafana/plugin-ci-workflows/issues/741)) ([58f76d0](https://github.com/grafana/plugin-ci-workflows/commit/58f76d0c28b82728429b8a6cabc0dee85cfddd5e))
+
+
+### 🔧 Chores
+
+* **setup:** bump `pnpm/action-setup` from v5.0.0 to v6.0.8 ([#738](https://github.com/grafana/plugin-ci-workflows/issues/738)) ([8df9930](https://github.com/grafana/plugin-ci-workflows/commit/8df9930bfc0bc7467101222b790d95cecd490647))
+
+## [8.0.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v7.3.1...ci-cd-workflows/v8.0.0) (2026-05-20)
+
+
+### ⚠ BREAKING CHANGES
+
+* **security:** migrate ci-cd workflows to GitHub App auth to GATB ([#722](https://github.com/grafana/plugin-ci-workflows/issues/722))
+* **security:** migrate version-bump-changelog workflow to GitHub App auth to GATB ([#730](https://github.com/grafana/plugin-ci-workflows/issues/730))
+* **security:** migrate release-please workflow to GitHub App auth to GATB ([#729](https://github.com/grafana/plugin-ci-workflows/issues/729))
+* **playwright:** bump e2e-version to v2.0.0 ([#695](https://github.com/grafana/plugin-ci-workflows/issues/695))
+
+### 🎉 Features
+
+* enable race detector by default ([#707](https://github.com/grafana/plugin-ci-workflows/issues/707)) ([6af2e54](https://github.com/grafana/plugin-ci-workflows/commit/6af2e54b6d583a8e955907d11a7d527c9ba9cb39))
+* **playwright:** bump e2e-version to v2.0.0 ([#695](https://github.com/grafana/plugin-ci-workflows/issues/695)) ([e4d529b](https://github.com/grafana/plugin-ci-workflows/commit/e4d529bb30db26ad7da0ed4880e63535be2e59e8))
+* **security:** migrate ci-cd workflows to GitHub App auth to GATB ([#722](https://github.com/grafana/plugin-ci-workflows/issues/722)) ([4115f12](https://github.com/grafana/plugin-ci-workflows/commit/4115f1223c34d419433be359d298f69e46679cf9))
+* **security:** migrate release-please workflow to GitHub App auth to GATB ([#729](https://github.com/grafana/plugin-ci-workflows/issues/729)) ([a3744ba](https://github.com/grafana/plugin-ci-workflows/commit/a3744ba1073c7edc9e949a481ec26934e62f62a2))
+* **security:** migrate version-bump-changelog workflow to GitHub App auth to GATB ([#730](https://github.com/grafana/plugin-ci-workflows/issues/730)) ([cae3d21](https://github.com/grafana/plugin-ci-workflows/commit/cae3d2109a5f83cfb3eff7f90d22f80c2b549174))
+
+
+### 🐛 Bug Fixes
+
+* **cd:** pass provenance attestation to catalog publish ([#704](https://github.com/grafana/plugin-ci-workflows/issues/704)) ([d99acfa](https://github.com/grafana/plugin-ci-workflows/commit/d99acfa1db91cf3f344d999f0ac57f97e3e8f1ca))
+* **ci:** fix app name for release-please commits ([#728](https://github.com/grafana/plugin-ci-workflows/issues/728)) ([67eaa33](https://github.com/grafana/plugin-ci-workflows/commit/67eaa331597a21ddb3a9cf985c6dd045584f0b98))
+* **ci:** fix gatb app name  ([#726](https://github.com/grafana/plugin-ci-workflows/issues/726)) ([9d94d7f](https://github.com/grafana/plugin-ci-workflows/commit/9d94d7f9637307702c1d6e6a5a1ae91e6edc7d0c))
+* **ci:** fix gatb app name ([#725](https://github.com/grafana/plugin-ci-workflows/issues/725)) ([ad3ab8c](https://github.com/grafana/plugin-ci-workflows/commit/ad3ab8c42072e87de0453c2a497558aa22afd92a))
+* **ci:** gate GCS upload on Playwright success ([#705](https://github.com/grafana/plugin-ci-workflows/issues/705)) ([a9fc9e9](https://github.com/grafana/plugin-ci-workflows/commit/a9fc9e918852bacd6dfec39d1a4aea574df4ae11))
+* fix GATB app name in internal release-please workflow ([#733](https://github.com/grafana/plugin-ci-workflows/issues/733)) ([26be0b6](https://github.com/grafana/plugin-ci-workflows/commit/26be0b6b7dd5816354745b315f4d0525eb5d00c3))
+
+
+### 📝 Documentation
+
+* add EngHub URL to examples that require additional GitHub App permissions ([#718](https://github.com/grafana/plugin-ci-workflows/issues/718)) ([594efe1](https://github.com/grafana/plugin-ci-workflows/commit/594efe1946716c7430252100deb2de946f825ab5))
+* improve release-please example and action description ([#710](https://github.com/grafana/plugin-ci-workflows/issues/710)) ([f4af5b2](https://github.com/grafana/plugin-ci-workflows/commit/f4af5b22a36a52882782c308bf482f6e712a0a4a))
+
+
+### 🤖 Continuous Integrations
+
+* migrate release-please to GATB ([#723](https://github.com/grafana/plugin-ci-workflows/issues/723)) ([bc5feb7](https://github.com/grafana/plugin-ci-workflows/commit/bc5feb734d91fdb7b84b865c6d288082c0c9d52e))
+
+
+### 🔧 Chores
+
+* **deps:** update dependency plugin-validator to v0.39.3 ([#709](https://github.com/grafana/plugin-ci-workflows/issues/709)) ([7a45217](https://github.com/grafana/plugin-ci-workflows/commit/7a452171fc62a0eb439e96a48e21f8c7bddde1e6))
+* **deps:** update peter-evans/create-pull-request action to v8.1.1 ([#697](https://github.com/grafana/plugin-ci-workflows/issues/697)) ([a360005](https://github.com/grafana/plugin-ci-workflows/commit/a3600051f2d4905e72ec273f7330512934e3320e))
+* **main:** release plugins-release-please 2.0.0 ([#415](https://github.com/grafana/plugin-ci-workflows/issues/415)) ([660e635](https://github.com/grafana/plugin-ci-workflows/commit/660e635efad32766d8cde97d7500181bf5897c16))
+* **main:** release plugins-release-please 2.0.1 ([#734](https://github.com/grafana/plugin-ci-workflows/issues/734)) ([c84b384](https://github.com/grafana/plugin-ci-workflows/commit/c84b38415ccbd59f83c322f4672f90c6c0574cbd))
+* **main:** release plugins-version-bump-changelog 2.0.0 ([#414](https://github.com/grafana/plugin-ci-workflows/issues/414)) ([30442d8](https://github.com/grafana/plugin-ci-workflows/commit/30442d8ce84a62cdf704c81c2adf8289778c0121))
+* migrate codeowners to @grafana/grafana-catalog ([#716](https://github.com/grafana/plugin-ci-workflows/issues/716)) ([97fa814](https://github.com/grafana/plugin-ci-workflows/commit/97fa814b87b43010b486f081990886c1351e318b))
+* update readme team handle to @grafana/grafana-catalog ([#719](https://github.com/grafana/plugin-ci-workflows/issues/719)) ([453e51c](https://github.com/grafana/plugin-ci-workflows/commit/453e51c7bef96e762abdb55264862de0a74ac352))
+
 ## [7.3.1](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v7.3.0...ci-cd-workflows/v7.3.1) (2026-04-24)
 
 
