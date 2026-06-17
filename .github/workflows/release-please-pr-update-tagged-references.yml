@@ -74,6 +74,7 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
           token: ${{ steps.generate-github-token.outputs.token }}
+          persist-credentials: false
           # This is needed or GitHub will return a
           # "remote rejected - cannot lock ref" error when trying to push
           fetch-depth: 0
