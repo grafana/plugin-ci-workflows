@@ -137,7 +137,7 @@ jobs:
       # so the commit is signed by GitHub and shows as "Verified".
       - name: Update PR
         if: steps.switch-references.outputs.changed == 'true' || steps.switch-references-examples.outputs.changed == 'true'
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           github-token: ${{ steps.generate-github-token.outputs.token }}
           script: |
