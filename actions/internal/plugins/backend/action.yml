@@ -46,7 +46,9 @@ runs:
       shell: bash
 
     - name: Lint
-      run: golangci-lint run --timeout=5m
+      # Only scope to `./pkg/...`: some node_modules include Go files
+      # and may cause golangci-lint to fail with unactionable errors.
+      run: golangci-lint run --timeout=5m ./pkg/...
       working-directory: ${{ inputs.plugin-directory }}
       shell: bash
 

@@ -19,7 +19,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var goVersionRegex = regexp.MustCompile(`^go\s+(\d+\.\d+)`)
+var goVersionRegex = regexp.MustCompile(`^go\s+(\d+\.\d+(?:\.\d+)?)`)
 
 // readNodeMajorFromNvmrc reads the major Node.js version from an .nvmrc file.
 // It returns the major version string (e.g., "24").
