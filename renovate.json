@@ -107,6 +107,7 @@
             "extractVersionTemplate": "^v?(?<version>.*)$"
         }
     ],
+    "dependencyDashboard": false,
     "minimumReleaseAge": "14 days",
     "prConcurrentLimit": 10,
     "rebaseWhen": "behind-base-branch"
