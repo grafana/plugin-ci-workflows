@@ -1,5 +1,29 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- `playwright-browsers` input on `cd.yml`, `ci.yml`, and `playwright.yml` to choose which Playwright browsers to install before E2E (default `chromium`; `chromium`, `firefox`, `webkit`).
+
+## [9.0.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v8.0.1...ci-cd-workflows/v9.0.0) (2026-05-28)
+
+
+### ⚠ BREAKING CHANGES
+
+* **ci:** use `package_json_file` in `pnpm/action-setup` ([#752](https://github.com/grafana/plugin-ci-workflows/issues/752))
+
+### 🎉 Features
+
+* **ci:** use `package_json_file` in `pnpm/action-setup` ([#752](https://github.com/grafana/plugin-ci-workflows/issues/752)) ([919febd](https://github.com/grafana/plugin-ci-workflows/commit/919febdc1eca10453811eaeeab304c35f99fc28f))
+* **playwright:** add max-parallel and customizable timeouts, add docker logs on Grafana startup failure ([#711](https://github.com/grafana/plugin-ci-workflows/issues/711)) ([a879e03](https://github.com/grafana/plugin-ci-workflows/commit/a879e03d59ec00233a141273ad7d10d0fbbff526))
+
+
+### 🔧 Chores
+
+* **deps:** update default Go version to 1.26 ([#745](https://github.com/grafana/plugin-ci-workflows/issues/745)) ([2ba6cdd](https://github.com/grafana/plugin-ci-workflows/commit/2ba6cdd6b3dafd2053500b64ff19951dadf1e208))
+* **security:** test plugins: harden security and update packages ([#746](https://github.com/grafana/plugin-ci-workflows/issues/746)) ([1215545](https://github.com/grafana/plugin-ci-workflows/commit/1215545ec6ab4d35f9a0cd7d1e4ba10cd7de93d6))
+
 ## [8.0.1](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v8.0.0...ci-cd-workflows/v8.0.1) (2026-05-22)
 
 

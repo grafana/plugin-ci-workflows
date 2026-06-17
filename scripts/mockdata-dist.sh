@@ -33,6 +33,10 @@ echo "Using Package Manager: $(pm)"
 echo "[$1] (frontend) Installing"
 $(pm) install
 
+echo "[$1] (frontend) Lint + typecheck"
+$(pm) run lint
+$(pm) run typecheck
+
 echo "[$1] (frontend) Building the plugin"
 $(pm) run build
 

@@ -91,7 +91,7 @@ runs:
       if: ${{ inputs.act-cache-warmup != 'true' && steps.package-manager.outputs.name == 'pnpm' }}
       uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093 # v6.0.8
       with:
-        version: ${{ steps.package-manager.outputs.version }}
+        package_json_file: ${{ inputs.plugin-directory }}/package.json
 
     - name: Node
       id: node
@@ -108,12 +108,10 @@ runs:
       if: ${{ env.ACT }}
       shell: bash
       run: |
-        # Double-check if yarn is installed, as it may be installed by another test
-        # running in parallel and sharing the same act-toolcache volume.
-        # If try to install yarn twice, we get an "ENOTEMPTY: directory not empty" error.
-        if ! command -v yarn >/dev/null 2>&1; then
-          npm install -g yarn
-        fi
+        # Enable corepack so that yarn (v4+) can be resolved via the packageManager
+        # field in package.json. Corepack ships with Node.js 16.9+ and is the
+        # recommended way to manage Yarn Berry versions.
+        corepack enable
 
     - name: Go
       if: ${{ inputs.frontend-only != 'true' }}
@@ -134,7 +132,7 @@ runs:
     - name: Cache Go tooling
       if: ${{ inputs.frontend-only != 'true' }}
       id: cache
-      uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+      uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
       with:
         path: |
           ${{ steps.go-bin.outputs.gobin }}/golangci-lint
