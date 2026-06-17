@@ -121,11 +121,6 @@ on:
         type: boolean
         required: false
         default: false
-      run-playwright-with-skip-grafana-react-19-preview-image:
-        description: Optionally, you can skip the Grafana React 19 preview image
-        type: boolean
-        required: false
-        default: false
       run-playwright-with-version-resolver-type:
         description: Define which version resolver type to use for Playwright E2E tests.
         type: string
@@ -178,6 +173,15 @@ on:
         required: false
         type: number
         default: 256
+      playwright-browsers:
+        description: |
+          Browsers to install before Playwright E2E tests. Space-, newline-, or semicolon-separated.
+          Allowed values: chromium, firefox, webkit. Defaults to chromium (unchanged behaviour).
+          Set when the plugin runs non-Chromium browser projects on CI. Example: `chromium firefox`.
+          Which browsers actually run remains configured in the plugin's playwright.config.ts.
+        type: string
+        required: false
+        default: chromium
       playwright-secrets:
         description: |
           The secrets to use for Playwright tests.
@@ -350,7 +354,7 @@ env:
   DEFAULT_NODE_VERSION: "24"
   DEFAULT_GO_VERSION: "1.26.3"
   DEFAULT_GOLANGCI_LINT_VERSION: "2.12.2"
-  DEFAULT_TRUFFLEHOG_VERSION: "3.95.3"
+  DEFAULT_TRUFFLEHOG_VERSION: "3.95.5"
   DEFAULT_MAGE_VERSION: "1.17.1"
   DEFAULT_PLUGIN_VALIDATOR_VERSION: "0.41.0"
 
@@ -399,7 +403,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           # Force exact ref when running in act (it copies files locally, it breaks if we specify another ref)
           ref: ${{ !github.event.act && inputs.branch || github.sha }}
@@ -726,7 +730,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           # Force exact ref when running in act (it copies files locally, it breaks if we specify another ref)
           ref: ${{ !github.event.act && inputs.branch || github.sha }}
@@ -756,7 +760,6 @@ jobs:
       plugin-directory: ${{ inputs.plugin-directory }}
       grafana-dependency: ${{ inputs.run-playwright-with-grafana-dependency }}
       skip-grafana-nightly-image: ${{ inputs.run-playwright-with-skip-grafana-nightly-image || inputs.run-playwright-with-skip-grafana-dev-image }}
-      skip-grafana-react-19-preview-image: ${{ inputs.run-playwright-with-skip-grafana-react-19-preview-image }}
       version-resolver-type: ${{ inputs.run-playwright-with-version-resolver-type }}
       upload-artifacts: ${{ inputs.upload-playwright-artifacts }}
       docker-compose-file: ${{ inputs.playwright-docker-compose-file }}
@@ -769,6 +772,7 @@ jobs:
       secrets: ${{ (fromJson(needs.test-and-build.outputs.workflow-context).isTrusted && inputs.playwright-secrets != '') && inputs.playwright-secrets || '' }}
       node-version: ${{ inputs.node-version }}
       npm-registry-auth: ${{ inputs.npm-registry-auth }}
+      playwright-browsers: ${{ inputs.playwright-browsers }}
 
   playwright-docker:
     name: Plugins - Dockerized Playwright E2E tests
@@ -782,7 +786,6 @@ jobs:
       gar-registry: ${{ inputs.playwright-gar-registry }}
       grafana-dependency: ${{ inputs.run-playwright-with-grafana-dependency }}
       skip-grafana-nightly-image: ${{ inputs.run-playwright-with-skip-grafana-nightly-image || inputs.run-playwright-with-skip-grafana-dev-image }}
-      skip-grafana-react-19-preview-image: ${{ inputs.run-playwright-with-skip-grafana-react-19-preview-image }}
       version-resolver-type: ${{ inputs.run-playwright-with-version-resolver-type }}
       upload-artifacts: ${{ inputs.upload-playwright-artifacts }}
       grafana-compose-file: ${{ inputs.playwright-docker-compose-file }}
