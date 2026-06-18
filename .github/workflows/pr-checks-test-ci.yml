@@ -31,8 +31,23 @@ jobs:
           persist-credentials: true
           fetch-depth: 2
 
+      - name: Check if restore-rolling-release commit
+        id: is-restore
+        run: |
+          if [[ "${COMMIT_MESSAGE}" == "chore: update references to use 'main' branch" ]] && \
+             [[ "${ACTOR}" == "grafana-plugins-platform-bot[bot]" ]]; then
+            echo "skip=true" >> "${GITHUB_OUTPUT}"
+          else
+            echo "skip=false" >> "${GITHUB_OUTPUT}"
+          fi
+        env:
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+          ACTOR: ${{ github.actor }}
+        shell: bash
+
       - name: Check for relevant changes
         id: changed
+        if: steps.is-restore.outputs.skip != 'true'
         uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96 # v47.0.6
         with:
           files: |
