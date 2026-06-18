@@ -1329,14 +1329,6 @@ jobs:
           ref: ${{ !github.event.act && needs.setup.outputs.commit-sha || github.sha }}
           persist-credentials: false
 
-      # TEMPORARY: grafana/docs-base (alpine + node) doesn't ship jq, which
-      # the create-github-app-token action's bash scripts depend on.
-      # Remove this step once grafana/shared-workflows#1948 is released and
-      # the create-github-app-token ref above is bumped past it.
-      - name: Install jq (docs-base workaround)
-        shell: sh
-        run: apk add --no-cache jq
-
       - name: Generate GitHub token
         id: generate-github-token
         uses: grafana/shared-workflows/actions/create-github-app-token@46f48da11e78ebdba7a8747ae456b11062fac83e # create-github-app-token/v0.3.1
@@ -1345,7 +1337,7 @@ jobs:
           permission_set: website-docs
 
       - name: Publish docs
-        uses: grafana/plugin-ci-workflows/actions/internal/plugins/docs/publish@main
+        uses: grafana/plugin-ci-workflows/actions/internal/plugins/docs/publish@giuseppe/docs-publish-pr
         with:
           id: ${{ fromJSON(needs.ci.outputs.plugin).id }}
           version: ${{ fromJSON(needs.ci.outputs.plugin).version }}
