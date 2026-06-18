@@ -13,18 +13,15 @@ inputs:
     required: true
   via-pr:
     description: |
-      When true (default), docs are published to grafana/website by opening a
-      pull request: the changes are committed to a new branch via the GitHub
-      API (so the commit is signed and shows as "Verified"), a PR is opened
-      against the default branch, and auto-merge is enabled. This avoids pushing
-      directly to a protected branch, which violates org policy.
+      When true, docs are published to the website repo by opening a
+      pull request. This avoids pushing directly to a protected branch.
 
-      When false, the legacy method is used: a local git commit pushed directly
-      to the website repository's default branch, which produces unsigned
-      commits. Avoid the legacy method: it pushes directly to a protected
-      branch and does not comply with the SDLC policies that require signed
-      commits via a PR. It will be removed in the future.
-    default: "true"
+      When false, the legacy method is used and unsigned commits are
+      pushed directly to the website repo.
+      Avoid the legacy method: it does not comply with the SDLC policies
+      and it will be removed in the future.
+    # TODO: default to true once auto-merge support is added
+    default: "false"
 
 runs:
   using: composite
@@ -33,39 +30,35 @@ runs:
     # Produces unsigned commits and bypasses code review. Kept for backwards
     # compatibility only.
     - name: Publish docs (legacy, unsigned direct push)
-      if: ${{ inputs.via-pr == 'false' }}
+      if: ${{ inputs.via-pr != 'true' }}
       run: |
-        ${{ github.action_path }}/script.sh ${PLUGIN_ID} ${PLUGIN_VERSION}
+        ${{ github.action_path }}/publish-docs-legacy.sh "${PLUGIN_ID}" "${PLUGIN_VERSION}"
       env:
         GITHUB_TOKEN: ${{ inputs.github-token }}
         PLUGIN_ID: ${{ inputs.id }}
         PLUGIN_VERSION: ${{ inputs.version }}
       shell: bash
 
-    # PR method (default): clone the website repo and rsync the docs into place,
-    # then let create-pull-request commit the changes via the GitHub API (so the
-    # commit is signed and shows as "Verified"), open a PR, and enable auto-merge.
-    - name: Prepare docs
-      id: prepare
-      if: ${{ inputs.via-pr != 'false' }}
+    # PR method (default): update docs in website repo and open a PR for review.
+    - name: Prepare docs PR
+      id: prepare-pr
+      if: ${{ inputs.via-pr == 'true' }}
       run: |
-        ${{ github.action_path }}/prepare.sh ${PLUGIN_ID} ${PLUGIN_VERSION}
+        ${{ github.action_path }}/prepare-pr.sh "${PLUGIN_ID}" "${PLUGIN_VERSION}"
       env:
         GITHUB_TOKEN: ${{ inputs.github-token }}
         PLUGIN_ID: ${{ inputs.id }}
         PLUGIN_VERSION: ${{ inputs.version }}
       shell: bash
 
-    # create-pull-request commits the rsync'd changes via the GitHub API
-    # (sign-commits: true), so the commit is signed and shows as "Verified". It
-    # creates/updates the branch and opens (or updates) the PR.
-    - name: Publish docs (PR)
-      id: cpr
-      if: ${{ inputs.via-pr != 'false' }}
+    # TODO: PR should auto-merge
+    - name: Create docs PR
+      id: create-pr
+      if: ${{ inputs.via-pr == 'true' }}
       uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
       with:
-        token: ${{ steps.prepare.outputs.token }}
-        path: ${{ steps.prepare.outputs.dir }}
+        token: ${{ steps.prepare-pr.outputs.token }}
+        path: ${{ steps.prepare-pr.outputs.dir }}
         base: master
         branch: plugins-docs/${{ inputs.id }}-v${{ inputs.version }}
         delete-branch: true
@@ -77,18 +70,3 @@ runs:
           from `${{ github.repository }}@${{ github.ref_name }}`.
 
           _This is an automated PR created by the `${{ github.workflow }}` workflow ([run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}))._
-
-    # Enable auto-merge so the PR merges once required checks/reviews pass. This
-    # requires auto-merge to be enabled on the repository; if it is not, log a
-    # warning and leave the PR open rather than failing. gh is not bundled in
-    # the docs-base image, so install it first.
-    - name: Enable auto-merge
-      if: ${{ inputs.via-pr != 'false' && steps.cpr.outputs.pull-request-number }}
-      run: |
-        apk add --no-cache github-cli
-        gh pr merge --auto --squash "${PR_NUMBER}" --repo grafana/website \
-          || echo "::warning::Could not enable auto-merge; PR left open for manual merge"
-      env:
-        GH_TOKEN: ${{ steps.prepare.outputs.token }}
-        PR_NUMBER: ${{ steps.cpr.outputs.pull-request-number }}
-      shell: sh
