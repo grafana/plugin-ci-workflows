@@ -1337,7 +1337,7 @@ jobs:
           permission_set: website-docs
 
       - name: Publish docs
-        uses: grafana/plugin-ci-workflows/actions/internal/plugins/docs/publish@giuseppe/docs-publish-pr
+        uses: grafana/plugin-ci-workflows/actions/internal/plugins/docs/publish@main
         with:
           id: ${{ fromJSON(needs.ci.outputs.plugin).id }}
           version: ${{ fromJSON(needs.ci.outputs.plugin).version }}
