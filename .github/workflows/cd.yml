@@ -719,14 +719,14 @@ jobs:
 
             // Docs only: skip plugin deployment
             if (!DISABLE_DOCS_PUBLISHING && DOCS_ONLY) {
-              /* if (!environments.includes('prod')) {
+              if (!environments.includes('prod')) {
                 core.setFailed(`Only 'prod' environment is allowed for docs publishing.`);
                 return;
               }
               if (!isReleaseReference) {
                 core.setFailed(`Non-release references cannot be used for docs publishing.`);
                 return;
-              } */
+              }
               core.setOutput('environments', JSON.stringify([]));
               core.setOutput('publish-docs', 'true');
               return;
