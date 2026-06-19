@@ -153,7 +153,7 @@ jobs:
 
       - name: Setup
         id: setup
-        uses: grafana/plugin-ci-workflows/actions/internal/plugins/setup@giuseppe/bump-e2e-versions-fix-crash
+        uses: grafana/plugin-ci-workflows/actions/internal/plugins/setup@main
         with:
           plugin-directory: ${{ inputs.plugin-directory }}
           node-version: ${{ inputs.node-version }}
@@ -363,6 +363,6 @@ jobs:
     if: always()
     steps:
       - name: Check matrix job status
-        uses: grafana/plugin-ci-workflows/actions/internal/check-matrix-status@giuseppe/bump-e2e-versions-fix-crash
+        uses: grafana/plugin-ci-workflows/actions/internal/check-matrix-status@main
         with:
           results: ${{ needs.playwright-tests.result }}

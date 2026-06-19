@@ -29,7 +29,7 @@ jobs:
 
       - name: Switch references
         id: switch-references
-        uses: grafana/plugin-ci-workflows/actions/internal/switch-references@giuseppe/bump-e2e-versions-fix-crash
+        uses: grafana/plugin-ci-workflows/actions/internal/switch-references@main
         with:
           repository: grafana/plugin-ci-workflows
           ref: main
