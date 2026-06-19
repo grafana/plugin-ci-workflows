@@ -51,7 +51,6 @@ runs:
         PLUGIN_VERSION: ${{ inputs.version }}
       shell: bash
 
-    # TODO: PR should auto-merge
     - name: Create docs PR
       id: create-pr
       if: ${{ inputs.via-pr == 'true' }}
