@@ -1,9 +1,6 @@
 #!/bin/bash
 set -e
 
-# Safety net for testing: always fail
-exit 1
-
 if [ $# -ne 2 ]; then
     echo "Usage: $0 <plugin_id> <plugin_version>"
     exit 1
