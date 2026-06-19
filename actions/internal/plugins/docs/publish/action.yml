@@ -66,7 +66,7 @@ runs:
         commit-message: "[plugins] Publish from ${{ github.repository }}:${{ github.ref_name }}/docs/sources"
         title: "[plugins] Publish docs for ${{ inputs.id }} v${{ inputs.version }}"
         body: |
-          Automated docs publish for `${{ inputs.id }}` v${{ inputs.version }}
+          Automated docs publish for `${{ inputs.id }}` `v${{ inputs.version }}`
           from `${{ github.repository }}@${{ github.ref_name }}`.
 
           _This is an automated PR created by the `${{ github.workflow }}` workflow ([run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}))._
