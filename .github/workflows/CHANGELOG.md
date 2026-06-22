@@ -6,6 +6,18 @@
 
 - `playwright-browsers` input on `cd.yml`, `ci.yml`, and `playwright.yml` to choose which Playwright browsers to install before E2E (default `chromium`; `chromium`, `firefox`, `webkit`).
 
+## [10.0.1](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v10.0.0...ci-cd-workflows/v10.0.1) (2026-06-19)
+
+
+### 🐛 Bug Fixes
+
+* **ci:** fix playwright tests crashing in CI ([#806](https://github.com/grafana/plugin-ci-workflows/issues/806)) ([0e08d4d](https://github.com/grafana/plugin-ci-workflows/commit/0e08d4dc2be7320ebf527d0b9aed36a331c2b860))
+
+
+### 🔧 Chores
+
+* **deps:** update grafana/shared-workflows/get-vault-secrets action to v2.0.0 - abandoned ([#795](https://github.com/grafana/plugin-ci-workflows/issues/795)) ([c8dd91b](https://github.com/grafana/plugin-ci-workflows/commit/c8dd91beda263800f0f29e8ea969ec296ea55ac6))
+
 ## [10.0.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v9.0.0...ci-cd-workflows/v10.0.0) (2026-06-18)
 
 
