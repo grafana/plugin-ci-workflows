@@ -17,6 +17,19 @@ apk add rsync
 plugin_id="$1"
 plugin_version="$2"
 
+case "$plugin_id" in
+  (*[!a-zA-Z0-9-]*|'')
+    echo "Invalid plugin_id: $plugin_id" >&2
+    exit 1
+    ;;
+esac
+case "$plugin_version" in
+  (*[!0-9A-Za-z.+-]*|'')
+    echo "Invalid plugin_version: $plugin_version" >&2
+    exit 1
+    ;;
+esac
+
 # Accept either a raw token or one already prefixed with "x-access-token:"
 # so callers that pass "x-access-token:<token>" keep working.
 github_token="${GITHUB_TOKEN#x-access-token:}"
