@@ -91,7 +91,7 @@ jobs:
 
       - name: Run act tests
         run: |
-          make act-tests
+          make act-test
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
