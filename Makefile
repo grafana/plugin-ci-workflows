@@ -44,9 +44,7 @@ genreadme:
 	cd examples/base && go run genreadme.go
 
 build-act-runner:
-	@if [ ! -d .act/.git ]; then \
-		git clone -b grafana --single-branch git@github.com:grafana/act-gha.git .act; \
-	fi
+	git submodule update --init --recursive
 	cd .act && make build
 
 act-lint:
