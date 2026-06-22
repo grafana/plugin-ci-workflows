@@ -12,7 +12,7 @@ if [ -z "$GITHUB_TOKEN" ]; then
 fi
 
 echo "Installing pre-requisites"
-apk add rsync
+apk add --no-cache rsync
 
 plugin_id="$1"
 plugin_version="$2"
