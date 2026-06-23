@@ -11,38 +11,13 @@ inputs:
   github-token:
     description: GitHub token for publishing to the website repository
     required: true
-  via-pr:
-    description: |
-      When true, docs are published to the website repo by opening a
-      pull request. This avoids pushing directly to a protected branch.
-
-      When false, the legacy method is used and unsigned commits are
-      pushed directly to the website repo.
-      Avoid the legacy method: it does not comply with the SDLC policies
-      and it will be removed in the future.
-    # TODO: default to true once auto-merge support is added
-    default: "false"
 
 runs:
   using: composite
   steps:
-    # Legacy method: local git commit pushed directly to the website repository.
-    # Produces unsigned commits and bypasses code review. Kept for backwards
-    # compatibility only.
-    - name: Publish docs (legacy, unsigned direct push)
-      if: ${{ inputs.via-pr != 'true' }}
-      run: |
-        ${{ github.action_path }}/publish-docs-legacy.sh "${PLUGIN_ID}" "${PLUGIN_VERSION}"
-      env:
-        GITHUB_TOKEN: ${{ inputs.github-token }}
-        PLUGIN_ID: ${{ inputs.id }}
-        PLUGIN_VERSION: ${{ inputs.version }}
-      shell: bash
-
-    # PR method (default): update docs in website repo and open a PR for review.
+    # Update docs in the website repo and open a PR for review.
     - name: Prepare docs PR
       id: prepare-pr
-      if: ${{ inputs.via-pr == 'true' }}
       run: |
         ${{ github.action_path }}/prepare-pr.sh "${PLUGIN_ID}" "${PLUGIN_VERSION}"
       env:
@@ -53,7 +28,6 @@ runs:
 
     - name: Create docs PR
       id: create-pr
-      if: ${{ inputs.via-pr == 'true' }}
       uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
       with:
         token: ${{ steps.prepare-pr.outputs.token }}
