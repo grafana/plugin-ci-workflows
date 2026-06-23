@@ -340,19 +340,6 @@ on:
           Disable docs publishing to the website.
         default: false
         type: boolean
-      docs-publish-via-pr:
-        # TODO: update the description to mention that true is the default once auto-merge support is added
-        description: |
-          When true, docs are published to the website repo by opening a
-          pull request. This avoids pushing directly to a protected branch.
-
-          When false, the legacy method is used and unsigned commits are
-          pushed directly to the website repo.
-          Avoid the legacy method: it does not comply with the SDLC policies
-          and it will be removed in the future.
-        # TODO: default to true once auto-merge support is added
-        default: false
-        type: boolean
       frontend-secrets:
         description: The secrets to use within frontend steps
         type: string
@@ -1341,7 +1328,6 @@ jobs:
           id: ${{ fromJSON(needs.ci.outputs.plugin).id }}
           version: ${{ fromJSON(needs.ci.outputs.plugin).version }}
           github-token: x-access-token:${{ steps.generate-github-token.outputs.token }}
-          via-pr: ${{ inputs.docs-publish-via-pr }}
 
   create-github-release:
     name: Create GitHub Release
