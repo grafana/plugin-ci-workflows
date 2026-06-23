@@ -9,17 +9,37 @@ inputs:
     description: Plugin version
     required: true
   github-token:
-    description: GitHub token for pushing to the website repository
+    description: GitHub token for publishing to the website repository
     required: true
 
 runs:
   using: composite
   steps:
-    - name: Publish docs
+    # Update docs in the website repo and open a PR for review.
+    - name: Prepare docs PR
+      id: prepare-pr
       run: |
-        ${{ github.action_path }}/script.sh ${PLUGIN_ID} ${PLUGIN_VERSION}
+        ${{ github.action_path }}/prepare-pr.sh "${PLUGIN_ID}" "${PLUGIN_VERSION}"
       env:
         GITHUB_TOKEN: ${{ inputs.github-token }}
         PLUGIN_ID: ${{ inputs.id }}
         PLUGIN_VERSION: ${{ inputs.version }}
       shell: bash
+
+    - name: Create docs PR
+      id: create-pr
+      uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+      with:
+        token: ${{ steps.prepare-pr.outputs.token }}
+        path: ${{ steps.prepare-pr.outputs.dir }}
+        base: master
+        branch: plugins-docs/${{ inputs.id }}-v${{ inputs.version }}
+        delete-branch: true
+        sign-commits: true
+        commit-message: "[plugins] Publish from ${{ github.repository }}:${{ github.ref_name }}/docs/sources"
+        title: "[plugins] Publish docs for ${{ inputs.id }} v${{ inputs.version }}"
+        body: |
+          Automated docs publish for `${{ inputs.id }}` `v${{ inputs.version }}`
+          from `${{ github.repository }}@${{ github.ref_name }}`.
+
+          _This is an automated PR created by the `${{ github.workflow }}` workflow ([run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}))._

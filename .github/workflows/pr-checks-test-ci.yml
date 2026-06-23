@@ -4,41 +4,68 @@ on:
   pull_request:
     branches:
       - main
-    paths:
-      - "tests/**"
-      - ".github/workflows/pr-checks-test-ci.yml"
-      - ".github/workflows/ci.yml"
-      - ".github/workflows/cd.yml"
-      - "actions/internal/**"
-      - "actions/plugins/publish/**"
   push:
     branches:
       - main
-    paths:
-      - "tests/**"
-      - ".github/workflows/pr-checks-test-ci.yml"
-      - ".github/workflows/ci.yml"
-      - ".github/workflows/cd.yml"
-      - "actions/internal/**"
-      - "actions/plugins/publish/**"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
-  ACT_VERSION: "0.2.88"
+  ACT_VERSION: "0.2.89"
 
 permissions:
   contents: read
 
 jobs:
-  act-tests:
-    name: Act tests
-    runs-on: ubuntu-x64-xlarge-io
+  detect-changes:
+    name: Detect changes
+    runs-on: ubuntu-arm64-small
+    outputs:
+      relevant: ${{ steps.changed.outputs.any_changed }}
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: true
+          fetch-depth: 2
+
+      - name: Check if restore-rolling-release commit
+        id: is-restore
+        run: |
+          if [[ "${COMMIT_MESSAGE}" == "chore: update references to use 'main' branch" ]] && \
+             [[ "${ACTOR}" == "grafana-plugins-platform-bot[bot]" ]]; then
+            echo "skip=true" >> "${GITHUB_OUTPUT}"
+          else
+            echo "skip=false" >> "${GITHUB_OUTPUT}"
+          fi
+        env:
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+          ACTOR: ${{ github.actor }}
+        shell: bash
+
+      - name: Check for relevant changes
+        id: changed
+        if: steps.is-restore.outputs.skip != 'true'
+        uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96 # v47.0.6
+        with:
+          files: |
+            tests/**
+            .github/workflows/pr-checks-test-ci.yml
+            .github/workflows/ci.yml
+            .github/workflows/cd.yml
+            actions/internal/**
+            actions/plugins/publish/**
+
+  act-tests:
+    name: Act tests
+    needs: detect-changes
+    if: needs.detect-changes.outputs.relevant == 'true'
+    runs-on: ubuntu-x64-xlarge-io
+    steps:
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           ref: ${{ github.event.pull_request.head.sha || github.ref }}
           fetch-depth: 0
@@ -75,3 +102,22 @@ jobs:
         working-directory: tests/act
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  act-tests-result:
+    name: Act tests result
+    if: always()
+    needs:
+      - detect-changes
+      - act-tests
+    runs-on: ubuntu-arm64-small
+    steps:
+      - name: Check result
+        run: |
+          if [[ "${TESTS_RESULT}" == "failure" ]]; then
+            echo "Act tests failed"
+            exit 1
+          fi
+          echo "Act tests passed (result: ${TESTS_RESULT}, relevant changes: ${RELEVANT})"
+        env:
+          TESTS_RESULT: ${{ needs.act-tests.result }}
+          RELEVANT: ${{ needs.detect-changes.outputs.relevant }}

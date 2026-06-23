@@ -29,7 +29,7 @@ jobs:
       automated-commit: ${{ steps.check.outputs.automated-commit }}
     steps:
       - name: Checkout PR branch
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           ref: ${{ github.head_ref }}
           persist-credentials: false
@@ -65,20 +65,19 @@ jobs:
     steps:
       - name: Generate GitHub token
         id: generate-github-token
-        uses: grafana/shared-workflows/actions/create-github-app-token@259ba21cb3ff07724f331e26d926d655d24b317b # create-github-app-token/v0.2.3
+        uses: grafana/shared-workflows/actions/create-github-app-token@46f48da11e78ebdba7a8747ae456b11062fac83e # create-github-app-token/v0.3.1
         with:
           github_app: grafana-plugins-platform-bot
 
       - name: Checkout PR branch
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           ref: ${{ github.head_ref }}
           token: ${{ steps.generate-github-token.outputs.token }}
+          persist-credentials: false
           # This is needed or GitHub will return a
           # "remote rejected - cannot lock ref" error when trying to push
           fetch-depth: 0
-          # Needed for the git-auto-commit-action to push changes
-          persist-credentials: true
 
       - name: Determine component name
         id: component-name
@@ -134,19 +133,58 @@ jobs:
           paths: |
             examples/**
 
-      - name: Get bot user info
-        id: get-bot-user
-        if: steps.switch-references.outputs.changed == 'true' || steps.switch-references-examples.outputs.changed == 'true'
-        uses: grafana/plugin-ci-workflows/actions/internal/get-bot-user@main
-        with:
-          app-slug: grafana-plugins-platform-bot
-          token: ${{ steps.generate-github-token.outputs.token }}
-
-      # Commit and push all changes to the PR
+      # Commit and push all changes to the PR branch via the GitHub API,
+      # so the commit is signed by GitHub and shows as "Verified".
       - name: Update PR
         if: steps.switch-references.outputs.changed == 'true' || steps.switch-references-examples.outputs.changed == 'true'
-        uses: stefanzweifel/git-auto-commit-action@04702edda442b2e678b25b537cec683a1493fcb9 # v7.1.0
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
-          commit_message: "chore(main): update tagged references"
-          commit_user_name: ${{ steps.get-bot-user.outputs.name }}
-          commit_user_email: ${{ steps.get-bot-user.outputs.email }}
+          github-token: ${{ steps.generate-github-token.outputs.token }}
+          script: |
+            const fs = require('fs');
+
+            // Collect working-tree changes made by the switch-references steps
+            const { stdout: statusOut } = await exec.getExecOutput('git', ['status', '--porcelain']);
+            const additions = [];
+            const deletions = [];
+            for (const line of statusOut.split('\n')) {
+              if (!line.trim()) continue;
+              const status = line.slice(0, 2).trim();
+              const path = line.slice(3);
+              if (status === 'D') {
+                deletions.push({ path });
+              } else {
+                additions.push({ path, contents: fs.readFileSync(path).toString('base64') });
+              }
+            }
+            if (additions.length === 0 && deletions.length === 0) {
+              core.info('No changes to commit');
+              return;
+            }
+
+            const { stdout: headOid } = await exec.getExecOutput('git', ['rev-parse', 'HEAD']);
+
+            const result = await github.graphql(
+              `mutation ($input: CreateCommitOnBranchInput!) {
+                createCommitOnBranch(input: $input) {
+                  commit { oid url }
+                }
+              }`,
+              {
+                input: {
+                  branch: {
+                    repositoryNameWithOwner: process.env.REPO,
+                    branchName: process.env.BRANCH_NAME,
+                  },
+                  expectedHeadOid: headOid.trim(),
+                  // Keep "update tagged references" in the headline:
+                  // the automated-commit-check job greps for it to prevent recursion.
+                  message: { headline: 'chore(main): update tagged references' },
+                  fileChanges: { additions, deletions },
+                },
+              },
+            );
+            core.info(`Created commit: ${result.createCommitOnBranch.commit.url}`);
+        env:
+          BRANCH_NAME: ${{ github.head_ref }}
+          REPO: ${{ github.repository }}
