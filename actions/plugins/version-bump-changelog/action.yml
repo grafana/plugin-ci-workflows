@@ -110,18 +110,19 @@ runs:
             'CHANGELOG.md',
           ]);
 
+          const { data: baseRef } = await github.rest.git.getRef({ owner, repo, ref });
+          const parentSha = baseRef.object.sha;
+
           const changed = execSync('git diff --name-only', { cwd: ws, encoding: 'utf8' })
             .trim()
             .split('\n')
             .filter((file) => file && allowedFiles.has(file));
 
           if (changed.length === 0) {
-            core.setFailed('No version bump files to commit');
+            core.warning('No version bump files to commit; skipping commit.');
+            core.setOutput('commit-sha', parentSha);
             return;
           }
-
-          const { data: baseRef } = await github.rest.git.getRef({ owner, repo, ref });
-          const parentSha = baseRef.object.sha;
           const { data: parentCommit } = await github.rest.git.getCommit({
             owner,
             repo,
