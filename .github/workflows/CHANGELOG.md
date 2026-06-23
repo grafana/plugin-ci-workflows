@@ -6,6 +6,19 @@
 
 - `playwright-browsers` input on `cd.yml`, `ci.yml`, and `playwright.yml` to choose which Playwright browsers to install before E2E (default `chromium`; `chromium`, `firefox`, `webkit`).
 
+## [10.1.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v10.0.1...ci-cd-workflows/v10.1.0) (2026-06-23)
+
+
+### 🎉 Features
+
+* **cd:** remove docs publishing via direct push, pr is now the default ([#813](https://github.com/grafana/plugin-ci-workflows/issues/813)) ([91a8891](https://github.com/grafana/plugin-ci-workflows/commit/91a8891c4fb32f4d473d7f1569e4c606c80a921a))
+* **cd:** support publishing docs to website via PR rather than direct push ([#783](https://github.com/grafana/plugin-ci-workflows/issues/783)) ([37ca5b8](https://github.com/grafana/plugin-ci-workflows/commit/37ca5b80175652b3a05393c8165989989d5ed2de))
+
+
+### 🔧 Chores
+
+* **deps:** update ci tool versions to v3.95.6 ([#809](https://github.com/grafana/plugin-ci-workflows/issues/809)) ([2bd1177](https://github.com/grafana/plugin-ci-workflows/commit/2bd11770dac6fb8f7ad70110c539fc24530ee350))
+
 ## [10.0.1](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v10.0.0...ci-cd-workflows/v10.0.1) (2026-06-19)
 
 
