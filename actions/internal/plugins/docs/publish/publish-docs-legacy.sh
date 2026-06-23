@@ -12,7 +12,7 @@ if [ -z "$GITHUB_TOKEN" ]; then
 fi
 
 echo "Installing pre-requisites"
-apk add rsync
+apk add --no-cache rsync
 
 plugin_id="$1"
 plugin_version="$2"
@@ -35,8 +35,8 @@ mkdir -p "$docs_folder"
 rsync -a --quiet --delete "$GITHUB_WORKSPACE/docs/sources/" "$docs_folder"
 
 git add "$docs_folder"
-git config user.name "144369747+grafana-plugins-platform-bot[bot]@users.noreply.github.com"
-git config user.email "grafana-plugins-platform-bot[bot]"
+git config user.name "grafana-plugins-platform-bot[bot]"
+git config user.email "144369747+grafana-plugins-platform-bot[bot]@users.noreply.github.com"
 git commit -m "[plugins] Publish from $GITHUB_REPOSITORY:$GITHUB_REF_NAME/docs/sources"
 
 git push origin master
