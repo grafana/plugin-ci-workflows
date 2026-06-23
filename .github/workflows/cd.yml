@@ -266,12 +266,6 @@ on:
         required: false
         default: ""
 
-      # Feature toggle: Artifacts attestation for build provenance
-      attestation:
-        description: Create a verifiable attestation for the plugin using Github OIDC.
-        type: boolean
-        required: false
-
       # User inputs
       plugin-version-suffix:
         description: |
@@ -588,7 +582,6 @@ concurrency:
 permissions:
   contents: write
   id-token: write
-  attestations: write
   pull-requests: read
 
 env:
@@ -849,70 +842,6 @@ jobs:
       dist-artifacts-retention-days: ${{ inputs.dist-artifacts-retention-days }}
       DO-NOT-USE-allow-pinned-commit-hashes: ${{ inputs.DO-NOT-USE-allow-pinned-commit-hashes }}
 
-  build-attestation:
-    name: Build attestation
-    if: ${{ inputs.attestation }}
-    needs:
-      - ci
-    runs-on: ubuntu-x64-small
-
-    outputs:
-      attestation-id: ${{ steps.attestation.outputs.attestation-id }}
-      attestation-url: ${{ steps.attestation.outputs.attestation-url }}
-      bundle-path: ${{ steps.attestation.outputs.bundle-path }}
-      provenance-attestation: ${{ steps.provenance-attestation.outputs.provenance-attestation }}
-
-    steps:
-      - name: Download GitHub artifact
-        id: download-dist-artifacts
-        continue-on-error: true
-        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
-        with:
-          name: ${{ inputs.dist-artifacts-prefix }}dist-artifacts
-          path: /tmp/dist-artifacts
-
-      - name: Log unavailable dist-artifacts error
-        if: steps.download-dist-artifacts.outcome == 'failure'
-        run: |
-          echo "::error::The dist-artifacts artifact could not be downloaded. It may have expired (retention period: ${RETENTION_DAYS} days). Please re-run the entire workflow from the beginning to rebuild the plugin."
-          exit 1
-        shell: bash
-        env:
-          RETENTION_DAYS: ${{ inputs.dist-artifacts-retention-days }}
-
-      - name: Generate artifact attestation
-        if: ${{ inputs.attestation }}
-        id: attestation
-        uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.0
-        with:
-          subject-path: /tmp/dist-artifacts/*.zip
-
-      - name: Generate provenance attestation reference
-        if: ${{ inputs.attestation }}
-        id: provenance-attestation
-        run: |
-          shopt -s nullglob
-
-          universal_zip=""
-          for zip_path in "${DIST_ARTIFACTS_PATH}"/*.zip; do
-            zip_file="$(basename "${zip_path}")"
-            if [[ ! "${zip_file}" =~ \.[[:alnum:]]+_[[:alnum:]]+\.zip$ ]]; then
-              universal_zip="${zip_path}"
-              break
-            fi
-          done
-
-          if [ -z "${universal_zip}" ]; then
-            echo "::error::Could not find a universal plugin ZIP to reference in the provenance attestation."
-            exit 1
-          fi
-
-          sha256="$(sha256sum "${universal_zip}" | cut -d ' ' -f1)"
-          echo "provenance-attestation=github#${GITHUB_REPOSITORY_OWNER}#sha256:${sha256}" >> "${GITHUB_OUTPUT}"
-        shell: bash
-        env:
-          DIST_ARTIFACTS_PATH: /tmp/dist-artifacts
-
   publish-to-catalog:
     name: Publish to catalog (${{ matrix.environment }})
     if: >-
@@ -923,14 +852,12 @@ jobs:
         && needs.setup.result == 'success'
         && needs.upload-to-gcs-release.result == 'success'
         && needs.ci.result == 'success'
-        && (!inputs.attestation || needs.build-attestation.result == 'success')
         && needs.setup.outputs.environments != '[]'
       }}
     needs:
       - setup
       - upload-to-gcs-release
       - ci
-      - build-attestation
     strategy:
       # Allow each stage to be deployed independently, even if others fails
       fail-fast: false
@@ -1036,7 +963,6 @@ jobs:
           gcloud-auth-token: ${{ steps.gcloud.outputs.id_token }}
           ignore-conflicts: ${{ steps.determine-continue.outputs.ignore_conflicts }}
           publish-as-pending: ${{ matrix.environment == 'prod-canary' || inputs.publish-to-catalog-as-pending }}
-          provenance-attestation: ${{ inputs.attestation && needs.build-attestation.outputs.provenance-attestation || '' }}
 
       - name: Print publish summary
         run: |
