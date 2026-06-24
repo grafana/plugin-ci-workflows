@@ -22,7 +22,6 @@ jobs:
       contents: write
       pull-requests: read
       id-token: write
-      attestations: write
     with:
       # Checkout/build PR or main branch, depending on event
       branch: ${{ github.event_name == 'push' && github.ref_name || github.ref }}
