@@ -6,6 +6,13 @@
 
 - `playwright-browsers` input on `cd.yml`, `ci.yml`, and `playwright.yml` to choose which Playwright browsers to install before E2E (default `chromium`; `chromium`, `firefox`, `webkit`).
 
+## [10.1.1](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v10.1.0...ci-cd-workflows/v10.1.1) (2026-06-24)
+
+
+### 🔧 Chores
+
+* **version-bump-changelog:** add pr creation and signed commits ([#780](https://github.com/grafana/plugin-ci-workflows/issues/780)) ([62d4239](https://github.com/grafana/plugin-ci-workflows/commit/62d4239b0781e59478a07866e0c721388e3c0d53))
+
 ## [10.1.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v10.0.1...ci-cd-workflows/v10.1.0) (2026-06-23)
 
 
