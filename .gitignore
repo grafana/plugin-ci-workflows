@@ -1,2 +1,3 @@
 .github/workflows/act-*
 .DS_Store
+.idea
