@@ -190,6 +190,20 @@ on:
         type: string
         required: false
         default: ""
+      playwright-bucket:
+        description: |
+          GCS bucket name to upload Playwright reports to.
+          If not set, the default shared internal Grafana bucket is used.
+        type: string
+        required: false
+        default: 'grafana-plugin-ci-playwright-reports'
+      playwright-pr-comment-summary:
+        description: |
+          Whether to post a PR comment with Playwright test results and report links.
+          Only takes effect when upload-playwright-artifacts is true.
+        type: boolean
+        required: false
+        default: true
 
       # Trufflehog
       run-trufflehog:
@@ -348,6 +362,7 @@ concurrency:
 permissions:
   contents: read
   id-token: write
+  pull-requests: write
 
 env:
   # Default versions for tooling
@@ -772,6 +787,8 @@ jobs:
       node-version: ${{ inputs.node-version }}
       npm-registry-auth: ${{ inputs.npm-registry-auth }}
       playwright-browsers: ${{ inputs.playwright-browsers }}
+      bucket: ${{ inputs.playwright-bucket }}
+      pr-comment-summary: ${{ inputs.playwright-pr-comment-summary }}
 
   playwright-docker:
     name: Plugins - Dockerized Playwright E2E tests
