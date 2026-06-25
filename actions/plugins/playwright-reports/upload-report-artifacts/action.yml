@@ -8,7 +8,7 @@ outputs:
 
 inputs:
   test-outcome:
-    description: "Outcome of the test step. For example `${{ steps.run-tests.outcome }}`."
+    description: "Outcome of the test step. For example `{{ steps.run-tests.outcome }}`."
     required: true
   grafana-image:
     description: "Grafana image used in the test."
