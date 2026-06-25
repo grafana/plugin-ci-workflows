@@ -2,6 +2,8 @@ name: Generate changelog version bump changelog
 description: |
   Bump npm version, create a git tag and optionally generate a changelog on main using the generate-changelog npm package.
 
+  Commits are created as verified GitHub App commits via the GitHub Git Data API.
+
 inputs:
   version:
     description: "Semver type of new version (major / minor / patch)"
@@ -37,12 +39,6 @@ runs:
         token: ${{ steps.generate-github-token.outputs.token }}
         persist-credentials: true
         fetch-depth: 0
-
-    - name: Setup Git
-      shell: bash
-      run: |
-        git config user.name 'grafana-plugins-platform-bot[bot]'
-        git config user.email '144369747+grafana-plugins-platform-bot[bot]@users.noreply.github.com'
 
     - name: Get previous tag before bumping
       id: previous-tag
@@ -92,24 +88,132 @@ runs:
         EXCLUDE_STRING: ${{ inputs.exclude-from-changelog }}
 
     - name: Commit changes
-      shell: bash
-      run: |
-        git add package.json
-        git add package-lock.json || true
-        git add CHANGELOG.md || true  # No-op if changelog not generated
-        git commit -m "chore(version): bump version to ${NEW_VERSION}"
-        git push origin main
+      id: commit
+      uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+      with:
+        github-token: ${{ steps.generate-github-token.outputs.token }}
+        script: |
+          const fs = require('fs');
+          const path = require('path');
+          const { execSync } = require('child_process');
+
+          const owner = context.repo.owner;
+          const repo = context.repo.repo;
+          const ws = process.env.GITHUB_WORKSPACE;
+          const ref = 'heads/main';
+          const message = process.env.COMMIT_MESSAGE;
+          const allowedFiles = new Set([
+            'package.json',
+            'package-lock.json',
+            'yarn.lock',
+            'pnpm-lock.yaml',
+            'CHANGELOG.md',
+          ]);
+
+          const { data: baseRef } = await github.rest.git.getRef({ owner, repo, ref });
+          const parentSha = baseRef.object.sha;
+
+          const changed = execSync('git diff --name-only', { cwd: ws, encoding: 'utf8' })
+            .trim()
+            .split('\n')
+            .filter((file) => file && allowedFiles.has(file));
+
+          if (changed.length === 0) {
+            core.warning('No version bump files to commit; skipping commit.');
+            core.setOutput('commit-sha', parentSha);
+            return;
+          }
+          const { data: parentCommit } = await github.rest.git.getCommit({
+            owner,
+            repo,
+            commit_sha: parentSha,
+          });
+
+          const tree = [];
+          for (const file of changed) {
+            const content = fs.readFileSync(path.join(ws, file));
+            const { data: blob } = await github.rest.git.createBlob({
+              owner,
+              repo,
+              content: content.toString('base64'),
+              encoding: 'base64',
+            });
+            tree.push({ path: file, mode: '100644', type: 'blob', sha: blob.sha });
+          }
+
+          const { data: newTree } = await github.rest.git.createTree({
+            owner,
+            repo,
+            base_tree: parentCommit.tree.sha,
+            tree,
+          });
+
+          const { data: commit } = await github.rest.git.createCommit({
+            owner,
+            repo,
+            message,
+            tree: newTree.sha,
+            parents: [parentSha],
+          });
+
+          await github.rest.git.updateRef({ owner, repo, ref, sha: commit.sha });
+          core.setOutput('commit-sha', commit.sha);
       env:
-        GITHUB_TOKEN: ${{ steps.generate-github-token.outputs.token }}
-        NEW_VERSION: ${{ steps.bump.outputs.new-version }}
+        COMMIT_MESSAGE: "chore(version): bump version to ${{ steps.bump.outputs.new-version }}"
 
     - name: Create git tag
-      shell: bash
-      run: |
-        git tag -a ${NEW_VERSION} -m "Release version ${NEW_VERSION}"
+      uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+      with:
+        github-token: ${{ steps.generate-github-token.outputs.token }}
+        script: |
+          const tag = process.env.NEW_VERSION;
+          const ref = `refs/tags/${tag}`;
+          const sha = process.env.COMMIT_SHA;
+
+          if (!sha) {
+            core.setFailed(
+              `Cannot create tag ${tag}: missing commit SHA from the version bump commit step. ` +
+              `The release tag was not created.`
+            );
+            return;
+          }
+
+          try {
+            await github.rest.git.createRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref,
+              sha,
+            });
+            core.info(`Created tag ${tag} at ${sha}`);
+          } catch (error) {
+            const message = error.response?.data?.message || error.message;
+
+            if (error.status === 422 && message.includes('already exists')) {
+              const { data: existingRef } = await github.rest.git.getRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: `tags/${tag}`,
+              });
+
+              if (existingRef.object.sha === sha) {
+                core.warning(`Tag ${tag} already exists at ${sha}; treating as success.`);
+                return;
+              }
+
+              core.setFailed(
+                `Tag ${tag} already exists at ${existingRef.object.sha}, expected ${sha}. ` +
+                `Delete the existing tag or bump to a new version before re-running.`
+              );
+              return;
+            }
+
+            core.setFailed(
+              `Failed to create tag ${tag} at ${sha}: ${message}. ` +
+              `The version bump commit was created but the release tag was not created.`
+            );
+            throw error;
+          }
       env:
         NEW_VERSION: ${{ steps.bump.outputs.new-version }}
-
-    - name: Push tags
-      shell: bash
-      run: git push origin --tags
+        COMMIT_SHA: ${{ steps.commit.outputs.commit-sha }}
