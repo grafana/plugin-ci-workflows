@@ -18,6 +18,10 @@ inputs:
     description: 'GCS bucket name to upload reports to. Defaults to the shared internal Grafana bucket.'
     required: false
     default: 'grafana-plugin-ci-playwright-reports'
+  service-account:
+    description: 'Service account to impersonate for GCS upload via WIF. If empty, direct WIF is used.'
+    required: false
+    default: ''
 
 runs:
   using: "composite"
@@ -59,7 +63,8 @@ runs:
       uses: grafana/shared-workflows/actions/login-to-gcs@6a97ef28077dbb66da3582aad604aef980cd1787 # login-to-gcs/v0.3.0
       with:
         bucket: ${{ inputs.bucket }}
-        use_wif_auth: 'true'
+        service_account: ${{ inputs.service-account }}
+        use_wif_auth: ${{ inputs.service-account == '' }}
         delete_credentials_file: 'false'
 
     - name: Upload reports to GCS
