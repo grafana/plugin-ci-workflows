@@ -153,7 +153,7 @@ jobs:
 
       - name: Setup
         id: setup
-        uses: grafana/plugin-ci-workflows/actions/internal/plugins/setup@main
+        uses: grafana/plugin-ci-workflows/actions/internal/plugins/setup@62d4239b0781e59478a07866e0c721388e3c0d53 # main
         with:
           plugin-directory: ${{ inputs.plugin-directory }}
           node-version: ${{ inputs.node-version }}
@@ -363,6 +363,6 @@ jobs:
     if: always()
     steps:
       - name: Check matrix job status
-        uses: grafana/plugin-ci-workflows/actions/internal/check-matrix-status@main
+        uses: grafana/plugin-ci-workflows/actions/internal/check-matrix-status@62d4239b0781e59478a07866e0c721388e3c0d53 # main
         with:
           results: ${{ needs.playwright-tests.result }}
