@@ -12,7 +12,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "js-yaml": "^4.1.0",
+    "js-yaml": "5.2.0",
     "plop": "^4.0.1"
   },
   "devDependencies": {
