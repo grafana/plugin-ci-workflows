@@ -1,0 +1,112 @@
+name: 'Publish Playwright test reports'
+description: 'Uploads Playwright test reports to Google Cloud Storage and comments on the PR with the results and links.'
+
+inputs:
+  pr-comment-summary:
+    description: 'Whether to comment the PR with the test results. Default is true.'
+    required: true
+    default: true
+  artifact-pattern:
+    description: 'Pattern to match the artifacts. Default is "gf-playwright-report-*"'
+    required: true
+    default: 'gf-playwright-report-*'
+  # TODO(infra): provision grafana-plugin-ci-playwright-reports with:
+  #   - 90-day object lifecycle rule
+  #   - IAM: roles/storage.objectViewer for Grafana Google Workspace group (uniform bucket-level access)
+  #   - WIF write access for github-plugin-ci-workflows@grafanalabs-workload-identity.iam.gserviceaccount.com
+  bucket:
+    description: 'GCS bucket name to upload reports to. Defaults to the shared internal Grafana bucket.'
+    required: false
+    default: 'grafana-plugin-ci-playwright-reports'
+  service-account:
+    description: 'Service account to impersonate for GCS upload via WIF. If empty, direct WIF is used.'
+    required: false
+    default: ''
+
+runs:
+  using: "composite"
+  steps:
+    - name: Download report artifacts
+      uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+      with:
+        path: all-reports
+        pattern: ${{ inputs.artifact-pattern }}
+        merge-multiple: true
+
+    - name: Delete any existing comment
+      uses: thollander/actions-comment-pull-request@24bffb9b452ba05a4f3f77933840a6a841d1b32b # v3.0.1
+      if: ${{ inputs.pr-comment-summary == 'true' && github.event.number != null }}
+      with:
+        comment-tag: gf-playwright-test-results
+        mode: delete
+
+    - name: Set a timestamp
+      shell: bash
+      id: timestampid
+      run: echo "timestamp=$(date --utc +%Y%m%d)" >> "$GITHUB_OUTPUT"
+
+    - name: Set initiator variable
+      id: set-initiator
+      shell: bash
+      run: |
+        if [[ -n "${EVENT_NUMBER}" ]]; then
+          echo "job_initiator=${EVENT_NUMBER}" >> "$GITHUB_OUTPUT"
+        else
+          echo "job_initiator=${RUN_ID}" >> "$GITHUB_OUTPUT"
+        fi
+      env:
+        EVENT_NUMBER: ${{ github.event.number }}
+        RUN_ID: ${{ github.run_id }}
+
+    - name: Login to GCS
+      id: login-to-gcs
+      uses: grafana/shared-workflows/actions/login-to-gcs@6a97ef28077dbb66da3582aad604aef980cd1787 # login-to-gcs/v0.3.0
+      with:
+        bucket: ${{ inputs.bucket }}
+        service_account: ${{ inputs.service-account }}
+        use_wif_auth: ${{ inputs.service-account == '' }}
+        delete_credentials_file: 'false'
+
+    - name: Upload reports to GCS
+      uses: google-github-actions/upload-cloud-storage@6397bd7208e18d13ba2619ee21b9873edc94427a # v3.0.0
+      with:
+        path: all-reports
+        destination: ${{ steps.login-to-gcs.outputs.bucket }}/${{ github.repository }}/${{ steps.timestampid.outputs.timestamp }}/${{ steps.set-initiator.outputs.job_initiator }}
+        parent: false
+        predefinedAcl: ' '
+        gzip: false
+        process_gcloudignore: false
+
+    - name: Generate Playwright Test Results Table
+      id: generate-table
+      shell: bash
+      run: |
+        table_output=$(node "${ACTION_PATH}/build-pr-comment.js" || echo "")
+        if [[ -n "$table_output" ]]; then
+          {
+            echo "table<<EOF"
+            echo "$table_output"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+        fi
+      env:
+        ACTION_PATH: ${{ github.action_path }}
+        GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
+        GITHUB_REPOSITORY_NAME: ${{ github.event.repository.name }}
+        DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        REPORT_BASE_URL: https://storage.cloud.google.com/${{ steps.login-to-gcs.outputs.bucket }}/${{ github.repository }}/${{ steps.timestampid.outputs.timestamp }}/${{ steps.set-initiator.outputs.job_initiator }}
+
+    - name: Write result table in Action summary
+      shell: bash
+      if: ${{ steps.generate-table.outputs.table != '' }}
+      run: echo "$TABLE_OUTPUT" >> "$GITHUB_STEP_SUMMARY"
+      env:
+        TABLE_OUTPUT: ${{ steps.generate-table.outputs.table }}
+
+    - name: Comment PR with Execution Details
+      uses: thollander/actions-comment-pull-request@24bffb9b452ba05a4f3f77933840a6a841d1b32b # v3.0.1
+      if: ${{ inputs.pr-comment-summary == 'true' && github.event.number != null && steps.generate-table.outputs.table != '' }}
+      with:
+        create-if-not-exists: true
+        comment-tag: gf-playwright-test-results
+        message: ${{ steps.generate-table.outputs.table }}
