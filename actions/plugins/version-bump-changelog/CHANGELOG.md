@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.0.1](https://github.com/grafana/plugin-ci-workflows/compare/plugins-version-bump-changelog/v2.0.0...plugins-version-bump-changelog/v2.0.1) (2026-06-30)
+
+
+### 🔧 Chores
+
+* **deps:** update actions/checkout action to v6.0.3 ([#773](https://github.com/grafana/plugin-ci-workflows/issues/773)) ([feb7de9](https://github.com/grafana/plugin-ci-workflows/commit/feb7de9055df9e767976f25faffb29512900c69a))
+* **deps:** update grafana/shared-workflows/create-github-app-token action to v0.3.1 ([#792](https://github.com/grafana/plugin-ci-workflows/issues/792)) ([33ca773](https://github.com/grafana/plugin-ci-workflows/commit/33ca773178b13fb9db12e756117fde47ded6b48e))
+* **version-bump-changelog:** add pr creation and signed commits ([#780](https://github.com/grafana/plugin-ci-workflows/issues/780)) ([62d4239](https://github.com/grafana/plugin-ci-workflows/commit/62d4239b0781e59478a07866e0c721388e3c0d53))
+
 ## [2.0.0](https://github.com/grafana/plugin-ci-workflows/compare/plugins-version-bump-changelog/v1.1.0...plugins-version-bump-changelog/v2.0.0) (2026-05-20)
 
 
