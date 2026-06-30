@@ -52,7 +52,7 @@ jobs:
       # (we want to encourage using tagged releases in docs)
       - name: Switch references
         id: switch-references
-        uses: grafana/plugin-ci-workflows/actions/internal/switch-references@main
+        uses: grafana/plugin-ci-workflows/actions/internal/switch-references@5f8900127a773ddbbe44e516d981836276a03c18 # main
         with:
           repository: grafana/plugin-ci-workflows
           ref: main
