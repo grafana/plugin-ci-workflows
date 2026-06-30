@@ -46,7 +46,6 @@ func NewWorkflow(opts ...WorkflowOption) (Workflow, error) {
 				Permissions: workflow.Permissions{
 					"contents":      "write",
 					"id-token":      "write",
-					"attestations":  "write",
 					"pull-requests": "read",
 				},
 				With: map[string]any{
@@ -134,7 +133,6 @@ type WorkflowInputs struct {
 	DocsOnly                 *bool
 	AllowPublishingPRsToProd *bool
 	UploadGCSLatest          *bool
-	Attestation              *bool
 }
 
 // WithWorkflowInputs sets the inputs for the CD workflow.
@@ -160,7 +158,6 @@ func WithWorkflowInputs(inputs WorkflowInputs) WorkflowOption {
 		workflow.SetJobInput(job, "docs-only", inputs.DocsOnly)
 		workflow.SetJobInput(job, "allow-publishing-prs-to-prod", inputs.AllowPublishingPRsToProd)
 		workflow.SetJobInput(job, "upload-gcs-latest", inputs.UploadGCSLatest)
-		workflow.SetJobInput(job, "attestation", inputs.Attestation)
 	}
 }
 
