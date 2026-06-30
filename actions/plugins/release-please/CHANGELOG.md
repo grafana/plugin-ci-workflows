@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.0.2](https://github.com/grafana/plugin-ci-workflows/compare/plugins-release-please/v2.0.1...plugins-release-please/v2.0.2) (2026-06-30)
+
+
+### 🔧 Chores
+
+* **deps:** update actions/checkout action to v6.0.3 ([#773](https://github.com/grafana/plugin-ci-workflows/issues/773)) ([feb7de9](https://github.com/grafana/plugin-ci-workflows/commit/feb7de9055df9e767976f25faffb29512900c69a))
+* **deps:** update googleapis/release-please-action action to v5 - abandoned ([#794](https://github.com/grafana/plugin-ci-workflows/issues/794)) ([fed734f](https://github.com/grafana/plugin-ci-workflows/commit/fed734feafc3d3f8d123b791aeb708a263d19a30))
+* **deps:** update grafana/shared-workflows/create-github-app-token action to v0.3.1 ([#792](https://github.com/grafana/plugin-ci-workflows/issues/792)) ([33ca773](https://github.com/grafana/plugin-ci-workflows/commit/33ca773178b13fb9db12e756117fde47ded6b48e))
+
 ## [2.0.1](https://github.com/grafana/plugin-ci-workflows/compare/plugins-release-please/v2.0.0...plugins-release-please/v2.0.1) (2026-05-20)
 
 
