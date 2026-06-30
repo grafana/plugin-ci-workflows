@@ -153,7 +153,7 @@ jobs:
 
       - name: Setup
         id: setup
-        uses: grafana/plugin-ci-workflows/actions/internal/plugins/setup@plugins-frontend-e2e-against-stack/v1.1.0
+        uses: grafana/plugin-ci-workflows/actions/internal/plugins/setup@ci-cd-workflows/v10.1.1
         with:
           plugin-directory: ${{ inputs.plugin-directory }}
           node-version: ${{ inputs.node-version }}
@@ -363,6 +363,6 @@ jobs:
     if: always()
     steps:
       - name: Check matrix job status
-        uses: grafana/plugin-ci-workflows/actions/internal/check-matrix-status@plugins-frontend-e2e-against-stack/v1.1.0
+        uses: grafana/plugin-ci-workflows/actions/internal/check-matrix-status@ci-cd-workflows/v10.1.1
         with:
           results: ${{ needs.playwright-tests.result }}
