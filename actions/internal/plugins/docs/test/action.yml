@@ -1,14 +1,24 @@
 name: Plugins - Docs - Test
 description: Check whether docs can be successfully built.
 
+inputs:
+  docs-source-directory:
+    description: |
+      Directory in the plugin repository, relative to the checkout root, that
+      contains the docs to test. Defaults to `docs/sources`.
+    required: false
+    default: docs/sources
+
 runs:
   using: composite
   steps:
     - name: Test docs
+      env:
+        DOCS_SOURCE_DIRECTORY: ${{ inputs.docs-source-directory }}
       run: |
-        if [ -d docs/sources ]; then
-          ${{ github.action_path }}/script.sh
+        if [ -d "${DOCS_SOURCE_DIRECTORY}" ]; then
+          ${{ github.action_path }}/script.sh "${DOCS_SOURCE_DIRECTORY}"
         else
-          echo "❌ Docs do not exist."
+          echo "❌ Docs do not exist at ${DOCS_SOURCE_DIRECTORY}."
         fi
       shell: bash

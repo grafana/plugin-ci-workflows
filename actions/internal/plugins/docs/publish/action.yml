@@ -11,6 +11,13 @@ inputs:
   github-token:
     description: GitHub token for publishing to the website repository
     required: true
+  docs-source-directory:
+    description: |
+      Directory in the plugin repository, relative to the checkout root, that
+      contains the docs to publish. Defaults to `docs/sources`. Must be a
+      relative subpath. No absolute paths, or `..` segments.
+    required: false
+    default: docs/sources
 
 runs:
   using: composite
@@ -19,11 +26,12 @@ runs:
     - name: Prepare docs PR
       id: prepare-pr
       run: |
-        ${{ github.action_path }}/prepare-pr.sh "${PLUGIN_ID}" "${PLUGIN_VERSION}"
+        ${{ github.action_path }}/prepare-pr.sh "${PLUGIN_ID}" "${PLUGIN_VERSION}" "${DOCS_SOURCE_DIRECTORY}"
       env:
         GITHUB_TOKEN: ${{ inputs.github-token }}
         PLUGIN_ID: ${{ inputs.id }}
         PLUGIN_VERSION: ${{ inputs.version }}
+        DOCS_SOURCE_DIRECTORY: ${{ inputs.docs-source-directory }}
       shell: bash
 
     - name: Create docs PR
@@ -36,7 +44,7 @@ runs:
         branch: plugins-docs/${{ inputs.id }}-v${{ inputs.version }}
         delete-branch: true
         sign-commits: true
-        commit-message: "[plugins] Publish from ${{ github.repository }}:${{ github.ref_name }}/docs/sources"
+        commit-message: "[plugins] Publish from ${{ github.repository }}:${{ github.ref_name }}/${{ inputs.docs-source-directory }}"
         title: "[plugins] Publish docs for ${{ inputs.id }} v${{ inputs.version }}"
         body: |
           Automated docs publish for `${{ inputs.id }}` `v${{ inputs.version }}`
