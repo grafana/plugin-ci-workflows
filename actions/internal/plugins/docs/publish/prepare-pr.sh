@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e
 
-if [ $# -ne 2 ]; then
-    echo "Usage: $0 <plugin_id> <plugin_version>"
+if [ $# -lt 2 ] || [ $# -gt 3 ]; then
+    echo "Usage: $0 <plugin_id> <plugin_version> [docs_source_directory]"
     exit 1
 fi
 
@@ -16,6 +16,7 @@ apk add --no-cache rsync
 
 plugin_id="$1"
 plugin_version="$2"
+docs_source_directory="${3:-docs/sources}"
 
 case "$plugin_id" in
   (*[!a-zA-Z0-9-]*|'')
@@ -29,6 +30,21 @@ case "$plugin_version" in
     exit 1
     ;;
 esac
+
+# Reject absolute paths, '..' segments, and anything that isn't a relative
+# subpath of the plugin repository. This keeps rsync scoped to the checkout.
+case "$docs_source_directory" in
+  (/*|*..*|'')
+    echo "Invalid docs_source_directory: $docs_source_directory" >&2
+    exit 1
+    ;;
+esac
+
+docs_source_abs="${GITHUB_WORKSPACE}/${docs_source_directory}"
+if [ ! -d "$docs_source_abs" ]; then
+    echo "docs source directory not found: $docs_source_abs" >&2
+    exit 1
+fi
 
 # Accept either a raw token or one already prefixed with "x-access-token:"
 # so callers that pass "x-access-token:<token>" keep working.
@@ -51,7 +67,7 @@ git clone \
 
 docs_folder="${abs_clone_dir}/content/docs/plugins/$plugin_id/v$plugin_version"
 mkdir -p "$docs_folder"
-rsync -a --quiet --delete "$GITHUB_WORKSPACE/docs/sources/" "$docs_folder"
+rsync -a --quiet --delete "${docs_source_abs%/}/" "$docs_folder"
 
 # Expose the clone directory, relative to GITHUB_WORKSPACE, for the
 # create-pull-request step's `path` input. create-pull-request stages and
