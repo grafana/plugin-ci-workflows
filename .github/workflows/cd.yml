@@ -88,6 +88,15 @@ on:
         type: string
         required: false
         default: .
+      docs-source-directory:
+        description: |
+          Directory in the plugin repository, relative to the checkout root,
+          that contains the docs to test and publish. Defaults to
+          `docs/sources`. Set this to scope docs publishing to a subset of the
+          repository.
+        type: string
+        required: false
+        default: docs/sources
       npm-registry-auth:
         description: |
           Whether to authenticate to the npm registry in Google Artifact Registry.
@@ -786,6 +795,7 @@ jobs:
     with:
       branch: ${{ needs.setup.outputs.commit-sha }}
       plugin-directory: ${{ inputs.plugin-directory }}
+      docs-source-directory: ${{ inputs.docs-source-directory }}
       plugin-version-suffix: ${{ needs.setup.outputs.plugin-version-suffix }}
       npm-registry-auth: ${{ inputs.npm-registry-auth }}
       go-private-git-auth: ${{ inputs.go-private-git-auth }}
@@ -1328,6 +1338,7 @@ jobs:
           id: ${{ fromJSON(needs.ci.outputs.plugin).id }}
           version: ${{ fromJSON(needs.ci.outputs.plugin).version }}
           github-token: x-access-token:${{ steps.generate-github-token.outputs.token }}
+          docs-source-directory: ${{ inputs.docs-source-directory }}
 
   create-github-release:
     name: Create GitHub Release
