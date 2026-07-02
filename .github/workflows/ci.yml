@@ -50,6 +50,15 @@ on:
         type: string
         required: false
         default: .
+      docs-source-directory:
+        description: |
+          Directory in the plugin repository, relative to the checkout root,
+          that contains the docs to test and later publish. Defaults to
+          `docs/sources`. Set this to scope docs publishing to a subset of the
+          repository.
+        type: string
+        required: false
+        default: docs/sources
       frontend-secrets:
         description: The secrets to use within frontend steps
         type: string
@@ -737,14 +746,18 @@ jobs:
 
       - name: Check docs exist
         id: exist
+        env:
+          DOCS_SOURCE_DIRECTORY: ${{ inputs.docs-source-directory }}
         run: |
           r=false
-          [ -d "docs/sources" ] && r=true
+          [ -d "${DOCS_SOURCE_DIRECTORY}" ] && r=true
           echo "exist=$r" >> "$GITHUB_OUTPUT"
         shell: bash
 
       - name: Test docs
         uses: grafana/plugin-ci-workflows/actions/internal/plugins/docs/test@main
+        with:
+          docs-source-directory: ${{ inputs.docs-source-directory }}
 
   playwright:
     name: Playwright E2E tests
