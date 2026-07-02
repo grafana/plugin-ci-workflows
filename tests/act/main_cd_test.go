@@ -1,11 +1,8 @@
 package main
 
 import (
-	"crypto/sha256"
 	"encoding/json"
-	"fmt"
 	"net/http"
-	"os"
 	"path/filepath"
 	"testing"
 
@@ -262,7 +259,12 @@ func TestCD(t *testing.T) {
 	}
 }
 
-func TestCD_PublishIncludesProvenanceAttestation(t *testing.T) {
+// TestCD_PublishOmitsProvenanceAttestation verifies that even when the attestation
+// feature is enabled (and the build-attestation job runs), the provenance attestation
+// reference is NOT included in the GCOM publish payload. GCOM no longer consumes this
+// field (see grafana/grafana-com#18942); the attestation is still generated so it can be
+// wired back into the payload later if needed.
+func TestCD_PublishOmitsProvenanceAttestation(t *testing.T) {
 	t.Parallel()
 
 	gitSha, err := getGitCommitSHA()
@@ -275,15 +277,6 @@ func TestCD_PublishIncludesProvenanceAttestation(t *testing.T) {
 		fakeGcomTokenDev = "dummy-gcom-api-key-dev"
 		fakeIapToken     = "dummy-iap-token"
 	)
-
-	zipBytes, err := os.ReadFile(workflow.LocalMockdataPath(
-		"dist-artifacts-unsigned",
-		pluginFolder,
-		anyZipFileName(pluginSlug, pluginVersion),
-	))
-	require.NoError(t, err)
-	zipSHA256 := sha256.Sum256(zipBytes)
-	expProvenanceAttestation := fmt.Sprintf("github#grafana#sha256:%x", zipSHA256)
 
 	mockVault := workflow.VaultSecrets{
 		DefaultValue: newPointer(""),
@@ -307,7 +300,7 @@ func TestCD_PublishIncludesProvenanceAttestation(t *testing.T) {
 
 		var body map[string]any
 		require.NoError(t, json.NewDecoder(r.Body).Decode(&body), "should be able to decode json body")
-		require.Equal(t, expProvenanceAttestation, body["provenanceAttestation"])
+		require.NotContains(t, body, "provenanceAttestation", "provenance attestation should not be sent to GCOM")
 
 		w.WriteHeader(http.StatusOK)
 		require.NoError(t, json.NewEncoder(w).Encode(map[string]any{

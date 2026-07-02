@@ -268,7 +268,12 @@ on:
 
       # Feature toggle: Artifacts attestation for build provenance
       attestation:
-        description: Create a verifiable attestation for the plugin using Github OIDC.
+        description: |
+          Create a verifiable attestation for the plugin using Github OIDC.
+          NOTE: The resulting attestation reference is currently NOT sent to GCOM
+          when publishing (GCOM no longer consumes it, see grafana/grafana-com#18942).
+          The attestation is still generated and can be wired back into the publish
+          payload if needed.
         type: boolean
         required: false
 

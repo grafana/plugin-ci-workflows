@@ -48,8 +48,11 @@ inputs:
     default: "false"
   provenance-attestation:
     description: |
-      Optional provenance attestation reference to include when publishing the plugin.
+      Optional provenance attestation reference for the plugin.
       Expected format: github#<owner>#sha256:<zip-sha256>.
+      NOTE: This value is currently NOT sent to GCOM when publishing
+      (GCOM no longer consumes it, see grafana/grafana-com#18942). The input is
+      kept so it can easily be wired back into the publish payload if needed.
     required: false
     default: ""
   gcom-api-url:
