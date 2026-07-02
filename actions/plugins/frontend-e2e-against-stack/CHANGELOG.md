@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.1.1](https://github.com/grafana/plugin-ci-workflows/compare/plugins-frontend-e2e-against-stack/v1.1.0...plugins-frontend-e2e-against-stack/v1.1.1) (2026-07-02)
+
+
+### 🔧 Chores
+
+* bumb brace-expansion to 5.0.6 ([#825](https://github.com/grafana/plugin-ci-workflows/issues/825)) ([1cffada](https://github.com/grafana/plugin-ci-workflows/commit/1cffada1876eb9aac90b29fd6691b5969328fd18))
+* **deps:** update dependency prettier to v3.9.1 ([#823](https://github.com/grafana/plugin-ci-workflows/issues/823)) ([58172b2](https://github.com/grafana/plugin-ci-workflows/commit/58172b289aaefaa8d16394cd7453055ac08a0e29))
+* **deps:** update dependency prettier to v3.9.3 ([#828](https://github.com/grafana/plugin-ci-workflows/issues/828)) ([59694e7](https://github.com/grafana/plugin-ci-workflows/commit/59694e70043350b5c79537084d0af3703663c911))
+
 ## [1.1.0](https://github.com/grafana/plugin-ci-workflows/compare/plugins-frontend-e2e-against-stack/v1.0.1...plugins-frontend-e2e-against-stack/v1.1.0) (2026-06-30)
 
 
