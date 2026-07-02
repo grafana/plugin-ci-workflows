@@ -139,6 +139,10 @@ json_download=$(json_obj "${jq_download_args[@]}")
 if [ -n "$provenance_attestation" ]; then
     echo "A provenance attestation was provided ($provenance_attestation), but it is currently NOT sent to GCOM (see grafana/grafana-com#18942); ignoring it."
 fi
+
+# For adding back the provenance attestation:
+# --arg provenanceAttestation "$provenance_attestation" \
+# '$ARGS.named | if .provenanceAttestation == "" then del(.provenanceAttestation) else . end'
 json_payload=$(jq -c -n \
     --argjson download "$json_download" \
     --arg url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" \
@@ -147,9 +151,6 @@ json_payload=$(jq -c -n \
     --argjson pending "$pending_param" \
     '$ARGS.named'
 )
-# For provenance attestation:
-# --arg provenanceAttestation "$provenance_attestation" \
-# '$ARGS.named | if .provenanceAttestation == "" then del(.provenanceAttestation) else . end'
 echo $json_payload | jq
 if [ "$dry_run" = true ]; then
     echo "Dry run enabled, skipping publish"
