@@ -92,7 +92,7 @@ curl_args=(
     "-H" "Accept: application/json"
     "-H" "User-Agent: github-actions-shared-workflows:/plugins/publish"
 )
-if [ "$has_iap" = true ]; then  
+if [ "$has_iap" = true ]; then
     if [ -z "$GCLOUD_AUTH_TOKEN" ]; then
         echo "GCLOUD_AUTH_TOKEN environment variable not set."
         exit 1
@@ -136,14 +136,9 @@ fi
 # Publish the plugin
 echo "Publishing to $gcom_api_url"
 json_download=$(json_obj "${jq_download_args[@]}")
-# NOTE: The provenance attestation is intentionally NOT sent to GCOM at the moment.
-# GCOM no longer consumes the "provenanceAttestation" field (see grafana/grafana-com#18942),
-# so we keep building the attestation (--provenance-attestation is still accepted and parsed)
-# but omit it from the publish payload.
-# To re-enable, add the following line back to the jq call below:
-#     --arg provenanceAttestation "$provenance_attestation" \
-# and restore the filter to:
-#     '$ARGS.named | if .provenanceAttestation == "" then del(.provenanceAttestation) else . end'
+if [ -n "$provenance_attestation" ]; then
+    echo "A provenance attestation was provided ($provenance_attestation), but it is currently NOT sent to GCOM (see grafana/grafana-com#18942); ignoring it."
+fi
 json_payload=$(jq -c -n \
     --argjson download "$json_download" \
     --arg url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" \
@@ -152,6 +147,9 @@ json_payload=$(jq -c -n \
     --argjson pending "$pending_param" \
     '$ARGS.named'
 )
+# For provenance attestation:
+# --arg provenanceAttestation "$provenance_attestation" \
+# '$ARGS.named | if .provenanceAttestation == "" then del(.provenanceAttestation) else . end'
 echo $json_payload | jq
 if [ "$dry_run" = true ]; then
     echo "Dry run enabled, skipping publish"

@@ -259,11 +259,6 @@ func TestCD(t *testing.T) {
 	}
 }
 
-// TestCD_PublishOmitsProvenanceAttestation verifies that even when the attestation
-// feature is enabled (and the build-attestation job runs), the provenance attestation
-// reference is NOT included in the GCOM publish payload. GCOM no longer consumes this
-// field (see grafana/grafana-com#18942); the attestation is still generated so it can be
-// wired back into the payload later if needed.
 func TestCD_PublishOmitsProvenanceAttestation(t *testing.T) {
 	t.Parallel()
 
