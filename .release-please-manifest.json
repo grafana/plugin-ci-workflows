@@ -4,5 +4,5 @@
   "actions/plugins/version-bump-changelog": "2.0.0",
   "actions/plugins/publish/change-plugin-scope": "1.0.0",
   "actions/plugins/release-please": "2.0.1",
-  "actions/plugins/frontend-e2e-against-stack": "1.1.1"
+  "actions/plugins/frontend-e2e-against-stack": "1.1.2"
 }

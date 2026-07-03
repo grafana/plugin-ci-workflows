@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.2](https://github.com/grafana/plugin-ci-workflows/compare/plugins-frontend-e2e-against-stack/v1.1.1...plugins-frontend-e2e-against-stack/v1.1.2) (2026-07-03)
+
+
+### 🔧 Chores
+
+* **deps:** update frontend-e2e-against-stack dependencies ([#833](https://github.com/grafana/plugin-ci-workflows/issues/833)) ([adddf75](https://github.com/grafana/plugin-ci-workflows/commit/adddf753c85976562210b28a90837ed415890d91))
+
 ## [1.1.1](https://github.com/grafana/plugin-ci-workflows/compare/plugins-frontend-e2e-against-stack/v1.1.0...plugins-frontend-e2e-against-stack/v1.1.1) (2026-07-02)
 
 
