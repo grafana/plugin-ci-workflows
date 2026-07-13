@@ -4,10 +4,11 @@
         "github>grafana/grafana-renovate-config//presets/base",
         "github>grafana/grafana-renovate-config//presets/automerge",
         "github>grafana/grafana-renovate-config//presets/labels",
-        "github>grafana/grafana-renovate-config//presets/docker"
+        "github>grafana/grafana-renovate-config//presets/docker",
+        "github>grafana/grafana-renovate-config//presets/npm"
     ],
     "extends": [
-        "config:best-practices"
+        "github>grafana/grafana-catalog-team//renovate/renovate"
     ],
     "packageRules": [
         {
@@ -120,7 +121,5 @@
         }
     ],
     "dependencyDashboard": false,
-    "minimumReleaseAge": "14 days",
-    "prConcurrentLimit": 10,
-    "rebaseWhen": "behind-base-branch"
+    "prConcurrentLimit": 10
 }
