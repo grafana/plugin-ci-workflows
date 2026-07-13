@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.3](https://github.com/grafana/plugin-ci-workflows/compare/plugins-frontend-e2e-against-stack/v1.1.2...plugins-frontend-e2e-against-stack/v1.1.3) (2026-07-08)
+
+
+### 🐛 Bug Fixes
+
+* **deps:** update dependency js-yaml to v5.2.1 ([#838](https://github.com/grafana/plugin-ci-workflows/issues/838)) ([c6cbe49](https://github.com/grafana/plugin-ci-workflows/commit/c6cbe499b5ae997e82da38b9247e4ebcdc6e6997))
+
 ## [1.1.2](https://github.com/grafana/plugin-ci-workflows/compare/plugins-frontend-e2e-against-stack/v1.1.1...plugins-frontend-e2e-against-stack/v1.1.2) (2026-07-03)
 
 
