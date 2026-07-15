@@ -118,6 +118,13 @@ on:
         type: boolean
         required: false
         default: false
+      allow-unsigned-in-dev:
+        description: |
+          Escape hatch: when true, allowing unsigned dev builds in untrusted contexts.
+          Defaults to false (untrusted dev builds hard-fail). See ci.yml for details.
+        type: boolean
+        required: false
+        default: false
       signature-type:
         description: Specify signature type to use when signing the plugin
         type: string
@@ -840,6 +847,7 @@ jobs:
       environment: ${{ inputs.environment }}
 
       allow-unsigned: ${{ inputs.allow-unsigned }}
+      allow-unsigned-in-dev: ${{ inputs.allow-unsigned-in-dev }}
       signature-type: ${{ inputs.signature-type }}
 
       dist-artifacts-prefix: ${{ inputs.dist-artifacts-prefix }}
