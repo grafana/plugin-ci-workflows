@@ -10155,7 +10155,7 @@ __metadata:
     "@emotion/css": "npm:11.10.6"
     "@grafana/data": "npm:13.1.0"
     "@grafana/eslint-config": "npm:8.2.0"
-    "@grafana/i18n": "npm:13.1.0-25893932881"
+    "@grafana/i18n": "npm:13.1.0"
     "@grafana/plugin-e2e": "npm:3.0.3"
     "@grafana/runtime": "npm:13.1.0-25893932881"
     "@grafana/schema": "npm:13.1.0-25893932881"
