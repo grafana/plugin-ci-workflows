@@ -50,7 +50,7 @@ on:
           Currently, this only works for provisioned plugins published to the catalog.
           Default is empty (do not trigger Argo Workflow).
         required: false
-        default:
+        default: ""
         type: string
 
       # Those inputs are used to customize the CI workflow, before publishing the plugin.
@@ -435,6 +435,16 @@ on:
           Example: `<!subteam^S02ND0RCSE7>,<@U045M4H659T>`
         default: ""
         type: string
+      argo-workflow-pull-request-labels:
+        description: |
+          Optional, comma-separated list of pull request labels to pass to the Argo Workflow
+          when deploying to Grafana Cloud.
+          This is only used when Argo is triggered (when `trigger-argo` is true).
+          Default is empty (no labels).
+          Example: `label1,label2`
+        default: ""
+        type: string
+        required: false
       auto-merge-environments:
         description: |
           Comma separated list of environments whose deployment_tools PRs will be auto-merged when
@@ -1116,6 +1126,7 @@ jobs:
             slack_silent=${{ inputs.argo-workflow-slack-silent }}
             slack_mention_trigger_user=${{ inputs.argo-workflow-slack-mention-trigger-user }}
             slack_extra_mentions=${{ inputs.argo-workflow-slack-extra-mentions }}
+            pull_request_labels=${{ inputs.argo-workflow-pull-request-labels }}
 
       - name: Print job summary
         run: |
