@@ -137,7 +137,7 @@ on:
         default: false
       playwright-gar-registry:
         description: |
-          Optional address of a private GAR registry (e.g.: us-docker.pkg.dev) to authenticate to for pulling images 
+          Optional address of a private GAR registry (e.g.: us-docker.pkg.dev) to authenticate to for pulling images
           in the docker-compose setup for the Playwright E2E tests.
           If not specified, no authentication will be done.
         type: string
@@ -277,7 +277,10 @@ on:
 
       # Feature toggle: Artifacts attestation for build provenance
       attestation:
-        description: Create a verifiable attestation for the plugin using Github OIDC.
+        description: |
+          Create a verifiable attestation for the plugin using Github OIDC.
+          NOTE: The resulting attestation reference is currently not sent to GCOM
+          when publishing.
         type: boolean
         required: false
 
