@@ -138,8 +138,8 @@ importers:
         specifier: 1.63.2
         version: 1.63.2
       sass-loader:
-        specifier: 13.3.1
-        version: 13.3.1(sass@1.63.2)(webpack@5.107.1)
+        specifier: 13.3.3
+        version: 13.3.3(sass@1.63.2)(webpack@5.107.1)
       semver:
         specifier: 7.7.3
         version: 7.7.3
@@ -3172,10 +3172,6 @@ packages:
     resolution: {integrity: sha512-eTIzlVOSUR+JxdDFepEYcBMtZ9Qqdef+rnzWdRZuMbOywu5tO2w2N7rqjoANZ5k9vywhL6Br1VRjUIgTQx4E8w==}
     engines: {node: '>=6'}
 
-  klona@2.0.6:
-    resolution: {integrity: sha512-dhG34DXATL5hSxJbIexCft8FChFXtmskoZYnoPWjXQuebWYCNkVeV3KkGegCK9CP1oswI/vQibS2GY7Em/sJJA==}
-    engines: {node: '>= 8'}
-
   lerc@3.0.0:
     resolution: {integrity: sha512-Rm4J/WaHhRa93nCN2mwWDZFoRVF18G1f47C+kvQWyHGEZxFpTUi73p7lMVSAndyxGt6lJ2/CFbOcf9ra5p8aww==}
 
@@ -3944,8 +3940,8 @@ packages:
   safer-buffer@2.1.2:
     resolution: {integrity: sha512-YZo3K82SD7Riyi0E1EQPojLz7kpepnSQI9IyPbHHg1XXXevb5dJI7tpyN2ADxGcQbHG7vcyRHk0cbwqcQriUtg==}
 
-  sass-loader@13.3.1:
-    resolution: {integrity: sha512-cBTxmgyVA1nXPvIK4brjJMXOMJ2v2YrQEuHqLw3LylGb3gsR6jAvdjHMcy/+JGTmmIF9SauTrLLR7bsWDMWqgg==}
+  sass-loader@13.3.3:
+    resolution: {integrity: sha512-mt5YN2F1MOZr3d/wBRcZxeFgwgkH44wVc2zohO2YF6JiOMkiXe4BYRZpSu2sO1g71mo/j16txzUhsKZlqjVGzA==}
     engines: {node: '>= 14.15.0'}
     peerDependencies:
       fibers: '>= 3.1.0'
@@ -8694,8 +8690,6 @@ snapshots:
 
   kleur@3.0.3: {}
 
-  klona@2.0.6: {}
-
   lerc@3.0.0: {}
 
   leven@3.1.0: {}
@@ -9477,9 +9471,8 @@ snapshots:
 
   safer-buffer@2.1.2: {}
 
-  sass-loader@13.3.1(sass@1.63.2)(webpack@5.107.1):
+  sass-loader@13.3.3(sass@1.63.2)(webpack@5.107.1):
     dependencies:
-      klona: 2.0.6
       neo-async: 2.6.2
       webpack: 5.107.1(@swc/core@1.15.40(@swc/helpers@0.5.23))(postcss@8.5.15)(webpack-cli@5.1.4)
     optionalDependencies:
