@@ -1,6 +1,6 @@
 .PHONY: clean-node-modules clean-dist clean-act-tmp clean-act-toolcache-volumes clean-lfs clean \
 	reset-mockdata mockdata-dist mockdata-dist-artifacts mockdata \
-	genreadme act-lint act-test actionlint
+	genreadme build-act-runner act-lint act-test actionlint
 
 clean-node-modules:
 	find tests -name node_modules -type d -prune -exec rm -rf '{}' +
@@ -43,10 +43,14 @@ mockdata: mockdata-dist-artifacts
 genreadme:
 	cd examples/base && go run genreadme.go
 
+build-act-runner:
+	git submodule update --init --recursive
+	cd .act && make build
+
 act-lint:
 	cd tests/act && golangci-lint run
 
-act-test:
+act-test: build-act-runner
 	cd tests/act && go test -v -timeout 1h
 
 actionlint:
