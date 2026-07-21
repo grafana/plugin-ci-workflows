@@ -19,4 +19,4 @@ Use this skill for behavioral changes to plugin-facing reusable CI/CD workflows,
 
 Do not add helper inputs merely to mirror workflow inputs; add them when a test needs to set them.
 
-Before local act execution, ensure the committed HEAD is pushed and remotely available; uncommitted working-tree changes are fine. Run `make clean` first when fixture-plugin `node_modules` directories exist. See the guide for details.
+Before local act execution, ensure the committed HEAD is pushed and remotely available; uncommitted working-tree changes are fine. Never push commits yourself. If the commit is unpushed, stop and ask the user to push it, explaining that act's `actions/checkout` clone requires the commit to exist remotely and will otherwise fail. Run `make clean` first when fixture-plugin `node_modules` directories exist. See the guide for details.
