@@ -2894,12 +2894,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:*, @types/node@npm:20.19.21":
-  version: 20.19.21
-  resolution: "@types/node@npm:20.19.21"
+"@types/node@npm:*, @types/node@npm:20.19.43":
+  version: 20.19.43
+  resolution: "@types/node@npm:20.19.43"
   dependencies:
     undici-types: "npm:~6.21.0"
-  checksum: 10c0/a5bedcc71b363abfa425c01e69696820736614dfba03d2363df6d306d2ee6f7619b370c72b4ec75d992e5d76eaccdcdeb362276cac1cd01756db6dec2eb8227c
+  checksum: 10c0/9bcec3b5295bdd77ff0b44a528a69f7e22028c347507ba2c69be47ec84e30299f45043b222e9c86c510e138c9c53b2419dd5cd34920602a4a5a381c288075318
   languageName: node
   linkType: hard
 
@@ -9595,7 +9595,7 @@ __metadata:
     "@testing-library/jest-dom": "npm:6.1.4"
     "@testing-library/react": "npm:14.0.0"
     "@types/jest": "npm:29.5.14"
-    "@types/node": "npm:20.19.21"
+    "@types/node": "npm:20.19.43"
     "@types/react": "npm:18.3.29"
     "@types/react-dom": "npm:18.3.7"
     "@typescript-eslint/eslint-plugin": "npm:8.46.1"
