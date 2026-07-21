@@ -2951,13 +2951,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/react@npm:*, @types/react@npm:18.3.29":
-  version: 18.3.29
-  resolution: "@types/react@npm:18.3.29"
+"@types/react@npm:*, @types/react@npm:18.3.31":
+  version: 18.3.31
+  resolution: "@types/react@npm:18.3.31"
   dependencies:
     "@types/prop-types": "npm:*"
     csstype: "npm:^3.2.2"
-  checksum: 10c0/b582f5c3a034229b2e287f5e39aebf3988d6ce79e7fd81c8257dc55bee0e321ddf708d6014a44c5ceae8debea1e15a93326b207a4fec6a0170200a03d105adfb
+  checksum: 10c0/44180549dd045f536ececd39e39aacdf828e76adc1c4a90b132f453e23cc370c4648d9102ae401172ebd8fd8b1977a901a39e214e53ec77171b27514b588c179
   languageName: node
   linkType: hard
 
@@ -9595,7 +9595,7 @@ __metadata:
     "@testing-library/react": "npm:14.0.0"
     "@types/jest": "npm:29.5.14"
     "@types/node": "npm:20.19.43"
-    "@types/react": "npm:18.3.29"
+    "@types/react": "npm:18.3.31"
     "@types/react-dom": "npm:18.3.7"
     "@typescript-eslint/eslint-plugin": "npm:8.46.1"
     "@typescript-eslint/parser": "npm:8.46.1"
