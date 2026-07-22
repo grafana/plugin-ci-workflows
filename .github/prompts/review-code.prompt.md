@@ -22,7 +22,6 @@ You are reviewing code in the `grafana/plugin-ci-workflows` repository. This rep
 - `tests/act/` — Go testing framework using nektos/act in Docker to run workflows
 - Every other folder in `tests` (like `tests/simple-frontend`) — Dummy Grafana plugins used as test fixtures
 - `tests/act/mockdata/` — Pre-generated artifacts (built plugins, ZIPs) for fast test execution
-- **The testing framework is WIP** — do not write new tests unless explicitly requested
 
 ---
 
@@ -133,6 +132,12 @@ If files in `examples/base/**/*` are modified, remind that `examples/base/README
 
 If files in `tests/simple-*` (dummy test plugins) are modified, remind that `make mockdata` should be run to regenerate mock data.
 
+### Plugin-Facing Behavior Coverage
+
+For behavioral changes to plugin-facing reusable CI/CD workflows, published plugin actions, or their supporting internal actions, verify that the PR has narrow, credible automated coverage where possible. Existing coverage may be adequate. Prefer `tests/act/` for orchestration and static or unit tests for pure wiring.
+
+If act cannot faithfully emulate the changed behavior, verify that the PR description names the specific limitation and the alternative validation. This policy does not create a general coverage requirement for repository release or maintenance automation. Some Docker-based behavior can be tested; do not reject coverage solely because Docker is involved.
+
 ---
 
 ## Go Code (tests/act/)
@@ -178,6 +183,6 @@ For every PR, verify:
 - [ ] New `actions/plugins/` actions added to `release-please-config.json` (both as a new package entry AND in the `.` package's `exclude-paths`)
 - [ ] `make genreadme` run if `examples/base/` modified
 - [ ] `make mockdata` run if `tests/simple-*` modified
+- [ ] Plugin-facing behavior change has credible coverage, already-adequate coverage, or a specific act limitation and alternative validation documented in the PR
 - [ ] Go errors wrapped with context
 - [ ] `make act-lint` and `make actionlint` pass
-

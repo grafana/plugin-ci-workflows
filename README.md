@@ -38,9 +38,10 @@ This repository is maintained by the Grafana Catalog team (`@grafana/grafana-cat
 ### Development Workflow
 
 1. Make changes to workflows or actions
-2. Test changes using the examples in your fork
-3. Submit a pull request with your changes
-4. Automated release via release-please upon merge
+2. Run `make actionlint` for workflow changes; use `make act-lint` and `make act-test` for relevant act-test changes
+3. Follow the [act testing guide](tests/act/CLAUDE.md) when workflow or action behavior needs automated coverage
+4. Submit a pull request with your changes
+5. Automated release via release-please upon merge
 
 ### Release Process
 
