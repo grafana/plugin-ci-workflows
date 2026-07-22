@@ -7,10 +7,10 @@ require (
 	github.com/goccy/go-yaml v1.18.0
 	github.com/google/uuid v1.6.0
 	github.com/spf13/afero v1.15.0
-	golang.org/x/mod v0.32.0
+	golang.org/x/mod v0.37.0
 )
 
-require golang.org/x/text v0.28.0 // indirect
+require golang.org/x/text v0.39.0 // indirect
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
