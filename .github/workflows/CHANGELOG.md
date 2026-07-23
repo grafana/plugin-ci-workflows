@@ -6,6 +6,30 @@
 
 - `playwright-browsers` input on `cd.yml`, `ci.yml`, and `playwright.yml` to choose which Playwright browsers to install before E2E (default `chromium`; `chromium`, `firefox`, `webkit`).
 
+## [11.0.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v10.2.0...ci-cd-workflows/v11.0.0) (2026-07-23)
+
+
+### ⚠ BREAKING CHANGES
+
+* **cd:** publish plugin docs to latest/ instead of versioned dirs ([#837](https://github.com/grafana/plugin-ci-workflows/issues/837))
+
+### 🎉 Features
+
+* **cd:** publish plugin docs to latest/ instead of versioned dirs ([#837](https://github.com/grafana/plugin-ci-workflows/issues/837)) ([49a5ea5](https://github.com/grafana/plugin-ci-workflows/commit/49a5ea512aa9d88a44bd2dd8a4361857a2f053a0))
+
+
+### 🐛 Bug Fixes
+
+* **security/high/tests/simple-backend:** update module google.golang.org/grpc to v1.82.1 [security] ([#874](https://github.com/grafana/plugin-ci-workflows/issues/874)) ([1a7f4d3](https://github.com/grafana/plugin-ci-workflows/commit/1a7f4d36ddaf8a8910c5ab6314502e7869ee3795))
+* **security/unknown/tests/act:** update module golang.org/x/text to v0.39.0 [security] ([#871](https://github.com/grafana/plugin-ci-workflows/issues/871)) ([2affc0d](https://github.com/grafana/plugin-ci-workflows/commit/2affc0df4826a81c33099f780c7229fa194d81ba))
+* **security/unknown/tests/simple-backend:** update module golang.org/x/net to v0.56.0 [security] ([#872](https://github.com/grafana/plugin-ci-workflows/issues/872)) ([4bfe601](https://github.com/grafana/plugin-ci-workflows/commit/4bfe601be3107121ee6af1d69d220b7184bed0a5))
+
+
+### 🔧 Chores
+
+* **deps:** update module github.com/mattn/go-isatty to v0.0.23 ([#866](https://github.com/grafana/plugin-ci-workflows/issues/866)) ([c4f1a1e](https://github.com/grafana/plugin-ci-workflows/commit/c4f1a1e214be201fa609b9d30739f28aabdefb16))
+* **deps:** update module github.com/olekukonko/ll to v0.1.8 ([#868](https://github.com/grafana/plugin-ci-workflows/issues/868)) ([e871285](https://github.com/grafana/plugin-ci-workflows/commit/e87128564a98b0b3cd28713e055381d0fa5d67b4))
+
 ## [10.2.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v10.1.0...ci-cd-workflows/v10.2.0) (2026-07-21)
 
 
