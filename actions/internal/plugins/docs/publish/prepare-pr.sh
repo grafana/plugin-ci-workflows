@@ -65,7 +65,7 @@ git clone \
     --depth 1 --single-branch --no-tags \
     https://github.com/grafana/website.git "$abs_clone_dir"
 
-docs_folder="${abs_clone_dir}/content/docs/plugins/$plugin_id/v$plugin_version"
+docs_folder="${abs_clone_dir}/content/docs/plugins/$plugin_id/latest"
 mkdir -p "$docs_folder"
 rsync -a --quiet --delete "${docs_source_abs%/}/" "$docs_folder"
 
