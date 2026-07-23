@@ -6,6 +6,48 @@
 
 - `playwright-browsers` input on `cd.yml`, `ci.yml`, and `playwright.yml` to choose which Playwright browsers to install before E2E (default `chromium`; `chromium`, `firefox`, `webkit`).
 
+## [10.2.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v10.1.0...ci-cd-workflows/v10.2.0) (2026-07-21)
+
+
+### 🎉 Features
+
+* **cd:** add labels to Argo PRs via argo-workflow-pull-request-labels input ([#829](https://github.com/grafana/plugin-ci-workflows/issues/829)) ([3b41bde](https://github.com/grafana/plugin-ci-workflows/commit/3b41bde617509332d77d9b864f2d481e215d02a5))
+* Make docs sync directory configurable ([#824](https://github.com/grafana/plugin-ci-workflows/issues/824)) ([53ea118](https://github.com/grafana/plugin-ci-workflows/commit/53ea11853b838bc018d6b2f6effee75b1aa003ab))
+
+
+### 🐛 Bug Fixes
+
+* **cd:** stop sending provenance attestation to GCOM ([#815](https://github.com/grafana/plugin-ci-workflows/issues/815)) ([d87a4f6](https://github.com/grafana/plugin-ci-workflows/commit/d87a4f69604df8b10a864f4619b11b511554a13e))
+* **security/high/tests/simple-frontend-pnpm:** update pnpm to v11.8.0 [security] ([#848](https://github.com/grafana/plugin-ci-workflows/issues/848)) ([f1677d5](https://github.com/grafana/plugin-ci-workflows/commit/f1677d581793615d9da6344e89b6e45f78e56c2f))
+
+
+### 🤖 Continuous Integrations
+
+* add manual trigger to release-please workflow ([#831](https://github.com/grafana/plugin-ci-workflows/issues/831)) ([84ad3c8](https://github.com/grafana/plugin-ci-workflows/commit/84ad3c8a44bf33c2ced5ee59e481c6e5986b1ea6))
+
+
+### 🔧 Chores
+
+* **deps:** update dependency @grafana/data to v13.1.0 ([#851](https://github.com/grafana/plugin-ci-workflows/issues/851)) ([c56d312](https://github.com/grafana/plugin-ci-workflows/commit/c56d3125ebaf29bd3e1dbdb02a476ccd96540bd2))
+* **deps:** update dependency @grafana/i18n to v13.1.0 ([#852](https://github.com/grafana/plugin-ci-workflows/issues/852)) ([13147c3](https://github.com/grafana/plugin-ci-workflows/commit/13147c31db96bc75e2a208d2bddddac9cd0fe9d1))
+* **deps:** update dependency @grafana/runtime to v13.1.0 ([#853](https://github.com/grafana/plugin-ci-workflows/issues/853)) ([add6058](https://github.com/grafana/plugin-ci-workflows/commit/add605863b5db42906a7515ad08a62d6cfa7b3e3))
+* **deps:** update dependency @grafana/schema to v13.1.0 ([#854](https://github.com/grafana/plugin-ci-workflows/issues/854)) ([2ff898c](https://github.com/grafana/plugin-ci-workflows/commit/2ff898c68ad7945044f9f2f2243da396cc56b9bc))
+* **deps:** update dependency @grafana/ui to v13.1.0 ([#855](https://github.com/grafana/plugin-ci-workflows/issues/855)) ([bf7c47c](https://github.com/grafana/plugin-ci-workflows/commit/bf7c47ceefcc1a3a3bce1de46a35519276e3df84))
+* **deps:** update dependency @swc/helpers to v0.5.23 ([#856](https://github.com/grafana/plugin-ci-workflows/issues/856)) ([27aa3ab](https://github.com/grafana/plugin-ci-workflows/commit/27aa3ab3e5e0678ae569549361e27ae5445204a5))
+* **deps:** update dependency @types/node to v20.19.43 ([#857](https://github.com/grafana/plugin-ci-workflows/issues/857)) ([1af13cf](https://github.com/grafana/plugin-ci-workflows/commit/1af13cf38606212b0b285e63ca69ac7956be43e1))
+* **deps:** update dependency @types/react to v18.3.31 ([#858](https://github.com/grafana/plugin-ci-workflows/issues/858)) ([49d1cc3](https://github.com/grafana/plugin-ci-workflows/commit/49d1cc3691571aec24962c5dd7663f495efea41c))
+* **deps:** update dependency eslint to v9.39.5 ([#859](https://github.com/grafana/plugin-ci-workflows/issues/859)) ([5019392](https://github.com/grafana/plugin-ci-workflows/commit/50193920181761c0da62a49e7f0cdadba477b514))
+* **deps:** update dependency eslint-webpack-plugin to v5.0.3 ([#860](https://github.com/grafana/plugin-ci-workflows/issues/860)) ([fccff25](https://github.com/grafana/plugin-ci-workflows/commit/fccff25ec2a5de97c0e1966a8adc162c040dc8e3))
+* **deps:** update dependency trufflehog to v3.95.7 ([#832](https://github.com/grafana/plugin-ci-workflows/issues/832)) ([865bc00](https://github.com/grafana/plugin-ci-workflows/commit/865bc00f71fd38374ec3a4965e108ed8bfd7f4e8))
+* **deps:** update dependency trufflehog to v3.95.8 ([#839](https://github.com/grafana/plugin-ci-workflows/issues/839)) ([8282cc8](https://github.com/grafana/plugin-ci-workflows/commit/8282cc8fa759ced5bf87e0f4b695a5a171291f65))
+* **deps:** update dependency trufflehog to v3.95.9 ([#845](https://github.com/grafana/plugin-ci-workflows/issues/845)) ([95373b1](https://github.com/grafana/plugin-ci-workflows/commit/95373b16490376a89e18bf2163d20fed2f1cf9f3))
+* **main:** release plugins-frontend-e2e-against-stack 1.1.0 ([#473](https://github.com/grafana/plugin-ci-workflows/issues/473)) ([5f89001](https://github.com/grafana/plugin-ci-workflows/commit/5f8900127a773ddbbe44e516d981836276a03c18))
+* **main:** release plugins-frontend-e2e-against-stack 1.1.1 ([#826](https://github.com/grafana/plugin-ci-workflows/issues/826)) ([1ae9a99](https://github.com/grafana/plugin-ci-workflows/commit/1ae9a99e6177e3daec3530491ab43e203a97714a))
+* **main:** release plugins-frontend-e2e-against-stack 1.1.2 ([#834](https://github.com/grafana/plugin-ci-workflows/issues/834)) ([71377d7](https://github.com/grafana/plugin-ci-workflows/commit/71377d7b1a6ab5880c14dc979ff328de1833cea2))
+* **main:** release plugins-frontend-e2e-against-stack 1.1.3 ([#835](https://github.com/grafana/plugin-ci-workflows/issues/835)) ([726162d](https://github.com/grafana/plugin-ci-workflows/commit/726162d57ac5c73ea11c27ecefce6085c181a844))
+* **renovate:** extend shared grafana-catalog-team preset ([#846](https://github.com/grafana/plugin-ci-workflows/issues/846)) ([8367c03](https://github.com/grafana/plugin-ci-workflows/commit/8367c032d68765ef3181794663730947db40f90d))
+* **version-bump-changelog:** add pr creation and signed commits ([#780](https://github.com/grafana/plugin-ci-workflows/issues/780)) ([62d4239](https://github.com/grafana/plugin-ci-workflows/commit/62d4239b0781e59478a07866e0c721388e3c0d53))
+
 ## [10.1.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v10.0.1...ci-cd-workflows/v10.1.0) (2026-06-23)
 
 
