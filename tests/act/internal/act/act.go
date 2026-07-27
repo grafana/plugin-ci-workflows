@@ -336,7 +336,23 @@ func (r *Runner) Run(workflow workflow.Workflow, event Event) (runResult *RunRes
 	// Use a shell otherwise git will not be able to clone anything,
 	// not even publis repositories like actions/checkout for some reason.
 	cmd := exec.Command("sh", "-c", actCmd)
-	cmd.Env = os.Environ()
+
+	// Prepend the local act build to PATH so it takes precedence over any
+	// system-installed act binary.
+	repoRoot, err := GetRepoRootAbsPath()
+	if err != nil {
+		return nil, fmt.Errorf("get repository root absolute path: %w", err)
+	}
+	localActPath := filepath.Join(repoRoot, ".act", "dist", "local")
+	env := os.Environ()
+	for i, e := range env {
+		const pathPrefix = "PATH="
+		if strings.HasPrefix(e, pathPrefix) {
+			env[i] = pathPrefix + localActPath + ":" + e[len(pathPrefix):]
+			break
+		}
+	}
+	cmd.Env = env
 
 	// Get stdout and stderr pipes to parse act output
 	stdout, err := cmd.StdoutPipe()
@@ -790,4 +806,33 @@ func copyFile(src, dst string) (err error) {
 	}
 
 	return nil
+}
+
+// GetRepoRootAbsPath returns the absolute path of the root of the git repository.
+// This is the root directory for the plugin-ci-workflows repo.
+// If the repo root is not found the function returns an error.
+func GetRepoRootAbsPath() (string, error) {
+	// Start from the current working directory and look for ".git" folder.
+	// If not found, move one level up and repeat until the root is reached.
+	dir, err := os.Getwd()
+	if err != nil {
+		return "", fmt.Errorf("get current working directory: %w", err)
+	}
+	for {
+		gitPath := filepath.Join(dir, ".git")
+		info, err := os.Stat(gitPath)
+		if err == nil && info.IsDir() {
+			return dir, nil
+		}
+		if os.IsNotExist(err) {
+			parentDir := filepath.Dir(dir)
+			if parentDir == dir {
+				break // Reached the root directory
+			}
+			dir = parentDir
+			continue
+		}
+		return "", fmt.Errorf("stat .git directory: %w", err)
+	}
+	return "", fmt.Errorf(".git directory not found in any parent directories")
 }

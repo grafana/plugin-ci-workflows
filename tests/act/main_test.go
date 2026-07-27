@@ -27,7 +27,7 @@ func TestMain(m *testing.M) {
 	fmt.Println("preparing test environment")
 
 	// Go to the root of the repo
-	root, err := getRepoRootAbsPath()
+	root, err := act.GetRepoRootAbsPath()
 	if err != nil {
 		panic(err)
 	}
@@ -193,35 +193,6 @@ func isDirEmpty(path string) (empty bool, err error) {
 		return false, err
 	}
 	return false, nil
-}
-
-// getRepoRootAbsPath returns the absolute path of the root of the git repository.
-// This is the root directory for the plugin-ci-workflows repo.
-// If the repo root is not found the function returns an error.
-func getRepoRootAbsPath() (string, error) {
-	// Start from the current working directory and look for ".git" folder.
-	// If not found, move one level up and repeat until the root is reached.
-	dir, err := os.Getwd()
-	if err != nil {
-		return "", fmt.Errorf("get current working directory: %w", err)
-	}
-	for {
-		gitPath := filepath.Join(dir, ".git")
-		info, err := os.Stat(gitPath)
-		if err == nil && info.IsDir() {
-			return dir, nil
-		}
-		if os.IsNotExist(err) {
-			parentDir := filepath.Dir(dir)
-			if parentDir == dir {
-				break // Reached the root directory
-			}
-			dir = parentDir
-			continue
-		}
-		return "", fmt.Errorf("stat .git directory: %w", err)
-	}
-	return "", fmt.Errorf(".git directory not found in any parent directories")
 }
 
 // Utilities for tests
