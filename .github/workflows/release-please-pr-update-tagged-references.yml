@@ -4,8 +4,14 @@
 # created when the PR is merged.
 name: "release-please PR: Update tagged references"
 
+# pull_request_target, not pull_request: the job below mints a
+# grafana-plugins-platform-bot token, and its guards (same-repo, release-please
+# branch, no recursion) only hold if the workflow definition comes from the base
+# branch instead of the PR head. It also lets the token grant pin the branch to
+# main. Nothing here checks out or executes head code beyond reading the release
+# manifest and the last commit message.
 on:
-  pull_request:
+  pull_request_target:
     types:
       - opened
       - reopened
