@@ -4,34 +4,35 @@
 # created when the PR is merged.
 name: "release-please PR: Update tagged references"
 
+# Reacts to the release-please branch being pushed rather than to events on its
+# PR: release-please owns and force-pushes these branches, so the branch update
+# is the actual signal. The app token grant in deployment_tools is pinned to this
+# event and branch prefix, so keep them in sync if either changes.
 on:
-  pull_request:
-    types:
-      - opened
-      - reopened
-      - synchronize
-    paths: .release-please-manifest.json
+  push:
+    branches:
+      - release-please--**
 
 permissions:
   contents: read
 
-# Only one instance of this workflow should run at a time for each PR.
+# Only one instance of this workflow should run at a time for each branch.
 concurrency:
-  group: ${{ github.workflow_ref }}-${{ github.event.pull_request.number }}
+  group: ${{ github.workflow_ref }}-${{ github.ref_name }}
   cancel-in-progress: true
 
 jobs:
-  # Checks if the PR's latest commit was made by this workflow to prevent recursion.
+  # Checks if the branch's latest commit was made by this workflow to prevent recursion.
   automated-commit-check:
     name: Automated commit check
     runs-on: ubuntu-arm64-small
     outputs:
       automated-commit: ${{ steps.check.outputs.automated-commit }}
     steps:
-      - name: Checkout PR branch
+      - name: Checkout release branch
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
-          ref: ${{ github.head_ref }}
+          ref: ${{ github.ref_name }}
           persist-credentials: false
       - name: Automated commit check
         id: check
@@ -51,14 +52,13 @@ jobs:
       - automated-commit-check
     permissions:
       contents: write
-      pull-requests: write
       id-token: write
-    # Only run if the PR is from the same repo (not a fork), is a release-please PR,
-    # and the last commit was not made by this workflow (to prevent recursion).
+    # The trigger's branch filter already scopes this to the release-please
+    # branches; the prefix check is kept as a second gate. The recursion guard
+    # stops this job from reacting to its own commit.
     if: >-
       ${{
-        github.event.pull_request.head.repo.full_name == github.repository
-        && startsWith(github.head_ref, 'release-please--')
+        startsWith(github.ref_name, 'release-please--')
         && needs.automated-commit-check.outputs.automated-commit == 'false'
       }}
     runs-on: ubuntu-arm64-small
@@ -69,10 +69,10 @@ jobs:
         with:
           github_app: grafana-plugins-platform-bot
 
-      - name: Checkout PR branch
+      - name: Checkout release branch
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
-          ref: ${{ github.head_ref }}
+          ref: ${{ github.ref_name }}
           token: ${{ steps.generate-github-token.outputs.token }}
           persist-credentials: false
           # This is needed or GitHub will return a
@@ -87,7 +87,7 @@ jobs:
           echo "component=$component_name" >> "$GITHUB_OUTPUT"
         shell: bash
         env:
-          BRANCH_NAME: ${{ github.head_ref }}
+          BRANCH_NAME: ${{ github.ref_name }}
 
       - name: Get new version
         id: get-version
@@ -186,5 +186,5 @@ jobs:
             );
             core.info(`Created commit: ${result.createCommitOnBranch.commit.url}`);
         env:
-          BRANCH_NAME: ${{ github.head_ref }}
+          BRANCH_NAME: ${{ github.ref_name }}
           REPO: ${{ github.repository }}
