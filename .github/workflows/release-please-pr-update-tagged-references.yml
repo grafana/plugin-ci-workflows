@@ -12,7 +12,6 @@ on:
   push:
     branches:
       - release-please--**
-    paths: .release-please-manifest.json
 
 permissions:
   contents: read
