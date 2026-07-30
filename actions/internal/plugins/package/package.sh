@@ -77,31 +77,45 @@ if [ "$universal" = true ]; then
     exit 0
 fi
 
-# Identify apps with nested datasource
+# Identify backend executables. An app can have its own backend, a nested
+# datasource with a backend, or both. Per-platform zips must filter the
+# binaries of every backend, not just one. Each entry is "<folder>|<exe>".
 ptype=$(jq -r .type plugin.json)
+backends=()
 exe=$(jq -r .executable plugin.json)
-backend_folder="."
-if [ "$ptype" == "app" ] && [ -d "datasource" ]; then
+if [ "$exe" != "null" ]; then
+    backends+=(".|$(basename $exe)")
+fi
+if [ "$ptype" == "app" ] && [ -f "datasource/plugin.json" ]; then
     echo "Found nested datasource"
-    cd datasource
-    nested_exe=$(jq -r .executable plugin.json)
+    nested_exe=$(jq -r .executable datasource/plugin.json)
     if [ "$nested_exe" != "null" ]; then
-        backend_folder="datasource"
-        exe="$backend_folder/$nested_exe"
+        backends+=("datasource|$(basename $nested_exe)")
     fi
-    cd ..
 fi
 
-if [ "$exe" == "null" ]; then
+if [ ${#backends[@]} -eq 0 ]; then
     echo "No executable found in plugin.json"
     exit 0
 fi
 
+# The first backend's binaries determine the os+arch combos to package
+first_backend_folder=${backends[0]%%|*}
+first_backend_exe=${backends[0]#*|}
+
+# find arguments pruning every backend's binaries
+prune_args=()
+for backend in "${backends[@]}"; do
+    if [ ${#prune_args[@]} -gt 0 ]; then
+        prune_args+=(-o)
+    fi
+    prune_args+=(-name "${backend#*|}*")
+done
+
 # Create os+arch zips
-exe_basename=$(basename $exe)
-for file in $(find "$backend_folder" -type f -name "${exe_basename}_*"); do
+for file in $(find "$first_backend_folder" -type f -name "${first_backend_exe}_*"); do
     # Extract os+arch from the file name
-    os_arch=$(echo $(basename $file) | sed -E "s|${exe_basename}_([a-zA-Z0-9_]+)(.exe)?|\1|")
+    os_arch=$(echo $(basename $file) | sed -E "s|${first_backend_exe}_([a-zA-Z0-9_]+)(.exe)?|\1|")
 
     # Temporary folder for the zip file
     tmp=$(mktemp -d)
@@ -110,19 +124,32 @@ for file in $(find "$backend_folder" -type f -name "${exe_basename}_*"); do
 
     # Copy all files but the executables, preserving permissions and mod times (similar to rsync)
     pushd "$dist" > /dev/null
-    # -name "${exe_basename}*" -prune: Ignore (prune) all executables
+    # \( -name "<exe>*" -o ... \) -prune: Ignore (prune) all executables of all backends
     # -o -type f -print0: OR, print file name (NUL-terminated) for use with while read
     # Copy with cp, preserving permissions and create any required parent directories to the dest folder
     # Note: Using a while loop instead of xargs for macOS compatibility (BSD cp lacks --parents and -t)
-    find . -name "${exe_basename}*" -prune -o -type f -print0 | while IFS= read -r -d '' file; do
+    find . \( "${prune_args[@]}" \) -prune -o -type f -print0 | while IFS= read -r -d '' file; do
         dir=$(dirname "$file")
         mkdir -p "$tmp/$plugin_id/$dir"
         cp -p "$file" "$tmp/$plugin_id/$dir/"
     done
     popd > /dev/null
 
-    # Copy only the current executable
-    cp "$dist/$file" "$tmp/$plugin_id/$backend_folder"
+    # Copy only the current os+arch executable of each backend
+    for backend in "${backends[@]}"; do
+        backend_folder=${backend%%|*}
+        exe_basename=${backend#*|}
+        exe_file="$backend_folder/${exe_basename}_${os_arch}"
+        if [ ! -f "$dist/$exe_file" ]; then
+            exe_file="$exe_file.exe"
+        fi
+        if [ ! -f "$dist/$exe_file" ]; then
+            echo "Missing ${exe_basename}_${os_arch} in '$backend_folder', aborting."
+            exit 1
+        fi
+        cp "$dist/$exe_file" "$tmp/$plugin_id/$backend_folder"
+    done
+
     os_arch_zip_fn="$plugin_id-$plugin_version.$os_arch.zip"
     echo "Creating package: $os_arch_zip_fn"
 
