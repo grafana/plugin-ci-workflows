@@ -21,6 +21,13 @@ func TestPackage(t *testing.T) {
 		expPluginVersion string
 		expBackend       bool
 		expPluginType    string
+		// expExecutables lists each backend executable's path prefix inside
+		// the plugin folder, without the os/arch suffix. Per-platform zips
+		// must contain exactly one binary per entry.
+		expExecutables []string
+		// expExtraDistFiles lists non-executable dist files beyond the common
+		// base files (e.g. a nested datasource's own plugin files).
+		expExtraDistFiles []string
 	}{
 		{
 			folder:           "simple-frontend",
@@ -35,6 +42,25 @@ func TestPackage(t *testing.T) {
 			expPluginVersion: "1.0.0",
 			expBackend:       true,
 			expPluginType:    "datasource",
+			expExecutables:   []string{"gpx_simple_backend"},
+		},
+		{
+			// App with its own backend AND a nested datasource backend:
+			// per-platform zips must filter the binaries of both backends
+			// (https://github.com/grafana/plugin-ci-workflows/pull/882)
+			folder:           "simple-app-nested-backend",
+			expPluginID:      "grafana-simpleappnested-app",
+			expPluginVersion: "1.0.0",
+			expBackend:       true,
+			expPluginType:    "app",
+			expExecutables: []string{
+				"gpx_simpleappnested_app",
+				"datasource/gpx_simpleappnested_datasource",
+			},
+			expExtraDistFiles: []string{
+				"datasource/plugin.json",
+				"datasource/module.js",
+			},
 		},
 	} {
 		t.Run(tc.folder, func(t *testing.T) {
@@ -111,7 +137,7 @@ func TestPackage(t *testing.T) {
 			// Check the nested plugin ZIP artifact for the "any" zip and then for os/arch zips
 
 			// Start from the "any" zip
-			basePluginFiles := [...]string{
+			basePluginFiles := []string{
 				filepath.Join(tc.expPluginID, "CHANGELOG.md"),
 				filepath.Join(tc.expPluginID, "LICENSE"),
 				filepath.Join(tc.expPluginID, "module.js"),
@@ -119,6 +145,9 @@ func TestPackage(t *testing.T) {
 				filepath.Join(tc.expPluginID, "plugin.json"),
 				filepath.Join(tc.expPluginID, "README.md"),
 				filepath.Join(tc.expPluginID, "img/logo.svg"),
+			}
+			for _, extraFile := range tc.expExtraDistFiles {
+				basePluginFiles = append(basePluginFiles, filepath.Join(tc.expPluginID, extraFile))
 			}
 			anyPluginZIP, err := distArtifacts.OpenZIP(anyZipFn)
 			require.NoError(t, err)
@@ -131,15 +160,17 @@ func TestPackage(t *testing.T) {
 					expBasePluginZipFiles,
 					filepath.Join(tc.expPluginID, "go_plugin_build_manifest"),
 				)
-				for _, osArch := range osArchCombos {
-					suffix := osArch.String()
-					if osArch.os == "windows" {
-						suffix += ".exe"
+				for _, exe := range tc.expExecutables {
+					for _, osArch := range osArchCombos {
+						suffix := osArch.String()
+						if osArch.os == "windows" {
+							suffix += ".exe"
+						}
+						expBasePluginZipFiles = append(
+							expBasePluginZipFiles,
+							filepath.Join(tc.expPluginID, exe+"_"+suffix),
+						)
 					}
-					expBasePluginZipFiles = append(
-						expBasePluginZipFiles,
-						filepath.Join(tc.expPluginID, "gpx_simple_backend_"+suffix),
-					)
 				}
 			}
 			require.NoError(t, checkFilesExist(anyPluginZIP, expBasePluginZipFiles, checkFilesExistOptions{strict: true}))
@@ -180,12 +211,16 @@ func TestPackage(t *testing.T) {
 					// Create a copy of the expected base files for each zip file we check
 					expPluginZipFiles := make([]string, len(expBasePluginZipFiles))
 					copy(expPluginZipFiles, expBasePluginZipFiles[:])
-					backendExeFn := "gpx_simple_backend_" + osArch.String()
-					if osArch.os == "windows" {
-						backendExeFn += ".exe"
+					// Expect each backend's executable for this os/arch, and
+					// nothing else: the strict check below fails on any other
+					// backend binary leaking into this platform's zip.
+					for _, exe := range tc.expExecutables {
+						backendExeFn := exe + "_" + osArch.String()
+						if osArch.os == "windows" {
+							backendExeFn += ".exe"
+						}
+						expPluginZipFiles = append(expPluginZipFiles, filepath.Join(tc.expPluginID, backendExeFn))
 					}
-					// Expect the backend executable for this os/arch
-					expPluginZipFiles = append(expPluginZipFiles, filepath.Join(tc.expPluginID, backendExeFn))
 
 					// Check that all files exist
 					osArchPluginZIP, err := distArtifacts.OpenZIP(osArchZipFileName(tc.expPluginID, tc.expPluginVersion, osArch))
