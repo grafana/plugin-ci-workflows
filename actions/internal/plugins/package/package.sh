@@ -77,60 +77,119 @@ if [ "$universal" = true ]; then
     exit 0
 fi
 
-# Identify apps with nested datasource
-ptype=$(jq -r .type plugin.json)
-exe=$(jq -r .executable plugin.json)
-backend_folder="."
-if [ "$ptype" == "app" ] && [ -d "datasource" ]; then
-    echo "Found nested datasource"
-    cd datasource
-    nested_exe=$(jq -r .executable plugin.json)
-    if [ "$nested_exe" != "null" ]; then
-        backend_folder="datasource"
-        exe="$backend_folder/$nested_exe"
+# Discover every backend executable family declared by a packaged plugin.json.
+# Executable paths are relative to the plugin.json that declares them.
+backend_executables=()
+while IFS= read -r -d '' plugin_json; do
+    executable=$(jq -r '.executable // empty' "$plugin_json")
+    if [ -z "$executable" ]; then
+        continue
     fi
-    cd ..
-fi
 
-if [ "$exe" == "null" ]; then
+    plugin_dir=$(dirname "$plugin_json")
+    if [ "$plugin_dir" = "." ]; then
+        backend_executables+=("$executable")
+    else
+        backend_executables+=("${plugin_dir#./}/$executable")
+    fi
+done < <(find . -type f -name plugin.json -print0)
+
+# Collect all executable files and the unique os/arch variants they provide.
+backend_files=()
+os_arches=()
+for executable in "${backend_executables[@]}"; do
+    executable_dir=$(dirname "$executable")
+    executable_basename=$(basename "$executable")
+
+    while IFS= read -r -d '' file; do
+        file=${file#./}
+        filename=$(basename "$file")
+        os_arch=${filename#"${executable_basename}_"}
+        os_arch=${os_arch%.exe}
+        if [[ ! "$os_arch" =~ ^[a-zA-Z0-9_]+$ ]]; then
+            continue
+        fi
+
+        backend_files+=("$file")
+        os_arches+=("$os_arch")
+    done < <(find "$executable_dir" -maxdepth 1 -type f -name "${executable_basename}_*" -print0)
+done
+
+if [ "${#backend_files[@]}" -eq 0 ]; then
     echo "No executable found in plugin.json"
     exit 0
 fi
 
-# Create os+arch zips
-exe_basename=$(basename $exe)
-for file in $(find "$backend_folder" -type f -name "${exe_basename}_*"); do
-    # Extract os+arch from the file name
-    os_arch=$(echo $(basename $file) | sed -E "s|${exe_basename}_([a-zA-Z0-9_]+)(.exe)?|\1|")
+unique_os_arches=()
+while IFS= read -r os_arch; do
+    if [ -n "$os_arch" ]; then
+        unique_os_arches+=("$os_arch")
+    fi
+done < <(printf '%s\n' "${os_arches[@]}" | sort -u)
 
-    # Temporary folder for the zip file
+selected_executable_path() {
+    local executable=$1
+    local os_arch=$2
+    local candidate="$dist/${executable}_${os_arch}"
+
+    if [ -f "$candidate" ]; then
+        printf '%s\n' "$candidate"
+    elif [ -f "${candidate}.exe" ]; then
+        printf '%s\n' "${candidate}.exe"
+    else
+        return 1
+    fi
+}
+
+# A tailored archive is only valid when every backend family supports its
+# platform. Fail before packaging instead of publishing an incomplete plugin.
+for os_arch in "${unique_os_arches[@]}"; do
+    for executable in "${backend_executables[@]}"; do
+        if ! selected_executable_path "$executable" "$os_arch" > /dev/null; then
+            echo "Executable '$executable' does not provide $os_arch, aborting."
+            exit 1
+        fi
+    done
+done
+
+# Create one zip per unique os+arch combination. Each zip copies all non-backend
+# files, then adds the selected executable from every backend family.
+for os_arch in "${unique_os_arches[@]}"; do
     tmp=$(mktemp -d)
-    pushd $tmp > /dev/null
+    pushd "$tmp" > /dev/null
     mkdir -p "$plugin_id"
 
-    # Copy all files but the executables, preserving permissions and mod times (similar to rsync)
     pushd "$dist" > /dev/null
-    # -name "${exe_basename}*" -prune: Ignore (prune) all executables
-    # -o -type f -print0: OR, print file name (NUL-terminated) for use with while read
-    # Copy with cp, preserving permissions and create any required parent directories to the dest folder
-    # Note: Using a while loop instead of xargs for macOS compatibility (BSD cp lacks --parents and -t)
-    find . -name "${exe_basename}*" -prune -o -type f -print0 | while IFS= read -r -d '' file; do
+    while IFS= read -r -d '' file; do
+        relative_file=${file#./}
+        is_backend_file=false
+        for backend_file in "${backend_files[@]}"; do
+            if [ "$relative_file" = "$backend_file" ]; then
+                is_backend_file=true
+                break
+            fi
+        done
+        if [ "$is_backend_file" = true ]; then
+            continue
+        fi
+
         dir=$(dirname "$file")
         mkdir -p "$tmp/$plugin_id/$dir"
         cp -p "$file" "$tmp/$plugin_id/$dir/"
-    done
+    done < <(find . -type f -print0)
     popd > /dev/null
 
-    # Copy only the current executable
-    cp "$dist/$file" "$tmp/$plugin_id/$backend_folder"
+    for executable in "${backend_executables[@]}"; do
+        selected_executable=$(selected_executable_path "$executable" "$os_arch")
+        executable_dest="$tmp/$plugin_id/$(dirname "$executable")"
+        mkdir -p "$executable_dest"
+        cp -p "$selected_executable" "$executable_dest/"
+    done
+
     os_arch_zip_fn="$plugin_id-$plugin_version.$os_arch.zip"
     echo "Creating package: $os_arch_zip_fn"
-
-    # Create the zip+sha256 files
     package "$out/$os_arch_zip_fn" "$plugin_id" "$SIGNATURE_TYPE"
 
-    # Cleanup temporary folder
     popd > /dev/null
-    rm -rf $tmp
+    rm -rf "$tmp"
 done
-

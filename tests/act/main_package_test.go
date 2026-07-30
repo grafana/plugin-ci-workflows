@@ -1,7 +1,10 @@
 package main
 
 import (
+	"archive/zip"
 	"encoding/json"
+	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 
@@ -198,4 +201,145 @@ func TestPackage(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestPackageScriptMultipleBackendFamilies(t *testing.T) {
+	t.Parallel()
+
+	const (
+		pluginID      = "grafana-multibackend-app"
+		pluginVersion = "1.0.0"
+	)
+
+	tmp := t.TempDir()
+	dist := filepath.Join(tmp, "dist")
+	out := filepath.Join(tmp, "dist-artifacts")
+	require.NoError(t, os.MkdirAll(out, 0o755))
+
+	fixtureFiles := map[string]string{
+		"plugin.json": `{
+			"id": "grafana-multibackend-app",
+			"type": "app",
+			"executable": "bin/gpx_root",
+			"info": {"version": "1.0.0"}
+		}`,
+		"module.js":                               "root frontend",
+		"go_plugin_build_manifest":                "root manifest",
+		"bin/gpx_root_linux_amd64":                "root linux executable",
+		"bin/gpx_root_windows_amd64.exe":          "root windows executable",
+		"resources/config.json":                   `{"preserve": true}`,
+		"datasource/plugin.json":                  `{"id":"grafana-nested-datasource","type":"datasource","backend":true,"executable":"gpx_nested","info":{"version":"1.0.0"}}`,
+		"datasource/module.js":                    "nested frontend",
+		"datasource/go_plugin_build_manifest":     "nested manifest",
+		"datasource/gpx_nested_linux_amd64":       "nested linux executable",
+		"datasource/gpx_nested_windows_amd64.exe": "nested windows executable",
+	}
+	writePackageFixtureFiles(t, dist, fixtureFiles)
+
+	output, err := runPackageScript(dist, out)
+	require.NoError(t, err, string(output))
+	output, err = runPackageScript("--universal", dist, out)
+	require.NoError(t, err, string(output))
+
+	baseFiles := []string{
+		filepath.Join(pluginID, "plugin.json"),
+		filepath.Join(pluginID, "module.js"),
+		filepath.Join(pluginID, "go_plugin_build_manifest"),
+		filepath.Join(pluginID, "resources/config.json"),
+		filepath.Join(pluginID, "datasource/plugin.json"),
+		filepath.Join(pluginID, "datasource/module.js"),
+		filepath.Join(pluginID, "datasource/go_plugin_build_manifest"),
+	}
+	backendFiles := map[string][]string{
+		"linux_amd64": {
+			filepath.Join(pluginID, "bin/gpx_root_linux_amd64"),
+			filepath.Join(pluginID, "datasource/gpx_nested_linux_amd64"),
+		},
+		"windows_amd64": {
+			filepath.Join(pluginID, "bin/gpx_root_windows_amd64.exe"),
+			filepath.Join(pluginID, "datasource/gpx_nested_windows_amd64.exe"),
+		},
+	}
+
+	for _, tc := range []struct {
+		name          string
+		zipName       string
+		expectedFiles []string
+	}{
+		{
+			name:    "universal",
+			zipName: anyZipFileName(pluginID, pluginVersion),
+			expectedFiles: append(
+				append(append([]string{}, baseFiles...), backendFiles["linux_amd64"]...),
+				backendFiles["windows_amd64"]...,
+			),
+		},
+		{
+			name:          "linux amd64",
+			zipName:       pluginID + "-" + pluginVersion + ".linux_amd64.zip",
+			expectedFiles: append(append([]string{}, baseFiles...), backendFiles["linux_amd64"]...),
+		},
+		{
+			name:          "windows amd64",
+			zipName:       pluginID + "-" + pluginVersion + ".windows_amd64.zip",
+			expectedFiles: append(append([]string{}, baseFiles...), backendFiles["windows_amd64"]...),
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			zr, err := zip.OpenReader(filepath.Join(out, tc.zipName))
+			require.NoError(t, err)
+			t.Cleanup(func() { require.NoError(t, zr.Close()) })
+
+			actualFiles := make([]string, 0, len(zr.File))
+			for _, file := range zr.File {
+				if !file.FileInfo().IsDir() {
+					actualFiles = append(actualFiles, file.Name)
+				}
+			}
+			require.ElementsMatch(t, tc.expectedFiles, actualFiles)
+		})
+	}
+}
+
+func TestPackageScriptRejectsMismatchedBackendPlatforms(t *testing.T) {
+	t.Parallel()
+
+	tmp := t.TempDir()
+	dist := filepath.Join(tmp, "dist")
+	out := filepath.Join(tmp, "dist-artifacts")
+	require.NoError(t, os.MkdirAll(out, 0o755))
+
+	writePackageFixtureFiles(t, dist, map[string]string{
+		"plugin.json":                       `{"id":"grafana-multibackend-app","type":"app","executable":"gpx_root","info":{"version":"1.0.0"}}`,
+		"gpx_root_linux_amd64":              "root linux executable",
+		"gpx_root_windows_amd64.exe":        "root windows executable",
+		"datasource/plugin.json":            `{"id":"grafana-nested-datasource","type":"datasource","backend":true,"executable":"gpx_nested","info":{"version":"1.0.0"}}`,
+		"datasource/gpx_nested_linux_amd64": "nested linux executable",
+	})
+
+	output, err := runPackageScript(dist, out)
+	require.Error(t, err)
+	require.Contains(t, string(output), "Executable 'datasource/gpx_nested' does not provide windows_amd64, aborting.")
+
+	entries, err := os.ReadDir(out)
+	require.NoError(t, err)
+	require.Empty(t, entries, "validation should fail before creating tailored archives")
+}
+
+func writePackageFixtureFiles(t *testing.T, root string, files map[string]string) {
+	t.Helper()
+
+	for name, content := range files {
+		path := filepath.Join(root, filepath.FromSlash(name))
+		require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
+		require.NoError(t, os.WriteFile(path, []byte(content), 0o755))
+	}
+}
+
+func runPackageScript(args ...string) ([]byte, error) {
+	cmd := exec.Command("bash", append([]string{"actions/internal/plugins/package/package.sh"}, args...)...)
+	cmd.Env = append(os.Environ(), "GRAFANA_ACCESS_POLICY_TOKEN=", "SIGNATURE_TYPE=grafana")
+	return cmd.CombinedOutput()
 }
