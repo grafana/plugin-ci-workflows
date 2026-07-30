@@ -98,10 +98,25 @@ jobs:
 
       - name: Run act tests
         run: |
-          go test -v -timeout 1h
+          go run gotest.tools/gotestsum@v1.13.0 \
+            --junitfile "${RUNNER_TEMP}/act-tests.xml" \
+            --format standard-verbose \
+            -- -timeout 1h
         working-directory: tests/act
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Publish per-test results (incl. failure messages) to the run summary,
+      # so failures can be read without digging through the raw act logs.
+      - name: Publish test report
+        if: ${{ !cancelled() }}
+        uses: mikepenz/action-junit-report@d9f48fc87bc235f7e214acf696ca5abc0a986f16 # v6.4.2
+        with:
+          report_paths: ${{ runner.temp }}/act-tests.xml
+          detailed_summary: true
+          include_passed: true
+          annotate_only: true
+          require_tests: false
 
   act-tests-result:
     name: Act tests result
