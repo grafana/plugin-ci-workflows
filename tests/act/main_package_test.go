@@ -23,7 +23,8 @@ func TestPackage(t *testing.T) {
 		expPluginType    string
 		// expExecutables lists each backend executable's path prefix inside
 		// the plugin folder, without the os/arch suffix. Per-platform zips
-		// must contain exactly one binary per entry.
+		// contain exactly one binary per entry 
+		// (unless it's a nested plugins where both the parent and child contain nested backend executables)
 		expExecutables []string
 		// expExtraDistFiles lists non-executable dist files beyond the common
 		// base files (e.g. a nested datasource's own plugin files).
