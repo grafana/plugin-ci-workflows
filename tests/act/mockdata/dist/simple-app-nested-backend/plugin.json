@@ -1,0 +1,27 @@
+{
+  "$schema": "https://raw.githubusercontent.com/grafana/grafana/main/docs/sources/developers/plugins/plugin.schema.json",
+  "type": "app",
+  "name": "Simple App Nested Backend",
+  "id": "grafana-simpleappnested-app",
+  "backend": true,
+  "executable": "gpx_simpleappnested_app",
+  "info": {
+    "description": "Test app plugin with its own backend and a nested datasource backend",
+    "author": {
+      "name": "Grafana Labs",
+      "url": "https://grafana.com"
+    },
+    "logos": {
+      "small": "img/logo.svg",
+      "large": "img/logo.svg"
+    },
+    "screenshots": [],
+    "version": "1.0.0",
+    "updated": "2026-07-30"
+  },
+  "includes": [],
+  "dependencies": {
+    "grafanaDependency": ">=10.4.0",
+    "plugins": []
+  }
+}
