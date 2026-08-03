@@ -15,18 +15,6 @@
             "matchManagers": [
                 "github-actions"
             ],
-            "groupName": "GitHub Actions"
-        },
-        {
-            "matchManagers": [
-                "custom.regex"
-            ],
-            "groupName": "CI tool versions"
-        },
-        {
-            "matchManagers": [
-                "github-actions"
-            ],
             "matchPackageNames": [
                 "grafana/plugin-actions"
             ],
@@ -46,6 +34,30 @@
                 "actions/plugins/frontend-e2e-against-stack/**"
             ],
             "groupName": "frontend-e2e-against-stack dependencies"
+        },
+        {
+            "description": "Automerge: minor/major updates need an approval from the Claude gate workflow before GitHub auto-merge fires",
+            "matchUpdateTypes": [
+                "minor",
+                "major"
+            ],
+            "automerge": true,
+            "addLabels": [
+                "claude-gate"
+            ]
+        },
+        {
+            "description": "Automerge: clear-cut updates get a direct bot approval, required CI checks still gate the merge",
+            "matchUpdateTypes": [
+                "patch",
+                "pin",
+                "digest",
+                "lockFileMaintenance"
+            ],
+            "automerge": true,
+            "addLabels": [
+                "automerge-direct"
+            ]
         }
     ],
     "customManagers": [
