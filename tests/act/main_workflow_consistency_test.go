@@ -36,6 +36,7 @@ var knownWorkflows = []workflowEntry{
 	{path: "release-please-pr-update-tagged-references.yml", internal: true},
 	{path: "release-please-restore-rolling-release.yml", internal: true},
 	{path: "release-please.yml", internal: true},
+	{path: "renovate-approve.yml", internal: true},
 }
 
 // ciOnlyInputs lists ci.yml inputs that are CI-only and should NOT be in cd.yml.
