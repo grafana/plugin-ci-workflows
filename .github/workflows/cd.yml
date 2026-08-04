@@ -393,9 +393,9 @@ on:
         description: |
           Slack channel to use for Argo Workflow deployment notifications.
           This is only used when Argo is triggered (when `trigger-argo` is true).
-          Default is '#grafana-plugins-platform-ci'.
+          Default is '#grafana-catalog-ci'.
           This should be changed to a Slack channel specific to your team.
-        default: "#grafana-plugins-platform-ci"
+        default: "#grafana-catalog-ci"
         type: string
       argo-workflow-slack-silent:
         description: |

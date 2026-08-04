@@ -38,7 +38,7 @@ jobs:
 
       # This will trigger the Argo Workflow to update your plugin version in Grafana Cloud via deployment_tools
       grafana-cloud-deployment-type: provisioned
-      argo-workflow-slack-channel: "#grafana-plugins-platform-ci" # TODO: Change with your own Slack channel
+      argo-workflow-slack-channel: "#grafana-catalog-ci" # TODO: Change with your own Slack channel
       # Grafana Cloud environment to deploy the provisioned plugin to.
       # - 'dev': dev
       # - 'ops': ops
