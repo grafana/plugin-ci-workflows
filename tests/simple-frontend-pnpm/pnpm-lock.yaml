@@ -17,20 +17,20 @@ importers:
         specifier: 11.13.5
         version: 11.13.5
       '@grafana/data':
-        specifier: 13.1.0
-        version: 13.1.0(eslint@9.39.5)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.5.4)
+        specifier: 13.1.1
+        version: 13.1.1(eslint@9.39.5)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.5.4)
       '@grafana/i18n':
-        specifier: 13.1.0
-        version: 13.1.0(eslint@9.39.5)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.5.4)
+        specifier: 13.1.1
+        version: 13.1.1(eslint@9.39.5)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.5.4)
       '@grafana/runtime':
-        specifier: 13.1.0
-        version: 13.1.0(@babel/runtime@7.29.2)(@codemirror/language@6.12.3)(@codemirror/lint@6.9.6)(@codemirror/search@6.7.0)(@codemirror/theme-one-dark@6.1.3)(@react-spectrum/provider@3.11.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@types/react@19.2.2)(codemirror@6.0.2)(eslint@9.39.5)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.5.4)
+        specifier: 13.1.1
+        version: 13.1.1(@babel/runtime@7.29.2)(@codemirror/language@6.12.3)(@codemirror/lint@6.9.6)(@codemirror/search@6.7.0)(@codemirror/theme-one-dark@6.1.3)(@react-spectrum/provider@3.11.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@types/react@19.2.2)(codemirror@6.0.2)(eslint@9.39.5)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.5.4)
       '@grafana/schema':
-        specifier: 13.1.0
-        version: 13.1.0
+        specifier: 13.1.1
+        version: 13.1.1
       '@grafana/ui':
-        specifier: 13.1.0
-        version: 13.1.0(@babel/runtime@7.29.2)(@codemirror/language@6.12.3)(@codemirror/lint@6.9.6)(@codemirror/search@6.7.0)(@codemirror/theme-one-dark@6.1.3)(@react-spectrum/provider@3.11.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@types/react@19.2.2)(codemirror@6.0.2)(eslint@9.39.5)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.5.4)
+        specifier: 13.1.1
+        version: 13.1.1(@babel/runtime@7.29.2)(@codemirror/language@6.12.3)(@codemirror/lint@6.9.6)(@codemirror/search@6.7.0)(@codemirror/theme-one-dark@6.1.3)(@react-spectrum/provider@3.11.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@types/react@19.2.2)(codemirror@6.0.2)(eslint@9.39.5)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.5.4)
       react:
         specifier: 18.3.1
         version: 18.3.1
@@ -538,17 +538,17 @@ packages:
   '@formatjs/intl-localematcher@0.6.2':
     resolution: {integrity: sha512-XOMO2Hupl0wdd172Y06h6kLpBz6Dv+J4okPLl4LPtzbr8f66WbIoy4ev98EBuZ6ZK4h5ydTN6XneT4QVpD7cdA==}
 
-  '@grafana/data@13.1.0':
-    resolution: {integrity: sha512-QCqBVG/sP/f2h0r93WFF+LfvdY2l0fQEAV4rCzcRQv+XLzClclKAPX+N41yIjh4zieDkB5JKlXYzCKKwLC9kWg==}
+  '@grafana/data@13.1.1':
+    resolution: {integrity: sha512-8mOs4ymGwdAwUrIWjYtofFkg8A6UakjwQ78Zw83uPM11oNQ2Xlpszz8L/238JTt7lYbOj0l8Cc5gIa2OYEJ8TQ==}
     peerDependencies:
       react: ^18.0.0
       react-dom: ^18.0.0
 
-  '@grafana/e2e-selectors@13.1.0':
-    resolution: {integrity: sha512-g/N5gGZ4iE59g4Coi/R6+F66BRrBnP0XKa7DO7sbiGo4IgM2tGsXgVvWNcR4CCF7bza930mhVWQnREyNLhClFw==}
-
   '@grafana/e2e-selectors@13.1.0-25644485979':
     resolution: {integrity: sha512-2H+veZBayawey47iUTb5N69QK5KYHxzspe8uaauvLH7aSsjeyzH6nFubLkOVxz1JUOVtVrwOaH+libUwSaPMXw==}
+
+  '@grafana/e2e-selectors@13.1.1':
+    resolution: {integrity: sha512-zPpdVa6epFQRAm/GA80wzhaUKcHge5Hz8q5MaAt5Br/eZtHz2R/FQUoCwA+AZqxIHun1sWofB2G6qlEoAIQwbg==}
 
   '@grafana/eslint-config@8.2.0':
     resolution: {integrity: sha512-siCxTY3uuCg2ekztQwS8i7DBPHH8xDGiWlZAf+d/TVZVB0TluIsM2jHEhNyC2XzTZdgDLbmDJwUt5SCnHC7iAg==}
@@ -569,8 +569,8 @@ packages:
   '@grafana/faro-web-sdk@2.7.0':
     resolution: {integrity: sha512-NIbFK2g634/KOcq6ej1LseZrbbRejBiIrO8beQpYX6CkyXVGrcdoWRfJdqkQ3Ys60h4aTH+xoAh2Oh0HebhOZg==}
 
-  '@grafana/i18n@13.1.0':
-    resolution: {integrity: sha512-hgmfauVZvU2TbhsczicXMaT2PU0GDzfPL5v+bQWNDojRHPB2uyq/f2CWrCgpKaEGyJxA7o2HFmTRPcTwvXfjgw==}
+  '@grafana/i18n@13.1.1':
+    resolution: {integrity: sha512-+t2QWJ6yGK5FHaBYv2WkviGEjfeV6ppNq3AwLfaeHrdg1J2cSEuZRyhwLh5fsByO5MSJVKFP64euZAkStizkRw==}
     peerDependencies:
       react: '>=18'
 
@@ -590,20 +590,20 @@ packages:
       react: ^18.0 || ^19.0
       react-dom: ^18.0 || ^19.0
 
-  '@grafana/runtime@13.1.0':
-    resolution: {integrity: sha512-HLMakCW+HzlISZEzaovW2u6TDCYnFZdISlgyM+BFVac1ewrK7fyPJDp61O+Jirotj4mxMzVfJCHvJ5jbWZXqGw==}
+  '@grafana/runtime@13.1.1':
+    resolution: {integrity: sha512-LAnt0bFYXLkK1AzTa/+40AIsucAjTF68kWBH5KtQgTOYixkDEUMXn4mmxgyMhTnP8jUJJsIwsJp7c4k+7evmPw==}
     peerDependencies:
       react: ^18.0.0
       react-dom: ^18.0.0
 
-  '@grafana/schema@13.1.0':
-    resolution: {integrity: sha512-7SPiD1sKQanTtmeZXcJ0FMcqyOvPLrXWNeWmlInE0fW+g0TSGjx05CH00hviPCEyBzG6MoW7izTWCKrgpy9iaA==}
+  '@grafana/schema@13.1.1':
+    resolution: {integrity: sha512-2/89TWqLUJ0ffi8/qhoUtT2cZqpQ7MY3DoOWJ39sY1+nf1defi8vIDKyWp88HFAo9HJtwwlQQQowP7Jre7VRHQ==}
 
   '@grafana/tsconfig@2.0.1':
     resolution: {integrity: sha512-yGNQWQDlxFfklzMfk0i8qnDqKOvIGc0Aqe62zLS4LTqptkhnyLEVsdaVmX99m3QFOcBiiFn8scREDzGeF2iNvQ==}
 
-  '@grafana/ui@13.1.0':
-    resolution: {integrity: sha512-6eOUQ4PXv965r2Nnk9VczQuKh2gko/FLHIWXYl+cULclYDQsPD09l9VWgl8x0tRKo1tf3Sl4VLLtcChFMYbnwg==}
+  '@grafana/ui@13.1.1':
+    resolution: {integrity: sha512-0YuE1lbALJjCD9owwiuCjM47HjpLV2pvQsyo0UG0VEn0DczQNEPfHtekiPar466h6Ex2uj9nmY7gRwcG/jm+Jw==}
     peerDependencies:
       react: ^18.0.0
       react-dom: ^18.0.0
@@ -3711,14 +3711,14 @@ packages:
     peerDependencies:
       react: ^16.8.0 || ^17 || ^18 || ^19
 
-  react-i18next@15.7.4:
-    resolution: {integrity: sha512-nyU8iKNrI5uDJch0z9+Y5XEr34b0wkyYj3Rp+tfbahxtlswxSCjcUL9H0nqXo9IR3/t5Y5PKIA3fx3MfUyR9Xw==}
+  react-i18next@16.6.6:
+    resolution: {integrity: sha512-ZgL2HUoW34UKUkOV7uSQFE1CDnRPD+tCR3ywSuWH7u2iapnz86U8Bi3Vrs620qNDzCf1F47NxglCEkchCTDOHw==}
     peerDependencies:
-      i18next: '>= 23.4.0'
+      i18next: '>= 25.10.9'
       react: '>= 16.8.0'
       react-dom: '*'
       react-native: '*'
-      typescript: ^5
+      typescript: ^5 || ^6
     peerDependenciesMeta:
       react-dom:
         optional: true
@@ -5204,11 +5204,11 @@ snapshots:
     dependencies:
       tslib: 2.8.1
 
-  '@grafana/data@13.1.0(eslint@9.39.5)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.5.4)':
+  '@grafana/data@13.1.1(eslint@9.39.5)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.5.4)':
     dependencies:
       '@braintree/sanitize-url': 7.0.1
-      '@grafana/i18n': 13.1.0(eslint@9.39.5)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.5.4)
-      '@grafana/schema': 13.1.0
+      '@grafana/i18n': 13.1.1(eslint@9.39.5)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.5.4)
+      '@grafana/schema': 13.1.1
       '@leeoniya/ufuzzy': 1.0.19
       '@types/d3-interpolate': 3.0.4
       '@types/string-hash': 1.1.3
@@ -5241,15 +5241,15 @@ snapshots:
       - supports-color
       - typescript
 
-  '@grafana/e2e-selectors@13.1.0':
-    dependencies:
-      semver: 7.7.3
-      typescript: 6.0.2
-
   '@grafana/e2e-selectors@13.1.0-25644485979':
     dependencies:
       semver: 7.7.3
       tslib: 2.8.1
+      typescript: 6.0.2
+
+  '@grafana/e2e-selectors@13.1.1':
+    dependencies:
+      semver: 7.7.3
       typescript: 6.0.2
 
   '@grafana/eslint-config@8.2.0(@stylistic/eslint-plugin-ts@2.13.0(eslint@9.39.5)(typescript@5.5.4))(@typescript-eslint/eslint-plugin@8.46.2(@typescript-eslint/parser@8.46.2(eslint@9.39.5)(typescript@5.5.4))(eslint@9.39.5)(typescript@5.5.4))(@typescript-eslint/parser@8.46.2(eslint@9.39.5)(typescript@5.5.4))(eslint-config-prettier@10.1.8(eslint@9.39.5))(eslint-plugin-jsdoc@51.4.1(eslint@9.39.5))(eslint-plugin-react-hooks@5.2.0(eslint@9.39.5))(eslint-plugin-react@7.37.5(eslint@9.39.5))(eslint@9.39.5)(typescript@5.5.4)':
@@ -5275,7 +5275,7 @@ snapshots:
       ua-parser-js: 1.0.41
       web-vitals: 5.2.0
 
-  '@grafana/i18n@13.1.0(eslint@9.39.5)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.5.4)':
+  '@grafana/i18n@13.1.1(eslint@9.39.5)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.5.4)':
     dependencies:
       '@formatjs/intl-durationformat': 0.7.6
       '@typescript-eslint/utils': 8.59.4(eslint@9.39.5)(typescript@5.5.4)
@@ -5285,7 +5285,7 @@ snapshots:
       i18next-pseudo: 2.2.1
       micro-memoize: 4.2.0
       react: 18.3.1
-      react-i18next: 15.7.4(i18next@25.10.10(typescript@5.5.4))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.5.4)
+      react-i18next: 16.6.6(i18next@25.10.10(typescript@5.5.4))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.5.4)
     transitivePeerDependencies:
       - eslint
       - react-dom
@@ -5305,13 +5305,13 @@ snapshots:
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
 
-  '@grafana/runtime@13.1.0(@babel/runtime@7.29.2)(@codemirror/language@6.12.3)(@codemirror/lint@6.9.6)(@codemirror/search@6.7.0)(@codemirror/theme-one-dark@6.1.3)(@react-spectrum/provider@3.11.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@types/react@19.2.2)(codemirror@6.0.2)(eslint@9.39.5)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.5.4)':
+  '@grafana/runtime@13.1.1(@babel/runtime@7.29.2)(@codemirror/language@6.12.3)(@codemirror/lint@6.9.6)(@codemirror/search@6.7.0)(@codemirror/theme-one-dark@6.1.3)(@react-spectrum/provider@3.11.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@types/react@19.2.2)(codemirror@6.0.2)(eslint@9.39.5)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.5.4)':
     dependencies:
-      '@grafana/data': 13.1.0(eslint@9.39.5)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.5.4)
-      '@grafana/e2e-selectors': 13.1.0
+      '@grafana/data': 13.1.1(eslint@9.39.5)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.5.4)
+      '@grafana/e2e-selectors': 13.1.1
       '@grafana/faro-web-sdk': 2.7.0
-      '@grafana/schema': 13.1.0
-      '@grafana/ui': 13.1.0(@babel/runtime@7.29.2)(@codemirror/language@6.12.3)(@codemirror/lint@6.9.6)(@codemirror/search@6.7.0)(@codemirror/theme-one-dark@6.1.3)(@react-spectrum/provider@3.11.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@types/react@19.2.2)(codemirror@6.0.2)(eslint@9.39.5)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.5.4)
+      '@grafana/schema': 13.1.1
+      '@grafana/ui': 13.1.1(@babel/runtime@7.29.2)(@codemirror/language@6.12.3)(@codemirror/lint@6.9.6)(@codemirror/search@6.7.0)(@codemirror/theme-one-dark@6.1.3)(@react-spectrum/provider@3.11.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@types/react@19.2.2)(codemirror@6.0.2)(eslint@9.39.5)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.5.4)
       '@openfeature/core': 1.10.0
       '@openfeature/ofrep-web-provider': 0.4.1(@openfeature/core@1.10.0)(@openfeature/web-sdk@1.8.0(@openfeature/core@1.10.0))
       '@openfeature/react-sdk': 1.3.0(@openfeature/web-sdk@1.8.0(@openfeature/core@1.10.0))(react@18.3.1)
@@ -5341,11 +5341,11 @@ snapshots:
       - supports-color
       - typescript
 
-  '@grafana/schema@13.1.0': {}
+  '@grafana/schema@13.1.1': {}
 
   '@grafana/tsconfig@2.0.1': {}
 
-  '@grafana/ui@13.1.0(@babel/runtime@7.29.2)(@codemirror/language@6.12.3)(@codemirror/lint@6.9.6)(@codemirror/search@6.7.0)(@codemirror/theme-one-dark@6.1.3)(@react-spectrum/provider@3.11.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@types/react@19.2.2)(codemirror@6.0.2)(eslint@9.39.5)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.5.4)':
+  '@grafana/ui@13.1.1(@babel/runtime@7.29.2)(@codemirror/language@6.12.3)(@codemirror/lint@6.9.6)(@codemirror/search@6.7.0)(@codemirror/theme-one-dark@6.1.3)(@react-spectrum/provider@3.11.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@types/react@19.2.2)(codemirror@6.0.2)(eslint@9.39.5)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.5.4)':
     dependencies:
       '@codemirror/autocomplete': 6.20.1
       '@codemirror/lang-json': 6.0.2
@@ -5356,12 +5356,12 @@ snapshots:
       '@emotion/react': 11.14.0(@types/react@19.2.2)(react@18.3.1)
       '@emotion/serialize': 1.3.3
       '@floating-ui/react': 0.27.19(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      '@grafana/data': 13.1.0(eslint@9.39.5)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.5.4)
-      '@grafana/e2e-selectors': 13.1.0
+      '@grafana/data': 13.1.1(eslint@9.39.5)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.5.4)
+      '@grafana/e2e-selectors': 13.1.1
       '@grafana/faro-web-sdk': 2.7.0
-      '@grafana/i18n': 13.1.0(eslint@9.39.5)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.5.4)
+      '@grafana/i18n': 13.1.1(eslint@9.39.5)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.5.4)
       '@grafana/react-data-grid': 7.0.0-beta.57(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      '@grafana/schema': 13.1.0
+      '@grafana/schema': 13.1.1
       '@hello-pangea/dnd': 18.0.1(@types/react@19.2.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@monaco-editor/react': 4.7.0(monaco-editor@0.34.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@popperjs/core': 2.11.8
@@ -9160,12 +9160,13 @@ snapshots:
     dependencies:
       react: 18.3.1
 
-  react-i18next@15.7.4(i18next@25.10.10(typescript@5.5.4))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.5.4):
+  react-i18next@16.6.6(i18next@25.10.10(typescript@5.5.4))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.5.4):
     dependencies:
       '@babel/runtime': 7.29.2
       html-parse-stringify: 3.0.1
       i18next: 25.10.10(typescript@5.5.4)
       react: 18.3.1
+      use-sync-external-store: 1.6.0(react@18.3.1)
     optionalDependencies:
       react-dom: 18.3.1(react@18.3.1)
       typescript: 5.5.4
