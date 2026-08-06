@@ -64,6 +64,12 @@
     "actions/plugins/frontend-e2e-against-stack": {
       "package-name": "plugins-frontend-e2e-against-stack"
     },
+    "actions/plugins/playwright-reports/upload-report-artifacts": {
+      "package-name": "plugins-playwright-reports-upload-report-artifacts"
+    },
+    "actions/plugins/playwright-reports/publish-report": {
+      "package-name": "plugins-playwright-reports-publish-report"
+    },
     ".": {
       "package-name": "ci-cd-workflows",
       "changelog-path": ".github/workflows/CHANGELOG.md",
@@ -72,7 +78,9 @@
         "actions/plugins/version-bump-changelog",
         "actions/plugins/publish/change-plugin-scope",
         "actions/plugins/release-please",
-        "actions/plugins/frontend-e2e-against-stack"
+        "actions/plugins/frontend-e2e-against-stack",
+        "actions/plugins/playwright-reports/upload-report-artifacts",
+        "actions/plugins/playwright-reports/publish-report"
       ]
     }
   },
