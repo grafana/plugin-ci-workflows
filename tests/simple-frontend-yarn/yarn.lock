@@ -1126,10 +1126,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@grafana/tsconfig@npm:2.0.0":
-  version: 2.0.0
-  resolution: "@grafana/tsconfig@npm:2.0.0"
-  checksum: 10c0/0b00f1ea90ed5014b1261153d0621aec1dcac891d0e0a723cec6280d489576661eb2d39b2a9c38ae261112e99e46e8ffaebfd8681d72363ab2c732c1d287fb11
+"@grafana/tsconfig@npm:2.2.0":
+  version: 2.2.0
+  resolution: "@grafana/tsconfig@npm:2.2.0"
+  checksum: 10c0/7e1adaa93888a9d82c2ed3a487eaa5901032cd206e61efe31be29590ad679c3dad15cb337c0adc7cac00f061bc12d7b5b42a7a5bca60a39e484ec02e1fa1cc70
   languageName: node
   linkType: hard
 
@@ -9566,7 +9566,7 @@ __metadata:
     "@grafana/plugin-e2e": "npm:3.10.0"
     "@grafana/runtime": "npm:13.1.1"
     "@grafana/schema": "npm:13.1.1"
-    "@grafana/tsconfig": "npm:2.0.0"
+    "@grafana/tsconfig": "npm:2.2.0"
     "@grafana/ui": "npm:13.1.1"
     "@playwright/test": "npm:1.56.0"
     "@stylistic/eslint-plugin-ts": "npm:2.13.0"
