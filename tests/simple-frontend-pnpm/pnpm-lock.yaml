@@ -45,8 +45,8 @@ importers:
         specifier: 3.10.0
         version: 3.10.0(@playwright/test@1.56.1)
       '@grafana/tsconfig':
-        specifier: 2.0.1
-        version: 2.0.1
+        specifier: 2.2.0
+        version: 2.2.0
       '@playwright/test':
         specifier: 1.56.1
         version: 1.56.1
@@ -599,8 +599,8 @@ packages:
   '@grafana/schema@13.1.1':
     resolution: {integrity: sha512-2/89TWqLUJ0ffi8/qhoUtT2cZqpQ7MY3DoOWJ39sY1+nf1defi8vIDKyWp88HFAo9HJtwwlQQQowP7Jre7VRHQ==}
 
-  '@grafana/tsconfig@2.0.1':
-    resolution: {integrity: sha512-yGNQWQDlxFfklzMfk0i8qnDqKOvIGc0Aqe62zLS4LTqptkhnyLEVsdaVmX99m3QFOcBiiFn8scREDzGeF2iNvQ==}
+  '@grafana/tsconfig@2.2.0':
+    resolution: {integrity: sha512-hhhXetqhSKTfgErStfWVPhqo4JPi+lNqBJNhBF6RT4ZIM4vwKxEfnfsyswT+NwHIXNrOz23xoOGeKWPpxmaHWQ==}
 
   '@grafana/ui@13.1.1':
     resolution: {integrity: sha512-0YuE1lbALJjCD9owwiuCjM47HjpLV2pvQsyo0UG0VEn0DczQNEPfHtekiPar466h6Ex2uj9nmY7gRwcG/jm+Jw==}
@@ -5343,7 +5343,7 @@ snapshots:
 
   '@grafana/schema@13.1.1': {}
 
-  '@grafana/tsconfig@2.0.1': {}
+  '@grafana/tsconfig@2.2.0': {}
 
   '@grafana/ui@13.1.1(@babel/runtime@7.29.2)(@codemirror/language@6.12.3)(@codemirror/lint@6.9.6)(@codemirror/search@6.7.0)(@codemirror/theme-one-dark@6.1.3)(@react-spectrum/provider@3.11.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@types/react@19.2.2)(codemirror@6.0.2)(eslint@9.39.5)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.5.4)':
     dependencies:
