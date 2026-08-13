@@ -305,6 +305,14 @@ on:
         type: number
         required: false
         default: 10
+      disable-gcs-upload:
+        description: |
+          If true, skip uploading the plugin ZIPs to the GCS artifacts bucket.
+          The ZIPs are still uploaded as GitHub artifacts. The `gcs-*` outputs will be empty and
+          publishing to the plugins catalog will not work, so this is not exposed on cd.yml.
+        type: boolean
+        required: false
+        default: false
       DO-NOT-USE-allow-pinned-commit-hashes:
         description: |
           FOR INTERNAL TESTING ONLY, DO NOT USE.
@@ -340,6 +348,7 @@ on:
       zips:
         value: ${{ jobs.test-and-build.outputs.zips }}
 
+      # All four gcs-* outputs are empty when the `disable-gcs-upload` input is true.
       gcs-zip-urls-latest:
         value: ${{ jobs.upload-to-gcs.outputs.zip-urls-latest }}
       gcs-zip-urls-commit:
@@ -812,10 +821,12 @@ jobs:
     runs-on: ubuntu-arm64-small
 
     # Skip the GCS upload (no access to the bucket) for PRs when run in non-trusted context (forks).
+    # Also skipped when the caller sets `disable-gcs-upload`.
     # If Playwright is enabled, only upload after the corresponding Playwright job succeeds.
     if: >-
       ${{
         !cancelled()
+        && !inputs.disable-gcs-upload
         && needs.test-and-build.result == 'success'
         && fromJson(needs.test-and-build.outputs.workflow-context).isTrusted
         && (!inputs.run-playwright || needs.playwright.result == 'success')
