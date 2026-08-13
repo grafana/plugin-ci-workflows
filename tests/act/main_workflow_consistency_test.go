@@ -42,6 +42,9 @@ var knownWorkflows = []workflowEntry{
 // ciOnlyInputs lists ci.yml inputs that are CI-only and should NOT be in cd.yml.
 var ciOnlyInputs = map[string]bool{
 	"testing": true,
+	// Publishing downloads the plugin from a GCS URL, so skipping the upload is
+	// incompatible with CD.
+	"disable-gcs-upload": true,
 }
 
 func TestCDWorkflowContainsAllCIInputs(t *testing.T) {
