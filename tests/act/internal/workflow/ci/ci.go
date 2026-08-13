@@ -114,6 +114,7 @@ type WorkflowInputs struct {
 	BackendBuildTarget *string
 
 	DistArtifactsRetentionDays *int
+	DisableGCSUpload           *bool
 }
 
 // SetCIInputs sets the inputs for the CI workflow.
@@ -142,6 +143,7 @@ func SetCIInputs(dst *workflow.Job, inputs WorkflowInputs) {
 	workflow.SetJobInput(dst, "backend-build-target", inputs.BackendBuildTarget)
 
 	workflow.SetJobInput(dst, "dist-artifacts-retention-days", inputs.DistArtifactsRetentionDays)
+	workflow.SetJobInput(dst, "disable-gcs-upload", inputs.DisableGCSUpload)
 }
 
 // WithWorkflowInputs sets the inputs for the CI workflow.
