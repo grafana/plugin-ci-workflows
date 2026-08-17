@@ -80,6 +80,6 @@ require (
 	golang.org/x/text v0.40.0 // indirect
 	google.golang.org/genproto v0.0.0-20210630183607-d20f26d13c79 // indirect
 	google.golang.org/grpc v1.83.0 // indirect
-	google.golang.org/protobuf v1.36.11 // indirect
+	google.golang.org/protobuf v1.36.12 // indirect
 	gopkg.in/fsnotify/fsnotify.v1 v1.4.7 // indirect
 )
