@@ -10,7 +10,7 @@ require (
 	golang.org/x/mod v0.40.0
 )
 
-require golang.org/x/text v0.39.0 // indirect
+require golang.org/x/text v0.41.0 // indirect
 
 require (
 	github.com/stretchr/testify v1.12.0
