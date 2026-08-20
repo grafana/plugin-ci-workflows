@@ -10,6 +10,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const uploadArtifactAction = "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a" // v7.0.1
+
 func TestDistArtifactsUnavailable(t *testing.T) {
 	t.Parallel()
 
@@ -72,12 +74,15 @@ func TestDistArtifactsUnavailable(t *testing.T) {
 						InjectionStepID: "set-outputs",
 						Steps: workflow.Steps{
 							{
-								Run:   `mkdir -p /tmp/placeholder-artifact && echo placeholder > /tmp/placeholder-artifact/placeholder.txt`,
+								Run: workflow.Commands{
+									"mkdir -p /tmp/placeholder-artifact",
+									"echo placeholder > /tmp/placeholder-artifact/placeholder.txt",
+								}.String(),
 								Shell: "bash",
 							},
 							{
 								Name: "Upload placeholder artifact (act workaround)",
-								Uses: "actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4", // v5.0.0
+								Uses: uploadArtifactAction,
 								With: map[string]any{
 									"name": "placeholder-artifact",
 									"path": "/tmp/placeholder-artifact/",
