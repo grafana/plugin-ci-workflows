@@ -436,7 +436,10 @@ jobs:
               'dependabot[bot]',
               'renovate-sh-app[bot]',
               // Used by other shared workflows such as the version bump workflow
-              'grafana-plugins-platform-bot[bot]'
+              'grafana-plugins-platform-bot[bot]',
+              // Creates releases via release-please in datasource repos, so it is the
+              // actor of their release-event publish runs, which sign the plugin
+              'grafana-oss-big-tent[bot]'
             ].map((s) => s.toLowerCase());
 
             const isPR = context.eventName === 'pull_request';
