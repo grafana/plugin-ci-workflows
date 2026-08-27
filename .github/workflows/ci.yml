@@ -421,7 +421,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # Force exact ref when running in act (it copies files locally, it breaks if we specify another ref)
           ref: ${{ !github.event.act && inputs.branch || github.sha }}
@@ -436,7 +436,10 @@ jobs:
               'dependabot[bot]',
               'renovate-sh-app[bot]',
               // Used by other shared workflows such as the version bump workflow
-              'grafana-plugins-platform-bot[bot]'
+              'grafana-plugins-platform-bot[bot]',
+              // Creates releases via release-please in datasource repos, so it is the
+              // actor of their release-event publish runs, which sign the plugin
+              'grafana-oss-big-tent[bot]'
             ].map((s) => s.toLowerCase());
 
             const isPR = context.eventName === 'pull_request';
@@ -747,7 +750,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # Force exact ref when running in act (it copies files locally, it breaks if we specify another ref)
           ref: ${{ !github.event.act && inputs.branch || github.sha }}
@@ -849,7 +852,7 @@ jobs:
       - name: Download GitHub artifact
         id: download-dist-artifacts
         continue-on-error: true
-        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: ${{ inputs.dist-artifacts-prefix }}dist-artifacts
           path: /tmp/${{ inputs.dist-artifacts-prefix }}dist-artifacts
