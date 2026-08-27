@@ -111,9 +111,24 @@ on:
         type: string
         required: false
         default: chromium
+      bucket:
+        description: |
+          GCS bucket name to upload Playwright reports to.
+          If not set, the default shared internal Grafana bucket is used.
+        type: string
+        required: false
+        default: 'grafana-plugin-ci-playwright-reports'
+      pr-comment-summary:
+        description: |
+          Whether to post a PR comment with Playwright test results and report links.
+          Only takes effect when upload-artifacts is true.
+        type: boolean
+        required: false
+        default: true
 permissions:
   contents: read
   id-token: write
+  pull-requests: write
 
 jobs:
   resolve-versions:
@@ -348,13 +363,30 @@ jobs:
           PLAYWRIGHT_CONFIG: ${{ inputs.playwright-config }}
         working-directory: ${{ inputs.plugin-directory }}
 
-      - name: Upload artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
-        if: ${{ (inputs.upload-artifacts == true) && ((always() && steps.run-tests.outcome == 'success') || (failure() && steps.run-tests.outcome == 'failure')) }}
+      - name: Upload report artifacts
+        uses: grafana/plugin-ci-workflows/actions/plugins/playwright-reports/upload-report-artifacts@main
+        if: ${{ always() && inputs.upload-artifacts == true && (steps.run-tests.outcome == 'success' || steps.run-tests.outcome == 'failure') }}
         with:
-          name: playwright-report-${{ matrix.GRAFANA_IMAGE.NAME }}-v${{ matrix.GRAFANA_IMAGE.VERSION }}-${{github.run_id}}
-          path: ${{ inputs.plugin-directory }}/${{ inputs.report-path }}
-          retention-days: 30
+          test-outcome: ${{ steps.run-tests.outcome }}
+          report-dir: ${{ inputs.plugin-directory }}/${{ inputs.report-path }}
+          grafana-image: ${{ matrix.GRAFANA_IMAGE.NAME }}
+          grafana-version: ${{ matrix.GRAFANA_IMAGE.VERSION }}
+
+  publish-reports:
+    name: Publish Playwright reports
+    needs: playwright-tests
+    if: ${{ always() && !cancelled() && inputs.upload-artifacts == true && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false) }}
+    runs-on: ubuntu-arm64-small
+    permissions:
+      id-token: write
+      pull-requests: write
+      contents: read
+    steps:
+      - name: Publish reports
+        uses: grafana/plugin-ci-workflows/actions/plugins/playwright-reports/publish-report@main
+        with:
+          pr-comment-summary: ${{ inputs.pr-comment-summary }}
+          bucket: ${{ inputs.bucket }}
 
   check-playwright-status:
     needs: playwright-tests
