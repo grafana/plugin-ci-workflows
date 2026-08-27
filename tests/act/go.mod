@@ -1,6 +1,6 @@
 module github.com/grafana/plugin-ci-workflows/tests/act
 
-go 1.26.3
+go 1.26.5
 
 require (
 	github.com/go-logfmt/logfmt v0.6.1
