@@ -6,6 +6,30 @@
 
 - `playwright-browsers` input on `cd.yml`, `ci.yml`, and `playwright.yml` to choose which Playwright browsers to install before E2E (default `chromium`; `chromium`, `firefox`, `webkit`).
 
+## [11.1.2](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v11.1.1...ci-cd-workflows/v11.1.2) (2026-09-03)
+
+
+### 🔧 Chores
+
+* **deps:** update anthropics/claude-code-action action to v1.0.210 ([#1000](https://github.com/grafana/plugin-ci-workflows/issues/1000)) ([b116711](https://github.com/grafana/plugin-ci-workflows/commit/b116711ae9556ce8d685a62a1e96304342bc57b6))
+* **deps:** update dependency @grafana/plugin-e2e to v3.11.1 ([#1001](https://github.com/grafana/plugin-ci-workflows/issues/1001)) ([8f8fd02](https://github.com/grafana/plugin-ci-workflows/commit/8f8fd0291bbf20e93a5e48e931161f3eb7390d05))
+* **deps:** update dependency @stylistic/eslint-plugin-ts to v4 ([#990](https://github.com/grafana/plugin-ci-workflows/issues/990)) ([d01babf](https://github.com/grafana/plugin-ci-workflows/commit/d01babfdabdb5a5b0b078c7b2f9501712f1918eb))
+* **deps:** update dependency @types/jest to v30 ([#991](https://github.com/grafana/plugin-ci-workflows/issues/991)) ([1c6993d](https://github.com/grafana/plugin-ci-workflows/commit/1c6993d4af5e87002eb1704724436908992ccaf6))
+* **deps:** update dependency @types/node to v24.13.3 ([#992](https://github.com/grafana/plugin-ci-workflows/issues/992)) ([dca89d9](https://github.com/grafana/plugin-ci-workflows/commit/dca89d9bbce81fd72b1b69cdda9e9a65f77027bc))
+* **deps:** update dependency copy-webpack-plugin to v14 ([#993](https://github.com/grafana/plugin-ci-workflows/issues/993)) ([7b24161](https://github.com/grafana/plugin-ci-workflows/commit/7b24161dda02e82450c575b211f6f9d597a39c0b))
+* **deps:** update dependency css-loader to v7 ([#998](https://github.com/grafana/plugin-ci-workflows/issues/998)) ([0cbbc3f](https://github.com/grafana/plugin-ci-workflows/commit/0cbbc3f68e0f1565b99ef38f668babd620438745))
+* **deps:** update dependency eslint-config-prettier to v10 ([#999](https://github.com/grafana/plugin-ci-workflows/issues/999)) ([ec37aa9](https://github.com/grafana/plugin-ci-workflows/commit/ec37aa900687c5ee8bb009a5b8ad3408c1983cc1))
+* **deps:** update dependency golangci-lint to v2.13.2 ([#1002](https://github.com/grafana/plugin-ci-workflows/issues/1002)) ([5e271fe](https://github.com/grafana/plugin-ci-workflows/commit/5e271fea6204cd1fce50874cc58aee2a733b5c0b))
+* **deps:** update dependency trufflehog to v3.97.1 ([#1003](https://github.com/grafana/plugin-ci-workflows/issues/1003)) ([4cbd153](https://github.com/grafana/plugin-ci-workflows/commit/4cbd153cafb9d5ce6084fbe2190547bcaa36109a))
+* **deps:** update dependency webpack to v5.110.2 ([#1011](https://github.com/grafana/plugin-ci-workflows/issues/1011)) ([4c7130e](https://github.com/grafana/plugin-ci-workflows/commit/4c7130ef50c9879215e87ef22e30c7fce31855f8))
+* **deps:** update golang.org/x/exp digest to e88cd73 ([#996](https://github.com/grafana/plugin-ci-workflows/issues/996)) ([cc05e04](https://github.com/grafana/plugin-ci-workflows/commit/cc05e046331337841fa4f0ab37ddef9330b05113))
+* **deps:** update module github.com/grpc-ecosystem/go-grpc-middleware/v2 to v2.3.4 ([#1005](https://github.com/grafana/plugin-ci-workflows/issues/1005)) ([7095e9b](https://github.com/grafana/plugin-ci-workflows/commit/7095e9b8ea521bd6ee38503ba5ab7280e2ae16d3))
+* **deps:** update module google.golang.org/grpc to v1.83.2 ([#1006](https://github.com/grafana/plugin-ci-workflows/issues/1006)) ([cb1d122](https://github.com/grafana/plugin-ci-workflows/commit/cb1d122539ad73b448eb432a00cc9a9bcfb380c3))
+* **deps:** update npm to v11.19.1 ([#1007](https://github.com/grafana/plugin-ci-workflows/issues/1007)) ([9a892b9](https://github.com/grafana/plugin-ci-workflows/commit/9a892b9793056c5094bd3f839c51a86800037916))
+* **deps:** update pnpm to v11.24.0 ([#997](https://github.com/grafana/plugin-ci-workflows/issues/997)) ([8d10769](https://github.com/grafana/plugin-ci-workflows/commit/8d1076969af0df636174a6b46b34dae33197d120))
+* **deps:** update softprops/action-gh-release action to v3.0.3 ([#1009](https://github.com/grafana/plugin-ci-workflows/issues/1009)) ([b7027b2](https://github.com/grafana/plugin-ci-workflows/commit/b7027b2b06d9d78a7b3fbb55c7831b2f9290ed57))
+* **deps:** update step-security/harden-runner action to v2.21.1 ([#1010](https://github.com/grafana/plugin-ci-workflows/issues/1010)) ([6ad44d5](https://github.com/grafana/plugin-ci-workflows/commit/6ad44d5bcd6cbdea9042c1b9edec07d37c2a9fd4))
+
 ## [11.1.1](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v11.1.0...ci-cd-workflows/v11.1.1) (2026-08-27)
 
 
