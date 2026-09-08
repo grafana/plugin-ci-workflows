@@ -190,13 +190,6 @@ on:
         type: string
         required: false
         default: ""
-      playwright-bucket:
-        description: |
-          GCS bucket name to upload Playwright reports to.
-          If not set, the default shared internal Grafana bucket is used.
-        type: string
-        required: false
-        default: 'grafana-plugin-ci-playwright-reports'
       playwright-pr-comment-summary:
         description: |
           Whether to post a PR comment with Playwright test results and report links.
@@ -787,7 +780,6 @@ jobs:
       node-version: ${{ inputs.node-version }}
       npm-registry-auth: ${{ inputs.npm-registry-auth }}
       playwright-browsers: ${{ inputs.playwright-browsers }}
-      bucket: ${{ inputs.playwright-bucket }}
       pr-comment-summary: ${{ inputs.playwright-pr-comment-summary }}
 
   playwright-docker:

@@ -217,6 +217,13 @@ on:
         type: string
         required: false
         default: ""
+      playwright-pr-comment-summary:
+        description: |
+          Whether to post a PR comment with Playwright test results and report links.
+          Only takes effect when upload-playwright-artifacts is true.
+        type: boolean
+        required: false
+        default: true
 
       # Trufflehog
       run-trufflehog:
@@ -576,7 +583,10 @@ permissions:
   contents: write
   id-token: write
   attestations: write
-  pull-requests: read
+  # write (not read) so the Playwright report publish job, which runs inside the called ci.yml,
+  # can post its summary comment: a called reusable workflow's permissions are capped by the
+  # caller's, and cd.yml can be triggered from a PR.
+  pull-requests: write
 
 env:
   VAULT_INSTANCE: ops
@@ -817,6 +827,7 @@ jobs:
       playwright-secrets: ${{ inputs.playwright-secrets }}
       playwright-gar-registry: ${{ inputs.playwright-gar-registry }}
       playwright-browsers: ${{ inputs.playwright-browsers }}
+      playwright-pr-comment-summary: ${{ inputs.playwright-pr-comment-summary }}
 
       run-trufflehog: ${{ inputs.run-trufflehog }}
       trufflehog-version: ${{ inputs.trufflehog-version }}
