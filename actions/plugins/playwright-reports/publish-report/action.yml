@@ -10,18 +10,6 @@ inputs:
     description: 'Pattern to match the artifacts. Default is "gf-playwright-report-*"'
     required: true
     default: 'gf-playwright-report-*'
-  # TODO(infra): provision grafana-plugin-ci-playwright-reports with:
-  #   - 90-day object lifecycle rule
-  #   - IAM: roles/storage.objectViewer for Grafana Google Workspace group (uniform bucket-level access)
-  #   - WIF write access for github-plugin-ci-workflows@grafanalabs-workload-identity.iam.gserviceaccount.com
-  bucket:
-    description: 'GCS bucket name to upload reports to. Defaults to the shared internal Grafana bucket.'
-    required: false
-    default: 'grafana-plugin-ci-playwright-reports'
-  service-account:
-    description: 'Service account to impersonate for GCS upload via WIF. If empty, direct WIF is used.'
-    required: false
-    default: ''
 
 runs:
   using: "composite"
@@ -62,9 +50,16 @@ runs:
       id: login-to-gcs
       uses: grafana/shared-workflows/actions/login-to-gcs@6a97ef28077dbb66da3582aad604aef980cd1787 # login-to-gcs/v0.3.0
       with:
-        bucket: ${{ inputs.bucket }}
-        service_account: ${{ inputs.service-account }}
-        use_wif_auth: ${{ inputs.service-account == '' }}
+        # Shared internal bucket for E2E test artifacts, provisioned in grafanalabs-global.
+        # Write access is granted only to the service account below, which in turn may only be
+        # impersonated by an explicit per-repo allowlist. See the README for how to onboard a repo.
+        bucket: grafana-e2e-test-artifacts
+        service_account: github-e2e-test-artifacts@grafanalabs-workload-identity.iam.gserviceaccount.com
+        use_wif_auth: 'false'
+        # Matches the upstream default, but pinned explicitly: google-github-actions/auth writes a
+        # short-lived credentials file and exports GOOGLE_APPLICATION_CREDENTIALS, which the
+        # upload-cloud-storage step below reads. Deleting it here would break that upload, so we
+        # keep it and remove it ourselves in "Revoke GCS credentials" once the upload is done.
         delete_credentials_file: 'false'
 
     - name: Upload reports to GCS
@@ -76,6 +71,16 @@ runs:
         predefinedAcl: ' '
         gzip: false
         process_gcloudignore: false
+
+    - name: Revoke GCS credentials
+      # Nothing after this point needs GCS access, including the third-party comment action
+      # below, so don't leave the credentials file readable for the rest of the job.
+      shell: bash
+      if: always()
+      run: |
+        if [[ -n "${GOOGLE_APPLICATION_CREDENTIALS:-}" ]]; then
+          rm -f "${GOOGLE_APPLICATION_CREDENTIALS}"
+        fi
 
     - name: Generate Playwright Test Results Table
       id: generate-table
