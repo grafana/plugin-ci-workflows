@@ -130,11 +130,12 @@ jobs:
 
       - name: Resolve Grafana E2E versions
         id: resolve-versions
-        uses: grafana/plugin-actions/e2e-version@304ed38a05911eda030608b10ff9ca59616e465c # e2e-version/v3.0.1
+        uses: grafana/plugin-actions/e2e-version@64ea9946103fc0a569c53cf53d27f568af2a44ce # e2e-version/v3.1.0
         with:
           skip-grafana-nightly-image: ${{ inputs.skip-grafana-nightly-image || inputs.skip-grafana-dev-image }}
           version-resolver-type: ${{ inputs.version-resolver-type }}
           grafana-dependency: ${{ inputs.grafana-dependency }}
+          plugin-directory: ${{ inputs.plugin-directory }}
 
   playwright-tests:
     needs: resolve-versions

@@ -773,7 +773,7 @@ jobs:
 
   playwright:
     name: Playwright E2E tests
-    uses: grafana/plugin-ci-workflows/.github/workflows/playwright.yml@main
+    uses: grafana/plugin-ci-workflows/.github/workflows/playwright.yml@feat/e2e-version-plugin-path
     if: ${{ inputs.run-playwright == true }}
     needs:
       - test-and-build
@@ -800,7 +800,7 @@ jobs:
 
   playwright-docker:
     name: Plugins - Dockerized Playwright E2E tests
-    uses: grafana/plugin-ci-workflows/.github/workflows/playwright-docker.yml@main
+    uses: grafana/plugin-ci-workflows/.github/workflows/playwright-docker.yml@feat/e2e-version-plugin-path
     if: ${{ inputs.run-playwright-docker == true }}
     needs:
       - test-and-build
@@ -808,6 +808,7 @@ jobs:
       id: ${{ fromJSON(needs.test-and-build.outputs.plugin).id}}
       version: ${{ fromJSON(needs.test-and-build.outputs.plugin).version}}
       gar-registry: ${{ inputs.playwright-gar-registry }}
+      plugin-directory: ${{ inputs.plugin-directory }}
       grafana-dependency: ${{ inputs.run-playwright-with-grafana-dependency }}
       skip-grafana-nightly-image: ${{ inputs.run-playwright-with-skip-grafana-nightly-image || inputs.run-playwright-with-skip-grafana-dev-image }}
       version-resolver-type: ${{ inputs.run-playwright-with-version-resolver-type }}
