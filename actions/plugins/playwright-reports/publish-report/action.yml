@@ -51,15 +51,16 @@ runs:
       uses: grafana/shared-workflows/actions/login-to-gcs@6a97ef28077dbb66da3582aad604aef980cd1787 # login-to-gcs/v0.3.0
       with:
         # Shared internal bucket for E2E test artifacts, provisioned in grafanalabs-global.
-        # Write access is granted only to the service account below, which in turn may only be
-        # impersonated by an explicit per-repo allowlist. See the README for how to onboard a repo.
+        # Writes are granted per repo to that repo's Direct WIF principal set, under an IAM
+        # condition confining it to the gs://<bucket>/<owner>/<repo>/ prefix. No service account
+        # is involved, which is why use_wif_auth is true: an IAM condition sees only resource.*
+        # and request.*, so it cannot tell which repo is behind an impersonated service account.
+        # This also makes the github.repository segment of the destination below load-bearing.
+        # See the README for how to onboard a repo.
         bucket: grafana-e2e-test-artifacts
-        service_account: github-e2e-test-artifacts@grafanalabs-workload-identity.iam.gserviceaccount.com
-        use_wif_auth: 'false'
-        # Matches the upstream default, but pinned explicitly: google-github-actions/auth writes a
-        # short-lived credentials file and exports GOOGLE_APPLICATION_CREDENTIALS, which the
-        # upload-cloud-storage step below reads. Deleting it here would break that upload, so we
-        # keep it and remove it ourselves in "Revoke GCS credentials" once the upload is done.
+        use_wif_auth: 'true'
+        # Keep the credentials file for the upload step below, then drop it in "Revoke GCS
+        # credentials". Deleting it here would break the upload.
         delete_credentials_file: 'false'
 
     - name: Upload reports to GCS
@@ -70,11 +71,16 @@ runs:
         parent: false
         predefinedAcl: ' '
         gzip: false
+        # A failing Playwright report is thousands of small files, and every resumable upload
+        # spends an extra round trip on the initiation request. Simple uploads roughly halve the
+        # requests, which matters because the federated credentials are short-lived.
+        resumable: false
         process_gcloudignore: false
 
     - name: Revoke GCS credentials
-      # Nothing after this point needs GCS access, including the third-party comment action
-      # below, so don't leave the credentials file readable for the rest of the job.
+      # Under direct WIF the credentials file holds the Actions OIDC request token, so whoever can
+      # read it can mint tokens for this job's WIF principal. Nothing after this point needs GCS
+      # access, including the third-party comment action below, so don't leave it on disk.
       shell: bash
       if: always()
       run: |
