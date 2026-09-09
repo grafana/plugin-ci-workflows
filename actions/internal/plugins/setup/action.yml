@@ -99,8 +99,27 @@ runs:
       with:
         node-version: "${{ inputs.node-version }}"
         node-version-file: "${{ inputs.node-version-file }}"
-        cache: ${{ inputs.act-cache-warmup != 'true' && steps.package-manager.outputs.name || '' }}
+        # pnpm is cached separately below. setup-node looks the store up by running
+        # `pnpm store path` from the repository root, which is the wrong directory when
+        # the plugin lives in a subfolder: nothing there pins a pnpm version, so corepack
+        # answers with the newest release off the registry, and since pnpm 12 that
+        # reports a store path no install ever creates.
+        cache: ${{ (inputs.act-cache-warmup != 'true' && steps.package-manager.outputs.name != 'pnpm') && steps.package-manager.outputs.name || '' }}
         cache-dependency-path: ${{ inputs.act-cache-warmup != 'true' && steps.package-manager.outputs.lockFilePath || '' }}
+
+    - name: Locate the pnpm store
+      if: ${{ steps.package-manager.outputs.name == 'pnpm' }}
+      id: pnpm-store
+      shell: bash
+      working-directory: ${{ inputs.plugin-directory }}
+      run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+    - name: Cache pnpm store
+      if: ${{ steps.package-manager.outputs.name == 'pnpm' }}
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ${{ steps.pnpm-store.outputs.path }}
+        key: pnpm-store-os=${{ runner.os }}-arch=${{ runner.arch }}-${{ hashFiles(format('{0}/pnpm-lock.yaml', inputs.plugin-directory)) }}
 
     # Install additional dependencies that are not built-in to the slim act image
     # but are included in the default GitHub Actions runner image and are needed for plugin-ci-workflows.
