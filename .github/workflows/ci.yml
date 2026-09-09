@@ -773,7 +773,7 @@ jobs:
 
   playwright:
     name: Playwright E2E tests
-    uses: grafana/plugin-ci-workflows/.github/workflows/playwright.yml@feat/e2e-version-plugin-path
+    uses: grafana/plugin-ci-workflows/.github/workflows/playwright.yml@main
     if: ${{ inputs.run-playwright == true }}
     needs:
       - test-and-build
@@ -800,7 +800,7 @@ jobs:
 
   playwright-docker:
     name: Plugins - Dockerized Playwright E2E tests
-    uses: grafana/plugin-ci-workflows/.github/workflows/playwright-docker.yml@feat/e2e-version-plugin-path
+    uses: grafana/plugin-ci-workflows/.github/workflows/playwright-docker.yml@main
     if: ${{ inputs.run-playwright-docker == true }}
     needs:
       - test-and-build
