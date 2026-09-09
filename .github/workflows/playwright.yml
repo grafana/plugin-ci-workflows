@@ -245,6 +245,7 @@ jobs:
 
       - name: Install Playwright browsers
         shell: bash
+        working-directory: ${{ inputs.plugin-directory }}
         env:
           PLAYWRIGHT_BROWSERS_LIST: ${{ steps.browsers.outputs.list }}
           NPM_EXEC_CMD: ${{ steps.setup.outputs.node-package-manager-exec-local-cmd }}
