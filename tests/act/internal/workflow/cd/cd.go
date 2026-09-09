@@ -127,6 +127,7 @@ type WorkflowInputs struct {
 	ArgoWorkflowSlackSilent             *bool
 	ArgoWorkflowSlackMentionTriggerUser *bool
 	ArgoWorkflowSlackExtraMentions      *string
+	ArgoWorkflowPullRequestLabels       *string
 	AutoApproveDurations                *string
 	ProdTargetsAll                      *bool
 
@@ -156,6 +157,7 @@ func WithWorkflowInputs(inputs WorkflowInputs) WorkflowOption {
 		workflow.SetJobInput(job, "argo-workflow-slack-silent", inputs.ArgoWorkflowSlackSilent)
 		workflow.SetJobInput(job, "argo-workflow-slack-mention-trigger-user", inputs.ArgoWorkflowSlackMentionTriggerUser)
 		workflow.SetJobInput(job, "argo-workflow-slack-extra-mentions", inputs.ArgoWorkflowSlackExtraMentions)
+		workflow.SetJobInput(job, "argo-workflow-pull-request-labels", inputs.ArgoWorkflowPullRequestLabels)
 		workflow.SetJobInput(job, "release-reference-regex", inputs.ReleaseReferenceRegex)
 		workflow.SetJobInput(job, "docs-only", inputs.DocsOnly)
 		workflow.SetJobInput(job, "allow-publishing-prs-to-prod", inputs.AllowPublishingPRsToProd)

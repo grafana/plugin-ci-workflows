@@ -1,9 +1,13 @@
 set -e
 
-if [ ! -d docs/sources ]; then echo "docs/sources not found. skipping build." && exit 0; fi
+docs_source_directory="${1:-docs/sources}"
 
-mkdir -p /hugo/content/docs/plugins/temp-name/v1.0.0
-cp -r docs/sources /hugo/content/docs/plugins/temp-name/v1.0.0
+if [ ! -d "${docs_source_directory}" ]; then
+  echo "${docs_source_directory} not found. skipping build." && exit 0
+fi
+
+mkdir -p /hugo/content/docs/plugins/temp-name/latest
+cp -r "${docs_source_directory}"/. /hugo/content/docs/plugins/temp-name/latest/
 make -C /hugo prod
 
 echo "✅ Docs can be successfuly built"

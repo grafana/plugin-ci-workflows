@@ -50,7 +50,7 @@ on:
           Currently, this only works for provisioned plugins published to the catalog.
           Default is empty (do not trigger Argo Workflow).
         required: false
-        default:
+        default: ""
         type: string
 
       # Those inputs are used to customize the CI workflow, before publishing the plugin.
@@ -88,6 +88,15 @@ on:
         type: string
         required: false
         default: .
+      docs-source-directory:
+        description: |
+          Directory in the plugin repository, relative to the checkout root,
+          that contains the docs to test and publish. Defaults to
+          `docs/sources`. Set this to scope docs publishing to a subset of the
+          repository.
+        type: string
+        required: false
+        default: docs/sources
       npm-registry-auth:
         description: |
           Whether to authenticate to the npm registry in Google Artifact Registry.
@@ -128,7 +137,7 @@ on:
         default: false
       playwright-gar-registry:
         description: |
-          Optional address of a private GAR registry (e.g.: us-docker.pkg.dev) to authenticate to for pulling images 
+          Optional address of a private GAR registry (e.g.: us-docker.pkg.dev) to authenticate to for pulling images
           in the docker-compose setup for the Playwright E2E tests.
           If not specified, no authentication will be done.
         type: string
@@ -275,7 +284,10 @@ on:
 
       # Feature toggle: Artifacts attestation for build provenance
       attestation:
-        description: Create a verifiable attestation for the plugin using Github OIDC.
+        description: |
+          Create a verifiable attestation for the plugin using Github OIDC.
+          NOTE: The resulting attestation reference is currently not sent to GCOM
+          when publishing.
         type: boolean
         required: false
 
@@ -388,9 +400,9 @@ on:
         description: |
           Slack channel to use for Argo Workflow deployment notifications.
           This is only used when Argo is triggered (when `trigger-argo` is true).
-          Default is '#grafana-plugins-platform-ci'.
+          Default is '#grafana-catalog-ci'.
           This should be changed to a Slack channel specific to your team.
-        default: "#grafana-plugins-platform-ci"
+        default: "#grafana-catalog-ci"
         type: string
       argo-workflow-slack-silent:
         description: |
@@ -430,6 +442,16 @@ on:
           Example: `<!subteam^S02ND0RCSE7>,<@U045M4H659T>`
         default: ""
         type: string
+      argo-workflow-pull-request-labels:
+        description: |
+          Optional, comma-separated list of pull request labels to pass to the Argo Workflow
+          when deploying to Grafana Cloud.
+          This is only used when Argo is triggered (when `trigger-argo` is true).
+          Default is empty (no labels).
+          Example: `label1,label2`
+        default: ""
+        type: string
+        required: false
       auto-merge-environments:
         description: |
           Comma separated list of environments whose deployment_tools PRs will be auto-merged when
@@ -613,7 +635,7 @@ jobs:
     steps:
       - name: Checkout specified branch
         id: checkout-specified-branch
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # Force exact ref when running in act (it copies files locally, it breaks if we specify another ref)
           ref: ${{ !github.event.act && inputs.branch || github.sha }}
@@ -796,6 +818,7 @@ jobs:
     with:
       branch: ${{ needs.setup.outputs.commit-sha }}
       plugin-directory: ${{ inputs.plugin-directory }}
+      docs-source-directory: ${{ inputs.docs-source-directory }}
       plugin-version-suffix: ${{ needs.setup.outputs.plugin-version-suffix }}
       npm-registry-auth: ${{ inputs.npm-registry-auth }}
       go-private-git-auth: ${{ inputs.go-private-git-auth }}
@@ -864,7 +887,7 @@ jobs:
       - name: Download GitHub artifact
         id: download-dist-artifacts
         continue-on-error: true
-        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: ${{ inputs.dist-artifacts-prefix }}dist-artifacts
           path: /tmp/dist-artifacts
@@ -881,7 +904,7 @@ jobs:
       - name: Generate artifact attestation
         if: ${{ inputs.attestation }}
         id: attestation
-        uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.0
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-path: /tmp/dist-artifacts/*.zip
 
@@ -937,7 +960,7 @@ jobs:
     runs-on: ubuntu-arm64-small
     steps:
       - name: Checkout
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # Force exact ref when running in act (it copies files locally, it breaks if we specify another ref)
           ref: ${{ !github.event.act && needs.setup.outputs.commit-sha || github.sha }}
@@ -974,7 +997,7 @@ jobs:
 
       - name: Get secrets from Vault
         id: get-secrets
-        uses: grafana/shared-workflows/actions/get-vault-secrets@e46fe1e9a2bf9e618bcf8d8d32f3a7381b45c06d # get-vault-secrets/v2.0.0
+        uses: grafana/shared-workflows/actions/get-vault-secrets@2e3743a1f8abfd3e921e53a7726ec0744c11bb01 # get-vault-secrets/v2.0.1
         with:
           vault_instance: ${{ env.VAULT_INSTANCE }}
           common_secrets: |
@@ -1114,6 +1137,7 @@ jobs:
             slack_silent=${{ inputs.argo-workflow-slack-silent }}
             slack_mention_trigger_user=${{ inputs.argo-workflow-slack-mention-trigger-user }}
             slack_extra_mentions=${{ inputs.argo-workflow-slack-extra-mentions }}
+            pull_request_labels=${{ inputs.argo-workflow-pull-request-labels }}
 
       - name: Print job summary
         run: |
@@ -1154,7 +1178,7 @@ jobs:
       - name: Download GitHub artifact
         id: download-dist-artifacts
         continue-on-error: true
-        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: ${{ inputs.dist-artifacts-prefix }}dist-artifacts
           path: /tmp/dist-artifacts
@@ -1320,7 +1344,7 @@ jobs:
         - /home/runner/work/_actions:/home/runner/work/_actions
     steps:
       - name: Checkout
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # Force exact ref when running in act (it copies files locally, it breaks if we specify another ref)
           ref: ${{ !github.event.act && needs.setup.outputs.commit-sha || github.sha }}
@@ -1339,6 +1363,7 @@ jobs:
           id: ${{ fromJSON(needs.ci.outputs.plugin).id }}
           version: ${{ fromJSON(needs.ci.outputs.plugin).version }}
           github-token: x-access-token:${{ steps.generate-github-token.outputs.token }}
+          docs-source-directory: ${{ inputs.docs-source-directory }}
 
   create-github-release:
     name: Create GitHub Release
@@ -1358,7 +1383,7 @@ jobs:
       }}
     steps:
       - name: Checkout
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # Force exact ref when running in act (it copies files locally, it breaks if we specify another ref)
           ref: ${{ !github.event.act && needs.setup.outputs.commit-sha || github.sha }}
@@ -1367,7 +1392,7 @@ jobs:
       - name: Download GitHub artifact
         id: download-dist-artifacts
         continue-on-error: true
-        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: ${{ inputs.dist-artifacts-prefix }}dist-artifacts
           path: /tmp/dist-artifacts
@@ -1414,7 +1439,7 @@ jobs:
           PLUGIN_VERSION: ${{ fromJSON(needs.ci.outputs.plugin).version }}
 
       - name: Create Github release
-        uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3.0.0
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
           draft: ${{ inputs.github-draft-release }}
           name: ${{ fromJSON(needs.ci.outputs.plugin).id }} v${{ fromJSON(needs.ci.outputs.plugin).version }}

@@ -16,6 +16,9 @@ gcs_zip_urls=()
 scopes=''
 dry_run=false
 publish_as_pending=false
+# provenance_attestation is still accepted via --provenance-attestation for backwards
+# compatibility, but it is currently NOT included in the GCOM publish payload
+# (see the note near the json_payload construction below).
 provenance_attestation=''
 while [[ "$#" -gt 0 ]]; do
     case $1 in
@@ -89,7 +92,7 @@ curl_args=(
     "-H" "Accept: application/json"
     "-H" "User-Agent: github-actions-shared-workflows:/plugins/publish"
 )
-if [ "$has_iap" = true ]; then  
+if [ "$has_iap" = true ]; then
     if [ -z "$GCLOUD_AUTH_TOKEN" ]; then
         echo "GCLOUD_AUTH_TOKEN environment variable not set."
         exit 1
@@ -133,14 +136,20 @@ fi
 # Publish the plugin
 echo "Publishing to $gcom_api_url"
 json_download=$(json_obj "${jq_download_args[@]}")
+if [ -n "$provenance_attestation" ]; then
+    echo "A provenance attestation was provided ($provenance_attestation), but it is currently NOT sent to GCOM (see grafana/grafana-com#18942); ignoring it."
+fi
+
+# For adding back the provenance attestation:
+# --arg provenanceAttestation "$provenance_attestation" \
+# '$ARGS.named | if .provenanceAttestation == "" then del(.provenanceAttestation) else . end'
 json_payload=$(jq -c -n \
     --argjson download "$json_download" \
     --arg url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" \
     --arg commit "$sha" \
     --argjson scopes "$scopes" \
     --argjson pending "$pending_param" \
-    --arg provenanceAttestation "$provenance_attestation" \
-    '$ARGS.named | if .provenanceAttestation == "" then del(.provenanceAttestation) else . end'
+    '$ARGS.named'
 )
 echo $json_payload | jq
 if [ "$dry_run" = true ]; then

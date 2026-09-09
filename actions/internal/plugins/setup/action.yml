@@ -89,18 +89,37 @@ runs:
 
     - name: Install pnpm
       if: ${{ inputs.act-cache-warmup != 'true' && steps.package-manager.outputs.name == 'pnpm' }}
-      uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093 # v6.0.8
+      uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
       with:
         package_json_file: ${{ inputs.plugin-directory }}/package.json
 
     - name: Node
       id: node
-      uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+      uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
       with:
         node-version: "${{ inputs.node-version }}"
         node-version-file: "${{ inputs.node-version-file }}"
-        cache: ${{ inputs.act-cache-warmup != 'true' && steps.package-manager.outputs.name || '' }}
+        # pnpm is cached separately below. setup-node looks the store up by running
+        # `pnpm store path` from the repository root, which is the wrong directory when
+        # the plugin lives in a subfolder: nothing there pins a pnpm version, so corepack
+        # answers with the newest release off the registry, and since pnpm 12 that
+        # reports a store path no install ever creates.
+        cache: ${{ (inputs.act-cache-warmup != 'true' && steps.package-manager.outputs.name != 'pnpm') && steps.package-manager.outputs.name || '' }}
         cache-dependency-path: ${{ inputs.act-cache-warmup != 'true' && steps.package-manager.outputs.lockFilePath || '' }}
+
+    - name: Locate the pnpm store
+      if: ${{ steps.package-manager.outputs.name == 'pnpm' }}
+      id: pnpm-store
+      shell: bash
+      working-directory: ${{ inputs.plugin-directory }}
+      run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+    - name: Cache pnpm store
+      if: ${{ steps.package-manager.outputs.name == 'pnpm' }}
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ${{ steps.pnpm-store.outputs.path }}
+        key: pnpm-store-os=${{ runner.os }}-arch=${{ runner.arch }}-${{ hashFiles(format('{0}/pnpm-lock.yaml', inputs.plugin-directory)) }}
 
     # Install additional dependencies that are not built-in to the slim act image
     # but are included in the default GitHub Actions runner image and are needed for plugin-ci-workflows.
@@ -116,7 +135,7 @@ runs:
     - name: Go
       if: ${{ inputs.frontend-only != 'true' }}
       id: go
-      uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+      uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
       with:
         go-version: "${{ inputs.go-version }}"
         go-version-file: "${{ inputs.go-version-file }}"
@@ -132,7 +151,7 @@ runs:
     - name: Cache Go tooling
       if: ${{ inputs.frontend-only != 'true' }}
       id: cache
-      uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: |
           ${{ steps.go-bin.outputs.gobin }}/golangci-lint
