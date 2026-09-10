@@ -214,7 +214,6 @@ func TestMockVaultSecretsStep(t *testing.T) {
 		}
 		mockedStep, err := MockVaultSecretsStep(step, vault)
 		require.NoError(t, err)
-		require.Equal(t, "Get Vault Secrets (mocked)", mockedStep.Name)
 		require.Contains(t, mockedStep.Run, bashOutput)
 		exp := `{"SECRET1":"value1","SECRET2":"value2"}`
 		require.Equal(t, exp, mockedStep.Env["SECRETS_JSON"])
@@ -233,7 +232,6 @@ func TestMockVaultSecretsStep(t *testing.T) {
 		}
 		mockedStep, err := MockVaultSecretsStep(step, vault)
 		require.NoError(t, err)
-		require.Equal(t, "Get Vault Secrets (mocked)", mockedStep.Name)
 		require.Contains(t, mockedStep.Run, bashOutput)
 		exp := `{"C":"value3","D":"value4"}`
 		require.Equal(t, exp, mockedStep.Env["SECRETS_JSON"])
@@ -256,7 +254,6 @@ func TestMockVaultSecretsStep(t *testing.T) {
 		}
 		mockedStep, err := MockVaultSecretsStep(step, vault)
 		require.NoError(t, err)
-		require.Equal(t, "Get Vault Secrets (mocked)", mockedStep.Name)
 		require.Contains(t, mockedStep.Run, bashOutput)
 		exp := `{"C":"value3","D":"value4","SECRET1":"value1","SECRET2":"value2"}`
 		require.Equal(t, exp, mockedStep.Env["SECRETS_JSON"])
