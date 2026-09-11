@@ -368,7 +368,10 @@ jobs:
   publish-reports:
     name: Publish Playwright reports
     needs: playwright-tests
-    if: ${{ always() && !cancelled() && inputs.upload-artifacts == true && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false) }}
+    # Pull requests from the same repo only. The bucket authorizes each repo's Direct WIF
+    # principal set for pull_request events on branch refs, so a push or tag run has no
+    # principal to upload as. There is also no PR to comment the report links on.
+    if: ${{ always() && !cancelled() && inputs.upload-artifacts == true && github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false }}
     runs-on: ubuntu-arm64-small
     permissions:
       id-token: write
