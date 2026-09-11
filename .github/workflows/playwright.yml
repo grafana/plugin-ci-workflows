@@ -111,9 +111,17 @@ on:
         type: string
         required: false
         default: chromium
+      pr-comment-summary:
+        description: |
+          Whether to post a PR comment with Playwright test results and report links.
+          Only takes effect when upload-artifacts is true.
+        type: boolean
+        required: false
+        default: true
 permissions:
   contents: read
   id-token: write
+  pull-requests: write
 
 jobs:
   resolve-versions:
@@ -350,13 +358,36 @@ jobs:
           PLAYWRIGHT_CONFIG: ${{ inputs.playwright-config }}
         working-directory: ${{ inputs.plugin-directory }}
 
-      - name: Upload artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
-        if: ${{ (inputs.upload-artifacts == true) && ((always() && steps.run-tests.outcome == 'success') || (failure() && steps.run-tests.outcome == 'failure')) }}
+      - name: Upload report artifacts
+        uses: grafana/plugin-ci-workflows/actions/plugins/playwright-reports/upload-report-artifacts@main
+        # Same event gate as the publish-reports job below. These artifacts exist only so that job
+        # can publish them to GCS, and they expire after a day, so producing them on a run that
+        # cannot publish just wastes storage and time. Keep the two conditions in sync.
+        if: ${{ always() && inputs.upload-artifacts == true && github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false && (steps.run-tests.outcome == 'success' || steps.run-tests.outcome == 'failure') }}
         with:
-          name: playwright-report-${{ matrix.GRAFANA_IMAGE.NAME }}-v${{ matrix.GRAFANA_IMAGE.VERSION }}-${{github.run_id}}
-          path: ${{ inputs.plugin-directory }}/${{ inputs.report-path }}
-          retention-days: 30
+          test-outcome: ${{ steps.run-tests.outcome }}
+          report-dir: ${{ inputs.plugin-directory }}/${{ inputs.report-path }}
+          grafana-image: ${{ matrix.GRAFANA_IMAGE.NAME }}
+          grafana-version: ${{ matrix.GRAFANA_IMAGE.VERSION }}
+
+  publish-reports:
+    name: Publish Playwright reports
+    needs: playwright-tests
+    # Pull requests from the same repo only. The bucket authorizes each repo's Direct WIF
+    # principal set for pull_request events on branch refs, so a push or tag run has no
+    # principal to upload as. There is also no PR to comment the report links on.
+    # The "Upload report artifacts" step above carries the same gate; keep the two in sync.
+    if: ${{ always() && !cancelled() && inputs.upload-artifacts == true && github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false }}
+    runs-on: ubuntu-arm64-small
+    permissions:
+      id-token: write
+      pull-requests: write
+      contents: read
+    steps:
+      - name: Publish reports
+        uses: grafana/plugin-ci-workflows/actions/plugins/playwright-reports/publish-report@main
+        with:
+          pr-comment-summary: ${{ inputs.pr-comment-summary }}
 
   check-playwright-status:
     needs: playwright-tests
