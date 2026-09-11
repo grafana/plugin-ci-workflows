@@ -358,7 +358,10 @@ jobs:
 
       - name: Upload report artifacts
         uses: grafana/plugin-ci-workflows/actions/plugins/playwright-reports/upload-report-artifacts@main
-        if: ${{ always() && inputs.upload-artifacts == true && (steps.run-tests.outcome == 'success' || steps.run-tests.outcome == 'failure') }}
+        # Same event gate as the publish-reports job below. These artifacts exist only so that job
+        # can publish them to GCS, and they expire after a day, so producing them on a run that
+        # cannot publish just wastes storage and time. Keep the two conditions in sync.
+        if: ${{ always() && inputs.upload-artifacts == true && github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false && (steps.run-tests.outcome == 'success' || steps.run-tests.outcome == 'failure') }}
         with:
           test-outcome: ${{ steps.run-tests.outcome }}
           report-dir: ${{ inputs.plugin-directory }}/${{ inputs.report-path }}
@@ -371,6 +374,7 @@ jobs:
     # Pull requests from the same repo only. The bucket authorizes each repo's Direct WIF
     # principal set for pull_request events on branch refs, so a push or tag run has no
     # principal to upload as. There is also no PR to comment the report links on.
+    # The "Upload report artifacts" step above carries the same gate; keep the two in sync.
     if: ${{ always() && !cancelled() && inputs.upload-artifacts == true && github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false }}
     runs-on: ubuntu-arm64-small
     permissions:
