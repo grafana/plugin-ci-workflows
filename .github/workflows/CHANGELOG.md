@@ -6,6 +6,21 @@
 
 - `playwright-browsers` input on `cd.yml`, `ci.yml`, and `playwright.yml` to choose which Playwright browsers to install before E2E (default `chromium`; `chromium`, `firefox`, `webkit`).
 
+## [11.2.1](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v11.2.0...ci-cd-workflows/v11.2.1) (2026-09-15)
+
+
+### 🔧 Chores
+
+* **deps:** update dependency @grafana/plugin-e2e to v3.12.0 ([#1031](https://github.com/grafana/plugin-ci-workflows/issues/1031)) ([a9b6408](https://github.com/grafana/plugin-ci-workflows/commit/a9b6408ab0e384fdaa93278275fad41c959e2fc7))
+* **deps:** update dependency @types/node to v24.13.4 ([#1039](https://github.com/grafana/plugin-ci-workflows/issues/1039)) ([66a4295](https://github.com/grafana/plugin-ci-workflows/commit/66a42951abbe3505aec451068f848d36729e6d43))
+* **deps:** update golang.org/x/exp digest to 85c1c22 ([#1038](https://github.com/grafana/plugin-ci-workflows/issues/1038)) ([e2bb935](https://github.com/grafana/plugin-ci-workflows/commit/e2bb9350ecee62a1a9737377a649b00da170a485))
+* **deps:** update grafana/shared-workflows/get-vault-secrets action to v2.0.2 ([#1041](https://github.com/grafana/plugin-ci-workflows/issues/1041)) ([7cbd4dd](https://github.com/grafana/plugin-ci-workflows/commit/7cbd4dd09c86064076eeb6a4537a93210b2e3690))
+* **deps:** update module golang.org/x/mod to v0.41.0 ([#1032](https://github.com/grafana/plugin-ci-workflows/issues/1032)) ([a6021ba](https://github.com/grafana/plugin-ci-workflows/commit/a6021ba3d90dcda4c1dbfcdedeea6099919d3887))
+* **deps:** update module golang.org/x/sys to v0.48.0 ([#1033](https://github.com/grafana/plugin-ci-workflows/issues/1033)) ([327901b](https://github.com/grafana/plugin-ci-workflows/commit/327901bfe46b60bcb824545a62acfd53a0cd0f8e))
+* **deps:** update opentelemetry-go monorepo to v1.46.0 ([#1034](https://github.com/grafana/plugin-ci-workflows/issues/1034)) ([9c0d4b6](https://github.com/grafana/plugin-ci-workflows/commit/9c0d4b6cd5447c5cbbf6e036b4334c85213052ed))
+* **deps:** update opentelemetry-go-contrib monorepo ([#1035](https://github.com/grafana/plugin-ci-workflows/issues/1035)) ([162d9a9](https://github.com/grafana/plugin-ci-workflows/commit/162d9a9608d75fc3494bf964fc36d7703aa0eb19))
+* **deps:** update pnpm to v11.26.0 ([#1042](https://github.com/grafana/plugin-ci-workflows/issues/1042)) ([3961d25](https://github.com/grafana/plugin-ci-workflows/commit/3961d25062cfbb8d54a213a9d79b0b4509053401))
+
 ## [11.2.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v11.1.1...ci-cd-workflows/v11.2.0) (2026-09-10)
 
 
