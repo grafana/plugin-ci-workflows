@@ -435,6 +435,7 @@ jobs:
             const trustedBots = [
               'dependabot[bot]',
               'renovate-sh-app[bot]',
+              'cursor[bot]',
               // Used by other shared workflows such as the version bump workflow
               'grafana-plugins-platform-bot[bot]',
               // Creates releases via release-please in datasource repos, so it is the
