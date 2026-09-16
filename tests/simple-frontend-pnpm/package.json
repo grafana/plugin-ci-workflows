@@ -17,7 +17,7 @@
   "license": "Apache-2.0",
   "devDependencies": {
     "@grafana/eslint-config": "8.2.0",
-    "@grafana/plugin-e2e": "3.11.1",
+    "@grafana/plugin-e2e": "3.12.0",
     "@grafana/tsconfig": "2.2.0",
     "@playwright/test": "1.63.0",
     "@stylistic/eslint-plugin-ts": "4.4.1",
@@ -27,8 +27,8 @@
     "@testing-library/jest-dom": "6.9.1",
     "@testing-library/react": "14.3.1",
     "@types/jest": "30.0.0",
-    "@types/node": "24.13.3",
-    "@types/react": "19.2.18",
+    "@types/node": "24.13.4",
+    "@types/react": "19.3.0",
     "@types/react-dom": "18.3.7",
     "@typescript-eslint/eslint-plugin": "8.67.0",
     "@typescript-eslint/parser": "8.67.0",
@@ -48,7 +48,7 @@
     "jest-environment-jsdom": "29.7.0",
     "prettier": "2.8.8",
     "replace-in-file-webpack-plugin": "1.0.6",
-    "sass": "1.104.0",
+    "sass": "1.104.1",
     "sass-loader": "13.3.3",
     "semver": "7.8.5",
     "style-loader": "3.3.4",
@@ -75,5 +75,5 @@
     "react": "18.3.1",
     "react-dom": "18.3.1"
   },
-  "packageManager": "pnpm@11.24.0+sha512.bd27e345e976dcb0be0b7a1228217b049a817e21b1f355c90dbe7dc46671895a8bc1e6d06c24554505ea93ea0b45f489a27ec1bfbc8de6a9659fca0f16fa0000"
+  "packageManager": "pnpm@11.26.0+sha512.fc0e2bf890b9f983611f1ab68c0637bce914390653699f83c1a78b005ed25f2c81e77920c8fd8eee2ecf0b58b28cdcb00a84d97f69bcf7c56b2f344710238664"
 }
