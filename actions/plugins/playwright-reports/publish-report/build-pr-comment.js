@@ -34,6 +34,7 @@ async function buildPrComment() {
   // Initialize an array to store rows
   let rows = [];
   let uploadReportDisabled = false;
+  let hasAnyReport = false;
 
   const reportBaseUrl = process.env.REPORT_BASE_URL;
   if (!reportBaseUrl) {
@@ -71,6 +72,9 @@ async function buildPrComment() {
     // Check for index.html
     const hasReport = fs.existsSync(path.join(dirPath, 'index.html'));
     const reportCell = hasReport ? `[View report](${reportLink})` : ' ';
+    if (hasReport) {
+      hasAnyReport = true;
+    }
 
     // Add row to table
     if (usePluginName) {
@@ -95,6 +99,12 @@ async function buildPrComment() {
   }
 
   table += `\n> ℹ️ Reports require a Grafana Google Workspace sign-in to view and are retained for 90 days.`;
+
+  // GitHub's comment sanitizer strips target="_blank" from links, so a modifier-click is the only
+  // way to open a report without navigating away from the pull request.
+  if (hasAnyReport) {
+    table += `\n>\n> 💡 Cmd-click (macOS) or Ctrl-click a report link to open it in a new tab.`;
+  }
 
   console.log(table);
 }
