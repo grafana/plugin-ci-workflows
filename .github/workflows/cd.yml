@@ -101,6 +101,14 @@ on:
         type: boolean
         required: false
         default: false
+      frontend-pre-command:
+        description: |
+          Command to run in the plugin directory before frontend lint, typecheck,
+          test, and build. Useful for shared setup like building local
+          dependencies that multiple scripts need.
+        type: string
+        required: false
+        default: ""
 
       # Build options.
       plugin-directory:
@@ -842,6 +850,7 @@ jobs:
       skip-frontend-lint: ${{ inputs.skip-frontend-lint }}
       skip-frontend-typecheck: ${{ inputs.skip-frontend-typecheck }}
       skip-frontend-test: ${{ inputs.skip-frontend-test }}
+      frontend-pre-command: ${{ inputs.frontend-pre-command }}
 
       run-plugin-validator: ${{ inputs.run-plugin-validator }}
       plugin-validator-config: ${{ inputs.plugin-validator-config }}

@@ -28,6 +28,13 @@ inputs:
     description: Skip the test step.
     required: false
     default: "false"
+  pre-command:
+    description: |
+      Command to run before lint, typecheck, test, and build.
+      Runs in the plugin directory. Useful for shared setup like building
+      local dependencies.
+    required: false
+    default: ""
 
 runs:
   using: composite
@@ -63,6 +70,12 @@ runs:
       shell: bash
       working-directory: ${{ inputs.plugin-directory }}
       run: ${{ steps.package-manager.outputs.frozenInstallCmd }}
+
+    - name: Pre-command
+      if: inputs.pre-command != ''
+      shell: bash
+      working-directory: ${{ inputs.plugin-directory }}
+      run: ${{ inputs.pre-command }}
 
     - name: Lint
       if: inputs.skip-lint != 'true'
