@@ -44,6 +44,26 @@ on:
         required: false
         default: true
 
+      # Frontend step controls.
+      skip-frontend-lint:
+        description: |
+          Skip the frontend lint step. Useful when lint is already run in a separate job.
+        type: boolean
+        required: false
+        default: false
+      skip-frontend-typecheck:
+        description: |
+          Skip the frontend typecheck step. Useful when typecheck is already run in a separate job.
+        type: boolean
+        required: false
+        default: false
+      skip-frontend-test:
+        description: |
+          Skip the frontend test step. Useful when tests are already run in a separate job.
+        type: boolean
+        required: false
+        default: false
+
       # Build options.
       plugin-directory:
         description: Directory of the plugin, if not in the root of the repository.
@@ -583,6 +603,9 @@ jobs:
           plugin-directory: ${{ inputs.plugin-directory }}
           secrets: ${{ (fromJson(steps.workflow-context.outputs.result).isTrusted && inputs.frontend-secrets != '') && inputs.frontend-secrets || '' }}
           npm-registry-auth: ${{ inputs.npm-registry-auth }}
+          skip-lint: ${{ inputs.skip-frontend-lint }}
+          skip-typecheck: ${{ inputs.skip-frontend-typecheck }}
+          skip-test: ${{ inputs.skip-frontend-test }}
 
       - name: Test and build backend
         id: backend

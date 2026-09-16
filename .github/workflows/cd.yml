@@ -82,6 +82,26 @@ on:
         type: "boolean"
         required: false
 
+      # Frontend step controls.
+      skip-frontend-lint:
+        description: |
+          Skip the frontend lint step. Useful when lint is already run in a separate job.
+        type: boolean
+        required: false
+        default: false
+      skip-frontend-typecheck:
+        description: |
+          Skip the frontend typecheck step. Useful when typecheck is already run in a separate job.
+        type: boolean
+        required: false
+        default: false
+      skip-frontend-test:
+        description: |
+          Skip the frontend test step. Useful when tests are already run in a separate job.
+        type: boolean
+        required: false
+        default: false
+
       # Build options.
       plugin-directory:
         description: Directory of the plugin, if not in the root of the repository.
@@ -818,6 +838,10 @@ jobs:
       node-version: ${{ inputs.node-version }}
       golangci-lint-version: ${{ inputs.golangci-lint-version }}
       mage-version: ${{ inputs.mage-version }}
+
+      skip-frontend-lint: ${{ inputs.skip-frontend-lint }}
+      skip-frontend-typecheck: ${{ inputs.skip-frontend-typecheck }}
+      skip-frontend-test: ${{ inputs.skip-frontend-test }}
 
       run-plugin-validator: ${{ inputs.run-plugin-validator }}
       plugin-validator-config: ${{ inputs.plugin-validator-config }}
