@@ -109,6 +109,16 @@ on:
         type: string
         required: false
         default: ""
+      parallel-frontend-verify:
+        description: |
+          Run frontend lint, typecheck, and test in a separate job that executes
+          in parallel with the build. Reduces the critical path by ~3 minutes
+          for plugins with slow test suites. When enabled, the test-and-build
+          job only runs the frontend build step, while a new frontend-verify
+          job handles verification. Both jobs must pass for CI to succeed.
+        type: boolean
+        required: false
+        default: false
 
       # Build options.
       plugin-directory:
@@ -851,6 +861,7 @@ jobs:
       skip-frontend-typecheck: ${{ inputs.skip-frontend-typecheck }}
       skip-frontend-test: ${{ inputs.skip-frontend-test }}
       frontend-pre-command: ${{ inputs.frontend-pre-command }}
+      parallel-frontend-verify: ${{ inputs.parallel-frontend-verify }}
 
       run-plugin-validator: ${{ inputs.run-plugin-validator }}
       plugin-validator-config: ${{ inputs.plugin-validator-config }}

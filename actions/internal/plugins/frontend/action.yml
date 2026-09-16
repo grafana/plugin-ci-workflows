@@ -28,6 +28,10 @@ inputs:
     description: Skip the test step.
     required: false
     default: "false"
+  skip-build:
+    description: Skip the build step. Used by the parallel verification job.
+    required: false
+    default: "false"
   pre-command:
     description: |
       Command to run before lint, typecheck, test, and build.
@@ -96,6 +100,7 @@ runs:
       run: ${{ steps.package-manager.outputs.runCmd }} test:ci
 
     - name: Build
+      if: inputs.skip-build != 'true'
       shell: bash
       working-directory: ${{ inputs.plugin-directory }}
       run: ${{ steps.package-manager.outputs.runCmd }} build

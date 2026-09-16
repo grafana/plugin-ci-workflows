@@ -71,6 +71,16 @@ on:
         type: string
         required: false
         default: ""
+      parallel-frontend-verify:
+        description: |
+          Run frontend lint, typecheck, and test in a separate job that executes
+          in parallel with the build. Reduces the critical path by ~3 minutes
+          for plugins with slow test suites. When enabled, the test-and-build
+          job only runs the frontend build step, while a new frontend-verify
+          job handles verification. Both jobs must pass for CI to succeed.
+        type: boolean
+        required: false
+        default: false
 
       # Build options.
       plugin-directory:
@@ -430,6 +440,86 @@ jobs:
     with:
       DO-NOT-USE-allow-pinned-commit-hashes: ${{ inputs.DO-NOT-USE-allow-pinned-commit-hashes }}
 
+  frontend-verify:
+    name: Verify frontend
+    if: ${{ inputs.parallel-frontend-verify }}
+    runs-on: ubuntu-x64-large
+
+    needs:
+      - check-for-release-channel
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ !github.event.act && inputs.branch || github.sha }}
+          persist-credentials: false
+
+      - name: Determine Node version
+        id: tooling-versions
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          script: |
+            const fs = require('fs');
+            const PLUGIN_DIRECTORY = process.env['PLUGIN_DIRECTORY'] || '.';
+            const NODE_VERSION = process.env['NODE_VERSION'];
+            const DEFAULT_NODE_VERSION = process.env['DEFAULT_NODE_VERSION'];
+            let nodeVersion = '';
+            let nodeVersionFile = '';
+            if (NODE_VERSION) {
+              nodeVersion = NODE_VERSION;
+            } else if (fs.existsSync(`${PLUGIN_DIRECTORY}/.nvmrc`)) {
+              nodeVersionFile = `${PLUGIN_DIRECTORY}/.nvmrc`;
+            } else {
+              nodeVersion = DEFAULT_NODE_VERSION;
+            }
+            const o = { nodeVersion, nodeVersionFile };
+            console.log("Node version:", JSON.stringify(o));
+            return o;
+        env:
+          PLUGIN_DIRECTORY: ${{ inputs.plugin-directory }}
+          NODE_VERSION: ${{ inputs.node-version }}
+          DEFAULT_NODE_VERSION: ${{ env.DEFAULT_NODE_VERSION }}
+
+      - name: Setup
+        uses: grafana/plugin-ci-workflows/actions/internal/plugins/setup@main
+        with:
+          plugin-directory: ${{ inputs.plugin-directory }}
+          node-version: ${{ fromJson(steps.tooling-versions.outputs.result).nodeVersion }}
+          node-version-file: ${{ fromJson(steps.tooling-versions.outputs.result).nodeVersionFile }}
+          frontend-only: "true"
+
+      - name: Determine workflow context
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        id: workflow-context
+        with:
+          script: |
+            const trustedBots = [
+              'dependabot[bot]',
+              'renovate-sh-app[bot]',
+              'grafana-plugins-platform-bot[bot]',
+              'grafana-oss-big-tent[bot]'
+            ].map((s) => s.toLowerCase());
+            const isPR = context.eventName === 'pull_request';
+            const isBot = context.actor?.toLowerCase().endsWith('[bot]');
+            const isTrustedBot = trustedBots.includes(context.actor?.toLowerCase());
+            const isForkPR = isPR && context.payload.pull_request.head.repo.full_name !== context.payload.repository.full_name;
+            const isTesting = process.env['INPUT_TESTING'] === 'true';
+            const isTrustedEvent = ['push', 'workflow_dispatch', 'release'].includes(context.eventName);
+            const isTrusted = (isTrustedEvent || (isPR && !isForkPR)) && !isTesting && (!isBot || isTrustedBot);
+            return { isTrusted, isForkPR };
+        env:
+          INPUT_TESTING: ${{ inputs.testing }}
+
+      - name: Test and verify frontend
+        uses: grafana/plugin-ci-workflows/actions/internal/plugins/frontend@main
+        with:
+          plugin-directory: ${{ inputs.plugin-directory }}
+          secrets: ${{ (fromJson(steps.workflow-context.outputs.result).isTrusted && inputs.frontend-secrets != '') && inputs.frontend-secrets || '' }}
+          npm-registry-auth: ${{ inputs.npm-registry-auth }}
+          pre-command: ${{ inputs.frontend-pre-command }}
+          skip-build: "true"
+
   test-and-build:
     name: Test and build plugin
     runs-on: ubuntu-x64-large
@@ -611,9 +701,9 @@ jobs:
           plugin-directory: ${{ inputs.plugin-directory }}
           secrets: ${{ (fromJson(steps.workflow-context.outputs.result).isTrusted && inputs.frontend-secrets != '') && inputs.frontend-secrets || '' }}
           npm-registry-auth: ${{ inputs.npm-registry-auth }}
-          skip-lint: ${{ inputs.skip-frontend-lint }}
-          skip-typecheck: ${{ inputs.skip-frontend-typecheck }}
-          skip-test: ${{ inputs.skip-frontend-test }}
+          skip-lint: ${{ inputs.parallel-frontend-verify || inputs.skip-frontend-lint }}
+          skip-typecheck: ${{ inputs.parallel-frontend-verify || inputs.skip-frontend-typecheck }}
+          skip-test: ${{ inputs.parallel-frontend-verify || inputs.skip-frontend-test }}
           pre-command: ${{ inputs.frontend-pre-command }}
 
       - name: Test and build backend
