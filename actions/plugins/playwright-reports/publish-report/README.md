@@ -16,7 +16,7 @@ Report links in PR comments require a Grafana Google Workspace sign-in and are r
 | `pr-comment-summary` | Whether to post a PR comment with test results and report links. | Yes      | `true`                   |
 | `artifact-pattern`   | Pattern to match the uploaded artifacts.                         | Yes      | `gf-playwright-report-*` |
 
-The bucket used for the upload is intentionally not an input — it is a shared internal Grafana resource with a single environment, so callers don't need to know or configure it.
+The bucket and the service account are intentionally not inputs. They are shared internal Grafana resources with a single environment, so callers do not need to know or configure them.
 
 ## Requirements
 
@@ -28,13 +28,26 @@ permissions:
   pull-requests: write # to post the summary comment
 ```
 
-Uploads authenticate as the repository's **Direct WIF principal set** — there is no service account. The `grafana-e2e-test-artifacts` bucket (project `grafanalabs-global`) grants `roles/storage.objectUser` per repository, under an IAM condition confining each repository to its own `<owner>/<repo>/` object prefix. This is why no service account is used: an IAM condition can only read `resource.*` and `request.*`, so it cannot tell which repository is behind an impersonated service account, which would leave the prefix unenforced.
+Uploads impersonate `github-e2e-test-artifacts@grafanalabs-workload-identity.iam.gserviceaccount.com`, which holds `roles/storage.objectUser` on the `grafana-e2e-test-artifacts` bucket (project `grafanalabs-global`).
 
-**Publishing is default-deny per repository.** To onboard a new repository, add an entry to `e2e_artifacts_publishers` in `deployment_tools`, in `terraform/storage/grafanalabs-global/e2e-test-artifacts.tf`. The map key must equal `github.repository` (for example `grafana/plugin-tools`), because it is both the enforced object prefix and the prefix this action uploads to. At the time of writing the allowlist covers only `grafana/grafana-test-datasource` and `grafana/plugin-tools`, and only for `pull_request` events on `branch` refs. A repository that is not on the allowlist fails at the upload step.
+That service account is impersonable only from this repository's Playwright workflows, via the `job_workflow_ref` attribute pinned to `main` and to release tags. This is the same trust pattern as `github-plugin-ci-workflows@`, so:
 
-Because the principal sets cover `pull_request` on `branch` refs only, this action is meant to run on pull requests from the same repository. `playwright.yml` gates its `publish-reports` job that way. Call it from a push, tag, or fork PR and there is no principal to upload as.
+- Any repository calling `playwright.yml` inherits access. There is no `deployment_tools` onboarding step.
+- Every event works, including `push` and `schedule`. The attribute does not constrain the event.
+- A workflow that a plugin repository writes itself cannot obtain the credential. Only this repository's pinned workflows can.
 
 Read access to the bucket is granted to `domain:grafana.com`, which is why report links require a Grafana Google Workspace sign-in. Objects are deleted after 90 days by the bucket's lifecycle rule.
+
+### Per-repository isolation is enforced here, not by IAM
+
+The service account can write anywhere in the bucket. Each repository stays inside its own `<owner>/<repository>/` prefix because this action builds the destination from `github.repository`, which a caller cannot set. IAM does not enforce it, so the following must stay true:
+
+- No input that a caller controls may reach the upload destination.
+- The publish job must not check out the caller's repository.
+- No step may execute content from the downloaded artifacts. Reading them as data is fine.
+- The upload must stay in its own job, separate from the job that runs the caller's tests.
+
+Breaking any of these would let one repository write to another repository's prefix, with no IAM backstop.
 
 ## Upload performance
 
