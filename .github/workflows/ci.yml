@@ -380,7 +380,7 @@ env:
   DEFAULT_NODE_VERSION: "24"
   DEFAULT_GO_VERSION: "1.26.8"
   DEFAULT_GOLANGCI_LINT_VERSION: "2.13.2"
-  DEFAULT_TRUFFLEHOG_VERSION: "3.97.1"
+  DEFAULT_TRUFFLEHOG_VERSION: "3.97.4"
   DEFAULT_MAGE_VERSION: "1.17.2"
   DEFAULT_PLUGIN_VALIDATOR_VERSION: "0.41.0"
 
@@ -539,7 +539,7 @@ jobs:
       - name: Get secrets from Vault
         id: get-secrets
         if: ${{ fromJson(steps.workflow-context.outputs.result).isTrusted }}
-        uses: grafana/shared-workflows/actions/get-vault-secrets@2e3743a1f8abfd3e921e53a7726ec0744c11bb01 # get-vault-secrets/v2.0.1
+        uses: grafana/shared-workflows/actions/get-vault-secrets@3b321a9af994a0b7d8caa3130f3cd9b5cc08fd7a # get-vault-secrets/v2.0.2
         with:
           vault_instance: ${{ env.VAULT_INSTANCE }}
           common_secrets: |
@@ -817,6 +817,7 @@ jobs:
       id: ${{ fromJSON(needs.test-and-build.outputs.plugin).id}}
       version: ${{ fromJSON(needs.test-and-build.outputs.plugin).version}}
       gar-registry: ${{ inputs.playwright-gar-registry }}
+      plugin-directory: ${{ inputs.plugin-directory }}
       grafana-dependency: ${{ inputs.run-playwright-with-grafana-dependency }}
       skip-grafana-nightly-image: ${{ inputs.run-playwright-with-skip-grafana-nightly-image || inputs.run-playwright-with-skip-grafana-dev-image }}
       version-resolver-type: ${{ inputs.run-playwright-with-version-resolver-type }}

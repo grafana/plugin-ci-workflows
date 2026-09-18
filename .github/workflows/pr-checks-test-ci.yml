@@ -98,10 +98,14 @@ jobs:
 
       - name: Run act tests
         run: |
+          # ./... so the internal packages are covered too, they were never run before.
+          # -p 1 keeps the package test binaries from running at the same time: the free
+          # port bookkeeping in internal/act is per-process, so a unit test reserving
+          # ports concurrently with a real act run could take one out from under it.
           go run gotest.tools/gotestsum@v1.13.0 \
             --junitfile "${RUNNER_TEMP}/act-tests.xml" \
             --format standard-verbose \
-            -- -timeout 1h
+            -- -timeout 1h -p 1 ./...
         working-directory: tests/act
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
