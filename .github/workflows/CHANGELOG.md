@@ -6,6 +6,40 @@
 
 - `playwright-browsers` input on `cd.yml`, `ci.yml`, and `playwright.yml` to choose which Playwright browsers to install before E2E (default `chromium`; `chromium`, `firefox`, `webkit`).
 
+## [11.2.1](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v11.2.0...ci-cd-workflows/v11.2.1) (2026-09-18)
+
+
+### ✅ Tests
+
+* **act:** run the internal packages in CI ([#1030](https://github.com/grafana/plugin-ci-workflows/issues/1030)) ([3348756](https://github.com/grafana/plugin-ci-workflows/commit/33487560323627b827fa29ea9bc4b2ec4111d553))
+
+
+### 🔧 Chores
+
+* **deps:** update anthropics/claude-code-action action to v1.0.223 ([#1049](https://github.com/grafana/plugin-ci-workflows/issues/1049)) ([17f5598](https://github.com/grafana/plugin-ci-workflows/commit/17f55987b860fd2dedf660322e00c3f7406968d9))
+* **deps:** update dependency @grafana/plugin-e2e to v3.12.0 ([#1031](https://github.com/grafana/plugin-ci-workflows/issues/1031)) ([a9b6408](https://github.com/grafana/plugin-ci-workflows/commit/a9b6408ab0e384fdaa93278275fad41c959e2fc7))
+* **deps:** update dependency @types/node to v24.13.4 ([#1039](https://github.com/grafana/plugin-ci-workflows/issues/1039)) ([66a4295](https://github.com/grafana/plugin-ci-workflows/commit/66a42951abbe3505aec451068f848d36729e6d43))
+* **deps:** update dependency @types/react to v19.3.0 ([#1046](https://github.com/grafana/plugin-ci-workflows/issues/1046)) ([f303c04](https://github.com/grafana/plugin-ci-workflows/commit/f303c047cf58b1089d759669005c270c1d62c2c1))
+* **deps:** update dependency eslint-plugin-jsdoc to v64 ([#1058](https://github.com/grafana/plugin-ci-workflows/issues/1058)) ([13ae6cb](https://github.com/grafana/plugin-ci-workflows/commit/13ae6cb7108002e03053c73203410ae03babc3dd))
+* **deps:** update dependency sass to v1.104.1 ([#1045](https://github.com/grafana/plugin-ci-workflows/issues/1045)) ([77a1420](https://github.com/grafana/plugin-ci-workflows/commit/77a14206702fc4c1bdc79a82a852344450ea6e69))
+* **deps:** update dependency webpack to v5.111.0 ([#1054](https://github.com/grafana/plugin-ci-workflows/issues/1054)) ([bf206d1](https://github.com/grafana/plugin-ci-workflows/commit/bf206d161c5177823d2a68ba211227ac10c6fd2e))
+* **deps:** update golang.org/x/exp digest to 85c1c22 ([#1038](https://github.com/grafana/plugin-ci-workflows/issues/1038)) ([e2bb935](https://github.com/grafana/plugin-ci-workflows/commit/e2bb9350ecee62a1a9737377a649b00da170a485))
+* **deps:** update google.golang.org/genproto/googleapis/api digest to f61a6ca ([#1043](https://github.com/grafana/plugin-ci-workflows/issues/1043)) ([659c796](https://github.com/grafana/plugin-ci-workflows/commit/659c796babbd0ad001e5a5b890c63121a8557684))
+* **deps:** update google.golang.org/genproto/googleapis/rpc digest to f61a6ca ([#1044](https://github.com/grafana/plugin-ci-workflows/issues/1044)) ([05a7439](https://github.com/grafana/plugin-ci-workflows/commit/05a74395089b54e1c4018558821b0bee189e7802))
+* **deps:** update grafana/shared-workflows/get-vault-secrets action to v2.0.2 ([#1041](https://github.com/grafana/plugin-ci-workflows/issues/1041)) ([7cbd4dd](https://github.com/grafana/plugin-ci-workflows/commit/7cbd4dd09c86064076eeb6a4537a93210b2e3690))
+* **deps:** update module github.com/apache/arrow-go/v18 to v18.8.0 ([#1047](https://github.com/grafana/plugin-ci-workflows/issues/1047)) ([f4df701](https://github.com/grafana/plugin-ci-workflows/commit/f4df701344c34a5a1a2ec38f745e2613028a813d))
+* **deps:** update module github.com/jaegertracing/jaeger-idl to v0.12.0 ([#1051](https://github.com/grafana/plugin-ci-workflows/issues/1051)) ([a02b9eb](https://github.com/grafana/plugin-ci-workflows/commit/a02b9ebaa378a42994fa3aa7d872219946087abe))
+* **deps:** update module golang.org/x/mod to v0.41.0 ([#1032](https://github.com/grafana/plugin-ci-workflows/issues/1032)) ([a6021ba](https://github.com/grafana/plugin-ci-workflows/commit/a6021ba3d90dcda4c1dbfcdedeea6099919d3887))
+* **deps:** update module golang.org/x/net to v0.59.0 ([#1052](https://github.com/grafana/plugin-ci-workflows/issues/1052)) ([1a22c9b](https://github.com/grafana/plugin-ci-workflows/commit/1a22c9befd18bad0205e0adb933185ea214b6ba0))
+* **deps:** update module golang.org/x/sys to v0.48.0 ([#1033](https://github.com/grafana/plugin-ci-workflows/issues/1033)) ([327901b](https://github.com/grafana/plugin-ci-workflows/commit/327901bfe46b60bcb824545a62acfd53a0cd0f8e))
+* **deps:** update module golang.org/x/text to v0.42.0 ([#1053](https://github.com/grafana/plugin-ci-workflows/issues/1053)) ([491a0f2](https://github.com/grafana/plugin-ci-workflows/commit/491a0f2a96749e4325767478496ffd066cc11108))
+* **deps:** update opentelemetry-go monorepo to v1.46.0 ([#1034](https://github.com/grafana/plugin-ci-workflows/issues/1034)) ([9c0d4b6](https://github.com/grafana/plugin-ci-workflows/commit/9c0d4b6cd5447c5cbbf6e036b4334c85213052ed))
+* **deps:** update opentelemetry-go-contrib monorepo ([#1035](https://github.com/grafana/plugin-ci-workflows/issues/1035)) ([162d9a9](https://github.com/grafana/plugin-ci-workflows/commit/162d9a9608d75fc3494bf964fc36d7703aa0eb19))
+* **deps:** update pnpm to v11.26.0 ([#1042](https://github.com/grafana/plugin-ci-workflows/issues/1042)) ([3961d25](https://github.com/grafana/plugin-ci-workflows/commit/3961d25062cfbb8d54a213a9d79b0b4509053401))
+* **deps:** update pnpm to v11.27.0 ([#1055](https://github.com/grafana/plugin-ci-workflows/issues/1055)) ([e447f40](https://github.com/grafana/plugin-ci-workflows/commit/e447f40cd7effd609821c10a1ae8438cd344496c))
+* **deps:** update pnpm/action-setup action to v6.1.0 ([#1056](https://github.com/grafana/plugin-ci-workflows/issues/1056)) ([b881a7d](https://github.com/grafana/plugin-ci-workflows/commit/b881a7d631449863a25325d040974ac2a60421ce))
+* **deps:** update typescript-eslint monorepo to v8.70.0 ([#1057](https://github.com/grafana/plugin-ci-workflows/issues/1057)) ([47d19c5](https://github.com/grafana/plugin-ci-workflows/commit/47d19c5574eee6ba106e157d18b111c8de292658))
+
 ## [11.2.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v11.1.1...ci-cd-workflows/v11.2.0) (2026-09-10)
 
 
