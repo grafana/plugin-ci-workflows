@@ -183,6 +183,18 @@ jobs:
         working-directory: ${{ inputs.plugin-directory }}
         run: GOOGLE_APPLICATION_CREDENTIALS=${{ env.GOOGLE_APPLICATION_CREDENTIALS }} npx google-artifactregistry-auth --credential-config ./.npmrc
 
+      - name: Revoke Google Cloud credentials
+        # The install and test steps below run the caller's code, and they do not need Google
+        # Cloud access: the registry token now lives in .npmrc. Don't leave the credentials file
+        # on disk for them. This is defence in depth only, since the job still holds
+        # id-token: write and could mint a fresh token.
+        if: ${{ always() && inputs.npm-registry-auth == true }}
+        shell: bash
+        run: |
+          if [[ -n "${GOOGLE_APPLICATION_CREDENTIALS:-}" ]]; then
+            rm -f "${GOOGLE_APPLICATION_CREDENTIALS}"
+          fi
+
       - name: Install npm dependencies
         run: ${{ steps.setup.outputs.node-package-manager-frozen-install-cmd }}
         shell: bash
@@ -368,23 +380,22 @@ jobs:
           grafana-version: ${{ matrix.GRAFANA_IMAGE.VERSION }}
 
   publish-reports:
-    name: Publish Playwright reports
     needs: playwright-tests
     # Runs on every event, including push and scheduled runs: the service account is trusted via
     # job_workflow_ref, which says nothing about the event. Fork pull requests are excluded
     # because GitHub withholds id-token: write from them. On a run with no pull request the action
     # skips the comment steps and writes the results table to the job summary instead.
     if: ${{ always() && !cancelled() && inputs.upload-artifacts == true && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false) }}
-    runs-on: ubuntu-arm64-small
+    # Deliberately a separate workflow file, not a job in this file. job_workflow_ref names a file,
+    # so a binding to playwright.yml would also grant the GCS credential to playwright-tests, which
+    # runs the caller's dependency install and tests. Do not inline these steps back into this file.
+    uses: grafana/plugin-ci-workflows/.github/workflows/playwright-publish-reports.yml@main
+    with:
+      pr-comment-summary: ${{ inputs.pr-comment-summary }}
     permissions:
       id-token: write
       pull-requests: write
       contents: read
-    steps:
-      - name: Publish reports
-        uses: grafana/plugin-ci-workflows/actions/plugins/playwright-reports/publish-report@main
-        with:
-          pr-comment-summary: ${{ inputs.pr-comment-summary }}
 
   check-playwright-status:
     needs: playwright-tests

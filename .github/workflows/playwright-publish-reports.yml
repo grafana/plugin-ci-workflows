@@ -1,0 +1,44 @@
+# Description:
+# Publish Playwright HTML reports to GCS and comment the results on the pull request.
+# Called by playwright.yml once the test matrix has finished.
+#
+# SECURITY: this workflow holds the credential for
+# github-e2e-test-artifacts@grafanalabs-workload-identity.iam.gserviceaccount.com, which can write
+# anywhere in gs://grafana-e2e-test-artifacts. GitHub's job_workflow_ref names a workflow file, not
+# a job, so this FILE is the identity boundary.
+#
+# Never add a step to this workflow that:
+#   - checks out the calling repository, or any caller-controlled ref
+#   - runs a caller's dependency install, build, or tests
+#   - executes content from the downloaded artifacts (reading them as data is fine)
+#   - lets a caller-controlled input reach the upload destination
+#
+# The per-repository prefix comes from github.repository inside the publish-report action.
+# See terraform/storage/grafanalabs-global/e2e-test-artifacts.tf in grafana/deployment_tools.
+
+name: Plugins - Publish Playwright reports
+
+on:
+  workflow_call:
+    inputs:
+      pr-comment-summary:
+        description: |
+          Whether to post a PR comment with Playwright test results and report links.
+        type: boolean
+        required: false
+        default: true
+
+permissions:
+  contents: read
+  id-token: write
+  pull-requests: write
+
+jobs:
+  publish-reports:
+    name: Publish Playwright reports
+    runs-on: ubuntu-arm64-small
+    steps:
+      - name: Publish reports
+        uses: grafana/plugin-ci-workflows/actions/plugins/playwright-reports/publish-report@main
+        with:
+          pr-comment-summary: ${{ inputs.pr-comment-summary }}
