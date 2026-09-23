@@ -178,14 +178,32 @@ func NewRunner(t *testing.T, opts ...RunnerOption) (*Runner, error) {
 }
 
 // args returns the CLI arguments to pass to act for the given workflow and event payload files.
-// It also returns the port number holding the artifact server port open.
-// The caller must call markPortAsFree with the returned port value to mark the port as free again after running act.
-func (r *Runner) args(eventKind EventKind, actor string, workflowFile string, payloadFile string) ([]string, int, error) {
+// It also returns the ports reserved for act's artifact and cache servers.
+// The caller must call markPortAsFree with each returned port to mark it as free again after running act.
+func (r *Runner) args(eventKind EventKind, actor string, workflowFile string, payloadFile string) (_ []string, ports []int, err error) {
+	defer func() {
+		if err != nil {
+			for _, port := range ports {
+				markPortAsFree(port)
+			}
+			ports = nil
+		}
+	}()
+
 	// Get a unique free port for the act artifact server, so multiple act instances can run in parallel
 	artifactServerPort, err := getFreePort()
 	if err != nil {
-		return nil, 0, fmt.Errorf("get free port for artifact server: %w", err)
+		return nil, ports, fmt.Errorf("get free port for artifact server: %w", err)
 	}
+	ports = append(ports, artifactServerPort)
+
+	// The cache server must get its port from getFreePort too. With the default of 0, act asks the
+	// kernel for a port itself, which can be one reserved for another act instance's artifact server.
+	cacheServerPort, err := getFreePort()
+	if err != nil {
+		return nil, ports, fmt.Errorf("get free port for cache server: %w", err)
+	}
+	ports = append(ports, cacheServerPort)
 
 	args := []string{
 		// Positional args: event kind
@@ -199,6 +217,7 @@ func (r *Runner) args(eventKind EventKind, actor string, workflowFile string, pa
 		// Unique artifact server port and path per act runner instance
 		fmt.Sprintf("--artifact-server-port=%d", artifactServerPort),
 		"--artifact-server-path=/tmp/act-artifacts/" + r.uuid.String() + "/",
+		fmt.Sprintf("--cache-server-port=%d", cacheServerPort),
 
 		// Required for cloning private repos
 		"--secret", "GITHUB_TOKEN=" + r.gitHubToken,
@@ -211,7 +230,7 @@ func (r *Runner) args(eventKind EventKind, actor string, workflowFile string, pa
 		// Do not pre-populate the cache if we are using the shared cache (cache warmup).
 		if r.actionsCachePath != TemplateActionsCachePath {
 			if err := copyDir(TemplateActionsCachePath, r.actionsCachePath); err != nil {
-				return nil, 0, fmt.Errorf("copy action cache: %w", err)
+				return nil, ports, fmt.Errorf("copy action cache: %w", err)
 			}
 		}
 		args = append(args, "--action-cache-path", r.actionsCachePath)
@@ -223,7 +242,7 @@ func (r *Runner) args(eventKind EventKind, actor string, workflowFile string, pa
 	// Map local all possible references of plugin-ci-workflows to the local repository
 	localRepoArgs, err := r.localRepositoryArgs()
 	if err != nil {
-		return nil, 0, err
+		return nil, ports, err
 	}
 	args = append(args, localRepoArgs...)
 	if actor != "" {
@@ -239,7 +258,7 @@ func (r *Runner) args(eventKind EventKind, actor string, workflowFile string, pa
 	for _, label := range selfHostedRunnerLabels {
 		args = append(args, "-P", label+"="+nektosActRunnerImage)
 	}
-	return args, artifactServerPort, nil
+	return args, ports, nil
 }
 
 // localRepositoryArgs returns act CLI arguments to map local references of plugin-ci-workflows
@@ -324,11 +343,15 @@ func (r *Runner) Run(workflow workflow.Workflow, event Event) (runResult *RunRes
 		}
 	}()
 
-	args, artifactServerPort, err := r.args(event.Kind, event.Actor, workflowFile, payloadFile)
+	args, ports, err := r.args(event.Kind, event.Actor, workflowFile, payloadFile)
 	if err != nil {
 		return nil, fmt.Errorf("get act args: %w", err)
 	}
-	defer markPortAsFree(artifactServerPort)
+	defer func() {
+		for _, port := range ports {
+			markPortAsFree(port)
+		}
+	}()
 
 	// TODO: escape args to avoid shell injection
 	actCmd := "act " + strings.Join(args, " ")

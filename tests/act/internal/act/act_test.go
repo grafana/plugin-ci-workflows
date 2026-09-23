@@ -83,8 +83,9 @@ func TestPortAllocationIsConcurrencySafe(t *testing.T) {
 		claim = func(port int, via string) {
 			mu.Lock()
 			defer mu.Unlock()
-			previous, dup := seen[port]
-			require.False(t, dup, "port %d handed out by both %s and %s", port, previous, via)
+			if previous, dup := seen[port]; dup {
+				t.Errorf("port %d handed out by both %s and %s", port, previous, via)
+			}
 			seen[port] = via
 		}
 	)
@@ -97,6 +98,7 @@ func TestPortAllocationIsConcurrencySafe(t *testing.T) {
 			if !assertNoError(t, err) {
 				return
 			}
+			t.Cleanup(func() { markPortAsFree(port) })
 			claim(port, "getFreePort")
 		}()
 		go func() {
@@ -105,6 +107,7 @@ func TestPortAllocationIsConcurrencySafe(t *testing.T) {
 			if !assertNoError(t, err) {
 				return
 			}
+			t.Cleanup(func() { _ = listener.Close() })
 			claim(listener.Addr().(*net.TCPAddr).Port, "listenFreePort")
 		}()
 	}
