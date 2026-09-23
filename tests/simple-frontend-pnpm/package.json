@@ -17,7 +17,7 @@
   "license": "Apache-2.0",
   "devDependencies": {
     "@grafana/eslint-config": "8.2.0",
-    "@grafana/plugin-e2e": "3.12.0",
+    "@grafana/plugin-e2e": "3.14.0",
     "@grafana/tsconfig": "2.2.0",
     "@playwright/test": "1.63.0",
     "@stylistic/eslint-plugin-ts": "4.4.1",
@@ -27,16 +27,16 @@
     "@testing-library/jest-dom": "6.9.1",
     "@testing-library/react": "14.3.1",
     "@types/jest": "30.0.0",
-    "@types/node": "24.13.4",
+    "@types/node": "24.13.5",
     "@types/react": "19.3.0",
     "@types/react-dom": "18.3.7",
-    "@typescript-eslint/eslint-plugin": "8.67.0",
-    "@typescript-eslint/parser": "8.67.0",
+    "@typescript-eslint/eslint-plugin": "8.70.0",
+    "@typescript-eslint/parser": "8.70.0",
     "copy-webpack-plugin": "14.0.0",
     "css-loader": "7.1.5",
     "eslint": "9.39.5",
     "eslint-config-prettier": "10.1.8",
-    "eslint-plugin-jsdoc": "51.4.1",
+    "eslint-plugin-jsdoc": "64.4.0",
     "eslint-plugin-react": "7.37.5",
     "eslint-plugin-react-hooks": "5.2.0",
     "eslint-webpack-plugin": "5.0.3",
@@ -56,7 +56,7 @@
     "terser-webpack-plugin": "5.6.1",
     "ts-node": "10.9.2",
     "typescript": "5.9.3",
-    "webpack": "5.110.3",
+    "webpack": "5.111.1",
     "webpack-cli": "5.1.4",
     "webpack-livereload-plugin": "3.0.2",
     "webpack-subresource-integrity": "5.1.0",
@@ -75,5 +75,5 @@
     "react": "18.3.1",
     "react-dom": "18.3.1"
   },
-  "packageManager": "pnpm@11.26.0+sha512.fc0e2bf890b9f983611f1ab68c0637bce914390653699f83c1a78b005ed25f2c81e77920c8fd8eee2ecf0b58b28cdcb00a84d97f69bcf7c56b2f344710238664"
+  "packageManager": "pnpm@11.27.0+sha512.ad12821463bb143295f1fa3ecde77a6b9b97a7990386da800ff57bffc3964dc64b7b1c7559d5dbe5c337aea659ed9c8937d4370bd198ca2009bc6fa0249808e7"
 }
