@@ -1107,6 +1107,21 @@ jobs:
           AUTO_APPROVE_DURATIONS: ${{ inputs.auto-approve-durations }}
         shell: bash
 
+      - name: Get commit timestamp
+        id: commit-timestamp
+        # Used by the Argo Workflow staleness check to tell which of two overlapping deployments is newer.
+        # Best effort: if empty, the staleness check falls back to the workflow creation time.
+        run: |
+          timestamp=$(curl -fsSL \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}" \
+            | jq -r '.commit.committer.date // empty') || timestamp=""
+          echo "timestamp=${timestamp}" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+
       - name: Trigger Argo Workflow
         id: trigger-argo-workflow
         uses: grafana/shared-workflows/actions/trigger-argo-workflow@5a212d56e9d224851dc4b3c2643bbc5bac484d5d # trigger-argo-workflow/v2.0.0
@@ -1120,6 +1135,7 @@ jobs:
             slack_channel=${{ inputs.argo-workflow-slack-channel }}
             commit=${{ github.sha }}
             commit_link=${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}
+            commit_timestamp=${{ steps.commit-timestamp.outputs.timestamp }}
             auto_merge_environments=${{ steps.argo-parameters.outputs.auto_merge_environments }}
             auto_approve_durations=${{ steps.argo-parameters.outputs.auto_approve_durations }}
             prod_targets_all=${{ inputs.prod-targets-all }}

@@ -416,6 +416,9 @@ func TestCD_Argo(t *testing.T) {
 				}
 				argoInputs[key] = value
 			}
+			// The commit timestamp comes from the GitHub API, so it's empty if the commit hasn't been pushed.
+			require.Regexp(t, `^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)?$`, argoInputs["commit_timestamp"])
+			delete(argoInputs, "commit_timestamp")
 			require.Equal(t, tc.expArgoInputs, argoInputs, "wrong argo inputs provided to argo workflow trigger step")
 
 			// Verify summary
