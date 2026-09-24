@@ -51,7 +51,7 @@
     "sass": "1.104.1",
     "sass-loader": "17.0.1",
     "semver": "7.8.5",
-    "style-loader": "3.3.4",
+    "style-loader": "4.0.0",
     "swc-loader": "0.2.7",
     "terser-webpack-plugin": "5.6.1",
     "ts-node": "10.9.2",
