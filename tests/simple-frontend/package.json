@@ -72,11 +72,11 @@
     "@grafana/runtime": "13.1.3",
     "@grafana/schema": "13.1.3",
     "@grafana/ui": "13.1.3",
-    "npm": "11.19.1",
+    "npm": "12.1.0",
     "react": "18.3.1",
     "react-dom": "18.3.1"
   },
-  "packageManager": "npm@11.19.1+sha512.cedb312b1b7f92421a02cfb68b4194e88f8346651dacd6acc5364a25ef5309d4a32b19616a1ff8aff865e7280c0fa5c0835a99f5cd93368991e2a80ec9da75d2",
+  "packageManager": "npm@12.1.0+sha512.17286eeb6a4dc7bd180acff9f9d1262504c556648ac2fa39080d2abc19060d1a686f8d8c27a1b6450dad77178a3389d89c8643aa4600c4482ab687a39fd406b5",
   "overrides": {
     "js-cookie": ">=3.0.7",
     "uuid": ">=11.1.1"
