@@ -16,6 +16,29 @@ inputs:
       If true, the root of the plugin repository must contain a `.npmrc` file.
     required: false
     default: "false"
+  skip-lint:
+    description: Skip the lint step.
+    required: false
+    default: "false"
+  skip-typecheck:
+    description: Skip the typecheck step.
+    required: false
+    default: "false"
+  skip-test:
+    description: Skip the test step.
+    required: false
+    default: "false"
+  skip-build:
+    description: Skip the build step. Used by the parallel verification job.
+    required: false
+    default: "false"
+  pre-command:
+    description: |
+      Command to run before lint, typecheck, test, and build.
+      Runs in the plugin directory. Useful for shared setup like building
+      local dependencies.
+    required: false
+    default: ""
 
 runs:
   using: composite
@@ -52,22 +75,32 @@ runs:
       working-directory: ${{ inputs.plugin-directory }}
       run: ${{ steps.package-manager.outputs.frozenInstallCmd }}
 
+    - name: Pre-command
+      if: inputs.pre-command != ''
+      shell: bash
+      working-directory: ${{ inputs.plugin-directory }}
+      run: ${{ inputs.pre-command }}
+
     - name: Lint
+      if: inputs.skip-lint != 'true'
       shell: bash
       working-directory: ${{ inputs.plugin-directory }}
       run: ${{ steps.package-manager.outputs.runCmd }} lint
 
     - name: Typecheck
+      if: inputs.skip-typecheck != 'true'
       shell: bash
       working-directory: ${{ inputs.plugin-directory }}
       run: ${{ steps.package-manager.outputs.runCmd }} typecheck
 
     - name: Test
+      if: inputs.skip-test != 'true'
       shell: bash
       working-directory: ${{ inputs.plugin-directory }}
       run: ${{ steps.package-manager.outputs.runCmd }} test:ci
 
     - name: Build
+      if: inputs.skip-build != 'true'
       shell: bash
       working-directory: ${{ inputs.plugin-directory }}
       run: ${{ steps.package-manager.outputs.runCmd }} build
