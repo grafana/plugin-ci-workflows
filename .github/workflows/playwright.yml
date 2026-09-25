@@ -111,9 +111,17 @@ on:
         type: string
         required: false
         default: chromium
+      pr-comment-summary:
+        description: |
+          Whether to post a PR comment with Playwright test results and report links.
+          Only takes effect when upload-artifacts is true.
+        type: boolean
+        required: false
+        default: true
 permissions:
   contents: read
   id-token: write
+  pull-requests: write
 
 jobs:
   resolve-versions:
@@ -174,6 +182,18 @@ jobs:
         shell: bash
         working-directory: ${{ inputs.plugin-directory }}
         run: GOOGLE_APPLICATION_CREDENTIALS=${{ env.GOOGLE_APPLICATION_CREDENTIALS }} npx google-artifactregistry-auth --credential-config ./.npmrc
+
+      - name: Revoke Google Cloud credentials
+        # The install and test steps below run the caller's code, and they do not need Google
+        # Cloud access: the registry token now lives in .npmrc. Don't leave the credentials file
+        # on disk for them. This is defence in depth only, since the job still holds
+        # id-token: write and could mint a fresh token.
+        if: ${{ always() && inputs.npm-registry-auth == true }}
+        shell: bash
+        run: |
+          if [[ -n "${GOOGLE_APPLICATION_CREDENTIALS:-}" ]]; then
+            rm -f "${GOOGLE_APPLICATION_CREDENTIALS}"
+          fi
 
       - name: Install npm dependencies
         run: ${{ steps.setup.outputs.node-package-manager-frozen-install-cmd }}
@@ -350,13 +370,32 @@ jobs:
           PLAYWRIGHT_CONFIG: ${{ inputs.playwright-config }}
         working-directory: ${{ inputs.plugin-directory }}
 
-      - name: Upload artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
-        if: ${{ (inputs.upload-artifacts == true) && ((always() && steps.run-tests.outcome == 'success') || (failure() && steps.run-tests.outcome == 'failure')) }}
+      - name: Upload report artifacts
+        uses: grafana/plugin-ci-workflows/actions/plugins/playwright-reports/upload-report-artifacts@main
+        if: ${{ always() && inputs.upload-artifacts == true && (steps.run-tests.outcome == 'success' || steps.run-tests.outcome == 'failure') }}
         with:
-          name: playwright-report-${{ matrix.GRAFANA_IMAGE.NAME }}-v${{ matrix.GRAFANA_IMAGE.VERSION }}-${{github.run_id}}
-          path: ${{ inputs.plugin-directory }}/${{ inputs.report-path }}
-          retention-days: 30
+          test-outcome: ${{ steps.run-tests.outcome }}
+          report-dir: ${{ inputs.plugin-directory }}/${{ inputs.report-path }}
+          grafana-image: ${{ matrix.GRAFANA_IMAGE.NAME }}
+          grafana-version: ${{ matrix.GRAFANA_IMAGE.VERSION }}
+
+  publish-reports:
+    needs: playwright-tests
+    # Runs on every event, including push and scheduled runs: the service account is trusted via
+    # job_workflow_ref, which says nothing about the event. Fork pull requests are excluded
+    # because GitHub withholds id-token: write from them. On a run with no pull request the action
+    # skips the comment steps and writes the results table to the job summary instead.
+    if: ${{ always() && !cancelled() && inputs.upload-artifacts == true && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false) }}
+    # Deliberately a separate workflow file, not a job in this file. job_workflow_ref names a file,
+    # so a binding to playwright.yml would also grant the GCS credential to playwright-tests, which
+    # runs the caller's dependency install and tests. Do not inline these steps back into this file.
+    uses: grafana/plugin-ci-workflows/.github/workflows/playwright-publish-reports.yml@main
+    with:
+      pr-comment-summary: ${{ inputs.pr-comment-summary }}
+    permissions:
+      id-token: write
+      pull-requests: write
+      contents: read
 
   check-playwright-status:
     needs: playwright-tests
