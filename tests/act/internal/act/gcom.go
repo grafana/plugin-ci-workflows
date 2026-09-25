@@ -25,8 +25,10 @@ type GCOM struct {
 func newGCOM(t *testing.T) *GCOM {
 	mux := http.NewServeMux()
 
-	// Create a listener on all interfaces (0.0.0.0) so Docker containers can reach it
-	listener, err := net.Listen("tcp", "0.0.0.0:0")
+	// Create a listener on all interfaces (0.0.0.0) so Docker containers can reach it.
+	// This must go through listenFreePort so the port is not one that getFreePort has
+	// already reserved for an act artifact server.
+	listener, err := listenFreePort()
 	if err != nil {
 		t.Fatalf("failed to create listener for GCOM mock: %v", err)
 	}
