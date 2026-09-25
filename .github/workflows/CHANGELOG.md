@@ -1,11 +1,5 @@
 # Changelog
 
-## Unreleased
-
-### Added
-
-- `playwright-browsers` input on `cd.yml`, `ci.yml`, and `playwright.yml` to choose which Playwright browsers to install before E2E (default `chromium`; `chromium`, `firefox`, `webkit`).
-
 ## [11.2.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v11.1.1...ci-cd-workflows/v11.2.0) (2026-09-10)
 
 
