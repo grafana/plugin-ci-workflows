@@ -31,6 +31,7 @@ changes, and consult other files in the repository as needed.
     - Ensure functions are focused, names are descriptive, and code is readable
     - Watch for duplication, dead code, or missing tests
     - Verify documentation and comments reflect the latest changes
+    - For changes to plugin-facing reusable CI/CD workflows, published plugin actions, or their supporting internal actions, confirm credible automated coverage, already-adequate coverage, or a specific act limitation and alternative validation documented in the PR description
 4. **Review security and risk**
     - Look for injection points, insecure defaults, or missing validation
     - Confirm secrets or credentials are not exposed
@@ -43,6 +44,7 @@ changes, and consult other files in the repository as needed.
 - [ ] Intended behavior works and matches requirements
 - [ ] Edge cases handled gracefully
 - [ ] Error handling is appropriate and informative
+- [ ] Plugin-facing behavior changes have credible coverage, already-adequate coverage, or a specific limitation and alternative validation documented in the PR
 
 ### Code Quality
 
@@ -75,6 +77,8 @@ These checks apply only to `.yml`/`.yaml` files in `.github/workflows/` and `act
 - Resource management, error handling, and logging reviewed
 - Suggested alternatives, additional test cases, or documentation updates
   captured
+- Prefer `tests/act/` for orchestration and static or unit tests for pure wiring. This does not create a general coverage requirement for repository release or maintenance automation.
+- Some Docker-based behavior is testable in this repository; do not treat Docker use alone as a reason coverage is impossible.
 
 Provide constructive feedback with concrete examples and actionable guidance for
 the author.
