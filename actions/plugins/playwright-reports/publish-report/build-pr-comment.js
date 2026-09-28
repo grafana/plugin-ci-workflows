@@ -98,7 +98,7 @@ async function buildPrComment() {
     table += `\n⚠️  To make Playwright reports for failed tests accessible, set the \`upload-report\` input to \`true\` in your [CI workflow](${ciLink}). For more details, refer to the [Developer Portal documentation](https://grafana.com/developers/plugin-tools/e2e-test-a-plugin/ci).\n`;
   }
 
-  table += `\n> ℹ️ Reports require a Grafana Google Workspace sign-in to view and are retained for 90 days.`;
+  table += `\n> ℹ️ Reports require a Grafana Google Workspace sign-in to view and are retained for 30 days.`;
 
   // GitHub's comment sanitizer strips target="_blank" from links, so a modifier-click is the only
   // way to open a report without navigating away from the pull request.

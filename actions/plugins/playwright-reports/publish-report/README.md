@@ -7,7 +7,7 @@ Reports are stored at:
 gs://grafana-e2e-test-artifacts/{owner}/{repo}/{YYYYMMDD}/{pr-number-or-run-id}/{matrix-dir}/
 ```
 
-Report links in PR comments require a Grafana Google Workspace sign-in and are retained for 90 days via a GCS object lifecycle rule.
+Report links in PR comments require a Grafana Google Workspace sign-in and are retained for 30 days via a GCS object lifecycle rule.
 
 ## Inputs
 
@@ -36,7 +36,7 @@ That service account is impersonable only from this repository's Playwright work
 - Every event works, including `push` and `schedule`. The attribute does not constrain the event.
 - A workflow that a plugin repository writes itself cannot obtain the credential. Only this repository's pinned workflows can.
 
-Read access to the bucket is granted to `domain:grafana.com`, which is why report links require a Grafana Google Workspace sign-in. Objects are deleted after 90 days by the bucket's lifecycle rule.
+Read access to the bucket is granted to `domain:grafana.com`, which is why report links require a Grafana Google Workspace sign-in. Objects are deleted after 30 days by the bucket's lifecycle rule.
 
 ### Per-repository isolation is enforced here, not by IAM
 
