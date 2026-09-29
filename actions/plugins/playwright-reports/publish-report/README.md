@@ -9,8 +9,10 @@ Uploads Playwright test reports to Google Cloud Storage and comments on the pull
 
 Reports are stored at:
 ```
-gs://grafana-e2e-test-artifacts/{owner}/{repo}/{YYYYMMDD}/{pr-number-or-run-id}/{matrix-dir}/
+gs://grafana-e2e-test-artifacts/{owner}/{repo}/{run-id}/{run-attempt}/{matrix-dir}/
 ```
+
+Each run attempt gets its own prefix, so a re-run never overwrites a report that an earlier comment or job summary links to.
 
 Report links in PR comments require a Grafana Google Workspace sign-in and are retained for 30 days via a GCS object lifecycle rule.
 
