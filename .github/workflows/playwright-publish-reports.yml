@@ -37,6 +37,10 @@ jobs:
   publish-reports:
     name: Publish Playwright reports
     runs-on: ubuntu-arm64-small
+    # Publishing is best effort. A GCS or comment failure must not fail the caller's build, and
+    # the caller cannot set this itself: a job that calls a reusable workflow does not support
+    # continue-on-error. The failed job still shows in the run.
+    continue-on-error: true
     steps:
       - name: Publish reports
         uses: grafana/plugin-ci-workflows/actions/plugins/playwright-reports/publish-report@main
