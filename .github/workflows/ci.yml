@@ -806,6 +806,10 @@ jobs:
       npm-registry-auth: ${{ inputs.npm-registry-auth }}
       playwright-browsers: ${{ inputs.playwright-browsers }}
       pr-comment-summary: ${{ inputs.playwright-pr-comment-summary }}
+      # Same trust rule as signing and the GCS upload in this workflow. isTrusted leaves out
+      # scheduled runs, so allow those separately: nightly failures are where a report helps
+      # most. A scheduled run executes the default branch, which is trusted code.
+      publish-reports: ${{ fromJson(needs.test-and-build.outputs.workflow-context).isTrusted || (github.event_name == 'schedule' && !inputs.testing) }}
 
   playwright-docker:
     name: Plugins - Dockerized Playwright E2E tests

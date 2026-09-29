@@ -114,10 +114,18 @@ on:
       pr-comment-summary:
         description: |
           Whether to post a PR comment with Playwright test results and report links.
-          Only takes effect when upload-artifacts is true.
+          Only takes effect when upload-artifacts and publish-reports are true.
         type: boolean
         required: false
         default: true
+      publish-reports:
+        description: |
+          Whether to publish the reports to GCS and link them from the job summary and, if
+          pr-comment-summary is true, from a PR comment. ci.yml sets this from its workflow
+          context, so untrusted runs do not publish. Only takes effect when upload-artifacts is true.
+        type: boolean
+        required: false
+        default: false
 permissions:
   contents: read
   id-token: write
@@ -381,11 +389,11 @@ jobs:
 
   publish-reports:
     needs: playwright-tests
-    # Runs on every event, including push and scheduled runs: the service account is trusted via
-    # job_workflow_ref, which says nothing about the event. Fork pull requests are excluded
-    # because GitHub withholds id-token: write from them. On a run with no pull request the action
-    # skips the comment steps and writes the results table to the job summary instead.
-    if: ${{ always() && !cancelled() && inputs.upload-artifacts == true && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false) }}
+    # Publishes only when the caller allows it through publish-reports. ci.yml allows trusted runs
+    # and scheduled runs. The fork check stays as a second guard: GitHub withholds id-token: write
+    # from fork pull requests, so the job could not authenticate there anyway. On a run with no
+    # pull request the action skips the comment steps and writes the results to the job summary.
+    if: ${{ always() && !cancelled() && inputs.upload-artifacts == true && inputs.publish-reports == true && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false) }}
     # Deliberately a separate workflow file, not a job in this file. job_workflow_ref names a file,
     # so a binding to playwright.yml would also grant the GCS credential to playwright-tests, which
     # runs the caller's dependency install and tests. Do not inline these steps back into this file.
