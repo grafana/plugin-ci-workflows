@@ -52,16 +52,17 @@ runs:
       with:
         # Shared internal bucket for E2E test artifacts, provisioned in grafanalabs-global.
         bucket: grafana-e2e-test-artifacts
-        # Dedicated service account, impersonable only from this repo's playwright workflows via
-        # job_workflow_ref. Same trust pattern as github-plugin-ci-workflows@, so every calling
-        # repo inherits access and needs no deployment_tools onboarding.
+        # Dedicated service account. It trusts exactly one workflow file via job_workflow_ref:
+        # .github/workflows/playwright-publish-reports.yml, at main and at release tags. This action
+        # therefore only authenticates when that workflow calls it. Called from any other workflow,
+        # job_workflow_ref names that workflow's file and impersonation is denied.
         #
         # The service account holds objectUser on the whole bucket, so per-repo isolation comes
         # from this action rather than from IAM. The destination below is built from
         # github.repository, which a caller cannot set. Keep it that way: do not add a caller
-        # input that reaches the destination, do not check out the caller's repo in this job, and
-        # do not execute anything from the downloaded artifacts. Any of those would let one repo
-        # write to another repo's prefix, and IAM would not stop it.
+        # input that reaches the destination, and do not execute anything from the downloaded
+        # artifacts. The rules for the calling workflow are at the top of
+        # playwright-publish-reports.yml.
         service_account: github-e2e-test-artifacts@grafanalabs-workload-identity.iam.gserviceaccount.com
         use_wif_auth: 'false'
         # Keep the credentials file for the upload step below, then drop it in "Revoke GCS
