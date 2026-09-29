@@ -1,6 +1,6 @@
 # Upload Report Artifacts Action
 
-Uploads Playwright test reports and summaries as GitHub artifacts. Used together with the `publish-report` action to upload reports to GCS and post PR comment links.
+Uploads Playwright test reports and summaries as GitHub artifacts. Used together with the [`playwright-publish-reports.yml`](../../../../.github/workflows/playwright-publish-reports.yml) reusable workflow, which uploads the reports to GCS and posts PR comment links. See the [`publish-report` README](../publish-report/README.md#usage) for a full example.
 
 ## Inputs
 
