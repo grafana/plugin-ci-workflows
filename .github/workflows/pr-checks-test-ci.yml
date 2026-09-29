@@ -73,11 +73,14 @@ jobs:
 
       # This is needed otherwise actions/checkout puts the repo in detached head
       # and act complains it cannot determine to which branch the current commit belongs to.
+      # Create (or reset) a local branch pointing at the already checked-out commit instead of
+      # checking out an existing one: for fork PRs the head branch only exists in the fork,
+      # so there is no origin/<branch> to resolve it from.
       - name: Checkout branch
         run: |
-          git checkout "${REF}"
+          git checkout -B "${BRANCH}"
         env:
-          REF: ${{ github.event.pull_request.head.ref || github.ref }}
+          BRANCH: ${{ github.head_ref || github.ref_name }}
         shell: bash
 
       - name: Install act

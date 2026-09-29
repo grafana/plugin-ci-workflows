@@ -128,7 +128,10 @@ steps:
 
 ## Release Process
 
+Do not create or edit any `CHANGELOG.md` file. release-please generates them automatically; agents must leave them untouched.
+
 Uses release-please with separate versioning:
+
 - Main workflows: `ci-cd-workflows/vX.Y.Z`
 - Each action in `actions/plugins/`: its own version tag
 

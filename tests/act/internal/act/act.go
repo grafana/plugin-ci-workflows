@@ -178,14 +178,32 @@ func NewRunner(t *testing.T, opts ...RunnerOption) (*Runner, error) {
 }
 
 // args returns the CLI arguments to pass to act for the given workflow and event payload files.
-// It also returns the port number holding the artifact server port open.
-// The caller must call markPortAsFree with the returned port value to mark the port as free again after running act.
-func (r *Runner) args(eventKind EventKind, actor string, workflowFile string, payloadFile string) ([]string, int, error) {
+// It also returns the ports reserved for act's artifact and cache servers.
+// The caller must call markPortAsFree with each returned port to mark it as free again after running act.
+func (r *Runner) args(eventKind EventKind, actor string, workflowFile string, payloadFile string) (_ []string, ports []int, err error) {
+	defer func() {
+		if err != nil {
+			for _, port := range ports {
+				markPortAsFree(port)
+			}
+			ports = nil
+		}
+	}()
+
 	// Get a unique free port for the act artifact server, so multiple act instances can run in parallel
 	artifactServerPort, err := getFreePort()
 	if err != nil {
-		return nil, 0, fmt.Errorf("get free port for artifact server: %w", err)
+		return nil, ports, fmt.Errorf("get free port for artifact server: %w", err)
 	}
+	ports = append(ports, artifactServerPort)
+
+	// The cache server must get its port from getFreePort too. With the default of 0, act asks the
+	// kernel for a port itself, which can be one reserved for another act instance's artifact server.
+	cacheServerPort, err := getFreePort()
+	if err != nil {
+		return nil, ports, fmt.Errorf("get free port for cache server: %w", err)
+	}
+	ports = append(ports, cacheServerPort)
 
 	args := []string{
 		// Positional args: event kind
@@ -199,6 +217,7 @@ func (r *Runner) args(eventKind EventKind, actor string, workflowFile string, pa
 		// Unique artifact server port and path per act runner instance
 		fmt.Sprintf("--artifact-server-port=%d", artifactServerPort),
 		"--artifact-server-path=/tmp/act-artifacts/" + r.uuid.String() + "/",
+		fmt.Sprintf("--cache-server-port=%d", cacheServerPort),
 
 		// Required for cloning private repos
 		"--secret", "GITHUB_TOKEN=" + r.gitHubToken,
@@ -211,7 +230,7 @@ func (r *Runner) args(eventKind EventKind, actor string, workflowFile string, pa
 		// Do not pre-populate the cache if we are using the shared cache (cache warmup).
 		if r.actionsCachePath != TemplateActionsCachePath {
 			if err := copyDir(TemplateActionsCachePath, r.actionsCachePath); err != nil {
-				return nil, 0, fmt.Errorf("copy action cache: %w", err)
+				return nil, ports, fmt.Errorf("copy action cache: %w", err)
 			}
 		}
 		args = append(args, "--action-cache-path", r.actionsCachePath)
@@ -223,7 +242,7 @@ func (r *Runner) args(eventKind EventKind, actor string, workflowFile string, pa
 	// Map local all possible references of plugin-ci-workflows to the local repository
 	localRepoArgs, err := r.localRepositoryArgs()
 	if err != nil {
-		return nil, 0, err
+		return nil, ports, err
 	}
 	args = append(args, localRepoArgs...)
 	if actor != "" {
@@ -239,7 +258,7 @@ func (r *Runner) args(eventKind EventKind, actor string, workflowFile string, pa
 	for _, label := range selfHostedRunnerLabels {
 		args = append(args, "-P", label+"="+nektosActRunnerImage)
 	}
-	return args, artifactServerPort, nil
+	return args, ports, nil
 }
 
 // localRepositoryArgs returns act CLI arguments to map local references of plugin-ci-workflows
@@ -324,11 +343,15 @@ func (r *Runner) Run(workflow workflow.Workflow, event Event) (runResult *RunRes
 		}
 	}()
 
-	args, artifactServerPort, err := r.args(event.Kind, event.Actor, workflowFile, payloadFile)
+	args, ports, err := r.args(event.Kind, event.Actor, workflowFile, payloadFile)
 	if err != nil {
 		return nil, fmt.Errorf("get act args: %w", err)
 	}
-	defer markPortAsFree(artifactServerPort)
+	defer func() {
+		for _, port := range ports {
+			markPortAsFree(port)
+		}
+	}()
 
 	// TODO: escape args to avoid shell injection
 	actCmd := "act " + strings.Join(args, " ")
@@ -667,19 +690,39 @@ func getDockerHostIP() string {
 	return "172.17.0.1"
 }
 
-// takenPorts keeps track of ports that have been given out by getFreePort and not yet marked as free by markPortAsFree.
+// takenPorts keeps track of ports that are in use by this process, either because
+// getFreePort handed them out for an act artifact server that has not bound them yet,
+// or because listenFreePort has an open listener on them.
+//
+// Every port this process binds must go through getFreePort or listenFreePort.
+// A listener created directly with net.Listen on port 0 bypasses the map and can be
+// handed a port that getFreePort has already promised to an act artifact server, which
+// then fails to start with "bind: address already in use".
 var takenPorts sync.Map
 
+// freePortAddr is the address probed when looking for a free port.
+//
+// This is deliberately the wildcard address and not localhost: act binds its artifact
+// server to the host's outbound IP (see getDockerHostIP), and the mock servers bind all
+// interfaces so containers can reach them. A port that is free on 127.0.0.1 can still be
+// taken on those addresses, so probing localhost would report ports that cannot be used.
+const freePortAddr = "0.0.0.0:0"
+
+// maxFreePortRetries is how many times to retry when a probed port is already reserved.
+const maxFreePortRetries = 10
+
 // getFreePort asks the kernel for a free open port that is ready to use.
-// The returned port is registered locally and will be considered taken by other calls
-// to getFreePort until markPortAsFree is called with the port number.
-// This avoids TOCTOU races where parallel tests get the same port.
-// The port can be used right away: no listener will be bound to that port when the function returns.
-// The caller must call markPortAsFree with the returned value to mark the port as free again, when it's no longer needed.
+// The returned port is registered in takenPorts and will be considered taken by other
+// calls to getFreePort and listenFreePort until markPortAsFree is called with it.
+// The port can be used right away: no listener is bound to it when the function returns.
+//
+// Use this for ports handed to another process (act's artifact server). If you need a
+// listener in this process, use listenFreePort instead: it never leaves the port unbound.
+//
+// The caller must call markPortAsFree with the returned value when the port is no longer needed.
 func getFreePort() (int, error) {
-	const maxRetries = 10
-	for retry := 0; retry < maxRetries; retry++ {
-		addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
+	for range maxFreePortRetries {
+		addr, err := net.ResolveTCPAddr("tcp", freePortAddr)
 		if err != nil {
 			continue
 		}
@@ -703,7 +746,46 @@ func getFreePort() (int, error) {
 		}
 		return port, nil
 	}
-	return 0, fmt.Errorf("could not find a free port after retrying %d times", maxRetries)
+	return 0, fmt.Errorf("could not find a free port after retrying %d times", maxFreePortRetries)
+}
+
+// listenFreePort binds a TCP listener to a free port on all interfaces, so that containers
+// started by act can reach it, and registers the port in takenPorts for as long as the
+// listener is open. Closing the returned listener releases the registration.
+//
+// Unlike getFreePort the port is never left unbound, so there is no window in which the
+// kernel can hand it to somebody else.
+func listenFreePort() (net.Listener, error) {
+	for range maxFreePortRetries {
+		listener, err := net.Listen("tcp", freePortAddr)
+		if err != nil {
+			return nil, fmt.Errorf("listen on %s: %w", freePortAddr, err)
+		}
+		port := listener.Addr().(*net.TCPAddr).Port
+		if _, ok := takenPorts.LoadOrStore(port, struct{}{}); ok {
+			// Reserved for an act artifact server that has not bound it yet. Try again.
+			if err := listener.Close(); err != nil {
+				fmt.Fprintf(os.Stderr, "listenFreePort: close listener on port %d: %v\n", port, err)
+			}
+			continue
+		}
+		return &reservedListener{Listener: listener, port: port}, nil
+	}
+	return nil, fmt.Errorf("could not find a free port after retrying %d times", maxFreePortRetries)
+}
+
+// reservedListener is a net.Listener that releases its takenPorts registration on Close.
+type reservedListener struct {
+	net.Listener
+	port int
+	once sync.Once
+}
+
+// Close closes the underlying listener and marks its port as free.
+func (l *reservedListener) Close() error {
+	err := l.Listener.Close()
+	l.once.Do(func() { markPortAsFree(l.port) })
+	return err
 }
 
 // markPortAsFree marks the given port as free again by deleting it from the takenPorts map.
