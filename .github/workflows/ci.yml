@@ -137,7 +137,9 @@ on:
         default: plugin-grafana-dependency
       upload-playwright-artifacts:
         description: |
-          If true, the Playwright E2E artifacts will be uploaded to GitHub.
+          If true, upload the Playwright reports as GitHub artifacts. On trusted runs and on
+          scheduled runs, also publish them to Google Cloud Storage and link them from the job
+          summary. Published reports are readable by all Grafana employees for 30 days.
           Default is false.
           IMPORTANT: Make sure there are no unmasked secrets in the E2E tests before turning this on.
         required: false
