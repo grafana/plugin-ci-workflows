@@ -1,0 +1,1 @@
+../../.claude/commands/update-test-plugins.md
