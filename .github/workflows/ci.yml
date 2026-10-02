@@ -135,6 +135,11 @@ on:
         type: string
         required: false
         default: plugin-grafana-dependency
+      run-playwright-with-limit:
+        description: The maximum number of Grafana versions to resolve for Playwright E2E tests. 0 means no limit.
+        type: string
+        required: false
+        default: "6"
       upload-playwright-artifacts:
         description: |
           If true, the Playwright E2E artifacts will be uploaded to GitHub.
@@ -785,6 +790,7 @@ jobs:
       grafana-dependency: ${{ inputs.run-playwright-with-grafana-dependency }}
       skip-grafana-nightly-image: ${{ inputs.run-playwright-with-skip-grafana-nightly-image || inputs.run-playwright-with-skip-grafana-dev-image }}
       version-resolver-type: ${{ inputs.run-playwright-with-version-resolver-type }}
+      limit: ${{ inputs.run-playwright-with-limit }}
       upload-artifacts: ${{ inputs.upload-playwright-artifacts }}
       docker-compose-file: ${{ inputs.playwright-docker-compose-file }}
       playwright-config: ${{ inputs.playwright-config }}
@@ -812,6 +818,7 @@ jobs:
       grafana-dependency: ${{ inputs.run-playwright-with-grafana-dependency }}
       skip-grafana-nightly-image: ${{ inputs.run-playwright-with-skip-grafana-nightly-image || inputs.run-playwright-with-skip-grafana-dev-image }}
       version-resolver-type: ${{ inputs.run-playwright-with-version-resolver-type }}
+      limit: ${{ inputs.run-playwright-with-limit }}
       upload-artifacts: ${{ inputs.upload-playwright-artifacts }}
       grafana-compose-file: ${{ inputs.playwright-docker-compose-file }}
       report-path: ${{ inputs.playwright-report-path }}
