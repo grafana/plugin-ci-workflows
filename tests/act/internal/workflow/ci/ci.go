@@ -101,7 +101,8 @@ type WorkflowInputs struct {
 	MageVersion         *string
 	TrufflehogVersion   *string
 
-	RunPlaywright *bool
+	RunPlaywright          *bool
+	RunPlaywrightWithLimit *string
 
 	RunPluginValidator     *bool
 	PluginValidatorConfig  *string
@@ -131,6 +132,7 @@ func SetCIInputs(dst *workflow.Job, inputs WorkflowInputs) {
 	workflow.SetJobInput(dst, "trufflehog-version", inputs.TrufflehogVersion)
 
 	workflow.SetJobInput(dst, "run-playwright", inputs.RunPlaywright)
+	workflow.SetJobInput(dst, "run-playwright-with-limit", inputs.RunPlaywrightWithLimit)
 
 	workflow.SetJobInput(dst, "run-plugin-validator", inputs.RunPluginValidator)
 	workflow.SetJobInput(dst, "plugin-validator-version", inputs.PluginValidatorVersion)
