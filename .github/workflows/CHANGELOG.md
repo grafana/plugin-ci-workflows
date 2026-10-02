@@ -1,5 +1,12 @@
 # Changelog
 
+## [11.4.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v11.3.0...ci-cd-workflows/v11.4.0) (2026-10-02)
+
+
+### 🎉 Features
+
+* **playwright:** add limit input to e2e-version ([#1106](https://github.com/grafana/plugin-ci-workflows/issues/1106)) ([6b55834](https://github.com/grafana/plugin-ci-workflows/commit/6b558345bb1c9f946c506f7773ae0b4d9ad0bf51))
+
 ## [11.3.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v11.2.0...ci-cd-workflows/v11.3.0) (2026-09-30)
 
 
