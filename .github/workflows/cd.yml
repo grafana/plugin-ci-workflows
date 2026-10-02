@@ -82,6 +82,44 @@ on:
         type: "boolean"
         required: false
 
+      # Frontend step controls.
+      skip-frontend-lint:
+        description: |
+          Skip the frontend lint step. Useful when lint is already run in a separate job.
+        type: boolean
+        required: false
+        default: false
+      skip-frontend-typecheck:
+        description: |
+          Skip the frontend typecheck step. Useful when typecheck is already run in a separate job.
+        type: boolean
+        required: false
+        default: false
+      skip-frontend-test:
+        description: |
+          Skip the frontend test step. Useful when tests are already run in a separate job.
+        type: boolean
+        required: false
+        default: false
+      frontend-pre-command:
+        description: |
+          Command to run in the plugin directory before frontend lint, typecheck,
+          test, and build. Useful for shared setup like building local
+          dependencies that multiple scripts need.
+        type: string
+        required: false
+        default: ""
+      parallel-frontend-verify:
+        description: |
+          Run frontend lint, typecheck, and test in a separate job that executes
+          in parallel with the build. Reduces the critical path by ~3 minutes
+          for plugins with slow test suites. When enabled, the test-and-build
+          job only runs the frontend build step, while a new frontend-verify
+          job handles verification. Both jobs must pass for CI to succeed.
+        type: boolean
+        required: false
+        default: false
+
       # Build options.
       plugin-directory:
         description: Directory of the plugin, if not in the root of the repository.
@@ -802,7 +840,7 @@ jobs:
 
   ci:
     name: CI
-    uses: grafana/plugin-ci-workflows/.github/workflows/ci.yml@main
+    uses: grafana/plugin-ci-workflows/.github/workflows/ci.yml@bsull/perf-parallel-frontend-verify
     needs:
       - setup
     with:
@@ -818,6 +856,12 @@ jobs:
       node-version: ${{ inputs.node-version }}
       golangci-lint-version: ${{ inputs.golangci-lint-version }}
       mage-version: ${{ inputs.mage-version }}
+
+      skip-frontend-lint: ${{ inputs.skip-frontend-lint }}
+      skip-frontend-typecheck: ${{ inputs.skip-frontend-typecheck }}
+      skip-frontend-test: ${{ inputs.skip-frontend-test }}
+      frontend-pre-command: ${{ inputs.frontend-pre-command }}
+      parallel-frontend-verify: ${{ inputs.parallel-frontend-verify }}
 
       run-plugin-validator: ${{ inputs.run-plugin-validator }}
       plugin-validator-config: ${{ inputs.plugin-validator-config }}
@@ -1021,7 +1065,7 @@ jobs:
 
       - name: Check and create stub
         id: check-and-create-stub
-        uses: grafana/plugin-ci-workflows/actions/internal/plugins/publish/check-and-create-stub@main
+        uses: grafana/plugin-ci-workflows/actions/internal/plugins/publish/check-and-create-stub@bsull/perf-parallel-frontend-verify
         if: ${{ matrix.environment != 'prod' && matrix.environment != 'prod-canary' }}
         with:
           plugin-id: ${{ fromJSON(needs.ci.outputs.plugin).id }}
@@ -1031,13 +1075,13 @@ jobs:
 
       - name: Check artifact ZIP(s)
         id: check-artifact-zips
-        uses: grafana/plugin-ci-workflows/actions/internal/plugins/publish/check-artifacts@main
+        uses: grafana/plugin-ci-workflows/actions/internal/plugins/publish/check-artifacts@bsull/perf-parallel-frontend-verify
         with:
           zips: ${{ needs.upload-to-gcs-release.outputs.gcs-zip-urls }}
           plugin-id: ${{ fromJSON(needs.ci.outputs.plugin).id }}
 
       - name: Publish to catalog
-        uses: grafana/plugin-ci-workflows/actions/plugins/publish/publish@main
+        uses: grafana/plugin-ci-workflows/actions/plugins/publish/publish@bsull/perf-parallel-frontend-verify
         with:
           zips: ${{ needs.upload-to-gcs-release.outputs.gcs-zip-urls }}
           environment: ${{ matrix.environment == 'prod-canary' && 'prod' || matrix.environment }}
@@ -1365,7 +1409,7 @@ jobs:
           permission_set: website-docs
 
       - name: Publish docs
-        uses: grafana/plugin-ci-workflows/actions/internal/plugins/docs/publish@main
+        uses: grafana/plugin-ci-workflows/actions/internal/plugins/docs/publish@bsull/perf-parallel-frontend-verify
         with:
           id: ${{ fromJSON(needs.ci.outputs.plugin).id }}
           version: ${{ fromJSON(needs.ci.outputs.plugin).version }}
@@ -1415,7 +1459,7 @@ jobs:
 
       - name: Parse changelog
         id: changelog
-        uses: grafana/plugin-ci-workflows/actions/internal/plugins/changelog@main
+        uses: grafana/plugin-ci-workflows/actions/internal/plugins/changelog@bsull/perf-parallel-frontend-verify
         with:
           changelog-path: ${{ inputs.plugin-directory }}/CHANGELOG.md
 
