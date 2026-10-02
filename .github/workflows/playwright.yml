@@ -41,6 +41,11 @@ on:
       grafana-dependency:
         required: false
         type: string
+      limit:
+        required: false
+        type: string
+        default: "6"
+        description: The maximum number of Grafana versions to resolve. 0 means no limit.
       upload-artifacts:
         required: false
         type: boolean
@@ -136,6 +141,7 @@ jobs:
           version-resolver-type: ${{ inputs.version-resolver-type }}
           grafana-dependency: ${{ inputs.grafana-dependency }}
           plugin-directory: ${{ inputs.plugin-directory }}
+          limit: ${{ inputs.limit }}
 
   playwright-tests:
     needs: resolve-versions
