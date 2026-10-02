@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cmp"
 	"encoding/json"
 	"fmt"
 	"path/filepath"
@@ -21,6 +22,7 @@ func TestContext(t *testing.T) {
 	t.Run("push", func(t *testing.T) {
 		for _, tc := range []struct {
 			actor        string
+			branch       string
 			testingInput bool
 			expIsTrusted bool
 		}{
@@ -28,15 +30,21 @@ func TestContext(t *testing.T) {
 			{actor: "dependabot[bot]", testingInput: false, expIsTrusted: true},
 			{actor: "renovate-sh-app[bot]", testingInput: false, expIsTrusted: true},
 			{actor: "grafana-plugins-platform-bot[bot]", testingInput: false, expIsTrusted: true},
+			{actor: "github-merge-queue[bot]", testingInput: false, expIsTrusted: true},
 			{actor: "hacker[bot]", testingInput: false, expIsTrusted: false},
+
+			// Merge queue branches are never trusted, even for a trusted actor
+			{actor: "github-merge-queue[bot]", branch: "gh-readonly-queue/main/pr-1-0123456789abcdef0123456789abcdef01234567", testingInput: false, expIsTrusted: false},
 
 			// In testing mode, context is never trusted
 			{actor: "dependabot[bot]", testingInput: true, expIsTrusted: false},
 			{actor: "renovate-sh-app[bot]", testingInput: true, expIsTrusted: false},
 			{actor: "grafana-plugins-platform-bot[bot]", testingInput: true, expIsTrusted: false},
+			{actor: "github-merge-queue[bot]", testingInput: true, expIsTrusted: false},
 			{actor: "hacker[bot]", testingInput: true, expIsTrusted: false},
 		} {
-			t.Run(fmt.Sprintf("%s testing=%t", tc.actor, tc.testingInput), func(t *testing.T) {
+			branch := cmp.Or(tc.branch, "main")
+			t.Run(fmt.Sprintf("%s on %s testing=%t", tc.actor, branch, tc.testingInput), func(t *testing.T) {
 				t.Parallel()
 
 				runner, err := act.NewRunner(t)
@@ -58,7 +66,7 @@ func TestContext(t *testing.T) {
 				)
 				require.NoError(t, err)
 
-				r, err := runner.Run(wf, act.NewPushEventPayload("main", act.WithEventActor(tc.actor)))
+				r, err := runner.Run(wf, act.NewPushEventPayload(branch, act.WithEventActor(tc.actor)))
 				require.NoError(t, err)
 				require.True(t, r.Success, "workflow should succeed")
 
@@ -69,7 +77,7 @@ func TestContext(t *testing.T) {
 					IsForkPR  bool `json:"isForkPR"`
 				}
 				require.NoError(t, json.Unmarshal([]byte(contextPayload), &context))
-				require.Equalf(t, tc.expIsTrusted, context.IsTrusted, "workflow should not be trusted for %q actor", tc.actor)
+				require.Equalf(t, tc.expIsTrusted, context.IsTrusted, "workflow trust status mismatch for %q actor on %q", tc.actor, branch)
 				require.False(t, context.IsForkPR, "push event should not be a fork PR")
 			})
 		}
