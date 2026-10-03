@@ -75,7 +75,7 @@
     "react": "18.3.1",
     "react-dom": "18.3.1"
   },
-  "packageManager": "npm@11.19.1+sha512.cedb312b1b7f92421a02cfb68b4194e88f8346651dacd6acc5364a25ef5309d4a32b19616a1ff8aff865e7280c0fa5c0835a99f5cd93368991e2a80ec9da75d2",
+  "packageManager": "npm@12.2.0+sha512.66c2632a94e796649738b2d7894d710c2cc2e1696893823066687f6b0d8a52e5f2b54eeaeaa32ffdc513ecca1e49ff794a5c2ec3f9515d879f1b3182b291cf35",
   "overrides": {
     "js-cookie": ">=3.0.6",
     "serialize-javascript": ">=7.0.5",
