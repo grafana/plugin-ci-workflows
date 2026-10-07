@@ -610,6 +610,14 @@ jobs:
             exit 0
           fi
 
+          # keep in sync with engines.node of the pinned @grafana/plugin-docs-cli
+          MIN_NODE_MAJOR=24
+          NODE_MAJOR=$(node -p 'process.versions.node.split(".")[0]')
+          if [ "${NODE_MAJOR}" -lt "${MIN_NODE_MAJOR}" ]; then
+            echo "::error title=Catalog docs::@grafana/plugin-docs-cli needs Node ${MIN_NODE_MAJOR} or newer, but this job runs $(node -v). Set the node-version input or .nvmrc to ${MIN_NODE_MAJOR} or newer."
+            exit 1
+          fi
+
           printf '::act-debug::msg="%s" docsPath=%s\n' "Building catalog docs" "${DOCS_PATH}"
           npx --yes "@grafana/plugin-docs-cli@${PLUGIN_DOCS_CLI_VERSION}" validate --strict
           npx --yes "@grafana/plugin-docs-cli@${PLUGIN_DOCS_CLI_VERSION}" build
