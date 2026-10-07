@@ -14,6 +14,7 @@ The plugin-ci-workflows repository centralizes and standardizes the CI/CD proces
 - **Plugin Packaging**: Automated signing and ZIP packaging for multiple architectures
 - **Deployment Pipeline**: Automated publishing to Grafana Plugin Catalog and Grafana Cloud
 - **Documentation Publishing**: Automated docs publishing to Grafana website
+- **Catalog Docs**: Validates and packages multi-page plugin catalog docs when `docsPath` is set in `plugin.json`
 
 
 ## 🚀 Quick Start

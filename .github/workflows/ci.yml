@@ -380,6 +380,7 @@ env:
   DEFAULT_TRUFFLEHOG_VERSION: "3.97.9"
   DEFAULT_MAGE_VERSION: "1.17.2"
   DEFAULT_PLUGIN_VALIDATOR_VERSION: "0.41.0"
+  DEFAULT_PLUGIN_DOCS_CLI_VERSION: "0.5.0"
 
   # Default plugin-validator configuration, used when no configuration is provided by the caller.
   # Disables some analyzers that are not relevant for Grafana Labs plugins.
@@ -598,6 +599,24 @@ jobs:
           plugin-directory: ${{ inputs.plugin-directory }}
           secrets: ${{ (fromJson(steps.workflow-context.outputs.result).isTrusted && inputs.backend-secrets != '') && inputs.backend-secrets || '' }}
           build-target: ${{ inputs.backend-build-target }}
+
+      # Multi-page docs for the plugin catalog (not the website docs in docs/sources). Built before packaging so the signature covers them.
+      - name: Validate and build catalog docs
+        id: catalog-docs
+        run: |
+          DOCS_PATH=$(jq -r '.docsPath // empty' dist/plugin.json)
+          if [ -z "${DOCS_PATH}" ]; then
+            echo "docsPath not set in plugin.json, skipping catalog docs"
+            exit 0
+          fi
+
+          printf '::act-debug::msg="%s" docsPath=%s\n' "Building catalog docs" "${DOCS_PATH}"
+          npx --yes "@grafana/plugin-docs-cli@${PLUGIN_DOCS_CLI_VERSION}" validate --strict
+          npx --yes "@grafana/plugin-docs-cli@${PLUGIN_DOCS_CLI_VERSION}" build
+        env:
+          PLUGIN_DOCS_CLI_VERSION: ${{ env.DEFAULT_PLUGIN_DOCS_CLI_VERSION }}
+        working-directory: ${{ inputs.plugin-directory }}
+        shell: bash
 
       - name: Package universal ZIP
         id: universal-zip
