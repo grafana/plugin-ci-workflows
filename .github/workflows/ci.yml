@@ -604,9 +604,9 @@ jobs:
       - name: Validate and build catalog docs
         id: catalog-docs
         run: |
-          DOCS_PATH=$(jq -r '.docsPath // empty' dist/plugin.json)
+          DOCS_PATH=$(jq -r '.docsPath // empty' src/plugin.json)
           if [ -z "${DOCS_PATH}" ]; then
-            echo "docsPath not set in plugin.json, skipping catalog docs"
+            echo "docsPath not set in src/plugin.json, skipping catalog docs"
             exit 0
           fi
 
