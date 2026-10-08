@@ -376,7 +376,7 @@ env:
   # Default versions for tooling
   DEFAULT_NODE_VERSION: "24"
   DEFAULT_GO_VERSION: "1.26.8"
-  DEFAULT_GOLANGCI_LINT_VERSION: "2.13.2"
+  DEFAULT_GOLANGCI_LINT_VERSION: "2.14.0"
   DEFAULT_TRUFFLEHOG_VERSION: "3.97.9"
   DEFAULT_MAGE_VERSION: "1.17.2"
   DEFAULT_PLUGIN_VALIDATOR_VERSION: "0.41.0"
@@ -444,7 +444,9 @@ jobs:
               'grafana-plugins-platform-bot[bot]',
               // Creates releases via release-please in datasource repos, so it is the
               // actor of their release-event publish runs, which sign the plugin
-              'grafana-oss-big-tent[bot]'
+              'grafana-oss-big-tent[bot]',
+              // Pushes merge queue merges, so it is the actor of push runs on the merged branch
+              'github-merge-queue[bot]'
             ].map((s) => s.toLowerCase());
 
             const isPR = context.eventName === 'pull_request';
@@ -452,10 +454,12 @@ jobs:
             const isTrustedBot = trustedBots.includes(context.actor?.toLowerCase());
             const isForkPR = isPR && context.payload.pull_request.head.repo.full_name !== context.payload.repository.full_name;
             const isTesting = process.env['INPUT_TESTING'] === 'true';
+            // Merge queue branches hold pull request code, including fork code, that has not merged yet
+            const isMergeQueueRef = context.ref.startsWith('refs/heads/gh-readonly-queue/');
 
             // Events that are considered trusted because can be run by a trusted user (unless it's a bot)
             const isTrustedEvent = ['push', 'workflow_dispatch', 'release'].includes(context.eventName);
-            const isTrusted = (isTrustedEvent || (isPR && !isForkPR)) && !isTesting && (!isBot || isTrustedBot);
+            const isTrusted = (isTrustedEvent || (isPR && !isForkPR)) && !isMergeQueueRef && !isTesting && (!isBot || isTrustedBot);
 
             const o = { isTrusted, isForkPR };
             console.log(JSON.stringify(o));
