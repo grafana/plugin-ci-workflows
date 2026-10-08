@@ -220,6 +220,7 @@ func WithMockedPackagedDistArtifacts(t *testing.T, distFolder string, packagedFo
 		for _, id := range []string{
 			"setup",
 			"replace-plugin-version",
+			"catalog-docs",
 		} {
 			require.NoError(t, testAndBuild.RemoveStep(id))
 		}
