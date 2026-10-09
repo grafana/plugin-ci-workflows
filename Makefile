@@ -47,7 +47,7 @@ act-lint:
 	cd tests/act && golangci-lint run
 
 act-test:
-	cd tests/act && go test -v -timeout 1h
+	cd tests/act && go test -v -timeout 1h -p 1 ./...
 
 actionlint:
 	actionlint

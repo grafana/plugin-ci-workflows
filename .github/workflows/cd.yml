@@ -162,6 +162,11 @@ on:
         type: string
         required: false
         default: plugin-grafana-dependency
+      run-playwright-with-limit:
+        description: The maximum number of Grafana versions to resolve for Playwright E2E tests. 0 means no limit.
+        type: string
+        required: false
+        default: "6"
       upload-playwright-artifacts:
         description: |
           If true, the Playwright E2E artifacts will be uploaded to GitHub.
@@ -393,9 +398,9 @@ on:
         description: |
           Slack channel to use for Argo Workflow deployment notifications.
           This is only used when Argo is triggered (when `trigger-argo` is true).
-          Default is '#grafana-plugins-platform-ci'.
+          Default is '#grafana-catalog-ci'.
           This should be changed to a Slack channel specific to your team.
-        default: "#grafana-plugins-platform-ci"
+        default: "#grafana-catalog-ci"
         type: string
       argo-workflow-slack-silent:
         description: |
@@ -591,7 +596,7 @@ on:
         value: ${{ jobs.ci.outputs.gcs-universal-zip-url-commit }}
 
 concurrency:
-  group: cd-${{ github.head_ref || github.run_id }}
+  group: cd-${{ inputs.plugin-directory }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 
 permissions:
@@ -625,7 +630,7 @@ jobs:
     steps:
       - name: Checkout specified branch
         id: checkout-specified-branch
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # Force exact ref when running in act (it copies files locally, it breaks if we specify another ref)
           ref: ${{ !github.event.act && inputs.branch || github.sha }}
@@ -829,6 +834,7 @@ jobs:
       run-playwright-with-skip-grafana-nightly-image: ${{ inputs.run-playwright-with-skip-grafana-nightly-image }}
       run-playwright-with-skip-grafana-dev-image: ${{ inputs.run-playwright-with-skip-grafana-dev-image }}
       run-playwright-with-version-resolver-type: ${{ inputs.run-playwright-with-version-resolver-type }}
+      run-playwright-with-limit: ${{ inputs.run-playwright-with-limit }}
       upload-playwright-artifacts: ${{ inputs.upload-playwright-artifacts }}
       playwright-report-path: ${{ inputs.playwright-report-path }}
       playwright-docker-compose-file: ${{ inputs.playwright-docker-compose-file }}
@@ -876,7 +882,7 @@ jobs:
       - name: Download GitHub artifact
         id: download-dist-artifacts
         continue-on-error: true
-        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: ${{ inputs.dist-artifacts-prefix }}dist-artifacts
           path: /tmp/dist-artifacts
@@ -893,7 +899,7 @@ jobs:
       - name: Generate artifact attestation
         if: ${{ inputs.attestation }}
         id: attestation
-        uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.0
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-path: /tmp/dist-artifacts/*.zip
 
@@ -949,7 +955,7 @@ jobs:
     runs-on: ubuntu-arm64-small
     steps:
       - name: Checkout
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # Force exact ref when running in act (it copies files locally, it breaks if we specify another ref)
           ref: ${{ !github.event.act && needs.setup.outputs.commit-sha || github.sha }}
@@ -986,7 +992,7 @@ jobs:
 
       - name: Get secrets from Vault
         id: get-secrets
-        uses: grafana/shared-workflows/actions/get-vault-secrets@e46fe1e9a2bf9e618bcf8d8d32f3a7381b45c06d # get-vault-secrets/v2.0.0
+        uses: grafana/shared-workflows/actions/get-vault-secrets@2f1ddaf3ce1aa677356243d0dd584be33cfa35e3 # get-vault-secrets/v2.1
         with:
           vault_instance: ${{ env.VAULT_INSTANCE }}
           common_secrets: |
@@ -1065,6 +1071,7 @@ jobs:
     runs-on: ubuntu-arm64-small
 
     needs:
+      - setup
       - ci
       - publish-to-catalog
     if: >-
@@ -1107,6 +1114,22 @@ jobs:
           AUTO_APPROVE_DURATIONS: ${{ inputs.auto-approve-durations }}
         shell: bash
 
+      - name: Get commit timestamp
+        id: commit-timestamp
+        # Used by the Argo Workflow staleness check to tell which of two overlapping deployments is newer.
+        # Best effort: if empty, the staleness check falls back to the workflow creation time.
+        run: |
+          timestamp=$(curl -fsSL \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/commits/${COMMIT_SHA}" \
+            | jq -r '.commit.committer.date // empty') || timestamp=""
+          echo "timestamp=${timestamp}" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          COMMIT_SHA: ${{ !github.event.act && needs.setup.outputs.commit-sha || github.sha }}
+        shell: bash
+
       - name: Trigger Argo Workflow
         id: trigger-argo-workflow
         uses: grafana/shared-workflows/actions/trigger-argo-workflow@5a212d56e9d224851dc4b3c2643bbc5bac484d5d # trigger-argo-workflow/v2.0.0
@@ -1120,6 +1143,7 @@ jobs:
             slack_channel=${{ inputs.argo-workflow-slack-channel }}
             commit=${{ github.sha }}
             commit_link=${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}
+            commit_timestamp=${{ steps.commit-timestamp.outputs.timestamp }}
             auto_merge_environments=${{ steps.argo-parameters.outputs.auto_merge_environments }}
             auto_approve_durations=${{ steps.argo-parameters.outputs.auto_approve_durations }}
             prod_targets_all=${{ inputs.prod-targets-all }}
@@ -1167,7 +1191,7 @@ jobs:
       - name: Download GitHub artifact
         id: download-dist-artifacts
         continue-on-error: true
-        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: ${{ inputs.dist-artifacts-prefix }}dist-artifacts
           path: /tmp/dist-artifacts
@@ -1333,7 +1357,7 @@ jobs:
         - /home/runner/work/_actions:/home/runner/work/_actions
     steps:
       - name: Checkout
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # Force exact ref when running in act (it copies files locally, it breaks if we specify another ref)
           ref: ${{ !github.event.act && needs.setup.outputs.commit-sha || github.sha }}
@@ -1341,7 +1365,7 @@ jobs:
 
       - name: Generate GitHub token
         id: generate-github-token
-        uses: grafana/shared-workflows/actions/create-github-app-token@46f48da11e78ebdba7a8747ae456b11062fac83e # create-github-app-token/v0.3.1
+        uses: grafana/shared-workflows/actions/create-github-app-token@5bbb526b1728ca57fbe1750c4c27ab6ab06171c2 # create-github-app-token/v1.0
         with:
           github_app: grafana-plugins-platform-bot
           permission_set: website-docs
@@ -1372,7 +1396,7 @@ jobs:
       }}
     steps:
       - name: Checkout
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # Force exact ref when running in act (it copies files locally, it breaks if we specify another ref)
           ref: ${{ !github.event.act && needs.setup.outputs.commit-sha || github.sha }}
@@ -1381,7 +1405,7 @@ jobs:
       - name: Download GitHub artifact
         id: download-dist-artifacts
         continue-on-error: true
-        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: ${{ inputs.dist-artifacts-prefix }}dist-artifacts
           path: /tmp/dist-artifacts
@@ -1428,7 +1452,7 @@ jobs:
           PLUGIN_VERSION: ${{ fromJSON(needs.ci.outputs.plugin).version }}
 
       - name: Create Github release
-        uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3.0.0
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
           draft: ${{ inputs.github-draft-release }}
           name: ${{ fromJSON(needs.ci.outputs.plugin).id }} v${{ fromJSON(needs.ci.outputs.plugin).version }}

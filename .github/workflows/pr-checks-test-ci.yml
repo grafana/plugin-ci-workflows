@@ -26,7 +26,7 @@ jobs:
       relevant: ${{ steps.changed.outputs.any_changed }}
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: true
           fetch-depth: 2
@@ -65,7 +65,7 @@ jobs:
     runs-on: ubuntu-x64-xlarge-io
     steps:
       - name: Checkout
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.event.pull_request.head.sha || github.ref }}
           fetch-depth: 0
@@ -73,11 +73,14 @@ jobs:
 
       # This is needed otherwise actions/checkout puts the repo in detached head
       # and act complains it cannot determine to which branch the current commit belongs to.
+      # Create (or reset) a local branch pointing at the already checked-out commit instead of
+      # checking out an existing one: for fork PRs the head branch only exists in the fork,
+      # so there is no origin/<branch> to resolve it from.
       - name: Checkout branch
         run: |
-          git checkout "${REF}"
+          git checkout -B "${BRANCH}"
         env:
-          REF: ${{ github.event.pull_request.head.ref || github.ref }}
+          BRANCH: ${{ github.head_ref || github.ref_name }}
         shell: bash
 
       - name: Install act
@@ -89,7 +92,7 @@ jobs:
         shell: bash
 
       - name: Setup Go
-        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: tests/act/go.mod
           cache-dependency-path: tests/act/go.sum
@@ -98,10 +101,29 @@ jobs:
 
       - name: Run act tests
         run: |
-          go test -v -timeout 1h
+          # ./... so the internal packages are covered too, they were never run before.
+          # -p 1 keeps the package test binaries from running at the same time: the free
+          # port bookkeeping in internal/act is per-process, so a unit test reserving
+          # ports concurrently with a real act run could take one out from under it.
+          go run gotest.tools/gotestsum@v1.13.0 \
+            --junitfile "${RUNNER_TEMP}/act-tests.xml" \
+            --format standard-verbose \
+            -- -timeout 1h -p 1 ./...
         working-directory: tests/act
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Publish test results to the run summary: overall counts, plus a
+      # detailed table and full failure messages for failed tests only.
+      - name: Publish test report
+        if: ${{ !cancelled() }}
+        uses: mikepenz/action-junit-report@a9170d5795813c01ab4901ffb045b52bab4ab09d # v6.5.0
+        with:
+          report_paths: ${{ runner.temp }}/act-tests.xml
+          detailed_summary: true
+          annotate_only: true
+          require_tests: false
+          truncate_stack_traces: false
 
   act-tests-result:
     name: Act tests result
