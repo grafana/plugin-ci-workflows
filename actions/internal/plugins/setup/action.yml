@@ -30,6 +30,14 @@ inputs:
     description: Defines if setup-go action should have caching enabled (https://github.com/actions/setup-go#caching-dependency-files-and-build-outputs)
     required: false
     default: "true"
+  node-setup-caching:
+    description: Defines if Node.js package manager caching should be enabled (setup-node and pnpm store).
+    required: false
+    default: "true"
+  go-tooling-caching:
+    description: Defines if the Go tooling executables (mage, golangci-lint) should be cached.
+    required: false
+    default: "true"
   node-version:
     description: |
       Node.js version to use.
@@ -88,10 +96,13 @@ runs:
         working-directory: ${{ inputs.plugin-directory }}
 
     - name: Install pnpm
+      id: pnpm
       if: ${{ inputs.act-cache-warmup != 'true' && steps.package-manager.outputs.name == 'pnpm' }}
       uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
       with:
         package_json_file: ${{ inputs.plugin-directory }}/package.json
+        # The pnpm store is cached separately below; avoid implicit caching.
+        cache: false
 
     - name: Node
       id: node
@@ -104,18 +115,21 @@ runs:
         # the plugin lives in a subfolder: nothing there pins a pnpm version, so corepack
         # answers with the newest release off the registry, and since pnpm 12 that
         # reports a store path no install ever creates.
-        cache: ${{ (inputs.act-cache-warmup != 'true' && steps.package-manager.outputs.name != 'pnpm') && steps.package-manager.outputs.name || '' }}
-        cache-dependency-path: ${{ inputs.act-cache-warmup != 'true' && steps.package-manager.outputs.lockFilePath || '' }}
+        # Disable implicit package manager caching so that it never bypasses node-setup-caching.
+        package-manager-cache: false
+        cache: ${{ (inputs.node-setup-caching == 'true' && inputs.act-cache-warmup != 'true' && steps.package-manager.outputs.name != 'pnpm') && steps.package-manager.outputs.name || '' }}
+        cache-dependency-path: ${{ inputs.node-setup-caching == 'true' && inputs.act-cache-warmup != 'true' && steps.package-manager.outputs.lockFilePath || '' }}
 
     - name: Locate the pnpm store
-      if: ${{ steps.package-manager.outputs.name == 'pnpm' }}
+      if: ${{ inputs.node-setup-caching == 'true' && steps.package-manager.outputs.name == 'pnpm' }}
       id: pnpm-store
       shell: bash
       working-directory: ${{ inputs.plugin-directory }}
       run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
 
     - name: Cache pnpm store
-      if: ${{ steps.package-manager.outputs.name == 'pnpm' }}
+      id: cache-pnpm
+      if: ${{ inputs.node-setup-caching == 'true' && steps.package-manager.outputs.name == 'pnpm' }}
       uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: ${{ steps.pnpm-store.outputs.path }}
@@ -149,7 +163,7 @@ runs:
       run: echo "gobin=$(go env GOPATH)/bin" >> "$GITHUB_OUTPUT"
 
     - name: Cache Go tooling
-      if: ${{ inputs.frontend-only != 'true' }}
+      if: ${{ inputs.frontend-only != 'true' && inputs.go-tooling-caching == 'true' }}
       id: cache
       uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
@@ -158,7 +172,9 @@ runs:
           ${{ steps.go-bin.outputs.gobin }}/mage
         key: go-tools-os=${{ runner.os }}-arch=${{ runner.arch }}-go=${{ steps.go.outputs.go-version }}-mage=${{ inputs.mage-version }}-golangci-lint=${{ inputs.golangci-lint-version }}
 
+    # TODO: verify the signatures of the downloaded tools (mage, golangci-lint) before executing them.
     - name: Mage
+      id: mage
       if: ${{ inputs.frontend-only != 'true' && steps.cache.outputs.cache-hit != 'true' }}
       shell: bash
       run: |
@@ -167,6 +183,7 @@ runs:
         MAGE_VERSION: ${{ inputs.mage-version }}
 
     - name: golangci-lint
+      id: golangci-lint
       if: ${{ inputs.frontend-only != 'true' && steps.cache.outputs.cache-hit != 'true' }}
       shell: bash
       run: |

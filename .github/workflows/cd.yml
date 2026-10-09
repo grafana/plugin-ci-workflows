@@ -77,10 +77,6 @@ on:
         description: Trufflehog version to use
         type: string
         required: false
-      go-setup-caching:
-        description: Defines if setup-go action should have caching enabled (https://github.com/actions/setup-go#caching-dependency-files-and-build-outputs)
-        type: "boolean"
-        required: false
 
       # Build options.
       plugin-directory:
@@ -819,7 +815,12 @@ jobs:
       go-private-git-auth: ${{ inputs.go-private-git-auth }}
 
       go-version: ${{ inputs.go-version }}
-      go-setup-caching: ${{ inputs.go-setup-caching }}
+      # Release builds never restore or save caches, to avoid cache poisoning.
+      go-setup-caching: false
+      node-setup-caching: false
+      go-tooling-caching: false
+      trufflehog-caching: false
+      playwright-caching: false
       node-version: ${{ inputs.node-version }}
       golangci-lint-version: ${{ inputs.golangci-lint-version }}
       mage-version: ${{ inputs.mage-version }}
