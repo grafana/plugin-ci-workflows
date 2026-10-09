@@ -154,7 +154,8 @@ jobs:
           limit: ${{ inputs.limit }}
 
   playwright-tests:
-    needs: resolve-versions
+    needs:
+      - resolve-versions
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -377,7 +378,8 @@ jobs:
           retention-days: 30
 
   check-playwright-status:
-    needs: playwright-tests
+    needs:
+      - playwright-tests
     name: Check Playwright E2E matrix status
     runs-on: ubuntu-arm64-small
     if: always()

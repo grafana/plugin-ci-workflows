@@ -24,9 +24,7 @@ const (
 
 type compositeAction struct {
 	Inputs map[string]workflow.WorkflowCallInput `yaml:"inputs"`
-	Runs   struct {
-		Steps workflow.Steps `yaml:"steps"`
-	} `yaml:"runs"`
+	Runs   workflow.Job                          `yaml:"runs"`
 }
 
 func loadAction(t *testing.T, path string) compositeAction {
@@ -45,46 +43,12 @@ func loadWorkflow(t *testing.T, name string) workflow.BaseWorkflow {
 	return wf
 }
 
-// Some cache and scanner steps have no id, so they can't be looked up with Job.GetStep.
-func stepByName(t *testing.T, steps workflow.Steps, name string) workflow.Step {
-	t.Helper()
-	for _, s := range steps {
-		if s.Name == name {
-			return s
-		}
-	}
-	require.Failf(t, "step not found", "%q", name)
-	return workflow.Step{}
-}
-
-// playwrightWorkflow is parsed locally because playwright.yml uses a scalar "needs",
-// which workflow.Job does not accept.
-type playwrightWorkflow struct {
-	On struct {
-		WorkflowCall struct {
-			Inputs map[string]workflow.WorkflowCallInput `yaml:"inputs"`
-		} `yaml:"workflow_call"`
-	} `yaml:"on"`
-	Jobs map[string]struct {
-		Steps workflow.Steps `yaml:"steps"`
-	} `yaml:"jobs"`
-}
-
-func loadPlaywright(t *testing.T) playwrightWorkflow {
-	t.Helper()
-	b, err := os.ReadFile(".github/workflows/playwright.yml")
-	require.NoError(t, err)
-	var wf playwrightWorkflow
-	require.NoError(t, yaml.Unmarshal(b, &wf))
-	return wf
-}
-
 func TestCachingFlagDeclarations(t *testing.T) {
 	t.Parallel()
 
 	ci := loadWorkflow(t, "ci.yml")
 	cd := loadWorkflow(t, "cd.yml")
-	pw := loadPlaywright(t)
+	pw := loadWorkflow(t, "playwright.yml")
 	setup := loadAction(t, setupActionPath)
 	trufflehog := loadAction(t, trufflehogActionPath)
 
@@ -119,11 +83,13 @@ func TestCachingFlagForwarding(t *testing.T) {
 	t.Parallel()
 
 	ci := loadWorkflow(t, "ci.yml")
-	pw := loadPlaywright(t)
+	pw := loadWorkflow(t, "playwright.yml")
 	ciSetup := ci.Jobs["test-and-build"].GetStep("setup")
 	require.NotNil(t, ciSetup)
-	pwSetup := stepByName(t, pw.Jobs["playwright-tests"].Steps, "Setup")
-	trufflehog := stepByName(t, ci.Jobs["test-and-build"].Steps, "Trufflehog secrets scanning")
+	pwSetup := pw.Jobs["playwright-tests"].GetStep("setup")
+	require.NotNil(t, pwSetup)
+	trufflehog := ci.Jobs["test-and-build"].GetStep("trufflehog")
+	require.NotNil(t, trufflehog)
 
 	for _, tc := range []struct {
 		name string
@@ -151,55 +117,60 @@ func TestCachingFlagForwarding(t *testing.T) {
 func TestSetupImplicitCachingDisabled(t *testing.T) {
 	t.Parallel()
 
-	steps := loadAction(t, setupActionPath).Runs.Steps
-	node := stepByName(t, steps, "Node")
-	goStep := stepByName(t, steps, "Go")
+	setup := loadAction(t, setupActionPath).Runs
+	node, goStep, pnpm := setup.GetStep("node"), setup.GetStep("go"), setup.GetStep("pnpm")
+	require.NotNil(t, node)
+	require.NotNil(t, goStep)
+	require.NotNil(t, pnpm)
 
 	require.Equal(t, false, node.With["package-manager-cache"])
 	require.Equal(t, nodeCacheExpr, node.With["cache"])
 	require.Equal(t, nodeDepsExpr, node.With["cache-dependency-path"])
 	require.Equal(t, "${{ inputs.go-setup-caching == 'true' }}", goStep.With["cache"])
-	require.Equal(t, false, stepByName(t, steps, "Install pnpm").With["cache"])
+	require.Equal(t, false, pnpm.With["cache"])
 }
 
 func TestCacheStepGating(t *testing.T) {
 	t.Parallel()
 
-	setup := loadAction(t, setupActionPath).Runs.Steps
-	trufflehog := loadAction(t, trufflehogActionPath).Runs.Steps
-	pw := loadPlaywright(t).Jobs["playwright-tests"].Steps
+	setup := loadAction(t, setupActionPath).Runs
+	trufflehog := loadAction(t, trufflehogActionPath).Runs
+	pw := loadWorkflow(t, "playwright.yml").Jobs["playwright-tests"]
+	const installIf = "${{ inputs.frontend-only != 'true' && steps.cache.outputs.cache-hit != 'true' }}"
 
 	for _, tc := range []struct {
 		name   string
-		steps  workflow.Steps
-		step   string
+		job    *workflow.Job
+		id     string
 		wantIf string
 	}{
-		{"pnpm store", setup, "Cache pnpm store", "${{ inputs.node-setup-caching == 'true' && steps.package-manager.outputs.name == 'pnpm' }}"},
-		{"go tooling", setup, "Cache Go tooling", "${{ inputs.frontend-only != 'true' && inputs.go-tooling-caching == 'true' }}"},
-		{"trufflehog", trufflehog, "Cache Trufflehog binary", "${{ inputs.cache == 'true' }}"},
-		{"playwright", pw, "Cache Playwright", "${{ inputs.playwright-caching }}"},
+		{"pnpm store", &setup, "cache-pnpm", "${{ inputs.node-setup-caching == 'true' && steps.package-manager.outputs.name == 'pnpm' }}"},
+		{"go tooling", &setup, "cache", "${{ inputs.frontend-only != 'true' && inputs.go-tooling-caching == 'true' }}"},
+		{"trufflehog", &trufflehog, "cache", "${{ inputs.cache == 'true' }}"},
+		{"playwright", pw, "cache", "${{ inputs.playwright-caching }}"},
 		// Disabling the archive cache must not suppress fresh installs.
-		{"mage install", setup, "Mage", "${{ inputs.frontend-only != 'true' && steps.cache.outputs.cache-hit != 'true' }}"},
-		{"golangci-lint install", setup, "golangci-lint", "${{ inputs.frontend-only != 'true' && steps.cache.outputs.cache-hit != 'true' }}"},
-		{"trufflehog install", trufflehog, "Install Trufflehog", "${{ steps.cache.outputs.cache-hit != 'true' }}"},
+		{"mage install", &setup, "mage", installIf},
+		{"golangci-lint install", &setup, "golangci-lint", installIf},
+		{"trufflehog install", &trufflehog, "install", "${{ steps.cache.outputs.cache-hit != 'true' }}"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			require.Equal(t, tc.wantIf, stepByName(t, tc.steps, tc.step).If)
+			step := tc.job.GetStep(tc.id)
+			require.NotNil(t, step)
+			require.Equal(t, tc.wantIf, step.If)
 		})
 	}
 
 	t.Run("no unaccounted actions/cache steps", func(t *testing.T) {
 		t.Parallel()
 		var got []string
-		for _, steps := range []workflow.Steps{setup, trufflehog, pw} {
-			for _, s := range steps {
+		for group, job := range map[string]*workflow.Job{"setup": &setup, "trufflehog": &trufflehog, "playwright": pw} {
+			for _, s := range job.Steps {
 				if strings.HasPrefix(s.Uses, "actions/cache@") || strings.HasPrefix(s.Uses, "actions/cache/") {
-					got = append(got, s.Name)
+					got = append(got, group+"/"+s.ID)
 				}
 			}
 		}
-		require.ElementsMatch(t, []string{"Cache pnpm store", "Cache Go tooling", "Cache Trufflehog binary", "Cache Playwright"}, got)
+		require.ElementsMatch(t, []string{"setup/cache-pnpm", "setup/cache", "trufflehog/cache", "playwright/cache"}, got)
 	})
 }

@@ -648,6 +648,7 @@ jobs:
           signature-type: ${{ inputs.signature-type }}
 
       - name: Trufflehog secrets scanning
+        id: trufflehog
         if: ${{ inputs.run-trufflehog == true }}
         uses: grafana/plugin-ci-workflows/actions/internal/plugins/trufflehog@main
         with:

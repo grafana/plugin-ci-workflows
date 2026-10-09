@@ -51,6 +51,7 @@ runs:
 
     # TODO: verify the signature of the downloaded Trufflehog before executing it.
     - name: Install Trufflehog
+      id: install
       if: ${{ steps.cache.outputs.cache-hit != 'true' }}
       shell: bash
       run: |
