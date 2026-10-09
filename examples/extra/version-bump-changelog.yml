@@ -1,6 +1,11 @@
 # Bumps the npm version, creates a git tag and optionally generates a changelog
 # entry using conventional commits.
 #
+# This workflow commits directly to main. It is only suitable for private
+# repositories without a branch ruleset that requires a pull request before
+# updating main. Public Grafana repositories, and any repo where main is
+# protected and requires a PR, cannot use this workflow.
+#
 # IMPORTANT: This workflow requires the `grafana-plugins-platform-bot` GitHub App
 # to have permissions on your repository and GATB (GitHub App Token Broker) setup in deployment_tools.
 # Before using it, request permissions by following the instructions here:

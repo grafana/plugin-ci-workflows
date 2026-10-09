@@ -4,41 +4,68 @@ on:
   pull_request:
     branches:
       - main
-    paths:
-      - "tests/**"
-      - ".github/workflows/pr-checks-test-ci.yml"
-      - ".github/workflows/ci.yml"
-      - ".github/workflows/cd.yml"
-      - "actions/internal/**"
-      - "actions/plugins/publish/**"
   push:
     branches:
       - main
-    paths:
-      - "tests/**"
-      - ".github/workflows/pr-checks-test-ci.yml"
-      - ".github/workflows/ci.yml"
-      - ".github/workflows/cd.yml"
-      - "actions/internal/**"
-      - "actions/plugins/publish/**"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
-  ACT_VERSION: "0.2.87"
+  ACT_VERSION: "0.2.89"
 
 permissions:
   contents: read
 
 jobs:
+  detect-changes:
+    name: Detect changes
+    runs-on: ubuntu-arm64-small
+    outputs:
+      relevant: ${{ steps.changed.outputs.any_changed }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: true
+          fetch-depth: 2
+
+      - name: Check if restore-rolling-release commit
+        id: is-restore
+        run: |
+          if [[ "${COMMIT_MESSAGE}" == "chore: update references to use 'main' branch" ]] && \
+             [[ "${ACTOR}" == "grafana-plugins-platform-bot[bot]" ]]; then
+            echo "skip=true" >> "${GITHUB_OUTPUT}"
+          else
+            echo "skip=false" >> "${GITHUB_OUTPUT}"
+          fi
+        env:
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+          ACTOR: ${{ github.actor }}
+        shell: bash
+
+      - name: Check for relevant changes
+        id: changed
+        if: steps.is-restore.outputs.skip != 'true'
+        uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96 # v47.0.6
+        with:
+          files: |
+            tests/**
+            .github/workflows/pr-checks-test-ci.yml
+            .github/workflows/ci.yml
+            .github/workflows/cd.yml
+            actions/internal/**
+            actions/plugins/publish/**
+
   act-tests:
     name: Act tests
+    needs: detect-changes
+    if: needs.detect-changes.outputs.relevant == 'true'
     runs-on: ubuntu-x64-xlarge-io
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.event.pull_request.head.sha || github.ref }}
           fetch-depth: 0
@@ -46,11 +73,14 @@ jobs:
 
       # This is needed otherwise actions/checkout puts the repo in detached head
       # and act complains it cannot determine to which branch the current commit belongs to.
+      # Create (or reset) a local branch pointing at the already checked-out commit instead of
+      # checking out an existing one: for fork PRs the head branch only exists in the fork,
+      # so there is no origin/<branch> to resolve it from.
       - name: Checkout branch
         run: |
-          git checkout "${REF}"
+          git checkout -B "${BRANCH}"
         env:
-          REF: ${{ github.event.pull_request.head.ref || github.ref }}
+          BRANCH: ${{ github.head_ref || github.ref_name }}
         shell: bash
 
       - name: Install act
@@ -62,7 +92,7 @@ jobs:
         shell: bash
 
       - name: Setup Go
-        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: tests/act/go.mod
           cache-dependency-path: tests/act/go.sum
@@ -71,7 +101,45 @@ jobs:
 
       - name: Run act tests
         run: |
-          go test -v -timeout 1h
+          # ./... so the internal packages are covered too, they were never run before.
+          # -p 1 keeps the package test binaries from running at the same time: the free
+          # port bookkeeping in internal/act is per-process, so a unit test reserving
+          # ports concurrently with a real act run could take one out from under it.
+          go run gotest.tools/gotestsum@v1.13.0 \
+            --junitfile "${RUNNER_TEMP}/act-tests.xml" \
+            --format standard-verbose \
+            -- -timeout 1h -p 1 ./...
         working-directory: tests/act
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Publish test results to the run summary: overall counts, plus a
+      # detailed table and full failure messages for failed tests only.
+      - name: Publish test report
+        if: ${{ !cancelled() }}
+        uses: mikepenz/action-junit-report@a9170d5795813c01ab4901ffb045b52bab4ab09d # v6.5.0
+        with:
+          report_paths: ${{ runner.temp }}/act-tests.xml
+          detailed_summary: true
+          annotate_only: true
+          require_tests: false
+          truncate_stack_traces: false
+
+  act-tests-result:
+    name: Act tests result
+    if: always()
+    needs:
+      - detect-changes
+      - act-tests
+    runs-on: ubuntu-arm64-small
+    steps:
+      - name: Check result
+        run: |
+          if [[ "${TESTS_RESULT}" == "failure" ]]; then
+            echo "Act tests failed"
+            exit 1
+          fi
+          echo "Act tests passed (result: ${TESTS_RESULT}, relevant changes: ${RELEVANT})"
+        env:
+          TESTS_RESULT: ${{ needs.act-tests.result }}
+          RELEVANT: ${{ needs.detect-changes.outputs.relevant }}

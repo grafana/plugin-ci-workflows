@@ -50,7 +50,7 @@ on:
           Currently, this only works for provisioned plugins published to the catalog.
           Default is empty (do not trigger Argo Workflow).
         required: false
-        default:
+        default: ""
         type: string
 
       # Those inputs are used to customize the CI workflow, before publishing the plugin.
@@ -88,6 +88,15 @@ on:
         type: string
         required: false
         default: .
+      docs-source-directory:
+        description: |
+          Directory in the plugin repository, relative to the checkout root,
+          that contains the docs to test and publish. Defaults to
+          `docs/sources`. Set this to scope docs publishing to a subset of the
+          repository.
+        type: string
+        required: false
+        default: docs/sources
       npm-registry-auth:
         description: |
           Whether to authenticate to the npm registry in Google Artifact Registry.
@@ -128,7 +137,7 @@ on:
         default: false
       playwright-gar-registry:
         description: |
-          Optional address of a private GAR registry (e.g.: us-docker.pkg.dev) to authenticate to for pulling images 
+          Optional address of a private GAR registry (e.g.: us-docker.pkg.dev) to authenticate to for pulling images
           in the docker-compose setup for the Playwright E2E tests.
           If not specified, no authentication will be done.
         type: string
@@ -148,16 +157,16 @@ on:
         type: boolean
         required: false
         default: false
-      run-playwright-with-skip-grafana-react-19-preview-image:
-        description: "Optionally, you can skip the Grafana React 19 preview image"
-        type: boolean
-        required: false
-        default: false
       run-playwright-with-version-resolver-type:
         description: Define which version resolver type to use for Playwright E2E tests.
         type: string
         required: false
         default: plugin-grafana-dependency
+      run-playwright-with-limit:
+        description: The maximum number of Grafana versions to resolve for Playwright E2E tests. 0 means no limit.
+        type: string
+        required: false
+        default: "6"
       upload-playwright-artifacts:
         description: |
           If true, the Playwright E2E artifacts will be uploaded to GitHub.
@@ -205,6 +214,15 @@ on:
         required: false
         type: number
         default: 256
+      playwright-browsers:
+        description: |
+          Browsers to install before Playwright E2E tests. Space-, newline-, or semicolon-separated.
+          Allowed values: chromium, firefox, webkit. Defaults to chromium (unchanged behaviour).
+          Set when the plugin runs non-Chromium browser projects on CI. Example: `chromium firefox`.
+          Which browsers actually run remains configured in the plugin's playwright.config.ts.
+        type: string
+        required: false
+        default: chromium
       playwright-secrets:
         description: |
           The secrets to use for Playwright tests.
@@ -264,7 +282,10 @@ on:
 
       # Feature toggle: Artifacts attestation for build provenance
       attestation:
-        description: Create a verifiable attestation for the plugin using Github OIDC.
+        description: |
+          Create a verifiable attestation for the plugin using Github OIDC.
+          NOTE: The resulting attestation reference is currently not sent to GCOM
+          when publishing.
         type: boolean
         required: false
 
@@ -377,9 +398,9 @@ on:
         description: |
           Slack channel to use for Argo Workflow deployment notifications.
           This is only used when Argo is triggered (when `trigger-argo` is true).
-          Default is '#grafana-plugins-platform-ci'.
+          Default is '#grafana-catalog-ci'.
           This should be changed to a Slack channel specific to your team.
-        default: "#grafana-plugins-platform-ci"
+        default: "#grafana-catalog-ci"
         type: string
       argo-workflow-slack-silent:
         description: |
@@ -419,6 +440,16 @@ on:
           Example: `<!subteam^S02ND0RCSE7>,<@U045M4H659T>`
         default: ""
         type: string
+      argo-workflow-pull-request-labels:
+        description: |
+          Optional, comma-separated list of pull request labels to pass to the Argo Workflow
+          when deploying to Grafana Cloud.
+          This is only used when Argo is triggered (when `trigger-argo` is true).
+          Default is empty (no labels).
+          Example: `label1,label2`
+        default: ""
+        type: string
+        required: false
       auto-merge-environments:
         description: |
           Comma separated list of environments whose deployment_tools PRs will be auto-merged when
@@ -565,7 +596,7 @@ on:
         value: ${{ jobs.ci.outputs.gcs-universal-zip-url-commit }}
 
 concurrency:
-  group: cd-${{ github.head_ref || github.run_id }}
+  group: cd-${{ inputs.plugin-directory }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 
 permissions:
@@ -599,7 +630,7 @@ jobs:
     steps:
       - name: Checkout specified branch
         id: checkout-specified-branch
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # Force exact ref when running in act (it copies files locally, it breaks if we specify another ref)
           ref: ${{ !github.event.act && inputs.branch || github.sha }}
@@ -782,6 +813,7 @@ jobs:
     with:
       branch: ${{ needs.setup.outputs.commit-sha }}
       plugin-directory: ${{ inputs.plugin-directory }}
+      docs-source-directory: ${{ inputs.docs-source-directory }}
       plugin-version-suffix: ${{ needs.setup.outputs.plugin-version-suffix }}
       npm-registry-auth: ${{ inputs.npm-registry-auth }}
       go-private-git-auth: ${{ inputs.go-private-git-auth }}
@@ -801,8 +833,8 @@ jobs:
       run-playwright-with-grafana-dependency: ${{ inputs.run-playwright-with-grafana-dependency }}
       run-playwright-with-skip-grafana-nightly-image: ${{ inputs.run-playwright-with-skip-grafana-nightly-image }}
       run-playwright-with-skip-grafana-dev-image: ${{ inputs.run-playwright-with-skip-grafana-dev-image }}
-      run-playwright-with-skip-grafana-react-19-preview-image: ${{ inputs.run-playwright-with-skip-grafana-react-19-preview-image }}
       run-playwright-with-version-resolver-type: ${{ inputs.run-playwright-with-version-resolver-type }}
+      run-playwright-with-limit: ${{ inputs.run-playwright-with-limit }}
       upload-playwright-artifacts: ${{ inputs.upload-playwright-artifacts }}
       playwright-report-path: ${{ inputs.playwright-report-path }}
       playwright-docker-compose-file: ${{ inputs.playwright-docker-compose-file }}
@@ -813,6 +845,7 @@ jobs:
       playwright-max-parallel: ${{ inputs.playwright-max-parallel }}
       playwright-secrets: ${{ inputs.playwright-secrets }}
       playwright-gar-registry: ${{ inputs.playwright-gar-registry }}
+      playwright-browsers: ${{ inputs.playwright-browsers }}
 
       run-trufflehog: ${{ inputs.run-trufflehog }}
       trufflehog-version: ${{ inputs.trufflehog-version }}
@@ -849,7 +882,7 @@ jobs:
       - name: Download GitHub artifact
         id: download-dist-artifacts
         continue-on-error: true
-        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: ${{ inputs.dist-artifacts-prefix }}dist-artifacts
           path: /tmp/dist-artifacts
@@ -866,7 +899,7 @@ jobs:
       - name: Generate artifact attestation
         if: ${{ inputs.attestation }}
         id: attestation
-        uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.0
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-path: /tmp/dist-artifacts/*.zip
 
@@ -922,7 +955,7 @@ jobs:
     runs-on: ubuntu-arm64-small
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # Force exact ref when running in act (it copies files locally, it breaks if we specify another ref)
           ref: ${{ !github.event.act && needs.setup.outputs.commit-sha || github.sha }}
@@ -959,14 +992,13 @@ jobs:
 
       - name: Get secrets from Vault
         id: get-secrets
-        uses: grafana/shared-workflows/actions/get-vault-secrets@f1614b210386ac420af6807a997ac7f6d96e477a # get-vault-secrets/v1.3.1
+        uses: grafana/shared-workflows/actions/get-vault-secrets@2f1ddaf3ce1aa677356243d0dd584be33cfa35e3 # get-vault-secrets/v2.1
         with:
           vault_instance: ${{ env.VAULT_INSTANCE }}
           common_secrets: |
             GCOM_PUBLISH_TOKEN_DEV=plugins/gcom-publish-token:dev
             GCOM_PUBLISH_TOKEN_OPS=plugins/gcom-publish-token:ops
             GCOM_PUBLISH_TOKEN_PROD=plugins/gcom-publish-token:prod
-          export_env: false
 
       - name: Determine which token to use
         id: gcom-token
@@ -1039,6 +1071,7 @@ jobs:
     runs-on: ubuntu-arm64-small
 
     needs:
+      - setup
       - ci
       - publish-to-catalog
     if: >-
@@ -1081,9 +1114,25 @@ jobs:
           AUTO_APPROVE_DURATIONS: ${{ inputs.auto-approve-durations }}
         shell: bash
 
+      - name: Get commit timestamp
+        id: commit-timestamp
+        # Used by the Argo Workflow staleness check to tell which of two overlapping deployments is newer.
+        # Best effort: if empty, the staleness check falls back to the workflow creation time.
+        run: |
+          timestamp=$(curl -fsSL \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/commits/${COMMIT_SHA}" \
+            | jq -r '.commit.committer.date // empty') || timestamp=""
+          echo "timestamp=${timestamp}" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          COMMIT_SHA: ${{ !github.event.act && needs.setup.outputs.commit-sha || github.sha }}
+        shell: bash
+
       - name: Trigger Argo Workflow
         id: trigger-argo-workflow
-        uses: grafana/shared-workflows/actions/trigger-argo-workflow@b513eb1dfd9becfa671a41e55063cdd5c0a08031 # trigger-argo-workflow/v1.2.2
+        uses: grafana/shared-workflows/actions/trigger-argo-workflow@5a212d56e9d224851dc4b3c2643bbc5bac484d5d # trigger-argo-workflow/v2.0.0
         with:
           namespace: grafana-plugins-cd
           workflow_template: grafana-plugins-deploy
@@ -1094,12 +1143,14 @@ jobs:
             slack_channel=${{ inputs.argo-workflow-slack-channel }}
             commit=${{ github.sha }}
             commit_link=${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}
+            commit_timestamp=${{ steps.commit-timestamp.outputs.timestamp }}
             auto_merge_environments=${{ steps.argo-parameters.outputs.auto_merge_environments }}
             auto_approve_durations=${{ steps.argo-parameters.outputs.auto_approve_durations }}
             prod_targets_all=${{ inputs.prod-targets-all }}
             slack_silent=${{ inputs.argo-workflow-slack-silent }}
             slack_mention_trigger_user=${{ inputs.argo-workflow-slack-mention-trigger-user }}
             slack_extra_mentions=${{ inputs.argo-workflow-slack-extra-mentions }}
+            pull_request_labels=${{ inputs.argo-workflow-pull-request-labels }}
 
       - name: Print job summary
         run: |
@@ -1140,7 +1191,7 @@ jobs:
       - name: Download GitHub artifact
         id: download-dist-artifacts
         continue-on-error: true
-        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: ${{ inputs.dist-artifacts-prefix }}dist-artifacts
           path: /tmp/dist-artifacts
@@ -1306,23 +1357,15 @@ jobs:
         - /home/runner/work/_actions:/home/runner/work/_actions
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # Force exact ref when running in act (it copies files locally, it breaks if we specify another ref)
           ref: ${{ !github.event.act && needs.setup.outputs.commit-sha || github.sha }}
           persist-credentials: false
 
-      # TEMPORARY: grafana/docs-base (alpine + node) doesn't ship jq, which
-      # the create-github-app-token action's bash scripts depend on.
-      # Remove this step once grafana/shared-workflows#1948 is released and
-      # the create-github-app-token ref above is bumped past it.
-      - name: Install jq (docs-base workaround)
-        shell: sh
-        run: apk add --no-cache jq
-
       - name: Generate GitHub token
         id: generate-github-token
-        uses: grafana/shared-workflows/actions/create-github-app-token@259ba21cb3ff07724f331e26d926d655d24b317b # create-github-app-token/v0.2.3
+        uses: grafana/shared-workflows/actions/create-github-app-token@5bbb526b1728ca57fbe1750c4c27ab6ab06171c2 # create-github-app-token/v1.0
         with:
           github_app: grafana-plugins-platform-bot
           permission_set: website-docs
@@ -1333,6 +1376,7 @@ jobs:
           id: ${{ fromJSON(needs.ci.outputs.plugin).id }}
           version: ${{ fromJSON(needs.ci.outputs.plugin).version }}
           github-token: x-access-token:${{ steps.generate-github-token.outputs.token }}
+          docs-source-directory: ${{ inputs.docs-source-directory }}
 
   create-github-release:
     name: Create GitHub Release
@@ -1352,7 +1396,7 @@ jobs:
       }}
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # Force exact ref when running in act (it copies files locally, it breaks if we specify another ref)
           ref: ${{ !github.event.act && needs.setup.outputs.commit-sha || github.sha }}
@@ -1361,7 +1405,7 @@ jobs:
       - name: Download GitHub artifact
         id: download-dist-artifacts
         continue-on-error: true
-        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: ${{ inputs.dist-artifacts-prefix }}dist-artifacts
           path: /tmp/dist-artifacts
@@ -1408,7 +1452,7 @@ jobs:
           PLUGIN_VERSION: ${{ fromJSON(needs.ci.outputs.plugin).version }}
 
       - name: Create Github release
-        uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe # v2.6.1
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
           draft: ${{ inputs.github-draft-release }}
           name: ${{ fromJSON(needs.ci.outputs.plugin).id }} v${{ fromJSON(needs.ci.outputs.plugin).version }}

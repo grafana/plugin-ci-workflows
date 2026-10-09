@@ -1,0 +1,11 @@
+{
+  "name": "simple-app-nested-backend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Test app plugin with its own backend and a nested datasource backend. The frontend is static files only: this fixture exists to exercise the packaging of multiple backend executables, so it skips the webpack toolchain on purpose.",
+  "scripts": {
+    "build": "node build.js",
+    "lint": "node -e \"process.exit(0)\"",
+    "typecheck": "node -e \"process.exit(0)\""
+  }
+}

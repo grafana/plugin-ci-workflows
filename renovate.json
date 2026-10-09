@@ -4,10 +4,11 @@
         "github>grafana/grafana-renovate-config//presets/base",
         "github>grafana/grafana-renovate-config//presets/automerge",
         "github>grafana/grafana-renovate-config//presets/labels",
-        "github>grafana/grafana-renovate-config//presets/docker"
+        "github>grafana/grafana-renovate-config//presets/docker",
+        "github>grafana/grafana-renovate-config//presets/npm"
     ],
     "extends": [
-        "config:best-practices"
+        "github>grafana/grafana-catalog-team//renovate/renovate"
     ],
     "packageRules": [
         {
@@ -33,6 +34,30 @@
                 "actions/plugins/frontend-e2e-against-stack/**"
             ],
             "groupName": "frontend-e2e-against-stack dependencies"
+        },
+        {
+            "description": "Automerge: minor/major updates need an approval from the Claude gate workflow before GitHub auto-merge fires",
+            "matchUpdateTypes": [
+                "minor",
+                "major"
+            ],
+            "automerge": true,
+            "addLabels": [
+                "claude-gate"
+            ]
+        },
+        {
+            "description": "Automerge: clear-cut updates get a direct bot approval, required CI checks still gate the merge",
+            "matchUpdateTypes": [
+                "patch",
+                "pin",
+                "digest",
+                "lockFileMaintenance"
+            ],
+            "automerge": true,
+            "addLabels": [
+                "automerge-direct"
+            ]
         }
     ],
     "customManagers": [
@@ -107,7 +132,6 @@
             "extractVersionTemplate": "^v?(?<version>.*)$"
         }
     ],
-    "minimumReleaseAge": "14 days",
-    "prConcurrentLimit": 10,
-    "rebaseWhen": "behind-base-branch"
+    "dependencyDashboard": false,
+    "prConcurrentLimit": 10
 }

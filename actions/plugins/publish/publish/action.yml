@@ -48,8 +48,9 @@ inputs:
     default: "false"
   provenance-attestation:
     description: |
-      Optional provenance attestation reference to include when publishing the plugin.
+      Optional provenance attestation reference for the plugin.
       Expected format: github#<owner>#sha256:<zip-sha256>.
+      NOTE: This value is currently NOT sent to GCOM when publishing.
     required: false
     default: ""
   gcom-api-url:

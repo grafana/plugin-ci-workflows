@@ -4,34 +4,35 @@
 # created when the PR is merged.
 name: "release-please PR: Update tagged references"
 
+# Reacts to the release-please branch being pushed rather than to events on its
+# PR: release-please owns and force-pushes these branches, so the branch update
+# is the actual signal. The app token grant in deployment_tools is pinned to this
+# event and branch prefix, so keep them in sync if either changes.
 on:
-  pull_request:
-    types:
-      - opened
-      - reopened
-      - synchronize
-    paths: .release-please-manifest.json
+  push:
+    branches:
+      - release-please--**
 
 permissions:
   contents: read
 
-# Only one instance of this workflow should run at a time for each PR.
+# Only one instance of this workflow should run at a time for each branch.
 concurrency:
-  group: ${{ github.workflow_ref }}-${{ github.event.pull_request.number }}
+  group: ${{ github.workflow_ref }}-${{ github.ref_name }}
   cancel-in-progress: true
 
 jobs:
-  # Checks if the PR's latest commit was made by this workflow to prevent recursion.
+  # Checks if the branch's latest commit was made by this workflow to prevent recursion.
   automated-commit-check:
     name: Automated commit check
     runs-on: ubuntu-arm64-small
     outputs:
       automated-commit: ${{ steps.check.outputs.automated-commit }}
     steps:
-      - name: Checkout PR branch
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Checkout release branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.head_ref }}
+          ref: ${{ github.ref_name }}
           persist-credentials: false
       - name: Automated commit check
         id: check
@@ -51,34 +52,32 @@ jobs:
       - automated-commit-check
     permissions:
       contents: write
-      pull-requests: write
       id-token: write
-    # Only run if the PR is from the same repo (not a fork), is a release-please PR,
-    # and the last commit was not made by this workflow (to prevent recursion).
+    # The trigger's branch filter already scopes this to the release-please
+    # branches; the prefix check is kept as a second gate. The recursion guard
+    # stops this job from reacting to its own commit.
     if: >-
       ${{
-        github.event.pull_request.head.repo.full_name == github.repository
-        && startsWith(github.head_ref, 'release-please--')
+        startsWith(github.ref_name, 'release-please--')
         && needs.automated-commit-check.outputs.automated-commit == 'false'
       }}
     runs-on: ubuntu-arm64-small
     steps:
       - name: Generate GitHub token
         id: generate-github-token
-        uses: grafana/shared-workflows/actions/create-github-app-token@259ba21cb3ff07724f331e26d926d655d24b317b # create-github-app-token/v0.2.3
+        uses: grafana/shared-workflows/actions/create-github-app-token@5bbb526b1728ca57fbe1750c4c27ab6ab06171c2 # create-github-app-token/v1.0
         with:
           github_app: grafana-plugins-platform-bot
 
-      - name: Checkout PR branch
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Checkout release branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.head_ref }}
+          ref: ${{ github.ref_name }}
           token: ${{ steps.generate-github-token.outputs.token }}
+          persist-credentials: false
           # This is needed or GitHub will return a
           # "remote rejected - cannot lock ref" error when trying to push
           fetch-depth: 0
-          # Needed for the git-auto-commit-action to push changes
-          persist-credentials: true
 
       - name: Determine component name
         id: component-name
@@ -88,7 +87,7 @@ jobs:
           echo "component=$component_name" >> "$GITHUB_OUTPUT"
         shell: bash
         env:
-          BRANCH_NAME: ${{ github.head_ref }}
+          BRANCH_NAME: ${{ github.ref_name }}
 
       - name: Get new version
         id: get-version
@@ -134,19 +133,58 @@ jobs:
           paths: |
             examples/**
 
-      - name: Get bot user info
-        id: get-bot-user
-        if: steps.switch-references.outputs.changed == 'true' || steps.switch-references-examples.outputs.changed == 'true'
-        uses: grafana/plugin-ci-workflows/actions/internal/get-bot-user@main
-        with:
-          app-slug: grafana-plugins-platform-bot
-          token: ${{ steps.generate-github-token.outputs.token }}
-
-      # Commit and push all changes to the PR
+      # Commit and push all changes to the PR branch via the GitHub API,
+      # so the commit is signed by GitHub and shows as "Verified".
       - name: Update PR
         if: steps.switch-references.outputs.changed == 'true' || steps.switch-references-examples.outputs.changed == 'true'
-        uses: stefanzweifel/git-auto-commit-action@04702edda442b2e678b25b537cec683a1493fcb9 # v7.1.0
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
-          commit_message: "chore(main): update tagged references"
-          commit_user_name: ${{ steps.get-bot-user.outputs.name }}
-          commit_user_email: ${{ steps.get-bot-user.outputs.email }}
+          github-token: ${{ steps.generate-github-token.outputs.token }}
+          script: |
+            const fs = require('fs');
+
+            // Collect working-tree changes made by the switch-references steps
+            const { stdout: statusOut } = await exec.getExecOutput('git', ['status', '--porcelain']);
+            const additions = [];
+            const deletions = [];
+            for (const line of statusOut.split('\n')) {
+              if (!line.trim()) continue;
+              const status = line.slice(0, 2).trim();
+              const path = line.slice(3);
+              if (status === 'D') {
+                deletions.push({ path });
+              } else {
+                additions.push({ path, contents: fs.readFileSync(path).toString('base64') });
+              }
+            }
+            if (additions.length === 0 && deletions.length === 0) {
+              core.info('No changes to commit');
+              return;
+            }
+
+            const { stdout: headOid } = await exec.getExecOutput('git', ['rev-parse', 'HEAD']);
+
+            const result = await github.graphql(
+              `mutation ($input: CreateCommitOnBranchInput!) {
+                createCommitOnBranch(input: $input) {
+                  commit { oid url }
+                }
+              }`,
+              {
+                input: {
+                  branch: {
+                    repositoryNameWithOwner: process.env.REPO,
+                    branchName: process.env.BRANCH_NAME,
+                  },
+                  expectedHeadOid: headOid.trim(),
+                  // Keep "update tagged references" in the headline:
+                  // the automated-commit-check job greps for it to prevent recursion.
+                  message: { headline: 'chore(main): update tagged references' },
+                  fileChanges: { additions, deletions },
+                },
+              },
+            );
+            core.info(`Created commit: ${result.createCommitOnBranch.commit.url}`);
+        env:
+          BRANCH_NAME: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}

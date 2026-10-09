@@ -36,7 +36,7 @@ runs:
     - name: Get secrets from Vault
       if: inputs.secrets != ''
       id: get-secrets
-      uses: grafana/shared-workflows/actions/get-vault-secrets@f1614b210386ac420af6807a997ac7f6d96e477a # get-vault-secrets/v1.3.1
+      uses: grafana/shared-workflows/actions/get-vault-secrets@2f1ddaf3ce1aa677356243d0dd584be33cfa35e3 # get-vault-secrets/v2.1
       with:
         repo_secrets: ${{ inputs.secrets }}
 
@@ -46,7 +46,9 @@ runs:
       shell: bash
 
     - name: Lint
-      run: golangci-lint run --timeout=5m
+      # Only scope to `./pkg/...`: some node_modules include Go files
+      # and may cause golangci-lint to fail with unactionable errors.
+      run: golangci-lint run --timeout=5m ./pkg/...
       working-directory: ${{ inputs.plugin-directory }}
       shell: bash
 

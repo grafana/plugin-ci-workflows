@@ -36,11 +36,15 @@ var knownWorkflows = []workflowEntry{
 	{path: "release-please-pr-update-tagged-references.yml", internal: true},
 	{path: "release-please-restore-rolling-release.yml", internal: true},
 	{path: "release-please.yml", internal: true},
+	{path: "renovate-approve.yml", internal: true},
 }
 
 // ciOnlyInputs lists ci.yml inputs that are CI-only and should NOT be in cd.yml.
 var ciOnlyInputs = map[string]bool{
 	"testing": true,
+	// Publishing downloads the plugin from a GCS URL, so skipping the upload is
+	// incompatible with CD.
+	"disable-gcs-upload": true,
 }
 
 func TestCDWorkflowContainsAllCIInputs(t *testing.T) {

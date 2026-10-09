@@ -210,12 +210,10 @@ func TestMockVaultSecretsStep(t *testing.T) {
 					"SECRET1=common_secret_1:a",
 					"SECRET2=common_secret_2:b",
 				}, "\n"),
-				"export_env": false,
 			},
 		}
 		mockedStep, err := MockVaultSecretsStep(step, vault)
 		require.NoError(t, err)
-		require.Equal(t, "Get Vault Secrets (mocked)", mockedStep.Name)
 		require.Contains(t, mockedStep.Run, bashOutput)
 		exp := `{"SECRET1":"value1","SECRET2":"value2"}`
 		require.Equal(t, exp, mockedStep.Env["SECRETS_JSON"])
@@ -230,12 +228,10 @@ func TestMockVaultSecretsStep(t *testing.T) {
 					"C=repo_secret_1:c",
 					"D=repo_secret_2:d",
 				}, "\n"),
-				"export_env": false,
 			},
 		}
 		mockedStep, err := MockVaultSecretsStep(step, vault)
 		require.NoError(t, err)
-		require.Equal(t, "Get Vault Secrets (mocked)", mockedStep.Name)
 		require.Contains(t, mockedStep.Run, bashOutput)
 		exp := `{"C":"value3","D":"value4"}`
 		require.Equal(t, exp, mockedStep.Env["SECRETS_JSON"])
@@ -254,12 +250,10 @@ func TestMockVaultSecretsStep(t *testing.T) {
 					"C=repo_secret_1:c",
 					"D=repo_secret_2:d",
 				}, "\n"),
-				"export_env": false,
 			},
 		}
 		mockedStep, err := MockVaultSecretsStep(step, vault)
 		require.NoError(t, err)
-		require.Equal(t, "Get Vault Secrets (mocked)", mockedStep.Name)
 		require.Contains(t, mockedStep.Run, bashOutput)
 		exp := `{"C":"value3","D":"value4","SECRET1":"value1","SECRET2":"value2"}`
 		require.Equal(t, exp, mockedStep.Env["SECRETS_JSON"])
@@ -273,7 +267,6 @@ func TestMockVaultSecretsStep(t *testing.T) {
 				"common_secrets": strings.Join([]string{
 					"SECRET1=this_secret_does_not_exist:a",
 				}, "\n"),
-				"export_env": false,
 			},
 		}
 		_, err := MockVaultSecretsStep(step, vault)
@@ -290,7 +283,6 @@ func TestMockVaultSecretsStep(t *testing.T) {
 					"SECRET1=a:b",
 					"SECRET2=this_secret_does_not_exist:a",
 				}, "\n"),
-				"export_env": false,
 			},
 		}
 		defaultValue := "foo"

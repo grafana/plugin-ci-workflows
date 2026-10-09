@@ -1,4 +1,5 @@
 # AGENTS.md
+- Security issues should be reported via [Grafana's security issue reporting page](https://grafana.com/legal/report-a-security-issue/) and not directly in this repository.
 
 This file provides guidance to AI coding assistants (Claude Code, Cursor, etc.) when working with code in this repository.
 
@@ -127,7 +128,10 @@ steps:
 
 ## Release Process
 
+Do not create or edit any `CHANGELOG.md` file. release-please generates them automatically; agents must leave them untouched.
+
 Uses release-please with separate versioning:
+
 - Main workflows: `ci-cd-workflows/vX.Y.Z`
 - Each action in `actions/plugins/`: its own version tag
 

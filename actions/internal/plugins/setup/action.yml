@@ -89,18 +89,37 @@ runs:
 
     - name: Install pnpm
       if: ${{ inputs.act-cache-warmup != 'true' && steps.package-manager.outputs.name == 'pnpm' }}
-      uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093 # v6.0.8
+      uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
       with:
-        version: ${{ steps.package-manager.outputs.version }}
+        package_json_file: ${{ inputs.plugin-directory }}/package.json
 
     - name: Node
       id: node
-      uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+      uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
       with:
         node-version: "${{ inputs.node-version }}"
         node-version-file: "${{ inputs.node-version-file }}"
-        cache: ${{ inputs.act-cache-warmup != 'true' && steps.package-manager.outputs.name || '' }}
+        # pnpm is cached separately below. setup-node looks the store up by running
+        # `pnpm store path` from the repository root, which is the wrong directory when
+        # the plugin lives in a subfolder: nothing there pins a pnpm version, so corepack
+        # answers with the newest release off the registry, and since pnpm 12 that
+        # reports a store path no install ever creates.
+        cache: ${{ (inputs.act-cache-warmup != 'true' && steps.package-manager.outputs.name != 'pnpm') && steps.package-manager.outputs.name || '' }}
         cache-dependency-path: ${{ inputs.act-cache-warmup != 'true' && steps.package-manager.outputs.lockFilePath || '' }}
+
+    - name: Locate the pnpm store
+      if: ${{ steps.package-manager.outputs.name == 'pnpm' }}
+      id: pnpm-store
+      shell: bash
+      working-directory: ${{ inputs.plugin-directory }}
+      run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+    - name: Cache pnpm store
+      if: ${{ steps.package-manager.outputs.name == 'pnpm' }}
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ${{ steps.pnpm-store.outputs.path }}
+        key: pnpm-store-os=${{ runner.os }}-arch=${{ runner.arch }}-${{ hashFiles(format('{0}/pnpm-lock.yaml', inputs.plugin-directory)) }}
 
     # Install additional dependencies that are not built-in to the slim act image
     # but are included in the default GitHub Actions runner image and are needed for plugin-ci-workflows.
@@ -108,17 +127,15 @@ runs:
       if: ${{ env.ACT }}
       shell: bash
       run: |
-        # Double-check if yarn is installed, as it may be installed by another test
-        # running in parallel and sharing the same act-toolcache volume.
-        # If try to install yarn twice, we get an "ENOTEMPTY: directory not empty" error.
-        if ! command -v yarn >/dev/null 2>&1; then
-          npm install -g yarn
-        fi
+        # Enable corepack so that yarn (v4+) can be resolved via the packageManager
+        # field in package.json. Corepack ships with Node.js 16.9+ and is the
+        # recommended way to manage Yarn Berry versions.
+        corepack enable
 
     - name: Go
       if: ${{ inputs.frontend-only != 'true' }}
       id: go
-      uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+      uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
       with:
         go-version: "${{ inputs.go-version }}"
         go-version-file: "${{ inputs.go-version-file }}"
@@ -134,7 +151,7 @@ runs:
     - name: Cache Go tooling
       if: ${{ inputs.frontend-only != 'true' }}
       id: cache
-      uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: |
           ${{ steps.go-bin.outputs.gobin }}/golangci-lint
@@ -153,6 +170,6 @@ runs:
       if: ${{ inputs.frontend-only != 'true' && steps.cache.outputs.cache-hit != 'true' }}
       shell: bash
       run: |
-        curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v${GOLANGCI_LINT_VERSION}
+        curl -sSfL https://golangci-lint.run/install.sh | sh -s -- -b $(go env GOPATH)/bin v${GOLANGCI_LINT_VERSION}
       env:
         GOLANGCI_LINT_VERSION: ${{ inputs.golangci-lint-version }}
