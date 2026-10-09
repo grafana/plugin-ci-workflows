@@ -48,6 +48,15 @@ else
     echo "[$1] No backend to build"
 fi
 
+if [ -n "$(jq -r '.docsPath // empty' src/plugin.json)" ]; then
+    docs_cli_version=$(sed -n 's/^ *DEFAULT_PLUGIN_DOCS_CLI_VERSION: *"\(.*\)"/\1/p' ../../.github/workflows/ci.yml)
+    echo "[$1] Building catalog docs with @grafana/plugin-docs-cli@${docs_cli_version}"
+    npx --yes "@grafana/plugin-docs-cli@${docs_cli_version}" validate --strict
+    npx --yes "@grafana/plugin-docs-cli@${docs_cli_version}" build
+else
+    echo "[$1] No catalog docs to build"
+fi
+
 echo "[$1] Copying dist folder to mockdata"
 rm -rf "../act/mockdata/dist/$1"
 mkdir -p "../act/mockdata/dist/$1"

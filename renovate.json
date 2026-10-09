@@ -130,6 +130,13 @@
             "packageNameTemplate": "grafana/plugin-validator",
             "datasourceTemplate": "github-releases",
             "extractVersionTemplate": "^v?(?<version>.*)$"
+        },
+        {
+            "customType": "regex",
+            "managerFilePatterns": [".github/workflows/*.{yml,yaml}"],
+            "matchStrings": ["DEFAULT_PLUGIN_DOCS_CLI_VERSION:\\s*\"(?<currentValue>[^\"]+)\""],
+            "depNameTemplate": "@grafana/plugin-docs-cli",
+            "datasourceTemplate": "npm"
         }
     ],
     "dependencyDashboard": false,
