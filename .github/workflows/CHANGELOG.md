@@ -1,5 +1,33 @@
 # Changelog
 
+## [11.4.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v11.3.0...ci-cd-workflows/v11.4.0) (2026-10-09)
+
+
+### 🎉 Features
+
+* **playwright:** add limit input to e2e-version ([#1106](https://github.com/grafana/plugin-ci-workflows/issues/1106)) ([6b55834](https://github.com/grafana/plugin-ci-workflows/commit/6b558345bb1c9f946c506f7773ae0b4d9ad0bf51))
+
+
+### 🐛 Bug Fixes
+
+* **ci:** trust github-merge-queue so queued merges can sign ([#1108](https://github.com/grafana/plugin-ci-workflows/issues/1108)) ([dc76ce3](https://github.com/grafana/plugin-ci-workflows/commit/dc76ce36bded9888548ea36017cd0dd1f03a6e74))
+* **security/unknown/tests/simple-backend:** update module golang.org/x/net to v0.60.0 [security] ([#1120](https://github.com/grafana/plugin-ci-workflows/issues/1120)) ([f581cce](https://github.com/grafana/plugin-ci-workflows/commit/f581cce8b7b81982c61feb5ae5f3c74dab31de2a))
+
+
+### 🔧 Chores
+
+* adjust AGENTS.md for act testing, add Claude skill for act tests ([#870](https://github.com/grafana/plugin-ci-workflows/issues/870)) ([8409f40](https://github.com/grafana/plugin-ci-workflows/commit/8409f40eae4424c7d8866c85e4412d12d03de9b5))
+* **deps:** lock file maintenance ([#1100](https://github.com/grafana/plugin-ci-workflows/issues/1100)) ([f3bf94a](https://github.com/grafana/plugin-ci-workflows/commit/f3bf94a746ac3f4253a975018616902f40e446d0))
+* **deps:** lock file maintenance ([#1111](https://github.com/grafana/plugin-ci-workflows/issues/1111)) ([4f8cefe](https://github.com/grafana/plugin-ci-workflows/commit/4f8cefe01229fa6bbfd1f0cf6dc4c54c8d25b8be))
+* **deps:** lock file maintenance ([#1113](https://github.com/grafana/plugin-ci-workflows/issues/1113)) ([67d8d60](https://github.com/grafana/plugin-ci-workflows/commit/67d8d60ddd33d4a3da06d0fa4db6e0a5de1e6497))
+* **deps:** update dependency @swc/core to v1.16.13 ([#1115](https://github.com/grafana/plugin-ci-workflows/issues/1115)) ([ae50d1e](https://github.com/grafana/plugin-ci-workflows/commit/ae50d1eec61abb3f156f790b0bf23e4781bdeff9))
+* **deps:** update dependency @types/node to v24.19.1 ([#1116](https://github.com/grafana/plugin-ci-workflows/issues/1116)) ([5fe1711](https://github.com/grafana/plugin-ci-workflows/commit/5fe171179535b1fb1b817a62c760d328532e9a30))
+* **deps:** update dependency golangci-lint to v2.14.0 ([#1117](https://github.com/grafana/plugin-ci-workflows/issues/1117)) ([b0647c5](https://github.com/grafana/plugin-ci-workflows/commit/b0647c525110e0b5b1fb6a8d0a70c00fc411036b))
+* **deps:** update eslint-plugin-react-hooks to v7 ([#1123](https://github.com/grafana/plugin-ci-workflows/issues/1123)) ([850f468](https://github.com/grafana/plugin-ci-workflows/commit/850f468dbe5aecf79635738e80dc9c0ecee110ad))
+* **deps:** update npm to v12 ([#1089](https://github.com/grafana/plugin-ci-workflows/issues/1089)) ([c99c55c](https://github.com/grafana/plugin-ci-workflows/commit/c99c55c555e39e93c8278157ca9d77ee40c7b44f))
+* **deps:** update typescript-eslint monorepo to v8.70.1 ([#1104](https://github.com/grafana/plugin-ci-workflows/issues/1104)) ([429285d](https://github.com/grafana/plugin-ci-workflows/commit/429285db36530e4edd758a9fa9db8228e85142c2))
+* **deps:** update yarn to v4.18.1 ([#1105](https://github.com/grafana/plugin-ci-workflows/issues/1105)) ([d8ac1fc](https://github.com/grafana/plugin-ci-workflows/commit/d8ac1fc37ea13b519d86025ad05f9908d2266d74))
+
 ## [11.3.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v11.2.0...ci-cd-workflows/v11.3.0) (2026-09-30)
 
 
