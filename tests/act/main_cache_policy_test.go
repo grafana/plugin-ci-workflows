@@ -1,11 +1,9 @@
 package main
 
 import (
-	"os"
 	"strings"
 	"testing"
 
-	"github.com/goccy/go-yaml"
 	"github.com/stretchr/testify/require"
 
 	"github.com/grafana/plugin-ci-workflows/tests/act/internal/workflow"
@@ -22,20 +20,6 @@ const (
 	nodeDepsExpr  = "${{ inputs.node-setup-caching == 'true' && inputs.act-cache-warmup != 'true' && steps.package-manager.outputs.lockFilePath || '' }}"
 )
 
-type compositeAction struct {
-	Inputs map[string]workflow.WorkflowCallInput `yaml:"inputs"`
-	Runs   workflow.Job                          `yaml:"runs"`
-}
-
-func loadAction(t *testing.T, path string) compositeAction {
-	t.Helper()
-	b, err := os.ReadFile(path)
-	require.NoError(t, err)
-	var a compositeAction
-	require.NoError(t, yaml.Unmarshal(b, &a))
-	return a
-}
-
 func loadWorkflow(t *testing.T, name string) workflow.BaseWorkflow {
 	t.Helper()
 	wf, err := workflow.NewBaseWorkflowFromFile(".github/workflows/" + name)
@@ -49,8 +33,10 @@ func TestCachingFlagDeclarations(t *testing.T) {
 	ci := loadWorkflow(t, "ci.yml")
 	cd := loadWorkflow(t, "cd.yml")
 	pw := loadWorkflow(t, "playwright.yml")
-	setup := loadAction(t, setupActionPath)
-	trufflehog := loadAction(t, trufflehogActionPath)
+	setup, err := workflow.NewCompositeActionFromFile(setupActionPath)
+	require.NoError(t, err)
+	trufflehog, err := workflow.NewCompositeActionFromFile(trufflehogActionPath)
+	require.NoError(t, err)
 
 	flags := []string{"go-setup-caching", "node-setup-caching", "go-tooling-caching", "trufflehog-caching", "playwright-caching"}
 	for _, flag := range flags {
@@ -117,8 +103,9 @@ func TestCachingFlagForwarding(t *testing.T) {
 func TestSetupImplicitCachingDisabled(t *testing.T) {
 	t.Parallel()
 
-	setup := loadAction(t, setupActionPath).Runs
-	node, goStep, pnpm := setup.GetStep("node"), setup.GetStep("go"), setup.GetStep("pnpm")
+	setup, err := workflow.NewCompositeActionFromFile(setupActionPath)
+	require.NoError(t, err)
+	node, goStep, pnpm := setup.Runs.GetStep("node"), setup.Runs.GetStep("go"), setup.Runs.GetStep("pnpm")
 	require.NotNil(t, node)
 	require.NotNil(t, goStep)
 	require.NotNil(t, pnpm)
@@ -133,8 +120,11 @@ func TestSetupImplicitCachingDisabled(t *testing.T) {
 func TestCacheStepGating(t *testing.T) {
 	t.Parallel()
 
-	setup := loadAction(t, setupActionPath).Runs
-	trufflehog := loadAction(t, trufflehogActionPath).Runs
+	setupAction, err := workflow.NewCompositeActionFromFile(setupActionPath)
+	require.NoError(t, err)
+	trufflehogAction, err := workflow.NewCompositeActionFromFile(trufflehogActionPath)
+	require.NoError(t, err)
+	setup, trufflehog := setupAction.Runs, trufflehogAction.Runs
 	pw := loadWorkflow(t, "playwright.yml").Jobs["playwright-tests"]
 	const installIf = "${{ inputs.frontend-only != 'true' && steps.cache.outputs.cache-hit != 'true' }}"
 
