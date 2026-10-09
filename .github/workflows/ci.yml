@@ -43,6 +43,26 @@ on:
         type: boolean
         required: false
         default: true
+      node-setup-caching:
+        description: Defines if Node.js dependency caching is enabled during setup
+        type: boolean
+        required: false
+        default: true
+      go-tooling-caching:
+        description: Defines if the Go tooling (mage, golangci-lint) executable cache is enabled
+        type: boolean
+        required: false
+        default: true
+      trufflehog-caching:
+        description: Defines if the Trufflehog binary cache is enabled
+        type: boolean
+        required: false
+        default: true
+      playwright-caching:
+        description: Defines if the Playwright browsers cache is enabled
+        type: boolean
+        required: false
+        default: true
 
       # Build options.
       plugin-directory:
@@ -525,6 +545,8 @@ jobs:
           go-version: ${{ fromJson(steps.tooling-versions.outputs.result).goVersion }}
           go-version-file: ${{ fromJson(steps.tooling-versions.outputs.result).goVersionFile }}
           go-setup-caching: ${{ inputs.go-setup-caching }}
+          node-setup-caching: ${{ inputs.node-setup-caching }}
+          go-tooling-caching: ${{ inputs.go-tooling-caching }}
           golangci-lint-version: ${{ inputs.golangci-lint-version || env.DEFAULT_GOLANGCI_LINT_VERSION }}
           mage-version: ${{ inputs.mage-version || env.DEFAULT_MAGE_VERSION }}
 
@@ -630,6 +652,7 @@ jobs:
         uses: grafana/plugin-ci-workflows/actions/internal/plugins/trufflehog@main
         with:
           trufflehog-version: ${{ inputs.trufflehog-version || env.DEFAULT_TRUFFLEHOG_VERSION }}
+          cache: ${{ inputs.trufflehog-caching }}
           folder: ${{ inputs.plugin-directory }}/dist-artifacts
           include-detectors: ${{ inputs.trufflehog-include-detectors }}
           exclude-detectors: ${{ inputs.trufflehog-exclude-detectors }}
@@ -807,6 +830,8 @@ jobs:
       node-version: ${{ inputs.node-version }}
       npm-registry-auth: ${{ inputs.npm-registry-auth }}
       playwright-browsers: ${{ inputs.playwright-browsers }}
+      node-setup-caching: ${{ inputs.node-setup-caching }}
+      playwright-caching: ${{ inputs.playwright-caching }}
 
   playwright-docker:
     name: Plugins - Dockerized Playwright E2E tests

@@ -18,6 +18,16 @@ on:
       gar-registry:
         type: string
         required: false
+      node-setup-caching:
+        description: Defines if Node.js dependency caching is enabled during setup
+        type: boolean
+        required: false
+        default: true
+      playwright-caching:
+        description: Defines if the Playwright browsers cache is enabled
+        type: boolean
+        required: false
+        default: true
       plugin-directory:
         description: Directory of the plugin, if not in the root of the repository.
         type: string
@@ -166,6 +176,7 @@ jobs:
           node-version: ${{ inputs.node-version }}
           node-version-file: ${{ inputs.plugin-directory }}/.nvmrc
           frontend-only: "true"
+          node-setup-caching: ${{ inputs.node-setup-caching }}
 
       - name: Login to Google Cloud
         if: inputs.npm-registry-auth == true
@@ -243,6 +254,7 @@ jobs:
           echo "cache-key=$cache_key" >> "$GITHUB_OUTPUT"
 
       - name: Cache Playwright
+        if: ${{ inputs.playwright-caching }}
         id: cache
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:

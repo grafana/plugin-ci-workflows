@@ -27,6 +27,10 @@ inputs:
       This value will be passed via the `--exclude-detectors` option to Trufflehog.
       If not provided, the flag is not passed.
     required: false
+  cache:
+    description: Defines if the Trufflehog binary should be cached.
+    required: false
+    default: "true"
   setup-only:
     description: |
       If true, only sets up Trufflehog without running it.
@@ -38,12 +42,14 @@ runs:
   using: composite
   steps:
     - name: Cache Trufflehog binary
+      if: ${{ inputs.cache == 'true' }}
       id: cache
       uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: /usr/local/bin/trufflehog
         key: trufflehog-${{ runner.os }}-${{ runner.arch }}-${{ inputs.trufflehog-version }}
 
+    # TODO: verify the signature of the downloaded Trufflehog before executing it.
     - name: Install Trufflehog
       if: ${{ steps.cache.outputs.cache-hit != 'true' }}
       shell: bash
