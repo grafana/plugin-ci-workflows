@@ -16,11 +16,11 @@
   "author": "Grafana",
   "license": "Apache-2.0",
   "devDependencies": {
-    "@grafana/eslint-config": "8.2.0",
+    "@grafana/eslint-config": "10.0.0",
     "@grafana/plugin-e2e": "3.14.0",
     "@grafana/tsconfig": "2.2.0",
     "@playwright/test": "1.63.0",
-    "@stylistic/eslint-plugin-ts": "4.4.1",
+    "@stylistic/eslint-plugin": "5.10.0",
     "@swc/core": "1.16.13",
     "@swc/helpers": "0.5.23",
     "@swc/jest": "0.2.39",
