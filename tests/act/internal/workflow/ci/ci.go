@@ -101,6 +101,12 @@ type WorkflowInputs struct {
 	MageVersion         *string
 	TrufflehogVersion   *string
 
+	NodeSetupCaching  *bool
+	GoSetupCaching    *bool
+	GoToolingCaching  *bool
+	TrufflehogCaching *bool
+	PlaywrightCaching *bool
+
 	RunPlaywright          *bool
 	RunPlaywrightWithLimit *string
 
@@ -130,6 +136,12 @@ func SetCIInputs(dst *workflow.Job, inputs WorkflowInputs) {
 	workflow.SetJobInput(dst, "golangci-lint-version", inputs.GolangciLintVersion)
 	workflow.SetJobInput(dst, "mage-version", inputs.MageVersion)
 	workflow.SetJobInput(dst, "trufflehog-version", inputs.TrufflehogVersion)
+
+	workflow.SetJobInput(dst, "node-setup-caching", inputs.NodeSetupCaching)
+	workflow.SetJobInput(dst, "go-setup-caching", inputs.GoSetupCaching)
+	workflow.SetJobInput(dst, "go-tooling-caching", inputs.GoToolingCaching)
+	workflow.SetJobInput(dst, "trufflehog-caching", inputs.TrufflehogCaching)
+	workflow.SetJobInput(dst, "playwright-caching", inputs.PlaywrightCaching)
 
 	workflow.SetJobInput(dst, "run-playwright", inputs.RunPlaywright)
 	workflow.SetJobInput(dst, "run-playwright-with-limit", inputs.RunPlaywrightWithLimit)

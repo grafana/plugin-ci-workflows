@@ -143,6 +143,11 @@ func WithWorkflowInputs(inputs WorkflowInputs) WorkflowOption {
 	return func(w *Workflow) {
 		job := w.BaseWorkflow.Jobs["cd"]
 		ci.SetCIInputs(job, inputs.CI)
+		// The CD workflow does not declare cache inputs (it forces all caches off),
+		// so make sure CI-only cache flags are never forwarded to it.
+		for _, k := range []string{"node-setup-caching", "go-setup-caching", "go-tooling-caching", "trufflehog-caching", "playwright-caching"} {
+			delete(job.With, k)
+		}
 		workflow.SetJobInput(job, "environment", inputs.Environment)
 		workflow.SetJobInput(job, "branch", inputs.Branch)
 		workflow.SetJobInput(job, "scopes", inputs.Scopes)

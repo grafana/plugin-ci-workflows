@@ -45,6 +45,12 @@ var ciOnlyInputs = map[string]bool{
 	// Publishing downloads the plugin from a GCS URL, so skipping the upload is
 	// incompatible with CD.
 	"disable-gcs-upload": true,
+	// CD forces caching off for release builds, to avoid cache poisoning.
+	"go-setup-caching":   true,
+	"node-setup-caching": true,
+	"go-tooling-caching": true,
+	"trufflehog-caching": true,
+	"playwright-caching": true,
 }
 
 func TestCDWorkflowContainsAllCIInputs(t *testing.T) {
