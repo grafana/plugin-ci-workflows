@@ -14,35 +14,37 @@ import (
 )
 
 // TestInstallScripts verifies the install scripts policy computed by the setup action
-// (node-package-manager-scripts input) against the three real test plugins (npm, yarn, pnpm).
-//
-// TODO: add a simple-frontend-yarn-berry test plugin and cover the yarnBerry agent path
-// (--mode=skip-build for "none", YARN_ENABLE_SCRIPTS for "allowlist" and "all").
+// (node-package-manager-scripts input) against the three real test plugins (npm, yarn berry, pnpm).
 func TestInstallScripts(t *testing.T) {
 	type testCase struct {
 		folder string
 		mode   string
 
 		// wantEffective is the effective policy (allowlist falls back to none when unsupported).
+		// For npmRuntimeDependent allowlist cases it is derived from the npm runtime version.
 		wantEffective string
 		// wantCmdSuffix is the flag(s) appended to the frozen install command ("" for none).
 		wantCmdSuffix string
 		wantWarning   bool
-		// npmAllFlagNeedsNPM1116 means wantCmdSuffix is derived from the npm runtime version
-		// (the toolcache decides it): the flag is only expected on npm >= 11.16.0.
-		npmAllFlagNeedsNPM1116 bool
+		// wantYarnEnableScripts is the expected yarn-enable-scripts value ("" means not-set).
+		wantYarnEnableScripts string
+		// npmRuntimeDependent means the expectations are derived from the npm runtime version
+		// (the toolcache decides it): allowlist is native on npm >= 12.0.0 (else falls back to
+		// none with a warning), and the "all" flag is only expected on npm >= 11.16.0.
+		npmRuntimeDependent bool
 	}
 
 	for _, tc := range []testCase{
 		// npm: simple-frontend has no allowScripts field
 		{folder: "simple-frontend", mode: "none", wantEffective: "none", wantCmdSuffix: " --ignore-scripts"},
-		{folder: "simple-frontend", mode: "allowlist", wantEffective: "none", wantCmdSuffix: " --ignore-scripts", wantWarning: true},
-		{folder: "simple-frontend", mode: "all", wantEffective: "all", npmAllFlagNeedsNPM1116: true},
-		// yarn classic: no allowlist support
-		{folder: "simple-frontend-yarn", mode: "none", wantEffective: "none", wantCmdSuffix: " --ignore-scripts"},
-		{folder: "simple-frontend-yarn", mode: "allowlist", wantEffective: "none", wantCmdSuffix: " --ignore-scripts", wantWarning: true},
-		{folder: "simple-frontend-yarn", mode: "all", wantEffective: "all"},
-		// pnpm 10: native allowlist
+		// allowlist: native on npm >= 12.0.0, otherwise falls back to none (see npmRuntimeDependent)
+		{folder: "simple-frontend", mode: "allowlist", npmRuntimeDependent: true},
+		{folder: "simple-frontend", mode: "all", wantEffective: "all", npmRuntimeDependent: true},
+		// yarn berry (4.x): scripts controlled via --mode=skip-build and YARN_ENABLE_SCRIPTS
+		{folder: "simple-frontend-yarn", mode: "none", wantEffective: "none", wantCmdSuffix: " --mode=skip-build", wantYarnEnableScripts: "false"},
+		{folder: "simple-frontend-yarn", mode: "allowlist", wantEffective: "allowlist", wantYarnEnableScripts: "false"},
+		{folder: "simple-frontend-yarn", mode: "all", wantEffective: "all", wantYarnEnableScripts: "true"},
+		// pnpm 10+: native allowlist
 		{folder: "simple-frontend-pnpm", mode: "none", wantEffective: "none", wantCmdSuffix: " --ignore-scripts"},
 		{folder: "simple-frontend-pnpm", mode: "allowlist", wantEffective: "allowlist"},
 		{folder: "simple-frontend-pnpm", mode: "all", wantEffective: "all", wantCmdSuffix: " --config.dangerously-allow-all-builds=true"},
@@ -62,7 +64,7 @@ func TestInstallScripts(t *testing.T) {
 				}),
 				ci.MutateCIWorkflow().With(
 					workflow.WithOnlyOneJob(t, "test-and-build", true),
-					workflow.WithRemoveAllStepsAfter(t, "test-and-build", "frontend"),
+					workflow.WithRemoveAllStepsAfter(t, "test-and-build", "setup"),
 				),
 			)
 			require.NoError(t, err)
@@ -71,13 +73,42 @@ func TestInstallScripts(t *testing.T) {
 			require.NoError(t, err)
 			require.True(t, r.Success, "workflow should succeed")
 
+			wantEffective, wantCmdSuffix, wantWarning := tc.wantEffective, tc.wantCmdSuffix, tc.wantWarning
+			if tc.npmRuntimeDependent {
+				var npmVersion string
+				for _, ann := range r.Annotations {
+					if ann.Level == act.AnnotationLevelDebug && strings.HasPrefix(ann.Message, `msg="pm-runtime-version" value=`) {
+						npmVersion = strings.TrimPrefix(ann.Message, `msg="pm-runtime-version" value=`)
+						break
+					}
+				}
+				require.NotEmpty(t, npmVersion, "pm-runtime-version annotation should be present")
+				npmVersion = "v" + npmVersion
+				switch tc.mode {
+				case "allowlist":
+					if semver.Compare(npmVersion, "v12.0.0") >= 0 {
+						wantEffective = "allowlist"
+					} else {
+						wantEffective, wantCmdSuffix, wantWarning = "none", " --ignore-scripts", true
+					}
+				case "all":
+					if semver.Compare(npmVersion, "v11.16.0") >= 0 {
+						wantCmdSuffix = " --dangerously-allow-all-scripts"
+					}
+				}
+			}
+
 			require.Contains(t, r.Annotations, act.Annotation{
 				Level:   act.AnnotationLevelDebug,
-				Message: fmt.Sprintf(`msg="scripts-policy" requested=%s effective=%s`, tc.mode, tc.wantEffective),
+				Message: fmt.Sprintf(`msg="scripts-policy" requested=%s effective=%s`, tc.mode, wantEffective),
 			})
+			wantYarnEnableScripts := tc.wantYarnEnableScripts
+			if wantYarnEnableScripts == "" {
+				wantYarnEnableScripts = "not-set"
+			}
 			require.Contains(t, r.Annotations, act.Annotation{
 				Level:   act.AnnotationLevelDebug,
-				Message: `msg="yarn-enable-scripts" value=not-set`,
+				Message: fmt.Sprintf(`msg="yarn-enable-scripts" value=%s`, wantYarnEnableScripts),
 			})
 
 			// The frozen install command differs per package manager: check only the policy suffix.
@@ -90,22 +121,8 @@ func TestInstallScripts(t *testing.T) {
 			}
 			require.NotEmpty(t, installCmd, "install-cmd annotation should be present")
 
-			wantCmdSuffix := tc.wantCmdSuffix
-			if tc.npmAllFlagNeedsNPM1116 {
-				var npmVersion string
-				for _, ann := range r.Annotations {
-					if ann.Level == act.AnnotationLevelDebug && strings.HasPrefix(ann.Message, `msg="pm-runtime-version" value=`) {
-						npmVersion = strings.TrimPrefix(ann.Message, `msg="pm-runtime-version" value=`)
-						break
-					}
-				}
-				require.NotEmpty(t, npmVersion, "pm-runtime-version annotation should be present")
-				if semver.Compare("v"+npmVersion, "v11.16.0") >= 0 {
-					wantCmdSuffix = " --dangerously-allow-all-scripts"
-				}
-			}
 			if wantCmdSuffix == "" {
-				for _, flag := range []string{"--ignore-scripts", "--dangerously-allow-all", "--strict-allow-scripts"} {
+				for _, flag := range []string{"--ignore-scripts", "--dangerously-allow-all", "--strict-allow-scripts", "--mode=skip-build"} {
 					require.NotContains(t, installCmd, flag)
 				}
 			} else {
@@ -118,7 +135,7 @@ func TestInstallScripts(t *testing.T) {
 					hasWarning = true
 				}
 			}
-			require.Equal(t, tc.wantWarning, hasWarning, "unexpected warning annotation state")
+			require.Equal(t, wantWarning, hasWarning, "unexpected warning annotation state")
 		})
 	}
 }
