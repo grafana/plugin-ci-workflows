@@ -142,7 +142,9 @@ on:
         default: "6"
       upload-playwright-artifacts:
         description: |
-          If true, the Playwright E2E artifacts will be uploaded to GitHub.
+          If true, upload the Playwright reports as GitHub artifacts. On trusted runs and on
+          scheduled runs, also publish them to Google Cloud Storage and link them from the job
+          summary. Published reports are readable by all Grafana employees for 30 days.
           Default is false.
           IMPORTANT: Make sure there are no unmasked secrets in the E2E tests before turning this on.
         required: false
@@ -204,6 +206,13 @@ on:
         type: string
         required: false
         default: ""
+      playwright-pr-comment-summary:
+        description: |
+          Whether to post a PR comment with Playwright test results and report links.
+          Only takes effect when upload-playwright-artifacts is true.
+        type: boolean
+        required: false
+        default: true
 
       # Trufflehog
       run-trufflehog:
@@ -371,6 +380,7 @@ concurrency:
 permissions:
   contents: read
   id-token: write
+  pull-requests: write
 
 env:
   # Default versions for tooling
@@ -807,6 +817,11 @@ jobs:
       node-version: ${{ inputs.node-version }}
       npm-registry-auth: ${{ inputs.npm-registry-auth }}
       playwright-browsers: ${{ inputs.playwright-browsers }}
+      pr-comment-summary: ${{ inputs.playwright-pr-comment-summary }}
+      # Same trust rule as signing and the GCS upload in this workflow. isTrusted leaves out
+      # scheduled runs, so allow those separately: nightly failures are where a report helps
+      # most. A scheduled run executes the default branch, which is trusted code.
+      publish-reports: ${{ fromJson(needs.test-and-build.outputs.workflow-context).isTrusted || (github.event_name == 'schedule' && !inputs.testing) }}
 
   playwright-docker:
     name: Plugins - Dockerized Playwright E2E tests
