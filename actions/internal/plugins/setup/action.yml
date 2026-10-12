@@ -71,6 +71,12 @@ inputs:
       Yarn Berry uses "dependenciesMeta.<pkg>.built: true" in package.json; Yarn Classic has no allowlist (falls back to "none").
     required: false
     default: allowlist
+  node-setup-caching:
+    description: |
+      If "false", disable package manager dependency caches in setup-node and
+      the pnpm store cache. For setup-only callers that never install dependencies.
+    required: false
+    default: "true"
 
 outputs:
   node-version:
@@ -129,18 +135,28 @@ runs:
         # the plugin lives in a subfolder: nothing there pins a pnpm version, so corepack
         # answers with the newest release off the registry, and since pnpm 12 that
         # reports a store path no install ever creates.
-        cache: ${{ (inputs.act-cache-warmup != 'true' && steps.package-manager.outputs.name != 'pnpm') && steps.package-manager.outputs.name || '' }}
+        cache: >-
+          ${{ (inputs.node-setup-caching != 'false' &&
+          inputs.act-cache-warmup != 'true' &&
+          steps.package-manager.outputs.name != 'pnpm') &&
+          steps.package-manager.outputs.name || '' }}
+        # setup-node v7 can enable automatic npm caching when `cache` is empty.
+        package-manager-cache: ${{ inputs.node-setup-caching != 'false' }}
         cache-dependency-path: ${{ inputs.act-cache-warmup != 'true' && steps.package-manager.outputs.lockFilePath || '' }}
 
     - name: Locate the pnpm store
-      if: ${{ steps.package-manager.outputs.name == 'pnpm' }}
+      if: >-
+        ${{ inputs.node-setup-caching != 'false' &&
+        steps.package-manager.outputs.name == 'pnpm' }}
       id: pnpm-store
       shell: bash
       working-directory: ${{ inputs.plugin-directory }}
       run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
 
     - name: Cache pnpm store
-      if: ${{ steps.package-manager.outputs.name == 'pnpm' }}
+      if: >-
+        ${{ inputs.node-setup-caching != 'false' &&
+        steps.package-manager.outputs.name == 'pnpm' }}
       uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: ${{ steps.pnpm-store.outputs.path }}

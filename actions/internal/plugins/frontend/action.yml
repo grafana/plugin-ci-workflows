@@ -74,14 +74,14 @@ runs:
         # `enableScripts` in .yarnrc.yml. Empty for npm, pnpm and Yarn
         # Classic, which ignores it: its command uses --ignore-scripts for
         # "none" and the "allowlist" fallback.
-        if [ -n "${YARN_ENABLE_SCRIPTS_POLICY}" ]; then
-          export YARN_ENABLE_SCRIPTS="${YARN_ENABLE_SCRIPTS_POLICY}"
+        if [ -n "${INSTALL_SCRIPTS_POLICY}" ]; then
+          export YARN_ENABLE_SCRIPTS="${INSTALL_SCRIPTS_POLICY}"
         fi
         read -r -a cmd <<< "${INSTALL_CMD}"
         "${cmd[@]}"
       env:
         INSTALL_CMD: ${{ inputs.install-cmd }}
-        YARN_ENABLE_SCRIPTS_POLICY: ${{ inputs.yarn-enable-scripts }}
+        INSTALL_SCRIPTS_POLICY: ${{ inputs.yarn-enable-scripts }}
 
     - name: Lint
       shell: bash
