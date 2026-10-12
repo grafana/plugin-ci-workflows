@@ -817,6 +817,7 @@ jobs:
       upload-artifacts: ${{ inputs.upload-playwright-artifacts }}
       docker-compose-file: ${{ inputs.playwright-docker-compose-file }}
       playwright-config: ${{ inputs.playwright-config }}
+      node-package-manager-scripts: ${{ inputs.node-package-manager-scripts }}
       report-path: ${{ inputs.playwright-report-path }}
       grafana-url: ${{ inputs.playwright-grafana-url }}
       grafana-timeout: ${{ inputs.playwright-grafana-timeout }}
@@ -826,7 +827,6 @@ jobs:
       node-version: ${{ inputs.node-version }}
       npm-registry-auth: ${{ inputs.npm-registry-auth }}
       playwright-browsers: ${{ inputs.playwright-browsers }}
-      node-package-manager-scripts: ${{ inputs.node-package-manager-scripts }}
 
   playwright-docker:
     name: Plugins - Dockerized Playwright E2E tests

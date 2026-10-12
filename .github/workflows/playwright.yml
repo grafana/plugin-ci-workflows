@@ -179,10 +179,10 @@ jobs:
         uses: grafana/plugin-ci-workflows/actions/internal/plugins/setup@main
         with:
           plugin-directory: ${{ inputs.plugin-directory }}
+          node-package-manager-scripts: ${{ inputs.node-package-manager-scripts }}
           node-version: ${{ inputs.node-version }}
           node-version-file: ${{ inputs.plugin-directory }}/.nvmrc
           frontend-only: "true"
-          node-package-manager-scripts: ${{ inputs.node-package-manager-scripts }}
 
       - name: Login to Google Cloud
         if: inputs.npm-registry-auth == true

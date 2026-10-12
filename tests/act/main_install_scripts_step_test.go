@@ -40,10 +40,10 @@ func TestSetupDependencyCacheToggle(t *testing.T) {
 				}
 				found = true
 				if name == "Node" {
-					require.Contains(t, step.With["cache"], "inputs.node-setup-caching != 'false'")
-					require.Equal(t, "${{ inputs.node-setup-caching != 'false' }}", step.With["package-manager-cache"])
+					require.Contains(t, step.With["cache"], "inputs.node-setup-caching == 'true'")
+					require.Equal(t, false, step.With["package-manager-cache"])
 				} else {
-					require.Contains(t, step.If, "inputs.node-setup-caching != 'false'")
+					require.Contains(t, step.If, "inputs.node-setup-caching == 'true'")
 				}
 			}
 			require.True(t, found, "cache step should exist")
