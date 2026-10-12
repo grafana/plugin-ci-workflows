@@ -89,15 +89,22 @@ on:
         type: boolean
         required: false
         default: false
-      node-package-manager-allow-scripts:
+      node-package-manager-scripts:
         description: |
-          Allow npm/yarn/pnpm lifecycle scripts (preinstall, install, postinstall, prepare, etc.)
-          to run during dependency installation.
-          Disabled by default for security. Only enable as a last resort if a plugin truly
-          requires install-time scripts and cannot work without them.
-        type: boolean
+          Controls the npm/pnpm/yarn install scripts (preinstall, install, postinstall, prepare, ...) run during dependency installation.
+          One of:
+          - "none": block every install script.
+          - "allowlist" (default): only run install scripts of dependencies allowlisted in your package manager config.
+            npm (--strict-allow-scripts) and pnpm 11 fail the install if a dependency with install scripts has no allow/deny entry.
+            If the package manager can't enforce an allowlist, all install scripts are disabled and a warning is shown.
+          - "all": run every dependency install script (last resort). On pnpm this needs pnpm >=10.9; older 10.x only builds "onlyBuiltDependencies" (with a warning).
+          The project's own lifecycle scripts (root/workspace) still run with "allowlist" and "all"; "none" blocks those too.
+          Allowlist: pnpm >=10 uses "allowBuilds" in pnpm-workspace.yaml (pnpm 10.26+/11) or "onlyBuiltDependencies" (older);
+          npm >=11.16 uses "allowScripts" in package.json (see "npm approve-scripts" / "npm install-scripts approve");
+          Yarn Berry uses "dependenciesMeta.<pkg>.built: true" in package.json; Yarn Classic has no allowlist (falls back to "none").
+        type: string
         required: false
-        default: false
+        default: allowlist
 
       # Playwright
       run-playwright:
@@ -536,6 +543,7 @@ jobs:
           go-setup-caching: ${{ inputs.go-setup-caching }}
           golangci-lint-version: ${{ inputs.golangci-lint-version || env.DEFAULT_GOLANGCI_LINT_VERSION }}
           mage-version: ${{ inputs.mage-version || env.DEFAULT_MAGE_VERSION }}
+          node-package-manager-scripts: ${{ inputs.node-package-manager-scripts }}
 
       - name: Check for backend
         id: check-for-backend
@@ -601,7 +609,8 @@ jobs:
           plugin-directory: ${{ inputs.plugin-directory }}
           secrets: ${{ (fromJson(steps.workflow-context.outputs.result).isTrusted && inputs.frontend-secrets != '') && inputs.frontend-secrets || '' }}
           npm-registry-auth: ${{ inputs.npm-registry-auth }}
-          allow-scripts: ${{ inputs.node-package-manager-allow-scripts }}
+          install-cmd: ${{ steps.setup.outputs.node-package-manager-install-cmd }}
+          yarn-enable-scripts: ${{ steps.setup.outputs.node-package-manager-yarn-enable-scripts }}
 
       - name: Test and build backend
         id: backend
@@ -817,7 +826,7 @@ jobs:
       node-version: ${{ inputs.node-version }}
       npm-registry-auth: ${{ inputs.npm-registry-auth }}
       playwright-browsers: ${{ inputs.playwright-browsers }}
-      node-package-manager-allow-scripts: ${{ inputs.node-package-manager-allow-scripts }}
+      node-package-manager-scripts: ${{ inputs.node-package-manager-scripts }}
 
   playwright-docker:
     name: Plugins - Dockerized Playwright E2E tests

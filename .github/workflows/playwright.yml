@@ -116,15 +116,22 @@ on:
         type: string
         required: false
         default: chromium
-      node-package-manager-allow-scripts:
+      node-package-manager-scripts:
         description: |
-          Allow npm/yarn/pnpm lifecycle scripts (preinstall, install, postinstall, prepare, etc.)
-          to run during dependency installation.
-          Disabled by default for security. Only enable as a last resort if a plugin truly
-          requires install-time scripts and cannot work without them.
-        type: boolean
+          Controls the npm/pnpm/yarn install scripts (preinstall, install, postinstall, prepare, ...) run during dependency installation.
+          One of:
+          - "none": block every install script.
+          - "allowlist" (default): only run install scripts of dependencies allowlisted in your package manager config.
+            npm (--strict-allow-scripts) and pnpm 11 fail the install if a dependency with install scripts has no allow/deny entry.
+            If the package manager can't enforce an allowlist, all install scripts are disabled and a warning is shown.
+          - "all": run every dependency install script (last resort). On pnpm this needs pnpm >=10.9; older 10.x only builds "onlyBuiltDependencies" (with a warning).
+          The project's own lifecycle scripts (root/workspace) still run with "allowlist" and "all"; "none" blocks those too.
+          Allowlist: pnpm >=10 uses "allowBuilds" in pnpm-workspace.yaml (pnpm 10.26+/11) or "onlyBuiltDependencies" (older);
+          npm >=11.16 uses "allowScripts" in package.json (see "npm approve-scripts" / "npm install-scripts approve");
+          Yarn Berry uses "dependenciesMeta.<pkg>.built: true" in package.json; Yarn Classic has no allowlist (falls back to "none").
+        type: string
         required: false
-        default: false
+        default: allowlist
 permissions:
   contents: read
   id-token: write
@@ -175,6 +182,7 @@ jobs:
           node-version: ${{ inputs.node-version }}
           node-version-file: ${{ inputs.plugin-directory }}/.nvmrc
           frontend-only: "true"
+          node-package-manager-scripts: ${{ inputs.node-package-manager-scripts }}
 
       - name: Login to Google Cloud
         if: inputs.npm-registry-auth == true
@@ -190,42 +198,26 @@ jobs:
         working-directory: ${{ inputs.plugin-directory }}
         run: GOOGLE_APPLICATION_CREDENTIALS=${{ env.GOOGLE_APPLICATION_CREDENTIALS }} npx google-artifactregistry-auth --credential-config ./.npmrc
 
-      - name: Configure package manager script policy
-        id: install-cmd
-        shell: bash
-        run: |
-          INSTALL_CMD="${FROZEN_INSTALL_CMD}"
-          if [ "${ALLOW_SCRIPTS}" != "true" ]; then
-            # Yarn Berry does not support --ignore-scripts on the CLI (it errors with YN0050).
-            # For Yarn Berry, scripts are suppressed via the YARN_ENABLE_SCRIPTS env var.
-            # npm, pnpm, and Yarn Classic (agent=yarn) all accept --ignore-scripts on the CLI.
-            if [ "${PACKAGE_MANAGER_AGENT}" != "yarnBerry" ]; then
-              INSTALL_CMD="${INSTALL_CMD} --ignore-scripts"
-            fi
-            # Belt-and-suspenders: also export env vars so that scripts are blocked even if a
-            # wrapper or sub-process re-invokes the package manager without our CLI flags.
-            # npm and pnpm both honour NPM_CONFIG_IGNORE_SCRIPTS.
-            # Yarn Berry honours YARN_ENABLE_SCRIPTS (its env-var form of enableScripts config).
-            # Yarn Classic also honours npm_config_ignore_scripts.
-            echo "NPM_CONFIG_IGNORE_SCRIPTS=true" >> "$GITHUB_ENV"
-            echo "YARN_ENABLE_SCRIPTS=false" >> "$GITHUB_ENV"
-            printf '::act-debug::msg="npm-config-ignore-scripts" value=true\n'
-            printf '::act-debug::msg="yarn-enable-scripts" value=false\n'
-          else
-            printf '::act-debug::msg="npm-config-ignore-scripts" value=not-set\n'
-            printf '::act-debug::msg="yarn-enable-scripts" value=not-set\n'
-          fi
-          echo "cmd=${INSTALL_CMD}" >> "$GITHUB_OUTPUT"
-          printf '::act-debug::msg="install-cmd" cmd=%s\n' "${INSTALL_CMD}"
-        env:
-          FROZEN_INSTALL_CMD: ${{ steps.setup.outputs.node-package-manager-frozen-install-cmd }}
-          PACKAGE_MANAGER_AGENT: ${{ steps.setup.outputs.node-package-manager-agent }}
-          ALLOW_SCRIPTS: ${{ inputs.node-package-manager-allow-scripts }}
-
       - name: Install npm dependencies
-        run: ${{ steps.install-cmd.outputs.cmd }}
         shell: bash
         working-directory: ${{ inputs.plugin-directory }}
+        run: |
+          if [ -z "${INSTALL_CMD}" ]; then
+            echo "::error::install command is empty"
+            exit 1
+          fi
+          # Yarn Berry (v2+) only: YARN_ENABLE_SCRIPTS is the env form of
+          # `enableScripts` in .yarnrc.yml. Empty for npm, pnpm and Yarn
+          # Classic, which ignores it: its command uses --ignore-scripts for
+          # "none" and the "allowlist" fallback.
+          if [ -n "${YARN_ENABLE_SCRIPTS_POLICY}" ]; then
+            export YARN_ENABLE_SCRIPTS="${YARN_ENABLE_SCRIPTS_POLICY}"
+          fi
+          read -r -a cmd <<< "${INSTALL_CMD}"
+          "${cmd[@]}"
+        env:
+          INSTALL_CMD: ${{ steps.setup.outputs.node-package-manager-install-cmd }}
+          YARN_ENABLE_SCRIPTS_POLICY: ${{ steps.setup.outputs.node-package-manager-yarn-enable-scripts }}
 
       - name: Get Playwright version
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
