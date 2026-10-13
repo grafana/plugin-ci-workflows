@@ -1,8 +1,8 @@
-name: Plugins - Frontend - Test and build
+name: Plugins - Frontend
 description: >-
-  Tests, lints, typechecks and builds the frontend.
-  With install-only, only authenticates to the npm registry
-  and installs dependencies.
+  Installs frontend dependencies (with optional npm registry auth),
+  then lints, typechecks, tests and builds.
+  With install-only, stops after installing dependencies.
 
 inputs:
   plugin-directory:
