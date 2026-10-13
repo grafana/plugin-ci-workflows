@@ -184,40 +184,14 @@ jobs:
           node-version-file: ${{ inputs.plugin-directory }}/.nvmrc
           frontend-only: "true"
 
-      - name: Login to Google Cloud
-        if: inputs.npm-registry-auth == true
-        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+      - name: Install frontend dependencies
+        uses: grafana/plugin-ci-workflows/actions/internal/plugins/frontend@main
         with:
-          token_format: access_token
-          workload_identity_provider: "projects/304398677251/locations/global/workloadIdentityPools/github/providers/github-provider"
-          service_account: github-plugin-ci-workflows@grafanalabs-workload-identity.iam.gserviceaccount.com
-
-      - name: NPM registry auth
-        if: inputs.npm-registry-auth == true
-        shell: bash
-        working-directory: ${{ inputs.plugin-directory }}
-        run: GOOGLE_APPLICATION_CREDENTIALS=${{ env.GOOGLE_APPLICATION_CREDENTIALS }} npx google-artifactregistry-auth --credential-config ./.npmrc
-
-      - name: Install npm dependencies
-        shell: bash
-        working-directory: ${{ inputs.plugin-directory }}
-        run: |
-          if [ -z "${INSTALL_CMD}" ]; then
-            echo "::error::install command is empty"
-            exit 1
-          fi
-          # Yarn Berry (v2+) only: YARN_ENABLE_SCRIPTS is the env form of
-          # `enableScripts` in .yarnrc.yml. Empty for npm, pnpm and Yarn
-          # Classic, which ignores it: its command uses --ignore-scripts for
-          # "none" and the "allowlist" fallback.
-          if [ -n "${INSTALL_SCRIPTS_POLICY}" ]; then
-            export YARN_ENABLE_SCRIPTS="${INSTALL_SCRIPTS_POLICY}"
-          fi
-          read -r -a cmd <<< "${INSTALL_CMD}"
-          "${cmd[@]}"
-        env:
-          INSTALL_CMD: ${{ steps.setup.outputs.node-package-manager-install-cmd }}
-          INSTALL_SCRIPTS_POLICY: ${{ steps.setup.outputs.node-package-manager-yarn-enable-scripts }}
+          plugin-directory: ${{ inputs.plugin-directory }}
+          npm-registry-auth: ${{ inputs.npm-registry-auth }}
+          install-cmd: ${{ steps.setup.outputs.node-package-manager-install-cmd }}
+          yarn-enable-scripts: ${{ steps.setup.outputs.node-package-manager-yarn-enable-scripts }}
+          install-only: "true"
 
       - name: Get Playwright version
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0

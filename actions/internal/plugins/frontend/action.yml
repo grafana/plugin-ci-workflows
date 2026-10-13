@@ -1,5 +1,8 @@
 name: Plugins - Frontend - Test and build
-description: Tests, lints, typechecks and builds the frontend.
+description: >-
+  Tests, lints, typechecks and builds the frontend.
+  With install-only, only authenticates to the npm registry
+  and installs dependencies.
 
 inputs:
   plugin-directory:
@@ -31,6 +34,13 @@ inputs:
       Leave empty to not set it.
     required: false
     default: ""
+  install-only:
+    description: |
+      If "true", only authenticate to the npm registry
+      (if npm-registry-auth is true) and install dependencies.
+      Lint, typecheck, test and build are skipped.
+    required: false
+    default: "false"
 
 runs:
   using: composite
@@ -57,6 +67,7 @@ runs:
       run: GOOGLE_APPLICATION_CREDENTIALS=${{ env.GOOGLE_APPLICATION_CREDENTIALS }} npx google-artifactregistry-auth --credential-config ./.npmrc
 
     - name: Detect package manager
+      if: inputs.install-only != 'true'
       id: package-manager
       uses: grafana/plugin-actions/package-manager-detect@package-manager-detect/v1.0.1
       with:
@@ -84,21 +95,25 @@ runs:
         INSTALL_SCRIPTS_POLICY: ${{ inputs.yarn-enable-scripts }}
 
     - name: Lint
+      if: inputs.install-only != 'true'
       shell: bash
       working-directory: ${{ inputs.plugin-directory }}
       run: ${{ steps.package-manager.outputs.runCmd }} lint
 
     - name: Typecheck
+      if: inputs.install-only != 'true'
       shell: bash
       working-directory: ${{ inputs.plugin-directory }}
       run: ${{ steps.package-manager.outputs.runCmd }} typecheck
 
     - name: Test
+      if: inputs.install-only != 'true'
       shell: bash
       working-directory: ${{ inputs.plugin-directory }}
       run: ${{ steps.package-manager.outputs.runCmd }} test:ci
 
     - name: Build
+      if: inputs.install-only != 'true'
       shell: bash
       working-directory: ${{ inputs.plugin-directory }}
       run: ${{ steps.package-manager.outputs.runCmd }} build
