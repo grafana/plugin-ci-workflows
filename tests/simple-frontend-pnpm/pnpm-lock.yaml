@@ -42,8 +42,8 @@ importers:
         specifier: 10.0.0
         version: 10.0.0(@stylistic/eslint-plugin@5.10.0(eslint@9.39.5(supports-color@8.1.1)))(@typescript-eslint/eslint-plugin@8.71.1(@typescript-eslint/parser@8.71.1(eslint@9.39.5(supports-color@8.1.1))(supports-color@8.1.1)(typescript@5.9.3))(eslint@9.39.5(supports-color@8.1.1))(supports-color@8.1.1)(typescript@5.9.3))(@typescript-eslint/parser@8.71.1(eslint@9.39.5(supports-color@8.1.1))(supports-color@8.1.1)(typescript@5.9.3))(eslint-config-prettier@10.1.8(eslint@9.39.5(supports-color@8.1.1)))(eslint-plugin-jsdoc@64.5.4(eslint@9.39.5(supports-color@8.1.1))(supports-color@8.1.1)(typescript@5.9.3))(eslint-plugin-react-hooks@7.1.1(eslint@9.39.5(supports-color@8.1.1))(supports-color@8.1.1))(eslint-plugin-react@7.37.5(eslint@9.39.5(supports-color@8.1.1)))(eslint@9.39.5(supports-color@8.1.1))(typescript@5.9.3)
       '@grafana/plugin-e2e':
-        specifier: 3.14.0
-        version: 3.14.0(@playwright/test@1.63.0)
+        specifier: 3.15.0
+        version: 3.15.0(@playwright/test@1.63.0)
       '@grafana/tsconfig':
         specifier: 2.2.0
         version: 2.2.0
@@ -560,9 +560,6 @@ packages:
   '@grafana/e2e-selectors@13.1.3':
     resolution: {integrity: sha512-4qOtIfooJT9vnivq/NsUa92Ch6uFrgRMzhcrYK1vfDfVQHceO+fSZn8Vu9YVAOXE8j+IRYJ2Wa0UMEAYEC19tw==}
 
-  '@grafana/e2e-selectors@13.2.0-30594044109':
-    resolution: {integrity: sha512-CRN0CTsSkAC3qQvufbR7duUzSX2Jfgc/g5ap+eSrjcFcS+vAVUDGfQVLK6y5ojN+B0gATNIbmVlCGngQxmm+eA==}
-
   '@grafana/eslint-config@10.0.0':
     resolution: {integrity: sha512-KdPghPTEkpT1bfph/HLRe0rWJuAEeQMy3wF8xXOHkwhqf/o9IS4d0GT3K/tW0TxXHD0AKZB/OQBo7mZwvvaq7Q==}
     peerDependencies:
@@ -587,8 +584,8 @@ packages:
     peerDependencies:
       react: '>=18'
 
-  '@grafana/plugin-e2e@3.14.0':
-    resolution: {integrity: sha512-hbfyAp5Bh1/F8SlzicFumTgDS2Br6XEs7dPpk/SA7MHvF64ZSwxQSsmurEPapaUOO+PfQKkHLLJRIJX9ZP+Tug==}
+  '@grafana/plugin-e2e@3.15.0':
+    resolution: {integrity: sha512-iHMfiYbxAFvQLnMObpMLU6saFxsKkXX5PMca5QxYs53S4BkP8KyS3hz9UUUGnWybvBToLWyJACrz7Vs4YVu9Fw==}
     engines: {node: '>=20 <=24'}
     peerDependencies:
       '@axe-core/playwright': ^4.11.1
@@ -5327,10 +5324,6 @@ snapshots:
       semver: 7.8.5
       typescript: 6.0.2
 
-  '@grafana/e2e-selectors@13.2.0-30594044109':
-    dependencies:
-      semver: 7.8.5
-
   '@grafana/eslint-config@10.0.0(@stylistic/eslint-plugin@5.10.0(eslint@9.39.5(supports-color@8.1.1)))(@typescript-eslint/eslint-plugin@8.71.1(@typescript-eslint/parser@8.71.1(eslint@9.39.5(supports-color@8.1.1))(supports-color@8.1.1)(typescript@5.9.3))(eslint@9.39.5(supports-color@8.1.1))(supports-color@8.1.1)(typescript@5.9.3))(@typescript-eslint/parser@8.71.1(eslint@9.39.5(supports-color@8.1.1))(supports-color@8.1.1)(typescript@5.9.3))(eslint-config-prettier@10.1.8(eslint@9.39.5(supports-color@8.1.1)))(eslint-plugin-jsdoc@64.5.4(eslint@9.39.5(supports-color@8.1.1))(supports-color@8.1.1)(typescript@5.9.3))(eslint-plugin-react-hooks@7.1.1(eslint@9.39.5(supports-color@8.1.1))(supports-color@8.1.1))(eslint-plugin-react@7.37.5(eslint@9.39.5(supports-color@8.1.1)))(eslint@9.39.5(supports-color@8.1.1))(typescript@5.9.3)':
     dependencies:
       '@stylistic/eslint-plugin': 5.10.0(eslint@9.39.5(supports-color@8.1.1))
@@ -5372,9 +5365,8 @@ snapshots:
       - supports-color
       - typescript
 
-  '@grafana/plugin-e2e@3.14.0(@playwright/test@1.63.0)':
+  '@grafana/plugin-e2e@3.15.0(@playwright/test@1.63.0)':
     dependencies:
-      '@grafana/e2e-selectors': 13.2.0-30594044109
       '@playwright/test': 1.63.0
       yaml: 2.9.1
 
