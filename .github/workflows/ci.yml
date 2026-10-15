@@ -615,6 +615,9 @@ jobs:
           npx --yes "@grafana/plugin-docs-cli@${PLUGIN_DOCS_CLI_VERSION}" build
         env:
           PLUGIN_DOCS_CLI_VERSION: ${{ env.DEFAULT_PLUGIN_DOCS_CLI_VERSION }}
+          # the docs CLI has no lockfile, so harden its dependency install regardless of the plugin's .npmrc
+          npm_config_ignore_scripts: "true"
+          npm_config_min_release_age: "3"
         working-directory: ${{ inputs.plugin-directory }}
         shell: bash
 
