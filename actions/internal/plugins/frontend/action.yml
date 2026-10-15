@@ -1,5 +1,8 @@
-name: Plugins - Frontend - Test and build
-description: Tests, lints, typechecks and builds the frontend.
+name: Plugins - Frontend
+description: >-
+  Installs frontend dependencies (with optional npm registry auth),
+  then lints, typechecks, tests and builds.
+  With install-only, stops after installing dependencies.
 
 inputs:
   plugin-directory:
@@ -14,6 +17,28 @@ inputs:
     description: |
       Whether to authenticate to the npm registry in Google Artifact Registry.
       If true, the root of the plugin repository must contain a `.npmrc` file.
+    required: false
+    default: "false"
+  install-cmd:
+    description: |
+      Command to install dependencies, with the install scripts policy already applied
+      (output `node-package-manager-install-cmd` of the internal setup action).
+    required: true
+  yarn-enable-scripts:
+    description: |
+      Yarn Berry (v2+) only: value to export as YARN_ENABLE_SCRIPTS
+      (env form of the `enableScripts` .yarnrc.yml setting)
+      for the install step only (output
+      `node-package-manager-yarn-enable-scripts` of the setup action).
+      Empty for npm, pnpm and Yarn Classic (v1 ignores this variable).
+      Leave empty to not set it.
+    required: false
+    default: ""
+  install-only:
+    description: |
+      If "true", only authenticate to the npm registry
+      (if npm-registry-auth is true) and install dependencies.
+      Lint, typecheck, test and build are skipped.
     required: false
     default: "false"
 
@@ -42,6 +67,7 @@ runs:
       run: GOOGLE_APPLICATION_CREDENTIALS=${{ env.GOOGLE_APPLICATION_CREDENTIALS }} npx google-artifactregistry-auth --credential-config ./.npmrc
 
     - name: Detect package manager
+      if: inputs.install-only != 'true'
       id: package-manager
       uses: grafana/plugin-actions/package-manager-detect@package-manager-detect/v1.0.1
       with:
@@ -50,24 +76,44 @@ runs:
     - name: Install dependencies
       shell: bash
       working-directory: ${{ inputs.plugin-directory }}
-      run: ${{ steps.package-manager.outputs.frozenInstallCmd }}
+      run: |
+        if [ -z "${INSTALL_CMD}" ]; then
+          echo "::error::The install-cmd input is required and must not be empty"
+          exit 1
+        fi
+        # Yarn Berry (v2+) only: YARN_ENABLE_SCRIPTS is the env form of
+        # `enableScripts` in .yarnrc.yml. Empty for npm, pnpm and Yarn
+        # Classic, which ignores it: its command uses --ignore-scripts for
+        # "none" and the "allowlist" fallback.
+        if [ -n "${INSTALL_SCRIPTS_POLICY}" ]; then
+          export YARN_ENABLE_SCRIPTS="${INSTALL_SCRIPTS_POLICY}"
+        fi
+        read -r -a cmd <<< "${INSTALL_CMD}"
+        "${cmd[@]}"
+      env:
+        INSTALL_CMD: ${{ inputs.install-cmd }}
+        INSTALL_SCRIPTS_POLICY: ${{ inputs.yarn-enable-scripts }}
 
     - name: Lint
+      if: inputs.install-only != 'true'
       shell: bash
       working-directory: ${{ inputs.plugin-directory }}
       run: ${{ steps.package-manager.outputs.runCmd }} lint
 
     - name: Typecheck
+      if: inputs.install-only != 'true'
       shell: bash
       working-directory: ${{ inputs.plugin-directory }}
       run: ${{ steps.package-manager.outputs.runCmd }} typecheck
 
     - name: Test
+      if: inputs.install-only != 'true'
       shell: bash
       working-directory: ${{ inputs.plugin-directory }}
       run: ${{ steps.package-manager.outputs.runCmd }} test:ci
 
     - name: Build
+      if: inputs.install-only != 'true'
       shell: bash
       working-directory: ${{ inputs.plugin-directory }}
       run: ${{ steps.package-manager.outputs.runCmd }} build

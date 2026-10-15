@@ -108,6 +108,22 @@ on:
         type: boolean
         required: false
         default: false
+      node-package-manager-scripts:
+        description: |
+          Controls the npm/pnpm/yarn install scripts (preinstall, install, postinstall, prepare, ...) run during dependency installation.
+          One of:
+          - "none": block every install script.
+          - "allowlist" (default): only run install scripts of dependencies allowlisted in your package manager config.
+            npm (--strict-allow-scripts) and pnpm 11 fail the install if a dependency with install scripts has no allow/deny entry.
+            If the package manager can't enforce an allowlist, all install scripts are disabled and a warning is shown.
+          - "all": run every dependency install script (last resort). On pnpm this needs pnpm >=10.9; older 10.x only builds "onlyBuiltDependencies" (with a warning).
+          The project's own lifecycle scripts (root/workspace) still run with "allowlist" and "all"; "none" blocks those too.
+          Allowlist: pnpm >=10 uses "allowBuilds" in pnpm-workspace.yaml (pnpm 10.26+/11) or "onlyBuiltDependencies" (older);
+          npm >=11.16 uses "allowScripts" in package.json (see "npm approve-scripts" / "npm install-scripts approve");
+          Yarn Berry uses "dependenciesMeta.<pkg>.built: true" in package.json; Yarn Classic has no allowlist (falls back to "none").
+        type: string
+        required: false
+        default: allowlist
       allow-unsigned:
         description: |
           Allow to publish unsigned plugins.
@@ -813,6 +829,7 @@ jobs:
       plugin-version-suffix: ${{ needs.setup.outputs.plugin-version-suffix }}
       npm-registry-auth: ${{ inputs.npm-registry-auth }}
       go-private-git-auth: ${{ inputs.go-private-git-auth }}
+      node-package-manager-scripts: ${{ inputs.node-package-manager-scripts }}
 
       go-version: ${{ inputs.go-version }}
       # Release builds never restore or save caches, to avoid cache poisoning.

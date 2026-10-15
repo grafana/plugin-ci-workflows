@@ -302,6 +302,12 @@ func TestToolingVersions(t *testing.T) {
 				ci.WithWorkflowInputs(wfInputs),
 				ci.MutateCIWorkflow().With(
 					workflow.WithOnlyOneJob(t, "test-and-build", true),
+					// Setup-only: no dependencies are installed, so there is no package manager cache to save.
+					func(twf *workflow.TestingWorkflow) {
+						setup := twf.BaseWorkflow.Jobs["test-and-build"].GetStep("setup")
+						require.NotNil(t, setup)
+						setup.With["node-setup-caching"] = false
+					},
 					workflow.WithRemoveAllStepsAfter(t, "test-and-build", "setup"),
 				),
 			}

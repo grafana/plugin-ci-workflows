@@ -64,6 +64,21 @@ inputs:
     description: mage version to use.
     required: false
     default: ""
+  node-package-manager-scripts:
+    description: |
+      Controls the npm/pnpm/yarn install scripts (preinstall, install, postinstall, prepare, ...) run during dependency installation.
+      One of:
+      - "none": block every install script.
+      - "allowlist" (default): only run install scripts of dependencies allowlisted in your package manager config.
+        npm (--strict-allow-scripts) and pnpm 11 fail the install if a dependency with install scripts has no allow/deny entry.
+        If the package manager can't enforce an allowlist, all install scripts are disabled and a warning is shown.
+      - "all": run every dependency install script (last resort). On pnpm this needs pnpm >=10.9; older 10.x only builds "onlyBuiltDependencies" (with a warning).
+      The project's own lifecycle scripts (root/workspace) still run with "allowlist" and "all"; "none" blocks those too.
+      Allowlist: pnpm >=10 uses "allowBuilds" in pnpm-workspace.yaml (pnpm 10.26+/11) or "onlyBuiltDependencies" (older);
+      npm >=11.16 uses "allowScripts" in package.json (see "npm approve-scripts" / "npm install-scripts approve");
+      Yarn Berry uses "dependenciesMeta.<pkg>.built: true" in package.json; Yarn Classic has no allowlist (falls back to "none").
+    required: false
+    default: allowlist
 
 outputs:
   node-version:
@@ -84,6 +99,16 @@ outputs:
   node-package-manager-exec-local-cmd:
     description: The command to execute a locally installed package (e.g. npx, yarn dlx, pnpm exec).
     value: ${{ steps.package-manager.outputs.execLocalCmd }}
+  node-package-manager-install-cmd:
+    description: The command to install dependencies with a frozen lockfile, with the install scripts policy applied.
+    value: ${{ steps.scripts-policy.outputs.install-cmd }}
+  node-package-manager-yarn-enable-scripts:
+    description: |
+      Yarn Berry (v2+) only: value to export as YARN_ENABLE_SCRIPTS
+      (env form of the `enableScripts` .yarnrc.yml setting) when running
+      the install command ("true" or "false").
+      Empty for npm, pnpm and Yarn Classic (v1 ignores this variable).
+    value: ${{ steps.scripts-policy.outputs.yarn-enable-scripts }}
 
 runs:
   using: composite
@@ -145,6 +170,21 @@ runs:
         # field in package.json. Corepack ships with Node.js 16.9+ and is the
         # recommended way to manage Yarn Berry versions.
         corepack enable
+
+    - name: Determine install scripts policy
+      if: ${{ inputs.act-cache-warmup != 'true' }}
+      id: scripts-policy
+      uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+      env:
+        ACTION_PATH: ${{ github.action_path }}
+        SCRIPTS_MODE: ${{ inputs.node-package-manager-scripts }}
+        PM_AGENT: ${{ steps.package-manager.outputs.agent }}
+        FROZEN_INSTALL_CMD: ${{ steps.package-manager.outputs.frozenInstallCmd }}
+        PLUGIN_DIRECTORY: ${{ inputs.plugin-directory }}
+      with:
+        script: |
+          const scriptsPolicy = require(`${process.env.ACTION_PATH}/scripts-policy.cjs`);
+          await scriptsPolicy({ core, exec });
 
     - name: Go
       if: ${{ inputs.frontend-only != 'true' }}

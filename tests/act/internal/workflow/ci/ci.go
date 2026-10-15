@@ -120,6 +120,8 @@ type WorkflowInputs struct {
 	Testing            *bool
 	BackendBuildTarget *string
 
+	NodePackageManagerScripts *string
+
 	DistArtifactsRetentionDays *int
 	DisableGCSUpload           *bool
 }
@@ -155,6 +157,8 @@ func SetCIInputs(dst *workflow.Job, inputs WorkflowInputs) {
 	workflow.SetJobInput(dst, "allow-unsigned", inputs.AllowUnsigned)
 	workflow.SetJobInput(dst, "testing", inputs.Testing)
 	workflow.SetJobInput(dst, "backend-build-target", inputs.BackendBuildTarget)
+
+	workflow.SetJobInput(dst, "node-package-manager-scripts", inputs.NodePackageManagerScripts)
 
 	workflow.SetJobInput(dst, "dist-artifacts-retention-days", inputs.DistArtifactsRetentionDays)
 	workflow.SetJobInput(dst, "disable-gcs-upload", inputs.DisableGCSUpload)
