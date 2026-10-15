@@ -104,12 +104,12 @@
   resolved "https://registry.yarnpkg.com/@pkgr/core/-/core-0.3.6.tgz#3569708bd4be4d8870ba32bf1c456dac81600d97"
   integrity sha512-SEeaJLb3qBNF/OaXnaR1NmmBbFYk1zC0ZH/52fATcRPLFg/p791YrcyFFy44Bo9sLaGuSuLp5Q6axbb/O+v/RA==
 
-"@types/bun@1.4.2":
-  version "1.4.2"
-  resolved "https://registry.yarnpkg.com/@types/bun/-/bun-1.4.2.tgz#2e6b29c6d484680b9f177e7226df28fac4ad6d91"
-  integrity sha512-GimotNn7+ZV0uVArItBbriZsR1oNf0+WTzPkdcFrzShI7k2norL0uzEaJT8T33dWr7O/c9ZDuAFQrctKCi72oQ==
+"@types/bun@1.4.3":
+  version "1.4.3"
+  resolved "https://registry.yarnpkg.com/@types/bun/-/bun-1.4.3.tgz#176b77a2d55077647a7a8ab7682eef77b310ae8e"
+  integrity sha512-N67Pqy8JXbAY/j0tNraS3V5mubGvc6rrrNDmDCtZLlFzccbUJPDb0tvgUBC5q4m8ybkP93Jcn1QB+RYQ6PvBhw==
   dependencies:
-    bun-types "1.4.2"
+    bun-types "1.4.3"
 
 "@types/eslint__js@9.14.0":
   version "9.14.0"
@@ -524,12 +524,13 @@ buffer@^5.5.0:
     base64-js "^1.3.1"
     ieee754 "^1.1.13"
 
-bun-types@1.4.2:
-  version "1.4.2"
-  resolved "https://registry.yarnpkg.com/bun-types/-/bun-types-1.4.2.tgz#8f213b0263187e4a12520a06d195b219bf8684d9"
-  integrity sha512-bxV1FgK7yBIzjRe5zBozIM4Bem11ZJcCXSrjWRG3YWLt8yFDePu4cLjpebO8OvPeIE9trbyPF4fuj3Cia4Fj3w==
+bun-types@1.4.3:
+  version "1.4.3"
+  resolved "https://registry.yarnpkg.com/bun-types/-/bun-types-1.4.3.tgz#c8a214170396c01054441c3e1886a32f8360141e"
+  integrity sha512-tinRJNGOmUN+tEAsn2y2e942n9JHRHR42iUYzDH75NmhJqVBokGSQkkfSFdNWwsANIdrK6ACH9t01M452YyTwg==
   dependencies:
     "@types/node" "*"
+    undici-types "*"
 
 chalk@^4.1.0:
   version "4.1.2"
@@ -1578,6 +1579,11 @@ unc-path-regex@^0.1.2:
   version "0.1.2"
   resolved "https://registry.yarnpkg.com/unc-path-regex/-/unc-path-regex-0.1.2.tgz#e73dd3d7b0d7c5ed86fbac6b0ae7d8c6a69d50fa"
   integrity sha512-eXL4nmJT7oCpkZsHZUOJo8hcX3GbsiDOa0Qu9F646fi8dT3XuSVopVqAcEiVzSKKH7UoDti23wNX3qGFxcW5Qg==
+
+undici-types@*:
+  version "8.12.1"
+  resolved "https://registry.yarnpkg.com/undici-types/-/undici-types-8.12.1.tgz#13a97fbf2c11035c9fc72573e874066bbf290c4a"
+  integrity sha512-nCiEcIx87oMw9u3Yzj2DuRBzv6p0e7akhy4HUPtpBiVWmAY3o6Phznst8QhmY1oLMttLgJ2tlAvsKuzCgBSoAw==
 
 undici-types@~8.9.0:
   version "8.9.0"
