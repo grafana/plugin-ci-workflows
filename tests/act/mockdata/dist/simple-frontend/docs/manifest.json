@@ -1,0 +1,48 @@
+{
+  "version": "1",
+  "title": "Plugin Documentation",
+  "pages": [
+    {
+      "title": "Simple Frontend",
+      "slug": "index",
+      "file": "index.md",
+      "frontmatter": {
+        "title": "Simple Frontend",
+        "description": "Overview of the Simple Frontend panel and what it shows."
+      },
+      "content": "\nSimple Frontend is a test panel used by the plugin-ci-workflows test suite to check that catalog docs are validated, built and packaged.\n\n![Simple Frontend panel](./img/panel.png)\n\n- [Options](./options.md) lists every panel option.\n- [Data formats](./data-formats.md) describes the data the panel accepts.\n"
+    },
+    {
+      "title": "Data formats",
+      "slug": "data-formats",
+      "file": "data-formats.md",
+      "frontmatter": {
+        "title": "Data formats",
+        "description": "The data frame shapes the Simple Frontend panel accepts."
+      },
+      "content": "\nThe panel accepts any data frame returned by any data source. It counts the series in the response and ignores the field values, so time series and tables both work.\n"
+    },
+    {
+      "title": "Options",
+      "slug": "options",
+      "file": "options.md",
+      "frontmatter": {
+        "title": "Options",
+        "description": "The options you can set on the Simple Frontend panel."
+      },
+      "content": "\n## Text\n\nThe text shown in the middle of the panel. Leave it empty to show only the series counter.\n\n## Show series counter\n\nShows the number of series returned by the query below the text.\n",
+      "headings": [
+        {
+          "level": 2,
+          "id": "text",
+          "text": "Text"
+        },
+        {
+          "level": 2,
+          "id": "show-series-counter",
+          "text": "Show series counter"
+        }
+      ]
+    }
+  ]
+}

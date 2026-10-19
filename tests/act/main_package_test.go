@@ -29,6 +29,9 @@ func TestPackage(t *testing.T) {
 		// expExtraDistFiles lists non-executable dist files beyond the common
 		// base files (e.g. a nested datasource's own plugin files).
 		expExtraDistFiles []string
+		// expCatalogDocsPages lists the page slugs expected in docs/manifest.json,
+		// for plugins that set docsPath in plugin.json.
+		expCatalogDocsPages []string
 	}{
 		{
 			folder:           "simple-frontend",
@@ -36,6 +39,14 @@ func TestPackage(t *testing.T) {
 			expPluginVersion: "1.0.0",
 			expBackend:       false,
 			expPluginType:    "panel",
+			expExtraDistFiles: []string{
+				"docs/manifest.json",
+				"docs/index.md",
+				"docs/options.md",
+				"docs/data-formats.md",
+				"docs/img/panel.png",
+			},
+			expCatalogDocsPages: []string{"index", "options", "data-formats"},
 		},
 		{
 			folder:           "simple-backend",
@@ -198,6 +209,26 @@ func TestPackage(t *testing.T) {
 				require.Equal(t, tc.expBackend, pluginJSON.Backend)
 			}
 			checkPluginJSON(anyPluginZIP)
+
+			if len(tc.expCatalogDocsPages) > 0 {
+				manifestFile, err := anyPluginZIP.Open(filepath.Join(tc.expPluginID, "docs", "manifest.json"))
+				require.NoError(t, err)
+				t.Cleanup(func() { require.NoError(t, manifestFile.Close()) })
+
+				var manifest struct {
+					Pages []struct {
+						Slug    string `json:"slug"`
+						Content string `json:"content"`
+					} `json:"pages"`
+				}
+				require.NoError(t, json.NewDecoder(manifestFile).Decode(&manifest))
+				slugs := make([]string, 0, len(manifest.Pages))
+				for _, page := range manifest.Pages {
+					require.NotEmptyf(t, page.Content, "catalog docs page %q should have content", page.Slug)
+					slugs = append(slugs, page.Slug)
+				}
+				require.ElementsMatch(t, tc.expCatalogDocsPages, slugs)
+			}
 
 			// Check ZIP content for os/arch combos zips
 			if tc.expBackend {
