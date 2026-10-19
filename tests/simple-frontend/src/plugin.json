@@ -3,6 +3,7 @@
   "type": "panel",
   "name": "Simple Frontend",
   "id": "grafana-simplefrontend-panel",
+  "docsPath": "docs",
   "info": {
     "keywords": [
       "panel"
