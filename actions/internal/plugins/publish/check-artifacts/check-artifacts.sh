@@ -47,14 +47,21 @@ process_plugin_zips() {
     local urls_array="$1"
     local plugin_id="$2"
     local failed_count=0
+    local zip_urls
 
-    # Parse JSON array and process each URL
-    echo "$urls_array" | jq -r '.[]' | while read -r zip_url; do
+    # Parse JSON array; -e also rejects an empty array
+    if ! zip_urls=$(echo "$urls_array" | jq -er '.[]'); then
+        echo "ERROR: No ZIP URLs to validate in: $urls_array"
+        return 1
+    fi
+
+    # Read from a here-string, not a pipe, so failed_count isn't updated in a subshell
+    while read -r zip_url; do
         if ! validate_plugin_zip "$zip_url" "$plugin_id"; then
-            ((failed_count++))
+            failed_count=$((failed_count + 1))
         fi
         echo "---"
-    done
+    done <<< "$zip_urls"
 
     if [[ $failed_count -gt 0 ]]; then
         echo "Completed with $failed_count failures"
