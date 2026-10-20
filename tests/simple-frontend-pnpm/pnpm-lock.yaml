@@ -4026,9 +4026,10 @@ packages:
     resolution: {integrity: sha512-pN/yOAvcC+5rQ5nERGuwrjLlYvLTbCibnZ1I7B1LaiAz9BRBlE9GMgE/eqV30P7aJQUf7Ddimy/RsbYO/GrVGg==}
     engines: {node: '>= 10.13.0'}
 
-  schema-utils@4.5.0:
-    resolution: {integrity: sha512-zJlMCZ0cAR5p/Y4oVpRoqioDMJcGxaXRrQ/4rP4WyR84vc5z/DolXdbvXeDpTwbtocDFr2rhPqHPErDCUtz2kA==}
+  schema-utils@4.6.0:
+    resolution: {integrity: sha512-q8cvkEp4bRQdWcLvB3vmxpZAlS25Hxws10nCK+rUxUfuB7e430dYZZJ5z5yAoOGBbbDtve8cUg8DFfc3ue12TA==}
     engines: {node: '>= 10.13.0'}
+    hasBin: true
 
   screenfull@5.2.0:
     resolution: {integrity: sha512-9BakfsO2aUQN2K9Fdbj87RJIEZ82Q9IGim7FqM5OsebfoFC6ZHXgDq/KvniuLTPdeM8wY2o6Dj3WQ7KeQCj3cA==}
@@ -7086,7 +7087,7 @@ snapshots:
     dependencies:
       glob-parent: 6.0.2
       normalize-path: 3.0.0
-      schema-utils: 4.5.0
+      schema-utils: 4.6.0
       serialize-javascript: 7.1.2
       tinyglobby: 0.2.17
       webpack: 5.112.0(@swc/core@1.16.18(@swc/helpers@0.5.23))(postcss@8.5.30)(webpack-cli@7.2.3)
@@ -7569,7 +7570,7 @@ snapshots:
       eslint: 9.39.5(supports-color@8.1.1)
       micromatch: 4.0.8
       normalize-path: 3.0.0
-      schema-utils: 4.5.0
+      schema-utils: 4.6.0
       webpack: 5.112.0(@swc/core@1.16.18(@swc/helpers@0.5.23))(postcss@8.5.30)(webpack-cli@7.2.3)
 
   eslint@9.39.5(supports-color@8.1.1):
@@ -8815,7 +8816,7 @@ snapshots:
     dependencies:
       '@jridgewell/trace-mapping': 0.3.31
       jest-worker: 27.5.1
-      schema-utils: 4.5.0
+      schema-utils: 4.6.0
       terser: 5.51.2
       webpack: 5.112.0(@swc/core@1.16.18(@swc/helpers@0.5.23))(postcss@8.5.30)(webpack-cli@7.2.3)
     optionalDependencies:
@@ -9529,7 +9530,7 @@ snapshots:
       ajv: 6.15.0
       ajv-keywords: 3.5.2(ajv@6.15.0)
 
-  schema-utils@4.5.0:
+  schema-utils@4.6.0:
     dependencies:
       '@types/json-schema': 7.0.15
       ajv: 8.20.0
@@ -9854,7 +9855,7 @@ snapshots:
     dependencies:
       '@jridgewell/trace-mapping': 0.3.31
       jest-worker: 27.5.1
-      schema-utils: 4.5.0
+      schema-utils: 4.6.0
       terser: 5.51.2
       webpack: 5.112.0(@swc/core@1.16.18(@swc/helpers@0.5.23))(postcss@8.5.30)(webpack-cli@7.2.3)
     optionalDependencies:
@@ -10111,7 +10112,7 @@ snapshots:
     dependencies:
       anymatch: 3.1.3
       portfinder: 1.0.38(supports-color@8.1.1)
-      schema-utils: 4.5.0
+      schema-utils: 4.6.0
       tiny-lr: 1.1.1(supports-color@8.1.1)
       webpack: 5.112.0(@swc/core@1.16.18(@swc/helpers@0.5.23))(postcss@8.5.30)(webpack-cli@7.2.3)
     transitivePeerDependencies:
@@ -10147,7 +10148,7 @@ snapshots:
       graceful-fs: 4.2.11
       mime-db: 1.54.0
       minimizer-webpack-plugin: 5.13.0(@swc/core@1.16.18(@swc/helpers@0.5.23))(postcss@8.5.30)(webpack@5.112.0)
-      schema-utils: 4.5.0
+      schema-utils: 4.6.0
       tapable: 2.3.3
       watchpack: 2.6.2
       webpack-sources: 3.6.0
