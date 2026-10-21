@@ -1,5 +1,25 @@
 # Changelog
 
+## [12.0.1](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v12.0.0...ci-cd-workflows/v12.0.1) (2026-10-21)
+
+
+### 🔧 Chores
+
+* **deps:** bump default Go version and Go examples version to 1.27.3 ([#1198](https://github.com/grafana/plugin-ci-workflows/issues/1198)) ([c5f19d3](https://github.com/grafana/plugin-ci-workflows/commit/c5f19d30e8487b6b4283484a81734bc05c27e6f2))
+* **deps:** lock file maintenance ([#1182](https://github.com/grafana/plugin-ci-workflows/issues/1182)) ([54cfeca](https://github.com/grafana/plugin-ci-workflows/commit/54cfecaba241ce3124e2ca0ac0df229e7af19350))
+* **deps:** lock file maintenance ([#1188](https://github.com/grafana/plugin-ci-workflows/issues/1188)) ([876facf](https://github.com/grafana/plugin-ci-workflows/commit/876facf6c2fd53b6bacde12d93253ca1a7c36b3e))
+* **deps:** update dependency @grafana/plugin-docs-cli to v0.8.0 ([#1185](https://github.com/grafana/plugin-ci-workflows/issues/1185)) ([554cb2f](https://github.com/grafana/plugin-ci-workflows/commit/554cb2f5f58fcfd6850780302a7ca51ad8e3ee55))
+* **deps:** update dependency eslint-plugin-jsdoc to v65 ([#1197](https://github.com/grafana/plugin-ci-workflows/issues/1197)) ([88408ac](https://github.com/grafana/plugin-ci-workflows/commit/88408ace3a73a4616c6414003c9574765225d065))
+* **deps:** update dependency golangci-lint to v2.15.0 ([#1186](https://github.com/grafana/plugin-ci-workflows/issues/1186)) ([eca0de1](https://github.com/grafana/plugin-ci-workflows/commit/eca0de1646a01e08ca739237dc77fd82a80aefa5))
+* **deps:** update dependency webpack to v5.112.0 ([#1189](https://github.com/grafana/plugin-ci-workflows/issues/1189)) ([3a0251c](https://github.com/grafana/plugin-ci-workflows/commit/3a0251c54f1416b7055b3bfb4d60caee331a371e))
+* **deps:** update module github.com/grpc-ecosystem/grpc-gateway/v2 to v2.32.0 ([#1191](https://github.com/grafana/plugin-ci-workflows/issues/1191)) ([14b9284](https://github.com/grafana/plugin-ci-workflows/commit/14b9284304072303a474597e542664a5863aa73f))
+* **deps:** update module github.com/klauspost/cpuid/v2 to v2.4.1 ([#1183](https://github.com/grafana/plugin-ci-workflows/issues/1183)) ([fbabc08](https://github.com/grafana/plugin-ci-workflows/commit/fbabc085cc928c3d7ec3ed08a9dcde68b21fb51d))
+* **deps:** update module github.com/prometheus/common to v0.72.1 ([#1184](https://github.com/grafana/plugin-ci-workflows/issues/1184)) ([afd1622](https://github.com/grafana/plugin-ci-workflows/commit/afd1622a43751f640a13235c514355d2e328d10c))
+* **deps:** update module golang.org/x/mod to v0.42.0 ([#1192](https://github.com/grafana/plugin-ci-workflows/issues/1192)) ([88539cb](https://github.com/grafana/plugin-ci-workflows/commit/88539cb9b1f604f9d5cb50e7d5df4ab75ecbe74d))
+* **deps:** update module golang.org/x/text to v0.43.0 ([#1193](https://github.com/grafana/plugin-ci-workflows/issues/1193)) ([904913b](https://github.com/grafana/plugin-ci-workflows/commit/904913bd10196e22fae913ab5bfdcc51537637a3))
+* **deps:** update pnpm to v11.28.6 ([#1194](https://github.com/grafana/plugin-ci-workflows/issues/1194)) ([3679ebc](https://github.com/grafana/plugin-ci-workflows/commit/3679ebc4fa6d45d20b5a3e506225ccd6dd9bb42e))
+* **deps:** update step-security/harden-runner action to v2.22.1 ([#1195](https://github.com/grafana/plugin-ci-workflows/issues/1195)) ([bdbe048](https://github.com/grafana/plugin-ci-workflows/commit/bdbe048e12158bb4d1a6ccfb3c1c8ec056dafd9d))
+
 ## [12.0.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v11.3.0...ci-cd-workflows/v12.0.0) (2026-10-20)
 
 
