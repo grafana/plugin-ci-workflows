@@ -1,5 +1,20 @@
 # Changelog
 
+## [12.0.2](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v12.0.1...ci-cd-workflows/v12.0.2) (2026-10-22)
+
+
+### 🔧 Chores
+
+* **deps:** lock file maintenance ([#1199](https://github.com/grafana/plugin-ci-workflows/issues/1199)) ([3fa1dc9](https://github.com/grafana/plugin-ci-workflows/commit/3fa1dc901682ecde4a1ea4d2c812039e2198a522))
+* **deps:** lock file maintenance ([#1207](https://github.com/grafana/plugin-ci-workflows/issues/1207)) ([bc62124](https://github.com/grafana/plugin-ci-workflows/commit/bc621242faaf512fd2f1ed5001cd66086e7324d4))
+* **deps:** update anthropics/claude-code-action action to v1.0.253 ([#1208](https://github.com/grafana/plugin-ci-workflows/issues/1208)) ([c3c3de8](https://github.com/grafana/plugin-ci-workflows/commit/c3c3de80dc4a728a840ae0fa60a8af8e59408fe6))
+* **deps:** update dependency cspell to v10 ([#1196](https://github.com/grafana/plugin-ci-workflows/issues/1196)) ([02d67b5](https://github.com/grafana/plugin-ci-workflows/commit/02d67b53140540ad048f4192dabe0b533cb5c250))
+* **deps:** update dependency eslint-plugin-jsdoc to v65.3.12 ([#1209](https://github.com/grafana/plugin-ci-workflows/issues/1209)) ([6f20fa6](https://github.com/grafana/plugin-ci-workflows/commit/6f20fa64e1b99e16b1ebbee523057f962cc3e39f))
+* **deps:** update jest monorepo to v30 ([#1202](https://github.com/grafana/plugin-ci-workflows/issues/1202)) ([f53fe4a](https://github.com/grafana/plugin-ci-workflows/commit/f53fe4aaefb7371854b22348a93fca1d5c4ac31c))
+* **deps:** update npm to v12.2.1 ([#1210](https://github.com/grafana/plugin-ci-workflows/issues/1210)) ([1ed73a6](https://github.com/grafana/plugin-ci-workflows/commit/1ed73a6139eb7fca88ab681c39366a217c308ce0))
+* **deps:** update pnpm to v12 ([#1205](https://github.com/grafana/plugin-ci-workflows/issues/1205)) ([1e116fb](https://github.com/grafana/plugin-ci-workflows/commit/1e116fbf4ee7856d921822def10044363bbbc8ae))
+* **deps:** update testing-library monorepo ([#1206](https://github.com/grafana/plugin-ci-workflows/issues/1206)) ([18a4c94](https://github.com/grafana/plugin-ci-workflows/commit/18a4c94c556d43f18a2d2595e3894ba824c3afe8))
+
 ## [12.0.1](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v12.0.0...ci-cd-workflows/v12.0.1) (2026-10-21)
 
 
