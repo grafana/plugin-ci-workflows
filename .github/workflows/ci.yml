@@ -637,7 +637,6 @@ jobs:
           fi
 
           printf '::act-debug::msg="%s" docsPath=%s\n' "Building catalog docs" "${DOCS_PATH}"
-          npx --yes "@grafana/plugin-docs-cli@${PLUGIN_DOCS_CLI_VERSION}" validate
           npx --yes "@grafana/plugin-docs-cli@${PLUGIN_DOCS_CLI_VERSION}" build
           npx --yes "@grafana/plugin-docs-cli@${PLUGIN_DOCS_CLI_VERSION}" validate --dist
         env:
