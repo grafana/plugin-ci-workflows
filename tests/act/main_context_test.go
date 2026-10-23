@@ -99,6 +99,8 @@ func TestContext(t *testing.T) {
 			// Non-fork PR from trusted bot - should be trusted if not testing
 			{name: "non-fork from trusted bot", actor: "dependabot[bot]", testingInput: false, expIsTrusted: true, expIsForkPR: false},
 			{name: "non-fork from trusted bot (testing)", actor: "dependabot[bot]", testingInput: true, expIsTrusted: false, expIsForkPR: false},
+			{name: "non-fork from databases-frontend-ci-bot", actor: "databases-frontend-ci-bot[bot]", testingInput: false, expIsTrusted: true, expIsForkPR: false},
+			{name: "non-fork from databases-frontend-ci-bot (testing)", actor: "databases-frontend-ci-bot[bot]", testingInput: true, expIsTrusted: false, expIsForkPR: false},
 
 			// Non-fork PR from untrusted bot - should NOT be trusted
 			{name: "non-fork from untrusted bot", actor: "hacker[bot]", testingInput: false, expIsTrusted: false, expIsForkPR: false},
