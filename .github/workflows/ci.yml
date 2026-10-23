@@ -400,7 +400,7 @@ env:
   DEFAULT_TRUFFLEHOG_VERSION: "3.99.2"
   DEFAULT_MAGE_VERSION: "1.17.2"
   DEFAULT_PLUGIN_VALIDATOR_VERSION: "0.41.0"
-  DEFAULT_PLUGIN_DOCS_CLI_VERSION: "0.8.0"
+  DEFAULT_PLUGIN_DOCS_CLI_VERSION: "0.13.0"
 
   # Default plugin-validator configuration, used when no configuration is provided by the caller.
   # Disables some analyzers that are not relevant for Grafana Labs plugins.
@@ -639,6 +639,7 @@ jobs:
           printf '::act-debug::msg="%s" docsPath=%s\n' "Building catalog docs" "${DOCS_PATH}"
           npx --yes "@grafana/plugin-docs-cli@${PLUGIN_DOCS_CLI_VERSION}" validate
           npx --yes "@grafana/plugin-docs-cli@${PLUGIN_DOCS_CLI_VERSION}" build
+          npx --yes "@grafana/plugin-docs-cli@${PLUGIN_DOCS_CLI_VERSION}" validate --dist dist
         env:
           PLUGIN_DOCS_CLI_VERSION: ${{ env.DEFAULT_PLUGIN_DOCS_CLI_VERSION }}
           # the docs CLI has no lockfile, so harden its dependency install regardless of the plugin's .npmrc
