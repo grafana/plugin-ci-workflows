@@ -470,7 +470,10 @@ jobs:
               'github-merge-queue[bot]',
               // Opens generated API type sync PRs, so it is the actor of their
               // pull_request runs, which need Playwright secrets
-              'databases-frontend-ci-bot[bot]'
+              'databases-frontend-ci-bot[bot]',
+              // Merges approved Renovate PRs, so it is the actor of push runs on the
+              // merged branch, which sign the plugin
+              'renovate-auto-merger[bot]'
             ].map((s) => s.toLowerCase());
 
             const isPR = context.eventName === 'pull_request';
