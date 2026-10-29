@@ -31,6 +31,7 @@ func TestContext(t *testing.T) {
 			{actor: "renovate-sh-app[bot]", testingInput: false, expIsTrusted: true},
 			{actor: "grafana-plugins-platform-bot[bot]", testingInput: false, expIsTrusted: true},
 			{actor: "github-merge-queue[bot]", testingInput: false, expIsTrusted: true},
+			{actor: "renovate-auto-merger[bot]", testingInput: false, expIsTrusted: true},
 			{actor: "hacker[bot]", testingInput: false, expIsTrusted: false},
 
 			// Merge queue branches are never trusted, even for a trusted actor
@@ -41,6 +42,7 @@ func TestContext(t *testing.T) {
 			{actor: "renovate-sh-app[bot]", testingInput: true, expIsTrusted: false},
 			{actor: "grafana-plugins-platform-bot[bot]", testingInput: true, expIsTrusted: false},
 			{actor: "github-merge-queue[bot]", testingInput: true, expIsTrusted: false},
+			{actor: "renovate-auto-merger[bot]", testingInput: true, expIsTrusted: false},
 			{actor: "hacker[bot]", testingInput: true, expIsTrusted: false},
 		} {
 			branch := cmp.Or(tc.branch, "main")
