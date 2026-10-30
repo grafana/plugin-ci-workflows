@@ -1,0 +1,103 @@
+# Example release.yml that auto-publishes the GitHub release with the matching
+# CHANGELOG.md section as the body, marked as latest.
+#
+# Use this when your repo also uses release-please (see release-please.yml in
+# this folder). The flow is:
+#
+#   1. release-please opens a release PR with version bump + CHANGELOG entry.
+#   2. Merging that PR pushes a v* tag and creates a GitHub release whose body
+#      is the new CHANGELOG entry.
+#   3. The tag push triggers this workflow.
+#   4. build-plugin attaches signed zips, checksums and a provenance
+#      attestation. It also REPLACES the release body with submission
+#      boilerplate and flips the release back to draft.
+#   5. The final "Publish release with CHANGELOG.md as body" step undoes the
+#      damage from (4): it pulls the matching ## [vX.Y.Z] section out of
+#      CHANGELOG.md, preserves the attestation link build-plugin added,
+#      publishes the release and marks it as latest.
+#
+# Without step 5, every release needs a manual edit-the-body / publish-the-draft
+# step. With it, merging the release PR is the only manual action.
+
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions: read-all
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: write
+      attestations: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      # Replace this with however your repo gets the policy token (e.g.
+      # `secrets.GRAFANA_ACCESS_POLICY_TOKEN` for the basic create-plugin flow,
+      # or shared-workflows/get-vault-secrets for Grafana Labs internal repos).
+      - name: Get Vault secrets
+        id: get-secrets
+        uses: grafana/shared-workflows/actions/get-vault-secrets@e5b7989c92b55fe3ac6dd006d6de49082ba8c507
+        with:
+          common_secrets: |
+            GRAFANA_ACCESS_POLICY_TOKEN=plugins/sign-plugin-access-policy-token:token
+
+      - name: Build and package plugin
+        uses: grafana/plugin-actions/build-plugin@main # zizmor: ignore[unpinned-uses] provided by grafana
+        with:
+          policy_token: ${{ env.GRAFANA_ACCESS_POLICY_TOKEN }}
+          attestation: true
+          go-version: '1.25'
+          node-version: '24'
+
+      # Restore the matching CHANGELOG.md section as the release body, preserve
+      # the attestation link build-plugin added, then publish as latest.
+      #
+      # If this step fails, the release is left as a draft with build-plugin's
+      # boilerplate body — same fallback state as not running this step at all.
+      - name: Publish release with CHANGELOG.md as body
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          VERSION="${REF_NAME#v}"
+
+          awk -v ver="${VERSION}" '
+            BEGIN {
+              esc = ver
+              gsub(/\./, "\\.", esc)
+              pat = "^## (\\[)?" esc "(\\]| |$)"
+            }
+            /^## / {
+              if (printing) exit
+              if ($0 ~ pat) { printing = 1 }
+            }
+            printing
+          ' CHANGELOG.md > release_body.md
+
+          if [ ! -s release_body.md ]; then
+            echo "::error::No CHANGELOG.md entry found for ${VERSION}"
+            exit 1
+          fi
+
+          ATTESTATION=$(gh release view "${REF_NAME}" --json body --jq '.body' \
+            | grep -F "attestation details" || true)
+          if [ -n "${ATTESTATION}" ]; then
+            printf '\n%s\n' "${ATTESTATION}" >> release_body.md
+          fi
+
+          gh release edit "${REF_NAME}" \
+            --notes-file release_body.md \
+            --draft=false \
+            --latest
