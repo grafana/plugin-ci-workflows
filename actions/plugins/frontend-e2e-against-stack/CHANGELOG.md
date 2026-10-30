@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.1.5](https://github.com/grafana/plugin-ci-workflows/compare/plugins-frontend-e2e-against-stack/v1.1.4...plugins-frontend-e2e-against-stack/v1.1.5) (2026-10-30)
+
+
+### 🔧 Chores
+
+* **deps:** lock file maintenance ([#1164](https://github.com/grafana/plugin-ci-workflows/issues/1164)) ([10c1244](https://github.com/grafana/plugin-ci-workflows/commit/10c12444212bb5e67358a9e3ddaa622a97492291))
+* **deps:** lock file maintenance ([#1176](https://github.com/grafana/plugin-ci-workflows/issues/1176)) ([6279ec1](https://github.com/grafana/plugin-ci-workflows/commit/6279ec18cf42734fae47a8520290dc199a4c6a8b))
+* **deps:** lock file maintenance ([#1216](https://github.com/grafana/plugin-ci-workflows/issues/1216)) ([e5b52b9](https://github.com/grafana/plugin-ci-workflows/commit/e5b52b9aee00e22ce33dfb5206d6f019da90190b))
+* **deps:** lock file maintenance ([#1226](https://github.com/grafana/plugin-ci-workflows/issues/1226)) ([c6854a1](https://github.com/grafana/plugin-ci-workflows/commit/c6854a152bccfa9461045b27c875050f8c2a461f))
+* **deps:** lock file maintenance ([#1241](https://github.com/grafana/plugin-ci-workflows/issues/1241)) ([8c937aa](https://github.com/grafana/plugin-ci-workflows/commit/8c937aa12598863e159195fc44ae19da3ce05067))
+* **deps:** update frontend-e2e-against-stack dependencies ([#1190](https://github.com/grafana/plugin-ci-workflows/issues/1190)) ([1146f0b](https://github.com/grafana/plugin-ci-workflows/commit/1146f0b283cf0b99d036529553105a6d256faf8b))
+* **deps:** update frontend-e2e-against-stack dependencies ([#1224](https://github.com/grafana/plugin-ci-workflows/issues/1224)) ([2b4bb03](https://github.com/grafana/plugin-ci-workflows/commit/2b4bb0309ae42ba845f6f18f2dcfdb344b9b25a8))
+
 ## [1.1.4](https://github.com/grafana/plugin-ci-workflows/compare/plugins-frontend-e2e-against-stack/v1.1.3...plugins-frontend-e2e-against-stack/v1.1.4) (2026-10-16)
 
 
