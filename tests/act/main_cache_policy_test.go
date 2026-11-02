@@ -164,3 +164,24 @@ func TestCacheStepGating(t *testing.T) {
 		require.ElementsMatch(t, []string{"setup/cache-pnpm", "setup/cache", "trufflehog/cache", "playwright/cache"}, got)
 	})
 }
+
+// The pnpm store key must change with the lockfile that pnpm uses. In a pnpm
+// workspace that lockfile is at the workspace root, so hashing
+// <plugin-directory>/pnpm-lock.yaml gave an empty hash and a key that never
+// changed, so the store was never saved again.
+func TestPnpmStoreKeyUsesDetectedLockfile(t *testing.T) {
+	t.Parallel()
+
+	setupAction, err := workflow.NewCompositeActionFromFile(setupActionPath)
+	require.NoError(t, err)
+
+	locate := setupAction.Runs.GetStep("pnpm-store")
+	require.NotNil(t, locate)
+	require.Equal(t, "${{ steps.package-manager.outputs.lockFilePath }}", locate.Env["LOCK_FILE_PATH"])
+	require.Contains(t, locate.Run, `echo "lockfile=$(realpath --relative-to="$GITHUB_WORKSPACE" "$LOCK_FILE_PATH")"`)
+
+	cache := setupAction.Runs.GetStep("cache-pnpm")
+	require.NotNil(t, cache)
+	require.Equal(t, "pnpm-store-os=${{ runner.os }}-arch=${{ runner.arch }}-${{ hashFiles(steps.pnpm-store.outputs.lockfile) }}", cache.With["key"])
+	require.Equal(t, "pnpm-store-os=${{ runner.os }}-arch=${{ runner.arch }}-", cache.With["restore-keys"])
+}
