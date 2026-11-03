@@ -296,8 +296,8 @@ importers:
         specifier: 1.107.1
         version: 1.107.1
       sass-loader:
-        specifier: 17.0.1
-        version: 17.0.1(sass@1.107.1)(webpack@5.112.2)
+        specifier: 17.1.0
+        version: 17.1.0(sass@1.107.1)(webpack@5.112.2)
       semver:
         specifier: 7.8.5
         version: 7.8.5
@@ -4248,8 +4248,8 @@ packages:
   safer-buffer@2.1.2:
     resolution: {integrity: sha512-YZo3K82SD7Riyi0E1EQPojLz7kpepnSQI9IyPbHHg1XXXevb5dJI7tpyN2ADxGcQbHG7vcyRHk0cbwqcQriUtg==}
 
-  sass-loader@17.0.1:
-    resolution: {integrity: sha512-pgJMwCuLjVTSIWsv/2luVRXKlCeaViUGcgSe8dx95zMG4hUwqIMFmjbhq29ypFLflJU0GyiJZeLM9iI1n3KYAA==}
+  sass-loader@17.1.0:
+    resolution: {integrity: sha512-EZ/u/bLkAErTKvIq/f81Bz6tgL/5Brt8hWOABdTsVdO+nX0PWx2rQhR6fyxVME+MhnQrrwecMDlm2G1y07hhpQ==}
     engines: {node: '>= 22.11.0'}
     peerDependencies:
       '@rspack/core': 0.x || ^1.0.0 || ^2.0.0-0
@@ -9743,7 +9743,7 @@ snapshots:
 
   safer-buffer@2.1.2: {}
 
-  sass-loader@17.0.1(sass@1.107.1)(webpack@5.112.2):
+  sass-loader@17.1.0(sass@1.107.1)(webpack@5.112.2):
     optionalDependencies:
       sass: 1.107.1
       webpack: 5.112.2(@swc/core@1.16.21(@swc/helpers@0.5.23))(postcss@8.5.32)(webpack-cli@7.3.1)
