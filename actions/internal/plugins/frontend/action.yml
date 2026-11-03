@@ -16,18 +16,6 @@ inputs:
       If true, the root of the plugin repository must contain a `.npmrc` file.
     required: false
     default: "false"
-  run-lint:
-    description: Whether to run the `lint` script.
-    required: false
-    default: "true"
-  run-typecheck:
-    description: Whether to run the `typecheck` script.
-    required: false
-    default: "true"
-  run-tests:
-    description: Whether to run the `test:ci` script.
-    required: false
-    default: "true"
 
 runs:
   using: composite
@@ -65,19 +53,16 @@ runs:
       run: ${{ steps.package-manager.outputs.frozenInstallCmd }}
 
     - name: Lint
-      if: inputs.run-lint == 'true'
       shell: bash
       working-directory: ${{ inputs.plugin-directory }}
       run: ${{ steps.package-manager.outputs.runCmd }} lint
 
     - name: Typecheck
-      if: inputs.run-typecheck == 'true'
       shell: bash
       working-directory: ${{ inputs.plugin-directory }}
       run: ${{ steps.package-manager.outputs.runCmd }} typecheck
 
     - name: Test
-      if: inputs.run-tests == 'true'
       shell: bash
       working-directory: ${{ inputs.plugin-directory }}
       run: ${{ steps.package-manager.outputs.runCmd }} test:ci
