@@ -164,9 +164,13 @@ package_os_arch() {
 }
 
 # Fetch the signing tool once: concurrent `npx -y` runs of an uncached
-# package can collide in the npx cache.
+# package can collide in the npx cache. A failed fetch does not stop the
+# script, as each package signs again and reports its own error, but its
+# stderr shows here, ahead of the parallel runs.
 if [ ! -z $GRAFANA_ACCESS_POLICY_TOKEN ]; then
-    npx -y @grafana/sign-plugin@latest --help > /dev/null 2>&1 || true
+    if ! npx -y @grafana/sign-plugin@latest --help > /dev/null; then
+        echo "::warning::Could not fetch @grafana/sign-plugin before packaging; each package fetches it again."
+    fi
 fi
 
 # Create the os+arch zips in parallel. Each runs in its own subshell and
