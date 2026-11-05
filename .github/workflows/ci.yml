@@ -89,6 +89,32 @@ on:
         type: string
         required: false
         default: ""
+      test-and-build-runs-on:
+        description: |
+          Runner label for the `test-and-build` job. Defaults to "ubuntu-x64-large".
+          Flexible labels such as "ubuntu-x64-large-plus" can take a runner from any matching pool
+          and reduce queueing.
+        type: string
+        required: false
+        default: ubuntu-x64-large
+      run-frontend-lint:
+        description: |
+          Whether to run the frontend `lint` script. Set to false when the caller lints in a job of its own.
+        type: boolean
+        required: false
+        default: true
+      run-frontend-typecheck:
+        description: |
+          Whether to run the frontend `typecheck` script. Set to false when the caller typechecks in a job of its own.
+        type: boolean
+        required: false
+        default: true
+      run-frontend-tests:
+        description: |
+          Whether to run the frontend `test:ci` script. Set to false when the caller runs the frontend tests in a job of its own.
+        type: boolean
+        required: false
+        default: true
       backend-build-target:
         description: Custom mage target to use for building the backend. Defaults to "buildAll". Useful for building for custom architectures not supported in the SDK yet, such as s390x or Windows ARM64.
         type: string
@@ -430,7 +456,7 @@ jobs:
 
   test-and-build:
     name: Test and build plugin
-    runs-on: ubuntu-x64-large
+    runs-on: ${{ inputs.test-and-build-runs-on }}
 
     needs:
       # Not strictly necessary, but makes sure we fail fast if the workflow is misconfigured
@@ -621,6 +647,9 @@ jobs:
           plugin-directory: ${{ inputs.plugin-directory }}
           secrets: ${{ (fromJson(steps.workflow-context.outputs.result).isTrusted && inputs.frontend-secrets != '') && inputs.frontend-secrets || '' }}
           npm-registry-auth: ${{ inputs.npm-registry-auth }}
+          run-lint: ${{ inputs.run-frontend-lint }}
+          run-typecheck: ${{ inputs.run-frontend-typecheck }}
+          run-tests: ${{ inputs.run-frontend-tests }}
 
       - name: Test and build backend
         id: backend
