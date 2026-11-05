@@ -112,8 +112,10 @@ for backend in "${backends[@]}"; do
     prune_args+=(-name "${backend#*|}*")
 done
 
-# Create os+arch zips
-for file in $(find "$first_backend_folder" -type f -name "${first_backend_exe}_*"); do
+# package_os_arch creates the zip for the os+arch of the first backend's
+# executable $1, with only that os+arch's executable of each backend.
+package_os_arch() {
+    local file=$1
     # Extract os+arch from the file name
     os_arch=$(echo $(basename $file) | sed -E "s|${first_backend_exe}_([a-zA-Z0-9_]+)(.exe)?|\1|")
 
@@ -159,5 +161,27 @@ for file in $(find "$first_backend_folder" -type f -name "${first_backend_exe}_*
     # Cleanup temporary folder
     popd > /dev/null
     rm -rf $tmp
-done
+}
 
+# Fetch the signing tool once: concurrent `npx -y` runs of an uncached
+# package can collide in the npx cache. A failed fetch does not stop the
+# script, as each package signs again and reports its own error, but its
+# stderr shows here, ahead of the parallel runs.
+if [ ! -z $GRAFANA_ACCESS_POLICY_TOKEN ]; then
+    if ! npx -y @grafana/sign-plugin@latest --help > /dev/null; then
+        echo "::warning::Could not fetch @grafana/sign-plugin before packaging; each package fetches it again."
+    fi
+fi
+
+# Create the os+arch zips in parallel. Each runs in its own subshell and
+# temporary folder; every failure fails the script.
+pids=()
+for file in $(find "$first_backend_folder" -type f -name "${first_backend_exe}_*"); do
+    ( set -e; package_os_arch "$file" ) &
+    pids+=($!)
+done
+status=0
+for pid in "${pids[@]}"; do
+    wait "$pid" || status=1
+done
+exit $status
