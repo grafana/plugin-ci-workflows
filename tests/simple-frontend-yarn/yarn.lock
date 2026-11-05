@@ -6374,11 +6374,11 @@ __metadata:
   linkType: hard
 
 "i18next-browser-languagedetector@npm:^8.0.0":
-  version: 8.2.4
-  resolution: "i18next-browser-languagedetector@npm:8.2.4"
+  version: 8.3.0
+  resolution: "i18next-browser-languagedetector@npm:8.3.0"
   dependencies:
     "@babel/runtime": "npm:^7.29.2"
-  checksum: 10c0/d2f4134e6859faee2269703144f36320395952fb3ce09ed40440dd5df19c9f2e12e8b77bde82e10be16b23efe0df23798fb230fc5d4528e45e0f71419c7c98a5
+  checksum: 10c0/34ec0e1a56fbcdaa1879e8ac0f11567d37edc3d1d45b3b562ac90c5eca774ff8bf59d4009257e37cd5adbd95434b07af6bfa24ea1efeb793c055e84af863c021
   languageName: node
   linkType: hard
 
@@ -7900,12 +7900,12 @@ __metadata:
   linkType: hard
 
 "minimatch@npm:^11.0.2":
-  version: 11.0.3
-  resolution: "minimatch@npm:11.0.3"
+  version: 11.0.4
+  resolution: "minimatch@npm:11.0.4"
   dependencies:
     "@isaacs/nonrecursive-glob-match": "npm:^1.0.3"
     brace-expansion: "npm:^5.0.12"
-  checksum: 10c0/5e8f192102251981872d3c117b3804d4b2759a20b5d788e65af2263a7679d96692f00ca8784b245e38476d042472c818f10ceac06085dec23a22136931b76053
+  checksum: 10c0/e342a036ce841615715727957c644df8fb167137035e7ec380c5dbd637a47dd10ba33b2e25ff3a8dd01c6483624cdd1942de5bafb5f4a342b450343bb63e29dc
   languageName: node
   linkType: hard
 
