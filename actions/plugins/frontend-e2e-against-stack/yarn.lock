@@ -1230,9 +1230,9 @@ uglify-js@^3.1.4:
   integrity sha512-v3Xu+yuwBXisp6QYTcH4UbH+xYJXqnq2m/LtQVWKWzYc1iehYnLixoQDN9FH6/j9/oybfd6W9Ghwkl8+UMKTKQ==
 
 undici-types@*:
-  version "8.12.3"
-  resolved "https://registry.yarnpkg.com/undici-types/-/undici-types-8.12.3.tgz#f58ee96cf9bed5809a14550edf483c979ab0bea7"
-  integrity sha512-EXE4ydL3S76dFb27UFjNVZHTyv/TLdATj/KUe29ptdcg6qXL48J2tZ3126E5kICj5jn781OR+XlVH1N6Mz8jbA==
+  version "8.12.4"
+  resolved "https://registry.yarnpkg.com/undici-types/-/undici-types-8.12.4.tgz#e474b79d8b8555a56d73c33ae0e362f4c3980dbf"
+  integrity sha512-GNCQH3MbVGB8OAVAoTiLH8pu4wx5Ni3DWKpnBzGj3WDsi8EwmK0aOVBooNEt+g5YL1eHPxcS9XUTouwFU6j1kQ==
 
 undici-types@~8.9.0:
   version "8.9.0"
