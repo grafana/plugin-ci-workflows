@@ -115,6 +115,18 @@ on:
         type: boolean
         required: false
         default: true
+      run-backend-lint:
+        description: |
+          Whether to run `golangci-lint` on the backend. Set to false when the caller lints in a job of its own.
+        type: boolean
+        required: false
+        default: true
+      run-backend-tests:
+        description: |
+          Whether to run the backend Mage tests. Set to false when the caller runs the backend tests in a job of its own.
+        type: boolean
+        required: false
+        default: true
       backend-build-target:
         description: Custom mage target to use for building the backend. Defaults to "buildAll". Useful for building for custom architectures not supported in the SDK yet, such as s390x or Windows ARM64.
         type: string
@@ -660,6 +672,8 @@ jobs:
           plugin-directory: ${{ inputs.plugin-directory }}
           secrets: ${{ (fromJson(steps.workflow-context.outputs.result).isTrusted && inputs.backend-secrets != '') && inputs.backend-secrets || '' }}
           build-target: ${{ inputs.backend-build-target }}
+          run-lint: ${{ inputs.run-backend-lint }}
+          run-tests: ${{ inputs.run-backend-tests }}
 
       # Multi-page docs for the plugin catalog (not the website docs in docs/sources). Built before packaging so the signature covers them.
       - name: Validate and build catalog docs
