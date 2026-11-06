@@ -389,6 +389,18 @@ on:
         type: boolean
         required: false
         default: true
+      run-backend-lint:
+        description: |
+          Whether to run `golangci-lint` on the backend. Set to false when the caller lints in a job of its own.
+        type: boolean
+        required: false
+        default: true
+      run-backend-tests:
+        description: |
+          Whether to run the backend Mage tests. Set to false when the caller runs the backend tests in a job of its own.
+        type: boolean
+        required: false
+        default: true
       backend-build-target:
         description: Custom mage target to use for building the backend. Defaults to "buildAll". Useful for building for custom architectures not supported in the SDK yet, such as s390x or Windows ARM64.
         type: string
@@ -886,6 +898,8 @@ jobs:
       run-frontend-lint: ${{ inputs.run-frontend-lint }}
       run-frontend-typecheck: ${{ inputs.run-frontend-typecheck }}
       run-frontend-tests: ${{ inputs.run-frontend-tests }}
+      run-backend-lint: ${{ inputs.run-backend-lint }}
+      run-backend-tests: ${{ inputs.run-backend-tests }}
 
       environment: ${{ inputs.environment }}
 
