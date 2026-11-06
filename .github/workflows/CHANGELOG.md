@@ -1,5 +1,100 @@
 # Changelog
 
+## [12.1.0](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v12.0.1...ci-cd-workflows/v12.1.0) (2026-11-06)
+
+
+### 🎉 Features
+
+* **ci:** add a test-and-build runner input and inputs to skip frontend checks ([#1272](https://github.com/grafana/plugin-ci-workflows/issues/1272)) ([f3cbe35](https://github.com/grafana/plugin-ci-workflows/commit/f3cbe35993d71019399a37a7ff78444e6323eb9d))
+* **ci:** add inputs to skip backend lint and tests ([#1291](https://github.com/grafana/plugin-ci-workflows/issues/1291)) ([ad37d07](https://github.com/grafana/plugin-ci-workflows/commit/ad37d079548052a8b18e2c3c007ce0b11cdbda02))
+* **ci:** validate the built catalog docs ([#1213](https://github.com/grafana/plugin-ci-workflows/issues/1213)) ([37d9ec3](https://github.com/grafana/plugin-ci-workflows/commit/37d9ec3a3ebda8828db18b0949beed307b06df3c))
+
+
+### 🐛 Bug Fixes
+
+* **ci:** trust databases-frontend-ci-bot so its sync PRs get Playwright secrets ([#1211](https://github.com/grafana/plugin-ci-workflows/issues/1211)) ([34504ce](https://github.com/grafana/plugin-ci-workflows/commit/34504ce7759260931b741aab6905ca3f0b6753a4))
+* **ci:** trust renovate-auto-merger so its merge pushes sign the plugin ([#1240](https://github.com/grafana/plugin-ci-workflows/issues/1240)) ([ede33f9](https://github.com/grafana/plugin-ci-workflows/commit/ede33f9c444974f4f08349afbeffe99b1dc9c067))
+* **security/low/tests/simple-frontend-pnpm:** update dependency serialize-javascript to &gt;=7.1.3 [security] ([#1214](https://github.com/grafana/plugin-ci-workflows/issues/1214)) ([a0486b6](https://github.com/grafana/plugin-ci-workflows/commit/a0486b6390e0ade76f4e403116f8e0e998b5b1ed))
+* **security/low/tests/simple-frontend-yarn:** update dependency serialize-javascript to v7.1.3 [security] ([#1215](https://github.com/grafana/plugin-ci-workflows/issues/1215)) ([0fedff6](https://github.com/grafana/plugin-ci-workflows/commit/0fedff696caed940fd80d7c3b5bed2fdedbbd24c))
+* **security/low/tests/simple-frontend-yarn:** update dependency serialize-javascript to v7.1.4 [security] ([#1225](https://github.com/grafana/plugin-ci-workflows/issues/1225)) ([4aac33c](https://github.com/grafana/plugin-ci-workflows/commit/4aac33c95ed8d99feb62edcffaaf594b0a13207a))
+* **security/medium/tests/simple-frontend-yarn:** update dependency glob to v14 [security] ([#1248](https://github.com/grafana/plugin-ci-workflows/issues/1248)) ([054379c](https://github.com/grafana/plugin-ci-workflows/commit/054379c88b4fa0c7f83a69a6f6902c1babb10c10))
+* **security/unknown/tests/simple-backend:** update module golang.org/x/net to v0.62.0 [security] ([#1235](https://github.com/grafana/plugin-ci-workflows/issues/1235)) ([62a8eb7](https://github.com/grafana/plugin-ci-workflows/commit/62a8eb7b52408eaaa4fe7a32a67d347126a3d3a0))
+* **setup:** key the pnpm store cache on the detected lockfile ([#1260](https://github.com/grafana/plugin-ci-workflows/issues/1260)) ([c89ee58](https://github.com/grafana/plugin-ci-workflows/commit/c89ee58537dd81612b528c81e4e6271ff61f61fa))
+
+
+### ⚡ Performance Improvements
+
+* **package:** build the os/arch packages in parallel ([#1271](https://github.com/grafana/plugin-ci-workflows/issues/1271)) ([25bffc5](https://github.com/grafana/plugin-ci-workflows/commit/25bffc5422619eb92c8e46375f101749c4a1b32f))
+
+
+### 🔧 Chores
+
+* **deps:** lock file maintenance ([#1199](https://github.com/grafana/plugin-ci-workflows/issues/1199)) ([3fa1dc9](https://github.com/grafana/plugin-ci-workflows/commit/3fa1dc901682ecde4a1ea4d2c812039e2198a522))
+* **deps:** lock file maintenance ([#1207](https://github.com/grafana/plugin-ci-workflows/issues/1207)) ([bc62124](https://github.com/grafana/plugin-ci-workflows/commit/bc621242faaf512fd2f1ed5001cd66086e7324d4))
+* **deps:** lock file maintenance ([#1212](https://github.com/grafana/plugin-ci-workflows/issues/1212)) ([2ff9e20](https://github.com/grafana/plugin-ci-workflows/commit/2ff9e20fe9fcdd2eb1ac8e5a3f8abc59b060570e))
+* **deps:** lock file maintenance ([#1217](https://github.com/grafana/plugin-ci-workflows/issues/1217)) ([0b38012](https://github.com/grafana/plugin-ci-workflows/commit/0b380121e2962b0cc1ddf0eba15c5dd18698e9d5))
+* **deps:** lock file maintenance ([#1236](https://github.com/grafana/plugin-ci-workflows/issues/1236)) ([3299bdb](https://github.com/grafana/plugin-ci-workflows/commit/3299bdb95c0168aa235ffef17ed37e6caeab491b))
+* **deps:** lock file maintenance ([#1239](https://github.com/grafana/plugin-ci-workflows/issues/1239)) ([c0c15dd](https://github.com/grafana/plugin-ci-workflows/commit/c0c15dd3319ccbe122cc511ab3e41ab0331faa96))
+* **deps:** lock file maintenance ([#1242](https://github.com/grafana/plugin-ci-workflows/issues/1242)) ([61d36be](https://github.com/grafana/plugin-ci-workflows/commit/61d36be59f4a0a35eb0ea41307201bd57041f76b))
+* **deps:** lock file maintenance ([#1244](https://github.com/grafana/plugin-ci-workflows/issues/1244)) ([27cecaf](https://github.com/grafana/plugin-ci-workflows/commit/27cecafadab443e59b6cccb42c788bffe4766db2))
+* **deps:** lock file maintenance ([#1245](https://github.com/grafana/plugin-ci-workflows/issues/1245)) ([1dd34d3](https://github.com/grafana/plugin-ci-workflows/commit/1dd34d30d5873d8cb1014f20b3d04b2862df17d4))
+* **deps:** lock file maintenance ([#1251](https://github.com/grafana/plugin-ci-workflows/issues/1251)) ([fbbd87b](https://github.com/grafana/plugin-ci-workflows/commit/fbbd87b854b03262ca5f2623de105132d3722148))
+* **deps:** lock file maintenance ([#1255](https://github.com/grafana/plugin-ci-workflows/issues/1255)) ([b7527b7](https://github.com/grafana/plugin-ci-workflows/commit/b7527b70240339aacf45700fe29025b0c8d15a33))
+* **deps:** lock file maintenance ([#1262](https://github.com/grafana/plugin-ci-workflows/issues/1262)) ([aac1498](https://github.com/grafana/plugin-ci-workflows/commit/aac14981073bd25d906dfcef02f06d2bae46594b))
+* **deps:** lock file maintenance ([#1266](https://github.com/grafana/plugin-ci-workflows/issues/1266)) ([438940c](https://github.com/grafana/plugin-ci-workflows/commit/438940c502885f31afebc2c054970a744a6623b1))
+* **deps:** lock file maintenance ([#1279](https://github.com/grafana/plugin-ci-workflows/issues/1279)) ([c3f8845](https://github.com/grafana/plugin-ci-workflows/commit/c3f884526d24c74044981f87ef42c8482e3e5661))
+* **deps:** lock file maintenance ([#1283](https://github.com/grafana/plugin-ci-workflows/issues/1283)) ([eb778eb](https://github.com/grafana/plugin-ci-workflows/commit/eb778eb3e7fa230230ab0bcfc21f82ff38ca4ed1))
+* **deps:** lock file maintenance ([#1288](https://github.com/grafana/plugin-ci-workflows/issues/1288)) ([9b3e812](https://github.com/grafana/plugin-ci-workflows/commit/9b3e812af04d7e643ec707e60a7af3901e9b536a))
+* **deps:** update anthropics/claude-code-action action to v1.0.253 ([#1208](https://github.com/grafana/plugin-ci-workflows/issues/1208)) ([c3c3de8](https://github.com/grafana/plugin-ci-workflows/commit/c3c3de80dc4a728a840ae0fa60a8af8e59408fe6))
+* **deps:** update anthropics/claude-code-action action to v1.0.259 ([#1219](https://github.com/grafana/plugin-ci-workflows/issues/1219)) ([5d92c8f](https://github.com/grafana/plugin-ci-workflows/commit/5d92c8f09b3316ad01aba906f1a800f7c19494ae))
+* **deps:** update anthropics/claude-code-action action to v1.0.261 ([#1227](https://github.com/grafana/plugin-ci-workflows/issues/1227)) ([b5358cb](https://github.com/grafana/plugin-ci-workflows/commit/b5358cb2a2a3f5199c710f0cc616cb5aeb62d56e))
+* **deps:** update anthropics/claude-code-action action to v1.0.262 ([#1237](https://github.com/grafana/plugin-ci-workflows/issues/1237)) ([c951890](https://github.com/grafana/plugin-ci-workflows/commit/c9518904b96cc20897830c4e233fb985e945ad0a))
+* **deps:** update anthropics/claude-code-action action to v1.0.265 ([#1254](https://github.com/grafana/plugin-ci-workflows/issues/1254)) ([99b8bcc](https://github.com/grafana/plugin-ci-workflows/commit/99b8bcc5c5edec773ccef2a8415617b31a198b8d))
+* **deps:** update anthropics/claude-code-action action to v1.0.266 ([#1263](https://github.com/grafana/plugin-ci-workflows/issues/1263)) ([c392df4](https://github.com/grafana/plugin-ci-workflows/commit/c392df4917ca9fd6649d7e69ad3a3aa9f10dcf39))
+* **deps:** update dependency @grafana/plugin-docs-cli to v0.13.0 ([#1230](https://github.com/grafana/plugin-ci-workflows/issues/1230)) ([62cf230](https://github.com/grafana/plugin-ci-workflows/commit/62cf230e27ffc02552bcd269edd72e40182a4893))
+* **deps:** update dependency @grafana/plugin-docs-cli to v0.13.1 ([#1290](https://github.com/grafana/plugin-ci-workflows/issues/1290)) ([456374e](https://github.com/grafana/plugin-ci-workflows/commit/456374ee8439b26221ac3558b19185c8f4ccf334))
+* **deps:** update dependency @grafana/plugin-e2e to v3.15.3 ([#1220](https://github.com/grafana/plugin-ci-workflows/issues/1220)) ([752c7b0](https://github.com/grafana/plugin-ci-workflows/commit/752c7b0419e68743723cd22d607f5b7ea519a694))
+* **deps:** update dependency @grafana/plugin-e2e to v3.15.4 ([#1256](https://github.com/grafana/plugin-ci-workflows/issues/1256)) ([04cccd5](https://github.com/grafana/plugin-ci-workflows/commit/04cccd57951a33bc13ec26accd2cfa6467bf4147))
+* **deps:** update dependency @swc/core to v1.16.20 ([#1221](https://github.com/grafana/plugin-ci-workflows/issues/1221)) ([9220a51](https://github.com/grafana/plugin-ci-workflows/commit/9220a5185427b576608c49efad9be5e72ed42968))
+* **deps:** update dependency @swc/core to v1.16.21 ([#1264](https://github.com/grafana/plugin-ci-workflows/issues/1264)) ([80e3a0b](https://github.com/grafana/plugin-ci-workflows/commit/80e3a0b4160c41a531209d5f066d36e8780b521c))
+* **deps:** update dependency @types/node to v26 ([#1238](https://github.com/grafana/plugin-ci-workflows/issues/1238)) ([564e0fc](https://github.com/grafana/plugin-ci-workflows/commit/564e0fce1e039e057930f7fca4f837971b11bdef))
+* **deps:** update dependency act to v0.2.92 ([#1257](https://github.com/grafana/plugin-ci-workflows/issues/1257)) ([bed81d3](https://github.com/grafana/plugin-ci-workflows/commit/bed81d337611d2ed3c75a95c081830e66ecb00a7))
+* **deps:** update dependency act to v0.2.94 ([#1280](https://github.com/grafana/plugin-ci-workflows/issues/1280)) ([f5fb73c](https://github.com/grafana/plugin-ci-workflows/commit/f5fb73cc4e3472391e2e79fe4697a1a65c80859b))
+* **deps:** update dependency cspell to v10 ([#1196](https://github.com/grafana/plugin-ci-workflows/issues/1196)) ([02d67b5](https://github.com/grafana/plugin-ci-workflows/commit/02d67b53140540ad048f4192dabe0b533cb5c250))
+* **deps:** update dependency eslint-plugin-jsdoc to v65.3.12 ([#1209](https://github.com/grafana/plugin-ci-workflows/issues/1209)) ([6f20fa6](https://github.com/grafana/plugin-ci-workflows/commit/6f20fa64e1b99e16b1ebbee523057f962cc3e39f))
+* **deps:** update dependency glob to v14.0.3 ([#1267](https://github.com/grafana/plugin-ci-workflows/issues/1267)) ([2840cd8](https://github.com/grafana/plugin-ci-workflows/commit/2840cd8d4b7a881296606d3a99e13e8fce45f32f))
+* **deps:** update dependency sass to v1.106.1 ([#1231](https://github.com/grafana/plugin-ci-workflows/issues/1231)) ([b71029f](https://github.com/grafana/plugin-ci-workflows/commit/b71029f0c233b2a948e4a3a2213a4bbb791ce398))
+* **deps:** update dependency sass to v1.107.1 ([#1270](https://github.com/grafana/plugin-ci-workflows/issues/1270)) ([3a2a597](https://github.com/grafana/plugin-ci-workflows/commit/3a2a597a56bdefde5a4fc0affd3b7a8f0f73d045))
+* **deps:** update dependency sass-loader to v17.1.0 ([#1273](https://github.com/grafana/plugin-ci-workflows/issues/1273)) ([e6c608e](https://github.com/grafana/plugin-ci-workflows/commit/e6c608edf092bdc93fe41b6524665e668c5a34d6))
+* **deps:** update dependency trufflehog to v3.99.4 ([#1222](https://github.com/grafana/plugin-ci-workflows/issues/1222)) ([95a0559](https://github.com/grafana/plugin-ci-workflows/commit/95a0559669f1e83858bece215391045b6c17e070))
+* **deps:** update dependency trufflehog to v3.99.7 ([#1228](https://github.com/grafana/plugin-ci-workflows/issues/1228)) ([518a072](https://github.com/grafana/plugin-ci-workflows/commit/518a072a3da0b30f436f1acadd03cfd924e525e3))
+* **deps:** update dependency webpack to v5.112.1 ([#1223](https://github.com/grafana/plugin-ci-workflows/issues/1223)) ([61dc277](https://github.com/grafana/plugin-ci-workflows/commit/61dc2776dc63e32b13ae59800eaa2326c4e8fe8e))
+* **deps:** update dependency webpack-cli to v7.3.1 ([#1274](https://github.com/grafana/plugin-ci-workflows/issues/1274)) ([71837fd](https://github.com/grafana/plugin-ci-workflows/commit/71837fd462c7c71366fa3a620c8c9814ded15da2))
+* **deps:** update eslint config ([#1232](https://github.com/grafana/plugin-ci-workflows/issues/1232)) ([92229c4](https://github.com/grafana/plugin-ci-workflows/commit/92229c457d6fca40ee9333ca1f347f25b7b35b61))
+* **deps:** update eslint config to v8.72.1 ([#1259](https://github.com/grafana/plugin-ci-workflows/issues/1259)) ([8599a46](https://github.com/grafana/plugin-ci-workflows/commit/8599a4642a9d4a2d302efaeaf6562fc76d4ac1bd))
+* **deps:** update google.golang.org/genproto/googleapis/api digest to 2ffab32 ([#1252](https://github.com/grafana/plugin-ci-workflows/issues/1252)) ([23027de](https://github.com/grafana/plugin-ci-workflows/commit/23027dee04d641db5714243369abe14b60d336d2))
+* **deps:** update google.golang.org/genproto/googleapis/api digest to ce908d2 ([#1218](https://github.com/grafana/plugin-ci-workflows/issues/1218)) ([2f4a5e9](https://github.com/grafana/plugin-ci-workflows/commit/2f4a5e9588a1b4ba449a93295151d1c00d730789))
+* **deps:** update google.golang.org/genproto/googleapis/rpc digest to 2ffab32 ([#1253](https://github.com/grafana/plugin-ci-workflows/issues/1253)) ([2ecbfcb](https://github.com/grafana/plugin-ci-workflows/commit/2ecbfcb161ec6dd81e87bc68161bd541102fadec))
+* **deps:** update google.golang.org/genproto/googleapis/rpc digest to 4341edf ([#1171](https://github.com/grafana/plugin-ci-workflows/issues/1171)) ([6906056](https://github.com/grafana/plugin-ci-workflows/commit/69060568965f7eba74dfee74a47bdaad7c855b37))
+* **deps:** update jest monorepo to v30 ([#1202](https://github.com/grafana/plugin-ci-workflows/issues/1202)) ([f53fe4a](https://github.com/grafana/plugin-ci-workflows/commit/f53fe4aaefb7371854b22348a93fca1d5c4ac31c))
+* **deps:** update mikepenz/action-junit-report action to v6.6.2 ([#1268](https://github.com/grafana/plugin-ci-workflows/issues/1268)) ([c896e78](https://github.com/grafana/plugin-ci-workflows/commit/c896e788897bb7982d6efc7518de42f9ca11a2ad))
+* **deps:** update module github.com/goccy/go-json to v0.12.0 ([#1275](https://github.com/grafana/plugin-ci-workflows/issues/1275)) ([ccb9013](https://github.com/grafana/plugin-ci-workflows/commit/ccb90131b74066a3782f4b5a259cc650202da61e))
+* **deps:** update module github.com/grafana/grafana-plugin-sdk-go to v0.298.0 ([#1243](https://github.com/grafana/plugin-ci-workflows/issues/1243)) ([f8df26d](https://github.com/grafana/plugin-ci-workflows/commit/f8df26dcb43d3fc740d49fa26f1b45ab65425e8b))
+* **deps:** update module github.com/grpc-ecosystem/grpc-gateway/v2 to v2.33.0 ([#1276](https://github.com/grafana/plugin-ci-workflows/issues/1276)) ([59e8074](https://github.com/grafana/plugin-ci-workflows/commit/59e80745ae0d620d4666f4f3ed0e21923e3c8daa))
+* **deps:** update module github.com/klauspost/cpuid/v2 to v2.4.2 ([#1284](https://github.com/grafana/plugin-ci-workflows/issues/1284)) ([c144b7f](https://github.com/grafana/plugin-ci-workflows/commit/c144b7faf6f354611ba0d97932a24127798aaa68))
+* **deps:** update module github.com/pandatix/go-abnf to v0.5.5 ([#1281](https://github.com/grafana/plugin-ci-workflows/issues/1281)) ([de6dd86](https://github.com/grafana/plugin-ci-workflows/commit/de6dd8620b8d2c7e4f67232b56b50015b1504e0e))
+* **deps:** update module github.com/prometheus/common to v0.73.1 ([#1277](https://github.com/grafana/plugin-ci-workflows/issues/1277)) ([367489c](https://github.com/grafana/plugin-ci-workflows/commit/367489ca6e5f48afbfb6037c037a18fcf8f8ccab))
+* **deps:** update module github.com/prometheus/procfs to v0.23.0 ([#1233](https://github.com/grafana/plugin-ci-workflows/issues/1233)) ([2727459](https://github.com/grafana/plugin-ci-workflows/commit/27274594e8f0e2c82160b02b7abcfcd3a1650747))
+* **deps:** update module go.yaml.in/yaml/v3 to v3.0.6 ([#1265](https://github.com/grafana/plugin-ci-workflows/issues/1265)) ([86335c6](https://github.com/grafana/plugin-ci-workflows/commit/86335c64f449f356dcc4fbf273c9e5a42fc069cf))
+* **deps:** update module google.golang.org/grpc to v1.85.0 ([#1282](https://github.com/grafana/plugin-ci-workflows/issues/1282)) ([824254e](https://github.com/grafana/plugin-ci-workflows/commit/824254ed18ab0dfe934d77b26a58622365d77f0e))
+* **deps:** update npm to v12.2.1 ([#1210](https://github.com/grafana/plugin-ci-workflows/issues/1210)) ([1ed73a6](https://github.com/grafana/plugin-ci-workflows/commit/1ed73a6139eb7fca88ab681c39366a217c308ce0))
+* **deps:** update pnpm to v12 ([#1205](https://github.com/grafana/plugin-ci-workflows/issues/1205)) ([1e116fb](https://github.com/grafana/plugin-ci-workflows/commit/1e116fbf4ee7856d921822def10044363bbbc8ae))
+* **deps:** update pnpm to v12.15.0 ([#1234](https://github.com/grafana/plugin-ci-workflows/issues/1234)) ([0fed92d](https://github.com/grafana/plugin-ci-workflows/commit/0fed92d7b49c70be42fcf86003db8fc6d407c485))
+* **deps:** update pnpm to v12.16.1 ([#1285](https://github.com/grafana/plugin-ci-workflows/issues/1285)) ([e2a0324](https://github.com/grafana/plugin-ci-workflows/commit/e2a032403b82d07a50f8694de2eb828bbdd076f0))
+* **deps:** update step-security/harden-runner action to v2.22.2 ([#1229](https://github.com/grafana/plugin-ci-workflows/issues/1229)) ([9487128](https://github.com/grafana/plugin-ci-workflows/commit/948712815c1f69f4c7161095c0f4f901dc7e4117))
+* **deps:** update step-security/harden-runner action to v2.22.3 ([#1269](https://github.com/grafana/plugin-ci-workflows/issues/1269)) ([12ae2ad](https://github.com/grafana/plugin-ci-workflows/commit/12ae2ad70d8fa8e2dc5f7fa4f9066552f858738f))
+* **deps:** update testing-library monorepo ([#1206](https://github.com/grafana/plugin-ci-workflows/issues/1206)) ([18a4c94](https://github.com/grafana/plugin-ci-workflows/commit/18a4c94c556d43f18a2d2595e3894ba824c3afe8))
+
 ## [12.0.1](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v12.0.0...ci-cd-workflows/v12.0.1) (2026-10-21)
 
 
