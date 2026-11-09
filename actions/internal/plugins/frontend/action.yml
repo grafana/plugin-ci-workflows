@@ -85,4 +85,13 @@ runs:
     - name: Build
       shell: bash
       working-directory: ${{ inputs.plugin-directory }}
-      run: ${{ steps.package-manager.outputs.runCmd }} build
+      env:
+        SECRETS_JSON: ${{ steps.get-secrets.outputs.secrets || '{}' }}
+      run: |
+        while IFS= read -r key; do
+          [[ "$key" =~ ^[A-Z_][A-Z0-9_]*$ ]] || { echo "::error::invalid secret name: $key"; exit 1; }
+          export "$key=$(jq -r --arg k "$key" '.[$k]' <<<"$SECRETS_JSON")"
+        done < <(jq -r 'keys[]' <<<"$SECRETS_JSON")
+        unset SECRETS_JSON
+
+        ${{ steps.package-manager.outputs.runCmd }} build

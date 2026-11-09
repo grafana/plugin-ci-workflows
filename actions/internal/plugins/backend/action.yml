@@ -74,20 +74,16 @@ runs:
       env:
         RACE_DETECTOR: ${{ inputs.race-detector }}
 
-    - name: Expose secrets to build
-      shell: bash
-      run: |
-        echo "${SECRETS_FROM_VAULT}" | jq -r 'keys | .[]'  | while read key; do
-            value=$(echo "${SECRETS_FROM_VAULT}" | jq -r ".[\"${key}\"]")
-            echo "::add-mask::${value}"
-            echo "${key}=${value}" >> "$GITHUB_ENV"
-        done
-      env:
-        SECRETS_FROM_VAULT: ${{ steps.get-secrets.outputs.secrets }}
-
     - name: Build
-      run: mage -v ${BUILD_TARGET}
+      run: |
+        while IFS= read -r key; do
+          [[ "$key" =~ ^[A-Z_][A-Z0-9_]*$ ]] || { echo "::error::invalid secret name: $key"; exit 1; }
+          export "$key=$(jq -r --arg k "$key" '.[$k]' <<<"$SECRETS_JSON")"
+        done < <(jq -r 'keys[]' <<<"$SECRETS_JSON")
+        unset SECRETS_JSON
+        mage -v ${BUILD_TARGET}
       working-directory: ${{ inputs.plugin-directory }}
       shell: bash
       env:
         BUILD_TARGET: ${{ inputs.build-target }}
+        SECRETS_JSON: ${{ steps.get-secrets.outputs.secrets || '{}' }}
