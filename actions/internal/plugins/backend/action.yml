@@ -12,7 +12,7 @@ inputs:
   secrets:
     required: false
     type: string
-    description: The secrets to use within frontend steps
+    description: Secrets to expose to the backend build process through environment variables
   race-detector:
     required: false
     type: boolean
@@ -73,6 +73,17 @@ runs:
       shell: bash
       env:
         RACE_DETECTOR: ${{ inputs.race-detector }}
+
+    - name: Expose secrets to build
+      shell: bash
+      run: |
+        echo "${SECRETS_FROM_VAULT}" | jq -r 'keys | .[]'  | while read key; do
+            value=$(echo "${SECRETS_FROM_VAULT}" | jq -r ".[\"${key}\"]")
+            echo "::add-mask::${value}"
+            echo "${key}=${value}" >> "$GITHUB_ENV"
+        done
+      env:
+        SECRETS_FROM_VAULT: ${{ steps.get-secrets.outputs.secrets }}
 
     - name: Build
       run: mage -v ${BUILD_TARGET}
