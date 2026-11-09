@@ -12,7 +12,7 @@ inputs:
   secrets:
     required: false
     type: string
-    description: The secrets to use within frontend steps
+    description: Secrets to expose to the backend build process through environment variables
   race-detector:
     required: false
     type: boolean
@@ -75,8 +75,15 @@ runs:
         RACE_DETECTOR: ${{ inputs.race-detector }}
 
     - name: Build
-      run: mage -v ${BUILD_TARGET}
+      run: |
+        while IFS= read -r key; do
+          [[ "$key" =~ ^[A-Z_][A-Z0-9_]*$ ]] || { echo "::error::invalid secret name: $key"; exit 1; }
+          export "$key=$(jq -r --arg k "$key" '.[$k]' <<<"$SECRETS_JSON")"
+        done < <(jq -r 'keys[]' <<<"$SECRETS_JSON")
+        unset SECRETS_JSON
+        mage -v ${BUILD_TARGET}
       working-directory: ${{ inputs.plugin-directory }}
       shell: bash
       env:
         BUILD_TARGET: ${{ inputs.build-target }}
+        SECRETS_JSON: ${{ steps.get-secrets.outputs.secrets || '{}' }}
