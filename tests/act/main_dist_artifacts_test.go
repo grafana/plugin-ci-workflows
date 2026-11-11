@@ -104,3 +104,88 @@ func TestDistArtifactsUnavailable(t *testing.T) {
 		})
 	}
 }
+
+// When ci.yml and cd.yml run in the same workflow run without different dist-artifacts-prefix values,
+// both upload an artifact with the same name and a job can download the one from the other build.
+func TestDistArtifactsFromAnotherBuild(t *testing.T) {
+	t.Parallel()
+
+	const builtZip = "test-plugin-1.0.0+aaaaaaa.zip"
+	for _, tc := range []struct {
+		name        string
+		artifactZip string
+		expSuccess  bool
+	}{
+		{name: "artifact from this build", artifactZip: builtZip, expSuccess: true},
+		{name: "artifact from another build", artifactZip: "test-plugin-1.0.0+bbbbbbb.zip", expSuccess: false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			runner, err := act.NewRunner(t)
+			require.NoError(t, err)
+
+			wf, err := ci.NewWorkflow(
+				ci.WithWorkflowInputs(ci.WorkflowInputs{
+					PluginDirectory:    workflow.Input(filepath.Join("tests", "simple-frontend")),
+					AllowUnsigned:      workflow.Input(true),
+					RunPlaywright:      workflow.Input(false),
+					RunTruffleHog:      workflow.Input(false),
+					RunPluginValidator: workflow.Input(false),
+				}),
+
+				ci.MutateCIWorkflow().With(
+					// Keep the dependencies so the upload-to-gcs `if:` condition can be evaluated.
+					workflow.WithOnlyOneJob(t, "upload-to-gcs", false),
+					workflow.WithNoOpJobWithOutputs(t, "check-for-release-channel", map[string]string{}),
+					workflow.WithNoOpJobWithOutputs(t, "test-and-build", map[string]string{
+						"workflow-context": `{"isTrusted":true}`,
+						"plugin":           `{"id":"test-plugin","version":"1.0.0+aaaaaaa"}`,
+						"universal-zip":    builtZip,
+					}),
+
+					// Upload a dist-artifacts artifact that holds tc.artifactZip.
+					workflow.WithInjectedSteps(t, "test-and-build", workflow.InjectedStepsOptions{
+						Position:        workflow.InjectedStepsOptionsPositionAfter,
+						InjectionStepID: "set-outputs",
+						Steps: workflow.Steps{
+							{
+								Run:   `mkdir -p /tmp/dist-artifacts && echo zip > "/tmp/dist-artifacts/${ZIP}"`,
+								Shell: "bash",
+								Env:   map[string]string{"ZIP": tc.artifactZip},
+							},
+							{
+								Name: "Upload dist-artifacts",
+								Uses: "actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4", // v5.0.0
+								With: map[string]any{
+									"name": "dist-artifacts",
+									"path": "/tmp/dist-artifacts/",
+								},
+							},
+						},
+					}),
+
+					workflow.WithMockedGCS(t),
+				),
+			)
+			require.NoError(t, err)
+
+			r, err := runner.Run(wf, act.NewPushEventPayload("main"))
+			require.NoError(t, err)
+
+			mismatch := act.Annotation{
+				Level: act.AnnotationLevelError,
+				Title: "Wrong dist-artifacts",
+				Message: "The dist-artifacts artifact does not contain " + builtZip + ". " +
+					"Another ci.yml or cd.yml call in this workflow run probably uploaded an artifact with the same name. " +
+					"Set a different dist-artifacts-prefix input on each call.",
+			}
+			require.Equal(t, tc.expSuccess, r.Success)
+			if tc.expSuccess {
+				require.NotContains(t, r.Annotations, mismatch)
+			} else {
+				require.Contains(t, r.Annotations, mismatch)
+			}
+		})
+	}
+}
