@@ -339,7 +339,8 @@ func TestCD_PublishOmitsProvenanceAttestation(t *testing.T) {
 				"is-release-reference":  "true",
 			}),
 			workflow.WithNoOpJobWithOutputs(t, "ci", map[string]string{
-				"plugin": string(pluginOutput),
+				"plugin":        string(pluginOutput),
+				"universal-zip": pluginSlug + "-" + pluginVersion + ".zip",
 			}),
 			workflow.WithNoOpJobWithOutputs(t, "upload-to-gcs-release", map[string]string{
 				"gcs-zip-urls": string(gcsZipURLs),

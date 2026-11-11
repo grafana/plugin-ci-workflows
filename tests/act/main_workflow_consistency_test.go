@@ -133,6 +133,84 @@ func TestCIUploadToGCSWaitsForEnabledPlaywrightJobs(t *testing.T) {
 	}
 }
 
+const (
+	distArtifactsName      = "${{ inputs.dist-artifacts-prefix }}dist-artifacts"
+	downloadArtifactAction = "actions/download-artifact@"
+	checkDistArtifactsID   = "check-dist-artifacts"
+)
+
+// isDistArtifactsDownload reports whether the step downloads the plugin's dist-artifacts GitHub artifact.
+func isDistArtifactsDownload(step workflow.Step) bool {
+	name, _ := step.With["name"].(string)
+	return strings.HasPrefix(step.Uses, downloadArtifactAction) && strings.HasSuffix(name, "dist-artifacts")
+}
+
+// When ci.yml and cd.yml run in the same workflow run, each one uploads a dist-artifacts artifact.
+// They only stay apart if every download uses the dist-artifacts-prefix input.
+func TestDistArtifactsDownloadsUsePrefix(t *testing.T) {
+	t.Parallel()
+
+	for _, fn := range []string{"ci.yml", "cd.yml", "playwright.yml", "playwright-docker.yml"} {
+		t.Run(fn, func(t *testing.T) {
+			t.Parallel()
+
+			wf, err := workflow.NewBaseWorkflowFromFile(filepath.Join(".github", "workflows", fn))
+			require.NoError(t, err)
+			_, ok := wf.On.WorkflowCall.Inputs["dist-artifacts-prefix"]
+			require.True(t, ok, "should have a dist-artifacts-prefix input")
+
+			var downloads int
+			for jobID, job := range wf.Jobs {
+				for _, step := range job.Steps {
+					if !isDistArtifactsDownload(step) {
+						continue
+					}
+					downloads++
+					require.Equalf(t, distArtifactsName, step.With["name"], "job %q step %q", jobID, step.Name)
+				}
+			}
+			require.NotZero(t, downloads, "should download dist-artifacts")
+		})
+	}
+
+	t.Run("ci.yml passes the prefix to the playwright workflows", func(t *testing.T) {
+		t.Parallel()
+
+		ciWf, err := workflow.NewBaseWorkflowFromFile(filepath.Join(".github", "workflows", "ci.yml"))
+		require.NoError(t, err)
+		for _, jobID := range []string{"playwright", "playwright-docker"} {
+			require.Equalf(t, "${{ inputs.dist-artifacts-prefix }}", ciWf.Jobs[jobID].With["dist-artifacts-prefix"], "job %q", jobID)
+		}
+	})
+}
+
+// A download by name returns one of the artifacts when two share a name, so the jobs that upload,
+// attest or release the zips check that they got the artifact of their own build.
+func TestDistArtifactsDownloadsAreChecked(t *testing.T) {
+	t.Parallel()
+
+	for _, fn := range []string{"ci.yml", "cd.yml"} {
+		wf, err := workflow.NewBaseWorkflowFromFile(filepath.Join(".github", "workflows", fn))
+		require.NoError(t, err)
+
+		for jobID, job := range wf.Jobs {
+			for i, step := range job.Steps {
+				if !isDistArtifactsDownload(step) {
+					continue
+				}
+				checked := false
+				for _, next := range job.Steps[i+1:] {
+					if next.ID == checkDistArtifactsID {
+						checked = true
+						break
+					}
+				}
+				require.Truef(t, checked, "%s: job %q downloads dist-artifacts without a %q step after it", fn, jobID, checkDistArtifactsID)
+			}
+		}
+	}
+}
+
 func TestExportedWorkflowsInSyncWithReleasePlease(t *testing.T) {
 	t.Parallel()
 
