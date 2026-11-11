@@ -16,3 +16,5 @@ minimumReleaseAgeExclude:
   - pnpm@11.8.0
   # Renovate security update: serialize-javascript@7.1.3
   - serialize-javascript@7.1.3
+  # Renovate security update: glob@14.0.2
+  - glob@14.0.2
