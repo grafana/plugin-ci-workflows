@@ -28,6 +28,11 @@ on:
         type: boolean
         required: false
         default: true
+      dist-artifacts-prefix:
+        description: Prefix of the dist-artifacts GitHub artifact uploaded by the ci workflow.
+        type: string
+        required: false
+        default: ""
       plugin-directory:
         description: Directory of the plugin, if not in the root of the repository.
         type: string
@@ -284,7 +289,7 @@ jobs:
         continue-on-error: true
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          name: dist-artifacts
+          name: ${{ inputs.dist-artifacts-prefix }}dist-artifacts
           path: /tmp/dist-artifacts
 
       - name: Log unavailable dist-artifacts error

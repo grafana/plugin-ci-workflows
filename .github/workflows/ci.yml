@@ -882,6 +882,7 @@ jobs:
     needs:
       - test-and-build
     with:
+      dist-artifacts-prefix: ${{ inputs.dist-artifacts-prefix }}
       id: ${{ fromJSON(needs.test-and-build.outputs.plugin).id}}
       version: ${{ fromJSON(needs.test-and-build.outputs.plugin).version}}
       gar-registry: ${{ inputs.playwright-gar-registry }}
@@ -912,6 +913,7 @@ jobs:
     needs:
       - test-and-build
     with:
+      dist-artifacts-prefix: ${{ inputs.dist-artifacts-prefix }}
       id: ${{ fromJSON(needs.test-and-build.outputs.plugin).id}}
       version: ${{ fromJSON(needs.test-and-build.outputs.plugin).version}}
       gar-registry: ${{ inputs.playwright-gar-registry }}
@@ -974,6 +976,21 @@ jobs:
         shell: bash
         env:
           RETENTION_DAYS: ${{ inputs.dist-artifacts-retention-days }}
+
+      - name: Check dist-artifacts belong to this build
+        id: check-dist-artifacts
+        run: |
+          if [ ! -f "${DIST_ARTIFACTS_PATH}/${UNIVERSAL_ZIP}" ]; then
+            echo "::error title=Wrong dist-artifacts::The ${DIST_ARTIFACTS_NAME} artifact does not contain ${UNIVERSAL_ZIP}. Another ci.yml or cd.yml call in this workflow run probably uploaded an artifact with the same name. Set a different dist-artifacts-prefix input on each call."
+            echo "Artifact contents:"
+            ls -1 "${DIST_ARTIFACTS_PATH}"
+            exit 1
+          fi
+        env:
+          DIST_ARTIFACTS_PATH: /tmp/${{ inputs.dist-artifacts-prefix }}dist-artifacts
+          DIST_ARTIFACTS_NAME: ${{ inputs.dist-artifacts-prefix }}dist-artifacts
+          UNIVERSAL_ZIP: ${{ needs.test-and-build.outputs.universal-zip }}
+        shell: bash
 
       - name: Login to Google Cloud
         uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
