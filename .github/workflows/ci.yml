@@ -1004,6 +1004,8 @@ jobs:
           destination: ${{ env.gcs_artifacts_path_latest }}
           parent: false
           process_gcloudignore: false
+          # Resumable uploads fail on small checksum files, see #775
+          resumable: false
 
       - name: Upload GCS artifacts (commit)
         id: gcs-upload-commit
@@ -1013,6 +1015,8 @@ jobs:
           destination: ${{ env.gcs_artifacts_path_commit }}
           parent: false
           process_gcloudignore: false
+          # Resumable uploads fail on small checksum files, see #775
+          resumable: false
 
       - name: Define outputs
         id: outputs

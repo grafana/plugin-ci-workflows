@@ -1305,6 +1305,8 @@ jobs:
           destination: "${{ steps.paths.outputs.gcs_artifacts_release_path_tag }}/${{ matrix.platform }}"
           parent: false
           process_gcloudignore: false
+          # Resumable uploads fail on small checksum files, see #775
+          resumable: false
 
       - name: Upload GCS release artifact (latest)
         if: ${{ inputs.upload-gcs-latest || needs.setup.outputs.is-release-reference == 'true' }}
@@ -1315,6 +1317,8 @@ jobs:
           destination: "${{ steps.paths.outputs.gcs_artifacts_release_path_latest }}/${{ matrix.platform }}"
           parent: false
           process_gcloudignore: false
+          # Resumable uploads fail on small checksum files, see #775
+          resumable: false
 
       - name: Upload GCS release artifacts (latest, any)
         if: ${{ (inputs.upload-gcs-latest || needs.setup.outputs.is-release-reference == 'true') && matrix.platform == 'any' }}
@@ -1324,6 +1328,8 @@ jobs:
           destination: "${{ steps.paths.outputs.gcs_artifacts_release_path_latest }}"
           parent: false
           process_gcloudignore: false
+          # Resumable uploads fail on small checksum files, see #775
+          resumable: false
 
       # all zip artifacts are already present in /tmp/dist-artifacts
       # we can generate all the urls here in a single step
