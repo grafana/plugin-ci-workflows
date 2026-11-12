@@ -4534,9 +4534,9 @@ __metadata:
   linkType: hard
 
 "ci-info@npm:^4.2.0":
-  version: 4.4.0
-  resolution: "ci-info@npm:4.4.0"
-  checksum: 10c0/44156201545b8dde01aa8a09ee2fe9fc7a73b1bef9adbd4606c9f61c8caeeb73fb7a575c88b0443f7b4edb5ee45debaa59ed54ba5f99698339393ca01349eb3a
+  version: 4.5.0
+  resolution: "ci-info@npm:4.5.0"
+  checksum: 10c0/8ad193f49fe61248764a346cf35627e9dd85b192492a3001fb93622e30696eafd5d9d6091f10fc49dbabf963d9fd48261f9895fcaec054d5a57b5e9e56e94371
   languageName: node
   linkType: hard
 
@@ -6444,9 +6444,9 @@ __metadata:
   linkType: hard
 
 "immutable@npm:^5.1.5":
-  version: 5.1.9
-  resolution: "immutable@npm:5.1.9"
-  checksum: 10c0/ae7032b60b81b682f3e7e4df13e1ec9a401a603eb81b15bb3e37331ed6666e318c71994c6936e1462eb443d32d04769396562a7e2669da22457c8ba279c03ad2
+  version: 5.1.10
+  resolution: "immutable@npm:5.1.10"
+  checksum: 10c0/fd7cc4399b164cf549490c9a4fdd4dea97cf93fe9864056337b407d773f24500c5b523552e6e7832427e298b764bd1210afb6960eae246423d626b1493191a77
   languageName: node
   linkType: hard
 
