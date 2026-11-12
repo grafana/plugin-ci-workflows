@@ -1487,18 +1487,33 @@ jobs:
 
       - name: Create tag
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
-        # Allow the tag creation to fail, in case it already exists
-        # (e.g.: created manually, or re-triggering a release).
+        # Unexpected errors still don't block the "Create Github release" step.
         continue-on-error: true
         with:
           script: |
             const { PLUGIN_VERSION } = process.env
-            github.rest.git.createRef({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              ref: `refs/tags/v${PLUGIN_VERSION}`,
-              sha: context.sha
-            })
+            const { owner, repo } = context.repo
+            const tag = `v${PLUGIN_VERSION}`
+            try {
+              await github.rest.git.createRef({ owner, repo, ref: `refs/tags/${tag}`, sha: context.sha })
+              core.info(`Created tag ${tag} at ${context.sha}`)
+            } catch (error) {
+              // 422 means the tag already exists, e.g. it was created manually or the release is re-run
+              if (error.status !== 422) {
+                throw error
+              }
+              const { data: ref } = await github.rest.git.getRef({ owner, repo, ref: `tags/${tag}` })
+              let sha = ref.object.sha
+              if (ref.object.type === 'tag') {
+                const { data: annotated } = await github.rest.git.getTag({ owner, repo, tag_sha: sha })
+                sha = annotated.object.sha
+              }
+              if (sha === context.sha) {
+                core.notice(`Tag ${tag} already exists at ${sha}, reusing it`)
+              } else {
+                core.warning(`Tag ${tag} already exists and points to ${sha}, not to ${context.sha}. The release will use the existing tag.`)
+              }
+            }
         env:
           PLUGIN_VERSION: ${{ fromJSON(needs.ci.outputs.plugin).version }}
 
