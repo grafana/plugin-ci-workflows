@@ -1,5 +1,27 @@
 # Changelog
 
+## [12.1.2](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v12.1.1...ci-cd-workflows/v12.1.2) (2026-11-12)
+
+
+### 🐛 Bug Fixes
+
+* **gcs:** disable resumable uploads for plugin artifacts ([#1328](https://github.com/grafana/plugin-ci-workflows/issues/1328)) ([4a20cb4](https://github.com/grafana/plugin-ci-workflows/commit/4a20cb42323d66d58058f48706bb75bdd5475272))
+
+
+### 🔧 Chores
+
+* **deps:** lock file maintenance ([#1326](https://github.com/grafana/plugin-ci-workflows/issues/1326)) ([75082be](https://github.com/grafana/plugin-ci-workflows/commit/75082be6190e2f0e6218fe063c31a64c2952764e))
+* **deps:** lock file maintenance ([#1331](https://github.com/grafana/plugin-ci-workflows/issues/1331)) ([9215440](https://github.com/grafana/plugin-ci-workflows/commit/9215440f1784b3fa4ba0222d5ae0734487f4fe6d))
+* **deps:** lock file maintenance ([#1332](https://github.com/grafana/plugin-ci-workflows/issues/1332)) ([7a4d716](https://github.com/grafana/plugin-ci-workflows/commit/7a4d71661d8d761f98704dc3b96994e00c5c9a5a))
+* **deps:** lock file maintenance ([#1334](https://github.com/grafana/plugin-ci-workflows/issues/1334)) ([45f891e](https://github.com/grafana/plugin-ci-workflows/commit/45f891e2cca54108244ae094c4a6267064fe21cd))
+* **deps:** update dependency @grafana/plugin-docs-cli to v0.14.1 ([#1317](https://github.com/grafana/plugin-ci-workflows/issues/1317)) ([6355145](https://github.com/grafana/plugin-ci-workflows/commit/635514525fc952d1e867c9ddea36bf9d80b85912))
+* **deps:** update dependency @grafana/plugin-e2e to v4 ([#1323](https://github.com/grafana/plugin-ci-workflows/issues/1323)) ([46b0789](https://github.com/grafana/plugin-ci-workflows/commit/46b078910295f1bedc70a9cdeba38ffb67cef0e6))
+* **deps:** update dependency @playwright/test to v1.65.0 ([#1318](https://github.com/grafana/plugin-ci-workflows/issues/1318)) ([76e335f](https://github.com/grafana/plugin-ci-workflows/commit/76e335fb19adb35ddcab34c5dfa45c1d0f85883e))
+* **deps:** update dependency sass to v1.108.1 ([#1319](https://github.com/grafana/plugin-ci-workflows/issues/1319)) ([c086a0f](https://github.com/grafana/plugin-ci-workflows/commit/c086a0f7ebd0b795cf4bb22c0b10af19911c7c3b))
+* **deps:** update mikepenz/action-junit-report action to v6.7.1 ([#1320](https://github.com/grafana/plugin-ci-workflows/issues/1320)) ([b8d7497](https://github.com/grafana/plugin-ci-workflows/commit/b8d74978fb49156f035f08c6dcc13a560b12eb52))
+* **deps:** update peter-evans/create-pull-request action to v8.1.2 ([#1333](https://github.com/grafana/plugin-ci-workflows/issues/1333)) ([7f163f6](https://github.com/grafana/plugin-ci-workflows/commit/7f163f6dc818b0323a66a44bc5f6aa259f7d7d7b))
+* **deps:** update pnpm to v12.18.0 ([#1321](https://github.com/grafana/plugin-ci-workflows/issues/1321)) ([3d88465](https://github.com/grafana/plugin-ci-workflows/commit/3d884658c47d9259848debf7524a0dca16cdf0f5))
+
 ## [12.1.1](https://github.com/grafana/plugin-ci-workflows/compare/ci-cd-workflows/v12.1.0...ci-cd-workflows/v12.1.1) (2026-11-10)
 
 
