@@ -107,6 +107,19 @@ func TestCDWorkflowCIJobPassesAllInputs(t *testing.T) {
 	})
 }
 
+func TestCDWorkflowHasNoCatalogOptOut(t *testing.T) {
+	t.Parallel()
+
+	cdWf, err := workflow.NewBaseWorkflowFromFile(filepath.Join(".github", "workflows", "cd.yml"))
+	require.NoError(t, err)
+
+	require.NotContains(t, cdWf.On.WorkflowCall.Inputs, "gcs-only", "CD must not expose a catalog opt-out")
+
+	publishJob := cdWf.Jobs["publish-to-catalog"]
+	require.NotNil(t, publishJob)
+	require.NotContains(t, publishJob.If, "gcs-only", "plugin publishing must not skip the catalog")
+}
+
 func TestCIUploadToGCSWaitsForEnabledPlaywrightJobs(t *testing.T) {
 	t.Parallel()
 
