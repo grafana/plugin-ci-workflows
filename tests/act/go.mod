@@ -13,5 +13,5 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/spf13/afero v1.15.0
 	github.com/stretchr/testify v1.12.1
-	golang.org/x/mod v0.42.0
+	golang.org/x/mod v0.43.0
 )
