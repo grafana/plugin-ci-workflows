@@ -48,6 +48,11 @@ on:
         required: false
         type: boolean
         description: "Deprecated: use skip-grafana-nightly-image instead"
+      grafana-image:
+        required: false
+        type: string
+        default: grafana
+        description: "The Grafana image to test against: grafana (open source) or grafana-enterprise"
       version-resolver-type:
         required: false
         type: string
@@ -149,9 +154,10 @@ jobs:
 
       - name: Resolve Grafana E2E versions
         id: resolve-versions
-        uses: grafana/plugin-actions/e2e-version@64ea9946103fc0a569c53cf53d27f568af2a44ce # e2e-version/v3.1.0
+        uses: grafana/plugin-actions/e2e-version@7c06940961370f55d9bb0e6164aed92f22d9f3b7 # e2e-version/v4.0.0
         with:
           skip-grafana-nightly-image: ${{ inputs.skip-grafana-nightly-image || inputs.skip-grafana-dev-image }}
+          grafana-image: ${{ inputs.grafana-image }}
           version-resolver-type: ${{ inputs.version-resolver-type }}
           grafana-dependency: ${{ inputs.grafana-dependency }}
           plugin-directory: ${{ inputs.plugin-directory }}
