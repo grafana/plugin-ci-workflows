@@ -146,6 +146,40 @@ func TestCIUploadToGCSWaitsForEnabledPlaywrightJobs(t *testing.T) {
 	}
 }
 
+func TestPlaywrightGrafanaImageIsPassedToE2EVersion(t *testing.T) {
+	t.Parallel()
+
+	ciWf, err := workflow.NewBaseWorkflowFromFile(filepath.Join(".github", "workflows", "ci.yml"))
+	require.NoError(t, err)
+
+	for _, tc := range []struct{ file, ciJob string }{
+		{file: "playwright.yml", ciJob: "playwright"},
+		{file: "playwright-docker.yml", ciJob: "playwright-docker"},
+	} {
+		t.Run(tc.file, func(t *testing.T) {
+			t.Parallel()
+
+			wf, err := workflow.NewBaseWorkflowFromFile(filepath.Join(".github", "workflows", tc.file))
+			require.NoError(t, err)
+			require.Contains(t, wf.On.WorkflowCall.Inputs, "grafana-image")
+
+			ciJob := ciWf.Jobs[tc.ciJob]
+			require.NotNil(t, ciJob)
+			require.Equal(t, "${{ inputs.run-playwright-with-grafana-image }}", ciJob.With["grafana-image"])
+
+			var resolved int
+			for _, step := range wf.Jobs["resolve-versions"].Steps {
+				if !strings.HasPrefix(step.Uses, "grafana/plugin-actions/e2e-version@") {
+					continue
+				}
+				resolved++
+				require.Equal(t, "${{ inputs.grafana-image }}", step.With["grafana-image"])
+			}
+			require.Equal(t, 1, resolved, "%s should have one e2e-version step", tc.file)
+		})
+	}
+}
+
 // Resumable uploads in upload-cloud-storage fail on small files such as the .sha1/.md5 checksums with
 // "the offset is lower than the number of bytes written", even though the object is written.
 // See https://github.com/grafana/plugin-ci-workflows/issues/775.
