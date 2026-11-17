@@ -833,6 +833,8 @@ jobs:
           name: ${{ inputs.dist-artifacts-prefix }}dist-artifacts
           path: ${{ inputs.plugin-directory }}/dist-artifacts/
           retention-days: ${{ inputs.dist-artifacts-retention-days }}
+          # Plugin ZIPs are already compressed; avoid recompressing them for upload.
+          compression-level: 0
 
   docs:
     name: Test docs
