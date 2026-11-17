@@ -188,6 +188,11 @@ on:
         type: boolean
         required: false
         default: false
+      run-playwright-with-grafana-image:
+        description: "The Grafana image to run Playwright E2E tests against: grafana (open source) or grafana-enterprise"
+        type: string
+        required: false
+        default: grafana
       run-playwright-with-version-resolver-type:
         description: Define which version resolver type to use for Playwright E2E tests.
         type: string
@@ -888,6 +893,7 @@ jobs:
       plugin-directory: ${{ inputs.plugin-directory }}
       grafana-dependency: ${{ inputs.run-playwright-with-grafana-dependency }}
       skip-grafana-nightly-image: ${{ inputs.run-playwright-with-skip-grafana-nightly-image || inputs.run-playwright-with-skip-grafana-dev-image }}
+      grafana-image: ${{ inputs.run-playwright-with-grafana-image }}
       version-resolver-type: ${{ inputs.run-playwright-with-version-resolver-type }}
       limit: ${{ inputs.run-playwright-with-limit }}
       upload-artifacts: ${{ inputs.upload-playwright-artifacts }}
@@ -918,6 +924,7 @@ jobs:
       plugin-directory: ${{ inputs.plugin-directory }}
       grafana-dependency: ${{ inputs.run-playwright-with-grafana-dependency }}
       skip-grafana-nightly-image: ${{ inputs.run-playwright-with-skip-grafana-nightly-image || inputs.run-playwright-with-skip-grafana-dev-image }}
+      grafana-image: ${{ inputs.run-playwright-with-grafana-image }}
       version-resolver-type: ${{ inputs.run-playwright-with-version-resolver-type }}
       limit: ${{ inputs.run-playwright-with-limit }}
       upload-artifacts: ${{ inputs.upload-playwright-artifacts }}
