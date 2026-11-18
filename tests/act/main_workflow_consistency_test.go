@@ -146,6 +146,66 @@ func TestCIUploadToGCSWaitsForEnabledPlaywrightJobs(t *testing.T) {
 	}
 }
 
+func TestPlaywrightEnterpriseNightlyRegistryIsWired(t *testing.T) {
+	t.Parallel()
+
+	ciWf, err := workflow.NewBaseWorkflowFromFile(filepath.Join(".github", "workflows", "ci.yml"))
+	require.NoError(t, err)
+	require.Contains(t, ciWf.On.WorkflowCall.Inputs, "run-playwright-with-enterprise-nightly-registry")
+
+	cdWf, err := workflow.NewBaseWorkflowFromFile(filepath.Join(".github", "workflows", "cd.yml"))
+	require.NoError(t, err)
+	require.Contains(t, cdWf.On.WorkflowCall.Inputs, "run-playwright-with-enterprise-nightly-registry")
+	require.Equal(t,
+		"${{ inputs.run-playwright-with-enterprise-nightly-registry }}",
+		cdWf.Jobs["ci"].With["run-playwright-with-enterprise-nightly-registry"],
+	)
+
+	for _, tc := range []struct{ file, ciJob, composeFileInput string }{
+		{file: "playwright.yml", ciJob: "playwright", composeFileInput: "docker-compose-file"},
+		{file: "playwright-docker.yml", ciJob: "playwright-docker", composeFileInput: "grafana-compose-file"},
+	} {
+		t.Run(tc.file, func(t *testing.T) {
+			t.Parallel()
+
+			wf, err := workflow.NewBaseWorkflowFromFile(filepath.Join(".github", "workflows", tc.file))
+			require.NoError(t, err)
+			require.Contains(t, wf.On.WorkflowCall.Inputs, "enterprise-nightly-registry")
+
+			ciJob := ciWf.Jobs[tc.ciJob]
+			require.NotNil(t, ciJob)
+			require.Equal(t, "${{ inputs.run-playwright-with-enterprise-nightly-registry }}", ciJob.With["enterprise-nightly-registry"])
+
+			steps := wf.Jobs["playwright-tests"].Steps
+			stepIndex := func(name string) int {
+				for i, step := range steps {
+					if step.Name == name {
+						return i
+					}
+				}
+				return -1
+			}
+
+			resolve := stepIndex("Resolve Grafana repository")
+			login := stepIndex("Log in to enterprise nightly registry")
+			check := stepIndex("Check docker-compose setup supports GRAFANA_REPOSITORY")
+			start := stepIndex("Start Grafana")
+			for name, idx := range map[string]int{"resolve": resolve, "login": login, "check": check, "start": start} {
+				require.GreaterOrEqualf(t, idx, 0, "%s: missing %s step", tc.file, name)
+			}
+			require.Less(t, resolve, login, "the private repository guard must run before logging in")
+			require.Less(t, login, check)
+			require.Less(t, check, start, "the compose check must run before Grafana starts")
+
+			require.Equal(t, "grafana-repository", steps[resolve].ID)
+			require.Equal(t, "${{ inputs.enterprise-nightly-registry }}", steps[resolve].Env["ENTERPRISE_NIGHTLY_REGISTRY"])
+			require.Equal(t, "${{ github.event.repository.private }}", steps[resolve].Env["REPOSITORY_IS_PRIVATE"])
+			require.Contains(t, steps[resolve].Run, `"${REPOSITORY_IS_PRIVATE}" != "true"`, "the guard must fail closed")
+			require.Equal(t, "${{ inputs."+tc.composeFileInput+" }}", steps[check].Env["DOCKER_COMPOSE_FILE"])
+		})
+	}
+}
+
 // Resumable uploads in upload-cloud-storage fail on small files such as the .sha1/.md5 checksums with
 // "the offset is lower than the number of bytes written", even though the object is written.
 // See https://github.com/grafana/plugin-ci-workflows/issues/775.
