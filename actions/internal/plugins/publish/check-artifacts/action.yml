@@ -10,6 +10,12 @@ inputs:
     description: |
       The expected plugin ID for the ZIP file(s).
     required: true
+  gcs-access-token:
+    description: |
+      Optional Google Cloud access token, sent only to `https://storage.googleapis.com/` URLs.
+      Needed for ZIPs in a private bucket.
+    required: false
+    default: ""
 
 runs:
   using: composite
@@ -20,4 +26,5 @@ runs:
       env:
         ZIPS: ${{ inputs.zips }}
         PLUGIN_ID: ${{ inputs.plugin-id }}
+        GCS_ACCESS_TOKEN: ${{ inputs.gcs-access-token }}
       shell: bash
