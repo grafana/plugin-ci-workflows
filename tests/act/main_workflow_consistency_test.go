@@ -241,6 +241,35 @@ func TestPlaywrightGrafanaImageIsPassedToE2EVersion(t *testing.T) {
 	}
 }
 
+func TestDockerPlaywrightUsesMatrixImageForAllSteps(t *testing.T) {
+	t.Parallel()
+
+	wf, err := workflow.NewBaseWorkflowFromFile(filepath.Join(".github", "workflows", "playwright-docker.yml"))
+	require.NoError(t, err)
+	job := wf.Jobs["playwright-tests"]
+	require.NotNil(t, job)
+	require.Equal(t, "${{ matrix.GRAFANA_IMAGE.name }}", job.Env["GRAFANA_IMAGE"])
+	require.Equal(t, "${{ matrix.GRAFANA_IMAGE.version }}", job.Env["GRAFANA_VERSION"])
+}
+
+func TestPlaywrightStatusChecksAllRequiredJobs(t *testing.T) {
+	t.Parallel()
+
+	for _, file := range []string{"playwright.yml", "playwright-docker.yml"} {
+		t.Run(file, func(t *testing.T) {
+			t.Parallel()
+			wf, err := workflow.NewBaseWorkflowFromFile(filepath.Join(".github", "workflows", file))
+			require.NoError(t, err)
+			check := wf.Jobs["check-playwright-status"]
+			require.NotNil(t, check)
+			require.ElementsMatch(t, []string{"resolve-versions", "playwright-tests"}, check.Needs)
+			require.Equal(t, "always()", check.If)
+			require.Len(t, check.Steps, 1)
+			require.Equal(t, "${{ join(needs.*.result, ',') }}", check.Steps[0].With["results"])
+		})
+	}
+}
+
 // Resumable uploads in upload-cloud-storage fail on small files such as the .sha1/.md5 checksums with
 // "the offset is lower than the number of bytes written", even though the object is written.
 // See https://github.com/grafana/plugin-ci-workflows/issues/775.

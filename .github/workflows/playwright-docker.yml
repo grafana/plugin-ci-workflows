@@ -118,6 +118,9 @@ jobs:
         GRAFANA_IMAGE: ${{fromJson(needs.resolve-versions.outputs.matrix)}}
     name: e2e ${{ matrix.GRAFANA_IMAGE.name }}@${{ matrix.GRAFANA_IMAGE.VERSION }}
     runs-on: ubuntu-x64-large
+    env:
+      GRAFANA_IMAGE: ${{ matrix.GRAFANA_IMAGE.name }}
+      GRAFANA_VERSION: ${{ matrix.GRAFANA_IMAGE.version }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -234,7 +237,7 @@ jobs:
       - name: Start Grafana
         # add the -f argument only if "inputs.grafana-compose-file" is defined
         run: |
-          GRAFANA_VERSION=${{ matrix.GRAFANA_IMAGE.VERSION }} GRAFANA_IMAGE=${{ matrix.GRAFANA_IMAGE.NAME }} docker compose ${DOCKER_COMPOSE_FILE:+-f "$DOCKER_COMPOSE_FILE"} up -d
+          docker compose ${DOCKER_COMPOSE_FILE:+-f "$DOCKER_COMPOSE_FILE"} up -d
         env:
           DOCKER_COMPOSE_FILE: ${{ inputs.grafana-compose-file }}
 
@@ -261,6 +264,7 @@ jobs:
 
   check-playwright-status:
     needs:
+      - resolve-versions
       - playwright-tests
     name: Check Playwright E2E matrix status
     runs-on: ubuntu-arm64-small
@@ -269,4 +273,4 @@ jobs:
       - name: Check matrix job status
         uses: grafana/plugin-ci-workflows/actions/internal/check-matrix-status@main
         with:
-          results: ${{ needs.playwright-tests.result }}
+          results: ${{ join(needs.*.result, ',') }}
