@@ -385,6 +385,7 @@ jobs:
 
   check-playwright-status:
     needs:
+      - resolve-versions
       - playwright-tests
     name: Check Playwright E2E matrix status
     runs-on: ubuntu-arm64-small
@@ -393,4 +394,4 @@ jobs:
       - name: Check matrix job status
         uses: grafana/plugin-ci-workflows/actions/internal/check-matrix-status@main
         with:
-          results: ${{ needs.playwright-tests.result }}
+          results: ${{ join(needs.*.result, ',') }}

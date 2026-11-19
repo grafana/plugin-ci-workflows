@@ -15,6 +15,9 @@ func TestCheckMatrixStatus(t *testing.T) {
 		expectSuccess bool
 	}{
 		{name: "success", results: "success", expectSuccess: true},
+		{name: "both jobs succeeded", results: "success,success", expectSuccess: true},
+		{name: "resolver failed and tests skipped", results: "failure,skipped", expectSuccess: false},
+		{name: "tests skipped", results: "success,skipped", expectSuccess: false},
 		{name: "failure", results: "failure", expectSuccess: false},
 		{name: "cancelled", results: "cancelled", expectSuccess: false},
 	} {
