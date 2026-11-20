@@ -81,6 +81,7 @@ type Job struct {
 
 	If string `yaml:"if,omitempty"`
 
+	Env      map[string]string `yaml:"env,omitempty"`
 	RunsOn   string            `yaml:"runs-on,omitempty"`
 	Needs    []string          `yaml:"needs,omitempty"`
 	Outputs  map[string]string `yaml:"outputs,omitempty"`

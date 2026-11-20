@@ -36,6 +36,11 @@ on:
         required: false
         type: boolean
         description: "Deprecated: use skip-grafana-nightly-image instead"
+      grafana-image:
+        required: false
+        type: string
+        default: grafana
+        description: "The Grafana image to test against: grafana (open source) or grafana-enterprise"
       version-resolver-type:
         required: false
         type: string
@@ -90,16 +95,18 @@ jobs:
 
       - name: Resolve Grafana E2E versions
         id: resolve-versions
-        uses: grafana/plugin-actions/e2e-version@64ea9946103fc0a569c53cf53d27f568af2a44ce # e2e-version/v3.1.0
+        uses: grafana/plugin-actions/e2e-version@7c06940961370f55d9bb0e6164aed92f22d9f3b7 # e2e-version/v4.0.0
         with:
           skip-grafana-nightly-image: ${{ inputs.skip-grafana-nightly-image || inputs.skip-grafana-dev-image }}
+          grafana-image: ${{ inputs.grafana-image }}
           version-resolver-type: ${{ inputs.version-resolver-type }}
           grafana-dependency: ${{ inputs.grafana-dependency }}
           plugin-directory: ${{ inputs.plugin-directory }}
           limit: ${{ inputs.limit }}
 
   playwright-tests:
-    needs: resolve-versions
+    needs:
+      - resolve-versions
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -107,6 +114,9 @@ jobs:
         GRAFANA_IMAGE: ${{fromJson(needs.resolve-versions.outputs.matrix)}}
     name: e2e ${{ matrix.GRAFANA_IMAGE.name }}@${{ matrix.GRAFANA_IMAGE.VERSION }}
     runs-on: ubuntu-x64-large
+    env:
+      GRAFANA_IMAGE: ${{ matrix.GRAFANA_IMAGE.name }}
+      GRAFANA_VERSION: ${{ matrix.GRAFANA_IMAGE.version }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -167,7 +177,7 @@ jobs:
       - name: Start Grafana
         # add the -f argument only if "inputs.grafana-compose-file" is defined
         run: |
-          GRAFANA_VERSION=${{ matrix.GRAFANA_IMAGE.VERSION }} GRAFANA_IMAGE=${{ matrix.GRAFANA_IMAGE.NAME }} docker compose ${DOCKER_COMPOSE_FILE:+-f "$DOCKER_COMPOSE_FILE"} up -d
+          docker compose ${DOCKER_COMPOSE_FILE:+-f "$DOCKER_COMPOSE_FILE"} up -d
         env:
           DOCKER_COMPOSE_FILE: ${{ inputs.grafana-compose-file }}
 
@@ -193,7 +203,9 @@ jobs:
           retention-days: 30
 
   check-playwright-status:
-    needs: playwright-tests
+    needs:
+      - resolve-versions
+      - playwright-tests
     name: Check Playwright E2E matrix status
     runs-on: ubuntu-arm64-small
     if: always()
@@ -201,4 +213,4 @@ jobs:
       - name: Check matrix job status
         uses: grafana/plugin-ci-workflows/actions/internal/check-matrix-status@main
         with:
-          results: ${{ needs.playwright-tests.result }}
+          results: ${{ join(needs.*.result, ',') }}
