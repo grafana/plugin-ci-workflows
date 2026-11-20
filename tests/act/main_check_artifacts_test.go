@@ -3,14 +3,18 @@ package main
 import (
 	"archive/zip"
 	"bytes"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 
+	"github.com/grafana/plugin-ci-workflows/tests/act/internal/act"
+	"github.com/grafana/plugin-ci-workflows/tests/act/internal/workflow"
 	"github.com/stretchr/testify/require"
 )
 
@@ -94,6 +98,82 @@ func TestCheckArtifacts(t *testing.T) {
 			require.NotContains(t, string(out), "All ZIP files validated successfully")
 		})
 	}
+}
+
+func TestCheckArtifacts_GCSAccessToken(t *testing.T) {
+	t.Parallel()
+
+	const (
+		pluginID = "myorg-test-app"
+		token    = "dummy-gcs-access-token"
+	)
+	withTokenURL := "https://storage.googleapis.com/integration-artifacts-private/with-token.zip"
+	otherHostURL := "https://example.com/other-host.zip"
+	noTokenURL := "https://storage.googleapis.com/integration-artifacts/no-token.zip"
+
+	runner, err := act.NewRunner(t)
+	require.NoError(t, err)
+
+	content := newZip(t, map[string]string{
+		pluginID + "/plugin.json":  `{"id":"` + pluginID + `"}`,
+		pluginID + "/MANIFEST.txt": "-----BEGIN PGP SIGNED MESSAGE-----",
+	})
+	var mu sync.Mutex
+	var requests []gcsMockRequest
+	mock, err := act.NewCurlHTTPSMock(t, runner, []string{"storage.googleapis.com", "example.com"}, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		requests = append(requests, gcsMockRequest{URL: "https://" + r.Host + r.URL.Path, Authorization: r.Header.Get("Authorization")})
+		mu.Unlock()
+		_, _ = w.Write(content)
+	}))
+	require.NoError(t, err)
+
+	checkArtifactsStep := func(name string, zips []string, gcsAccessToken string) workflow.Step {
+		zipsJSON, err := json.Marshal(zips)
+		require.NoError(t, err)
+		return workflow.Step{
+			Name: name,
+			Uses: "grafana/plugin-ci-workflows/actions/internal/plugins/publish/check-artifacts@main",
+			With: map[string]any{
+				"zips":             string(zipsJSON),
+				"plugin-id":        pluginID,
+				"gcs-access-token": gcsAccessToken,
+			},
+			Env: mock.CurlEnv(),
+		}
+	}
+	baseWf := workflow.BaseWorkflow{
+		Name: "Check artifacts GCS access token test",
+		On:   workflow.On{Push: workflow.OnPush{Branches: []string{"main"}}},
+		Jobs: map[string]*workflow.Job{
+			"check": {
+				RunsOn: "ubuntu-arm64-small",
+				Steps: workflow.Steps{
+					checkArtifactsStep("Check with token", []string{withTokenURL, otherHostURL}, token),
+					checkArtifactsStep("Check without token", []string{noTokenURL}, ""),
+				},
+			},
+		},
+	}
+	wf := workflow.NewTestingWorkflow("check-artifacts-gcs-access-token", baseWf)
+	wf.AddUUIDToAllJobsRecursive()
+
+	r, err := runner.Run(wf, act.NewPushEventPayload("main"))
+	require.NoError(t, err)
+	require.True(t, r.Success, "workflow should succeed")
+
+	mu.Lock()
+	defer mu.Unlock()
+	require.ElementsMatch(t, []gcsMockRequest{
+		{URL: withTokenURL, Authorization: "Bearer " + token},
+		{URL: otherHostURL},
+		{URL: noTokenURL},
+	}, requests)
+}
+
+type gcsMockRequest struct {
+	URL           string
+	Authorization string
 }
 
 func newZip(t *testing.T, files map[string]string) []byte {

@@ -10,7 +10,13 @@ validate_plugin_zip() {
     echo "Processing: $zip_url"
 
     # Download the ZIP file
-    if ! curl -L -o "$zip_file" "$zip_url"; then
+    if [[ -n "${GCS_ACCESS_TOKEN:-}" && "$zip_url" == https://storage.googleapis.com/* ]]; then
+        # Read the header from stdin to keep the token out of the process list.
+        if ! curl -L -H @- -o "$zip_file" "$zip_url" <<< "Authorization: Bearer ${GCS_ACCESS_TOKEN}"; then
+            echo "ERROR: Failed to download $zip_url"
+            return 1
+        fi
+    elif ! curl -L -o "$zip_file" "$zip_url"; then
         echo "ERROR: Failed to download $zip_url"
         return 1
     fi

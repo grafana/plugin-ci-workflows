@@ -53,6 +53,7 @@ Mock external boundaries, not the behavior under test. The checked-in helpers su
 - GCS authentication/upload replacement with local file assertions;
 - Vault-secret and GitHub App-token step replacements;
 - GCOM HTTP handlers that receive requests from act containers;
+- HTTPS servers for real host names called with curl, such as `storage.googleapis.com` (`act.NewCurlHTTPSMock`; set its `CurlEnv()` on the steps that should use it);
 - Argo-workflow trigger replacement backed by an HTTP request spy;
 - generic Docker-accessible HTTP spies for request/input assertions;
 - pre-built plugin `dist` and packaged artifact fixtures through `tests/act/mockdata` and CI wrapper helpers.

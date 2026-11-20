@@ -86,6 +86,9 @@ type Runner struct {
 
 	// inGitHubActions indicates whether the runner is executing in a GitHub Actions environment.
 	inGitHubActions bool
+
+	// httpsMocksPath is the host directory with the CurlHTTPSMock files, if any (see NewCurlHTTPSMock).
+	httpsMocksPath string
 }
 
 // actionsCachePathBase is the base path for the action cache.
@@ -641,6 +644,9 @@ func (r *Runner) containerOptions() string {
 		"-v $PWD/tests/act/mockdata:/mockdata",
 		// mocked GCS
 		"-v " + r.GCS.basePath + ":/gcs",
+	}
+	if r.httpsMocksPath != "" {
+		opts = append(opts, "-v "+r.httpsMocksPath+":"+httpsMocksContainerPath)
 	}
 
 	// On Linux, add --add-host for host.docker.internal (Docker Desktop handles this automatically)
