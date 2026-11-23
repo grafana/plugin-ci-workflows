@@ -4643,8 +4643,8 @@ packages:
       uglify-js:
         optional: true
 
-  terser@5.51.2:
-    resolution: {integrity: sha512-bWnjSNscmuI+GJze6ZupnHP8G/cTcsJF+bXCeQknk2SHQsgbNJnLrqiH9jZ2W4STPVXH2mDKKRX3iwPhc9Cn/Q==}
+  terser@5.51.3:
+    resolution: {integrity: sha512-j5jPZZ6Sz0Eg2unusKhdRzUhUlHXJ3Bw2AkIXyJ6AqajWwihUlZOdJS+KSnZzmtVk6mFGdm3hHg0+M2sgyEz5Q==}
     engines: {node: '>=10'}
     hasBin: true
 
@@ -9114,7 +9114,7 @@ snapshots:
     dependencies:
       jest-worker: 27.5.1
       schema-utils: 4.8.5(webpack@5.112.2)
-      terser: 5.51.2
+      terser: 5.51.3
       webpack: 5.112.2(@swc/core@1.16.22(@swc/helpers@0.5.24))(postcss@8.5.33)(webpack-cli@7.3.1)
     optionalDependencies:
       '@swc/core': 1.16.22(@swc/helpers@0.5.24)
@@ -10136,13 +10136,13 @@ snapshots:
       '@jridgewell/trace-mapping': 0.3.31
       jest-worker: 27.5.1
       schema-utils: 4.8.5(webpack@5.112.2)
-      terser: 5.51.2
+      terser: 5.51.3
       webpack: 5.112.2(@swc/core@1.16.22(@swc/helpers@0.5.24))(postcss@8.5.33)(webpack-cli@7.3.1)
     optionalDependencies:
       '@swc/core': 1.16.22(@swc/helpers@0.5.24)
       postcss: 8.5.33
 
-  terser@5.51.2:
+  terser@5.51.3:
     dependencies:
       '@jridgewell/source-map': 0.3.11
       acorn: 8.19.0
