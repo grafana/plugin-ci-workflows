@@ -194,8 +194,7 @@ jobs:
       - name: Wait for Playwright image
         shell: bash
         run: |
-          for _ in $(seq 1 600); do
-            [ -f "${RUNNER_TEMP}/playwright-image.done" ] && break
+          until [ -f "${RUNNER_TEMP}/playwright-image.done" ]; do
             sleep 1
           done
           cat "${RUNNER_TEMP}/playwright-image.log" || true

@@ -444,7 +444,11 @@ jobs:
             sleep 1
           done
           cat "${RUNNER_TEMP}/playwright-deps.log" || true
-          if [ "$(cat "${RUNNER_TEMP}/playwright-deps.exit" 2>/dev/null)" = "0" ]; then
+          if [ ! -f "${RUNNER_TEMP}/playwright-deps.exit" ]; then
+            echo "::error::Timed out waiting for the Playwright system dependencies to install"
+            exit 1
+          fi
+          if [ "$(cat "${RUNNER_TEMP}/playwright-deps.exit")" = "0" ]; then
             echo "ok=true" >> "$GITHUB_OUTPUT"
           else
             echo "::warning::Installing the Playwright system dependencies in the background failed; retrying after the npm install"
