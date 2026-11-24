@@ -56,7 +56,10 @@ func TestPlaywrightEnterpriseNightlyResolveStep(t *testing.T) {
 		}
 		return out
 	}
-	registry := map[string]string{"ENTERPRISE_NIGHTLY_REGISTRY": enterpriseNightlyRegistry}
+	registry := map[string]string{
+		"ENTERPRISE_NIGHTLY_REGISTRY": enterpriseNightlyRegistry,
+		"GRAFANA_IMAGE_INPUT":         "grafana-enterprise",
+	}
 
 	for _, tc := range []struct {
 		name         string
@@ -86,8 +89,13 @@ func TestPlaywrightEnterpriseNightlyResolveStep(t *testing.T) {
 			expectEnv:    "GRAFANA_REPOSITORY=" + enterpriseNightlyRegistry + "/grafana-enterprise",
 		},
 		{
+			name:      "oss image is rejected",
+			env:       merge(registry, private, nightly, map[string]string{"GRAFANA_IMAGE_INPUT": "grafana"}),
+			expectErr: "only applies to the grafana-enterprise image",
+		},
+		{
 			name:      "invalid registry is rejected",
-			env:       merge(private, nightly, map[string]string{"ENTERPRISE_NIGHTLY_REGISTRY": "bad value;x"}),
+			env:       merge(registry, private, nightly, map[string]string{"ENTERPRISE_NIGHTLY_REGISTRY": "bad value;x"}),
 			expectErr: "must be a registry path",
 		},
 		{
