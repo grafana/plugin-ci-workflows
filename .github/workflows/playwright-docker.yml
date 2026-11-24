@@ -203,16 +203,23 @@ jobs:
         with:
           registry: ${{ steps.grafana-repository.outputs.gar-host }}
 
-      # An older .config/Dockerfile ignores GRAFANA_REPOSITORY and would silently test against the Docker Hub image
+      # An older .config setup ignores GRAFANA_REPOSITORY and would silently test against the Docker Hub image
       - name: Check docker-compose setup supports GRAFANA_REPOSITORY
         if: steps.grafana-repository.outputs.gar-host != ''
         shell: bash
         run: |
-          config=$(GRAFANA_REPOSITORY=repository-override-probe docker compose ${DOCKER_COMPOSE_FILE:+-f "$DOCKER_COMPOSE_FILE"} config)
-          if ! grep -q "repository-override-probe" <<< "${config}"; then
-            echo "::error::The docker-compose setup does not use GRAFANA_REPOSITORY, so the enterprise nightly image would be pulled from Docker Hub. Update the plugin with 'npx @grafana/create-plugin@latest update' or remove run-playwright-with-enterprise-nightly-registry."
+          config=$(GRAFANA_REPOSITORY=repository-override-probe docker compose ${DOCKER_COMPOSE_FILE:+-f "$DOCKER_COMPOSE_FILE"} config --format json)
+          dockerfiles=$(jq -r '.services[] | select(.build.args.grafana_repository == "repository-override-probe") | (.build.dockerfile // "Dockerfile") as $d | if ($d | startswith("/")) then $d else "\(.build.context)/\($d)" end' <<< "${config}")
+          if [ -z "${dockerfiles}" ]; then
+            echo "::error::The docker-compose setup does not pass GRAFANA_REPOSITORY to the Grafana build, so the enterprise nightly image would be pulled from Docker Hub. Update the plugin with 'npx @grafana/create-plugin@latest update' or remove run-playwright-with-enterprise-nightly-registry."
             exit 1
           fi
+          while IFS= read -r dockerfile; do
+            if ! grep -Eq '^FROM[[:space:]].*\$\{?grafana_repository' "${dockerfile}"; then
+              echo "::error::${dockerfile} does not use grafana_repository in its FROM line, so the enterprise nightly image would be pulled from Docker Hub. Update the plugin with 'npx @grafana/create-plugin@latest update' or remove run-playwright-with-enterprise-nightly-registry."
+              exit 1
+            fi
+          done <<< "${dockerfiles}"
         env:
           DOCKER_COMPOSE_FILE: ${{ inputs.grafana-compose-file }}
           GRAFANA_IMAGE: ${{ matrix.GRAFANA_IMAGE.NAME }}

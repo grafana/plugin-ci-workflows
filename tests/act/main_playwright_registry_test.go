@@ -145,6 +145,9 @@ func TestPlaywrightEnterpriseNightlyComposeProbe(t *testing.T) {
 	if err := exec.Command("docker", "compose", "version").Run(); err != nil {
 		t.Skip("docker compose is not available")
 	}
+	if _, err := exec.LookPath("jq"); err != nil {
+		t.Skip("jq is not available")
+	}
 
 	const composeTemplate = `services:
   grafana:
@@ -154,14 +157,30 @@ func TestPlaywrightEnterpriseNightlyComposeProbe(t *testing.T) {
         grafana_image: ${GRAFANA_IMAGE:-grafana}
 %s        grafana_version: ${GRAFANA_VERSION:-latest}
 `
+	const repositoryArg = "        grafana_repository: ${GRAFANA_REPOSITORY:-}\n"
 
 	for _, tc := range []struct {
-		name      string
-		args      string
-		expectErr bool
+		name       string
+		args       string
+		dockerfile string
+		expectErr  string
 	}{
-		{name: "compose file that reads GRAFANA_REPOSITORY", args: "        grafana_repository: ${GRAFANA_REPOSITORY:-}\n"},
-		{name: "compose file that ignores GRAFANA_REPOSITORY", args: "", expectErr: true},
+		{
+			name:       "compose and Dockerfile both use GRAFANA_REPOSITORY",
+			args:       repositoryArg,
+			dockerfile: "ARG grafana_repository\nFROM ${grafana_repository:-grafana/${grafana_image}}:${grafana_version}\n",
+		},
+		{
+			name:       "compose passes GRAFANA_REPOSITORY but the Dockerfile hard-codes the repository",
+			args:       repositoryArg,
+			dockerfile: "ARG grafana_repository\nFROM grafana/${grafana_image}:${grafana_version}\n",
+			expectErr:  "does not use grafana_repository in its FROM line",
+		},
+		{
+			name:       "compose ignores GRAFANA_REPOSITORY",
+			dockerfile: "FROM grafana/${grafana_image}:${grafana_version}\n",
+			expectErr:  "does not pass GRAFANA_REPOSITORY to the Grafana build",
+		},
 	} {
 		for _, file := range playwrightRegistryWorkflows {
 			t.Run(file+"/"+tc.name, func(t *testing.T) {
@@ -170,13 +189,13 @@ func TestPlaywrightEnterpriseNightlyComposeProbe(t *testing.T) {
 				step := playwrightStep(t, file, "Check docker-compose setup supports GRAFANA_REPOSITORY")
 				dir := t.TempDir()
 				compose := filepath.Join(dir, "docker-compose.yaml")
-				content := strings.Replace(composeTemplate, "%s", tc.args, 1)
-				require.NoError(t, os.WriteFile(compose, []byte(content), 0o600))
+				require.NoError(t, os.WriteFile(compose, []byte(strings.Replace(composeTemplate, "%s", tc.args, 1)), 0o600))
+				require.NoError(t, os.WriteFile(filepath.Join(dir, "Dockerfile"), []byte(tc.dockerfile), 0o600))
 
 				out, err := runBash(t, step.Run, dir, map[string]string{"DOCKER_COMPOSE_FILE": compose})
-				if tc.expectErr {
+				if tc.expectErr != "" {
 					require.Error(t, err)
-					require.Contains(t, out, "does not use GRAFANA_REPOSITORY")
+					require.Contains(t, out, tc.expectErr)
 					return
 				}
 				require.NoError(t, err, out)
