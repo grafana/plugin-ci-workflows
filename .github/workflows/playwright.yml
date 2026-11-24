@@ -181,7 +181,7 @@ jobs:
 
       - name: Setup
         id: setup
-        uses: grafana/plugin-ci-workflows/actions/internal/plugins/setup@main
+        uses: grafana/plugin-ci-workflows/actions/internal/plugins/setup@sunker/default-oss-test
         with:
           plugin-directory: ${{ inputs.plugin-directory }}
           node-version: ${{ inputs.node-version }}
@@ -458,6 +458,6 @@ jobs:
     if: always()
     steps:
       - name: Check matrix job status
-        uses: grafana/plugin-ci-workflows/actions/internal/check-matrix-status@main
+        uses: grafana/plugin-ci-workflows/actions/internal/check-matrix-status@sunker/default-oss-test
         with:
           results: ${{ join(needs.*.result, ',') }}

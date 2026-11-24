@@ -478,7 +478,7 @@ env:
 jobs:
   check-for-release-channel:
     name: Check for release channel
-    uses: grafana/plugin-ci-workflows/.github/workflows/check-release-channel.yml@main
+    uses: grafana/plugin-ci-workflows/.github/workflows/check-release-channel.yml@sunker/default-oss-test
     with:
       DO-NOT-USE-allow-pinned-commit-hashes: ${{ inputs.DO-NOT-USE-allow-pinned-commit-hashes }}
 
@@ -598,7 +598,7 @@ jobs:
 
       - name: Setup
         id: setup
-        uses: grafana/plugin-ci-workflows/actions/internal/plugins/setup@main
+        uses: grafana/plugin-ci-workflows/actions/internal/plugins/setup@sunker/default-oss-test
         with:
           plugin-directory: ${{ inputs.plugin-directory }}
           node-version: ${{ fromJson(steps.tooling-versions.outputs.result).nodeVersion }}
@@ -670,7 +670,7 @@ jobs:
 
       - name: Test and build frontend
         id: frontend
-        uses: grafana/plugin-ci-workflows/actions/internal/plugins/frontend@main
+        uses: grafana/plugin-ci-workflows/actions/internal/plugins/frontend@sunker/default-oss-test
         with:
           plugin-directory: ${{ inputs.plugin-directory }}
           secrets: ${{ (fromJson(steps.workflow-context.outputs.result).isTrusted && inputs.frontend-secrets != '') && inputs.frontend-secrets || '' }}
@@ -682,7 +682,7 @@ jobs:
       - name: Test and build backend
         id: backend
         if: ${{ steps.check-for-backend.outputs.has-backend == 'true' }}
-        uses: grafana/plugin-ci-workflows/actions/internal/plugins/backend@main
+        uses: grafana/plugin-ci-workflows/actions/internal/plugins/backend@sunker/default-oss-test
         with:
           github-token: ${{ steps.generate-github-token.outputs.token || '' }}
           plugin-directory: ${{ inputs.plugin-directory }}
@@ -714,7 +714,7 @@ jobs:
 
       - name: Package universal ZIP
         id: universal-zip
-        uses: grafana/plugin-ci-workflows/actions/internal/plugins/package@main
+        uses: grafana/plugin-ci-workflows/actions/internal/plugins/package@sunker/default-oss-test
         with:
           universal: "true"
           dist-folder: ${{ inputs.plugin-directory }}/dist
@@ -725,7 +725,7 @@ jobs:
 
       - name: Package os/arch ZIPs
         id: os-arch-zips
-        uses: grafana/plugin-ci-workflows/actions/internal/plugins/package@main
+        uses: grafana/plugin-ci-workflows/actions/internal/plugins/package@sunker/default-oss-test
         with:
           universal: "false"
           dist-folder: ${{ inputs.plugin-directory }}/dist
@@ -737,7 +737,7 @@ jobs:
       - name: Trufflehog secrets scanning
         id: trufflehog
         if: ${{ inputs.run-trufflehog == true }}
-        uses: grafana/plugin-ci-workflows/actions/internal/plugins/trufflehog@main
+        uses: grafana/plugin-ci-workflows/actions/internal/plugins/trufflehog@sunker/default-oss-test
         with:
           trufflehog-version: ${{ inputs.trufflehog-version || env.DEFAULT_TRUFFLEHOG_VERSION }}
           cache: ${{ inputs.trufflehog-caching }}
@@ -887,13 +887,13 @@ jobs:
         shell: bash
 
       - name: Test docs
-        uses: grafana/plugin-ci-workflows/actions/internal/plugins/docs/test@main
+        uses: grafana/plugin-ci-workflows/actions/internal/plugins/docs/test@sunker/default-oss-test
         with:
           docs-source-directory: ${{ inputs.docs-source-directory }}
 
   playwright:
     name: Playwright E2E tests
-    uses: grafana/plugin-ci-workflows/.github/workflows/playwright.yml@main
+    uses: grafana/plugin-ci-workflows/.github/workflows/playwright.yml@sunker/default-oss-test
     if: ${{ inputs.run-playwright == true }}
     needs:
       - test-and-build
@@ -925,7 +925,7 @@ jobs:
 
   playwright-docker:
     name: Plugins - Dockerized Playwright E2E tests
-    uses: grafana/plugin-ci-workflows/.github/workflows/playwright-docker.yml@main
+    uses: grafana/plugin-ci-workflows/.github/workflows/playwright-docker.yml@sunker/default-oss-test
     if: ${{ inputs.run-playwright-docker == true }}
     needs:
       - test-and-build

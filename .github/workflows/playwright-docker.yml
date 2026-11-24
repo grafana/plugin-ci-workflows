@@ -274,6 +274,6 @@ jobs:
     if: always()
     steps:
       - name: Check matrix job status
-        uses: grafana/plugin-ci-workflows/actions/internal/check-matrix-status@main
+        uses: grafana/plugin-ci-workflows/actions/internal/check-matrix-status@sunker/default-oss-test
         with:
           results: ${{ join(needs.*.result, ',') }}
