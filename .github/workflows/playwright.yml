@@ -240,6 +240,9 @@ jobs:
           cd out
           cd "$(ls -1)"
           mv ./* "$src/dist/"
+
+          cd "$src"
+          find dist -type f -exec sha256sum {} + > "${RUNNER_TEMP}/dist.sha256"
         env:
           PLUGIN_ID: ${{ inputs.id }}
           PLUGIN_VERSION: ${{ inputs.version }}
@@ -364,6 +367,16 @@ jobs:
         shell: bash
         working-directory: ${{ inputs.plugin-directory }}
 
+      # dist/ is moved in before the npm install, so a prepare or postinstall script that builds the plugin would replace the CI artifact
+      - name: Check that the npm install did not change dist
+        shell: bash
+        working-directory: ${{ inputs.plugin-directory }}
+        run: |
+          if ! sha256sum --check --quiet "${RUNNER_TEMP}/dist.sha256"; then
+            echo "::error::The npm install changed dist/, probably through a prepare or postinstall script that builds the plugin. Remove the build from that script so the e2e tests run against the CI artifact."
+            exit 1
+          fi
+
       - name: Get secrets from Vault
         if: inputs.secrets != ''
         id: get-secrets
@@ -439,15 +452,10 @@ jobs:
         if: steps.lockfile-version.outputs.version != ''
         shell: bash
         run: |
-          for _ in $(seq 1 600); do
-            [ -f "${RUNNER_TEMP}/playwright-deps.exit" ] && break
+          until [ -f "${RUNNER_TEMP}/playwright-deps.exit" ]; do
             sleep 1
           done
           cat "${RUNNER_TEMP}/playwright-deps.log" || true
-          if [ ! -f "${RUNNER_TEMP}/playwright-deps.exit" ]; then
-            echo "::error::Timed out waiting for the Playwright system dependencies to install"
-            exit 1
-          fi
           if [ "$(cat "${RUNNER_TEMP}/playwright-deps.exit")" = "0" ]; then
             echo "ok=true" >> "$GITHUB_OUTPUT"
           else
