@@ -345,7 +345,7 @@ jobs:
           if [ -z "${ENTERPRISE_NIGHTLY_REGISTRY}" ]; then
             exit 0
           fi
-          if [ "${REPOSITORY_IS_PRIVATE}" != "true" ]; then
+          if [ "${REPOSITORY_IS_PRIVATE}" != "true" ] && [ "${REPOSITORY_VISIBILITY}" != "private" ] && [ "${REPOSITORY_VISIBILITY}" != "internal" ]; then
             echo "::error::run-playwright-with-enterprise-nightly-registry can only be used from private or internal repositories"
             exit 1
           fi
@@ -360,6 +360,7 @@ jobs:
         env:
           ENTERPRISE_NIGHTLY_REGISTRY: ${{ inputs.enterprise-nightly-registry }}
           REPOSITORY_IS_PRIVATE: ${{ github.event.repository.private }}
+          REPOSITORY_VISIBILITY: ${{ github.event.repository.visibility }}
           IMAGE_NAME: ${{ matrix.GRAFANA_IMAGE.NAME }}
           IMAGE_VERSION: ${{ matrix.GRAFANA_IMAGE.VERSION }}
 
