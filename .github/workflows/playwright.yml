@@ -452,10 +452,16 @@ jobs:
         if: steps.lockfile-version.outputs.version != ''
         shell: bash
         run: |
-          until [ -f "${RUNNER_TEMP}/playwright-deps.exit" ]; do
-            sleep 1
-          done
-          cat "${RUNNER_TEMP}/playwright-deps.log" || true
+for _ in $(seq 1 600); do
+  [ -f "${RUNNER_TEMP}/playwright-deps.exit" ] && break
+  sleep 1
+done
+if [ ! -f "${RUNNER_TEMP}/playwright-deps.exit" ]; then
+  cat "${RUNNER_TEMP}/playwright-deps.log" || true
+  echo "::error::Timed out waiting for background Playwright system dependencies"
+  exit 1
+fi
+cat "${RUNNER_TEMP}/playwright-deps.log" || true
           if [ "$(cat "${RUNNER_TEMP}/playwright-deps.exit")" = "0" ]; then
             echo "ok=true" >> "$GITHUB_OUTPUT"
           else
