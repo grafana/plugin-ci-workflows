@@ -211,8 +211,7 @@ jobs:
           echo "list=$list" >> "$GITHUB_OUTPUT"
           echo "cache-key=$cache_key" >> "$GITHUB_OUTPUT"
 
-      # The dist artifact, secrets and registry login come first so that Grafana can start in the background
-      # while the npm install and the Playwright install below are running.
+      # The dist artifact comes first so that Grafana can start in the background before the npm install.
       - name: Download GitHub artifact
         id: download-dist-artifacts
         continue-on-error: true
@@ -246,29 +245,12 @@ jobs:
           PLUGIN_VERSION: ${{ inputs.version }}
         working-directory: ${{ inputs.plugin-directory }}
 
-      - name: Get secrets from Vault
-        if: inputs.secrets != ''
-        id: get-secrets
-        uses: grafana/shared-workflows/actions/get-vault-secrets@2f1ddaf3ce1aa677356243d0dd584be33cfa35e3 # get-vault-secrets/v2.1
-        with:
-          repo_secrets: ${{ inputs.secrets }}
-
-      - name: Set secrets
-        if: inputs.secrets != ''
-        run: |
-          echo '${{ steps.get-secrets.outputs.secrets }}' | jq -r 'to_entries[] | "\(.key)=\(.value)"' >> .env
-        working-directory: ${{ inputs.plugin-directory }}
-
-      # Log in to GAR to allow pulling private Docker images in the docker-compose setup if needed
-      - name: Log in to GAR
-        if: inputs.gar-registry != ''
-        uses: grafana/shared-workflows/actions/login-to-gar@afad5c7621e788905e6417f05b492972685ab1eb # login-to-gar/v1.0.4
-        with:
-          registry: ${{ inputs.gar-registry }}
-
       # Runs in the background so the image pull, build and Grafana boot overlap with the install steps below.
       # The exit code is written to a file and checked by the "Wait for background Grafana start" step.
+      # Without secrets or a GAR login there is nothing to protect from the npm lifecycle scripts, so this
+      # can start before the npm install. Otherwise the same step runs after the credentials are set up.
       - name: Start Grafana
+        if: inputs.secrets == '' && inputs.gar-registry == ''
         # add the -f argument only if "inputs.docker-compose-file" is defined
         shell: bash
         run: |
@@ -288,8 +270,11 @@ jobs:
       # Reads the Playwright version from the lockfile so the system dependencies (apt) can be installed
       # while the npm install is running. Outputs nothing when the version is missing or ambiguous,
       # in which case the dependencies are installed after the npm install instead.
+      # Skipped with a private npm registry: the background install runs outside the plugin directory,
+      # so it would fetch from the public registry and ignore the plugin's .npmrc.
       - name: Resolve Playwright version from lockfile
         id: lockfile-version
+        if: inputs.npm-registry-auth != true
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
         with:
           script: |
@@ -337,7 +322,6 @@ jobs:
         env:
           PLUGIN_DIRECTORY: ${{ inputs.plugin-directory }}
 
-      # Runs in the background next to the npm install. The "Wait for Playwright system dependencies" step joins it.
       - name: Install Playwright system dependencies in the background
         if: steps.lockfile-version.outputs.version != ''
         shell: bash
@@ -379,6 +363,44 @@ jobs:
         run: ${{ steps.setup.outputs.node-package-manager-frozen-install-cmd }}
         shell: bash
         working-directory: ${{ inputs.plugin-directory }}
+
+      - name: Get secrets from Vault
+        if: inputs.secrets != ''
+        id: get-secrets
+        uses: grafana/shared-workflows/actions/get-vault-secrets@2f1ddaf3ce1aa677356243d0dd584be33cfa35e3 # get-vault-secrets/v2.1
+        with:
+          repo_secrets: ${{ inputs.secrets }}
+
+      - name: Set secrets
+        if: inputs.secrets != ''
+        run: |
+          echo '${{ steps.get-secrets.outputs.secrets }}' | jq -r 'to_entries[] | "\(.key)=\(.value)"' >> .env
+        working-directory: ${{ inputs.plugin-directory }}
+
+      # Log in to GAR to allow pulling private Docker images in the docker-compose setup if needed
+      - name: Log in to GAR
+        if: inputs.gar-registry != ''
+        uses: grafana/shared-workflows/actions/login-to-gar@afad5c7621e788905e6417f05b492972685ab1eb # login-to-gar/v1.0.4
+        with:
+          registry: ${{ inputs.gar-registry }}
+
+      - name: Start Grafana (with credentials)
+        if: inputs.secrets != '' || inputs.gar-registry != ''
+        # add the -f argument only if "inputs.docker-compose-file" is defined
+        shell: bash
+        run: |
+          rm -f "${RUNNER_TEMP}/grafana-up.exit"
+          (
+            trap '' HUP
+            status=0
+            docker compose ${DOCKER_COMPOSE_FILE:+-f "$DOCKER_COMPOSE_FILE"} up -d || status=$?
+            echo "$status" > "${RUNNER_TEMP}/grafana-up.exit"
+          ) < /dev/null > "${RUNNER_TEMP}/grafana-up.log" 2>&1 &
+        working-directory: ${{ inputs.plugin-directory }}
+        env:
+          DOCKER_COMPOSE_FILE: ${{ inputs.docker-compose-file }}
+          GRAFANA_VERSION: ${{ matrix.GRAFANA_IMAGE.VERSION }}
+          GRAFANA_IMAGE: ${{ matrix.GRAFANA_IMAGE.NAME }}
 
       - name: Get Playwright version
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
