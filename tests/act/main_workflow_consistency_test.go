@@ -199,10 +199,74 @@ func TestPlaywrightEnterpriseNightlyRegistryIsWired(t *testing.T) {
 
 			require.Equal(t, "grafana-repository", steps[resolve].ID)
 			require.Equal(t, "${{ inputs.enterprise-nightly-registry }}", steps[resolve].Env["ENTERPRISE_NIGHTLY_REGISTRY"])
+			require.Equal(t, "${{ inputs.grafana-image }}", steps[resolve].Env["GRAFANA_IMAGE_INPUT"])
 			require.Equal(t, "${{ github.event.repository.private }}", steps[resolve].Env["REPOSITORY_IS_PRIVATE"])
 			require.Equal(t, "${{ github.event.repository.visibility }}", steps[resolve].Env["REPOSITORY_VISIBILITY"])
 			require.Contains(t, steps[resolve].Run, `"${REPOSITORY_IS_PRIVATE}" != "true"`, "the guard must fail closed")
 			require.Equal(t, "${{ inputs."+tc.composeFileInput+" }}", steps[check].Env["DOCKER_COMPOSE_FILE"])
+		})
+	}
+}
+
+func TestPlaywrightGrafanaImageIsPassedToE2EVersion(t *testing.T) {
+	t.Parallel()
+
+	ciWf, err := workflow.NewBaseWorkflowFromFile(filepath.Join(".github", "workflows", "ci.yml"))
+	require.NoError(t, err)
+
+	for _, tc := range []struct{ file, ciJob string }{
+		{file: "playwright.yml", ciJob: "playwright"},
+		{file: "playwright-docker.yml", ciJob: "playwright-docker"},
+	} {
+		t.Run(tc.file, func(t *testing.T) {
+			t.Parallel()
+
+			wf, err := workflow.NewBaseWorkflowFromFile(filepath.Join(".github", "workflows", tc.file))
+			require.NoError(t, err)
+			require.Contains(t, wf.On.WorkflowCall.Inputs, "grafana-image")
+
+			ciJob := ciWf.Jobs[tc.ciJob]
+			require.NotNil(t, ciJob)
+			require.Equal(t, "${{ inputs.run-playwright-with-grafana-image }}", ciJob.With["grafana-image"])
+
+			var resolved int
+			for _, step := range wf.Jobs["resolve-versions"].Steps {
+				if !strings.HasPrefix(step.Uses, "grafana/plugin-actions/e2e-version@") {
+					continue
+				}
+				resolved++
+				require.Equal(t, "${{ inputs.grafana-image }}", step.With["grafana-image"])
+			}
+			require.Equal(t, 1, resolved, "%s should have one e2e-version step", tc.file)
+		})
+	}
+}
+
+func TestDockerPlaywrightUsesMatrixImageForAllSteps(t *testing.T) {
+	t.Parallel()
+
+	wf, err := workflow.NewBaseWorkflowFromFile(filepath.Join(".github", "workflows", "playwright-docker.yml"))
+	require.NoError(t, err)
+	job := wf.Jobs["playwright-tests"]
+	require.NotNil(t, job)
+	require.Equal(t, "${{ matrix.GRAFANA_IMAGE.name }}", job.Env["GRAFANA_IMAGE"])
+	require.Equal(t, "${{ matrix.GRAFANA_IMAGE.version }}", job.Env["GRAFANA_VERSION"])
+}
+
+func TestPlaywrightStatusChecksAllRequiredJobs(t *testing.T) {
+	t.Parallel()
+
+	for _, file := range []string{"playwright.yml", "playwright-docker.yml"} {
+		t.Run(file, func(t *testing.T) {
+			t.Parallel()
+			wf, err := workflow.NewBaseWorkflowFromFile(filepath.Join(".github", "workflows", file))
+			require.NoError(t, err)
+			check := wf.Jobs["check-playwright-status"]
+			require.NotNil(t, check)
+			require.ElementsMatch(t, []string{"resolve-versions", "playwright-tests"}, check.Needs)
+			require.Equal(t, "always()", check.If)
+			require.Len(t, check.Steps, 1)
+			require.Equal(t, "${{ join(needs.*.result, ',') }}", check.Steps[0].With["results"])
 		})
 	}
 }
