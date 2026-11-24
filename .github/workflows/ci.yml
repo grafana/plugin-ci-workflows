@@ -435,10 +435,10 @@ env:
   DEFAULT_NODE_VERSION: "24"
   DEFAULT_GO_VERSION: "1.27.3"
   DEFAULT_GOLANGCI_LINT_VERSION: "2.15.0"
-  DEFAULT_TRUFFLEHOG_VERSION: "3.99.8"
+  DEFAULT_TRUFFLEHOG_VERSION: "3.100.0"
   DEFAULT_MAGE_VERSION: "1.17.2"
   DEFAULT_PLUGIN_VALIDATOR_VERSION: "0.41.0"
-  DEFAULT_PLUGIN_DOCS_CLI_VERSION: "0.14.1"
+  DEFAULT_PLUGIN_DOCS_CLI_VERSION: "1.0.0"
 
   # Default plugin-validator configuration, used when no configuration is provided by the caller.
   # Disables some analyzers that are not relevant for Grafana Labs plugins.
@@ -624,7 +624,7 @@ jobs:
       - name: Spellcheck
         run: |
           if [ -f "./cspell.config.json" ]; then
-            npx --yes cspell@10.4.1 -c cspell.config.json "**/*.{ts,tsx,js,go,md,mdx,yml,yaml,json,scss,css}"
+            npx --yes cspell@10.5.2 -c cspell.config.json "**/*.{ts,tsx,js,go,md,mdx,yml,yaml,json,scss,css}"
           else
             echo "❌ Spellcheck is not configured."
           fi
@@ -1004,6 +1004,8 @@ jobs:
           destination: ${{ env.gcs_artifacts_path_latest }}
           parent: false
           process_gcloudignore: false
+          # Resumable uploads fail on small checksum files, see #775
+          resumable: false
 
       - name: Upload GCS artifacts (commit)
         id: gcs-upload-commit
@@ -1013,6 +1015,8 @@ jobs:
           destination: ${{ env.gcs_artifacts_path_commit }}
           parent: false
           process_gcloudignore: false
+          # Resumable uploads fail on small checksum files, see #775
+          resumable: false
 
       - name: Define outputs
         id: outputs

@@ -14,7 +14,7 @@ on:
   workflow_call:
     inputs:
       # Those inputs can be customized depending on the plugin's needs:
-      # Publishing options (GCS and/or catalog)
+      # Publishing options
       upload-gcs-latest:
         description: |
           If true, upload artifacts to the GCS latest path even when triggered from a non-release reference (branch).
@@ -23,11 +23,6 @@ on:
         type: boolean
         required: false
         default: false
-      gcs-only:
-        description: |
-          Only publish the plugin to GCS, do not publish the plugin to the Grafana Plugin Catalog.
-        default: false
-        type: boolean
       scopes:
         description: |
           Comma-separated list of scopes for the plugin version in the catalog.
@@ -42,7 +37,6 @@ on:
         description: |
           The deployment type used by the Argo Workflow to deploy the plugin to the specified environment(s) in Grafana Cloud.
           `trigger-argo` must also be true for Argo to be triggered.
-          `gcs_only` must be false for this to work.
 
           Supported values:
             - provisioned
@@ -980,7 +974,6 @@ jobs:
       ${{
         !cancelled()
         && !inputs.docs-only
-        && !inputs.gcs-only
         && needs.setup.result == 'success'
         && needs.upload-to-gcs-release.result == 'success'
         && needs.ci.result == 'success'
@@ -1305,6 +1298,8 @@ jobs:
           destination: "${{ steps.paths.outputs.gcs_artifacts_release_path_tag }}/${{ matrix.platform }}"
           parent: false
           process_gcloudignore: false
+          # Resumable uploads fail on small checksum files, see #775
+          resumable: false
 
       - name: Upload GCS release artifact (latest)
         if: ${{ inputs.upload-gcs-latest || needs.setup.outputs.is-release-reference == 'true' }}
@@ -1315,6 +1310,8 @@ jobs:
           destination: "${{ steps.paths.outputs.gcs_artifacts_release_path_latest }}/${{ matrix.platform }}"
           parent: false
           process_gcloudignore: false
+          # Resumable uploads fail on small checksum files, see #775
+          resumable: false
 
       - name: Upload GCS release artifacts (latest, any)
         if: ${{ (inputs.upload-gcs-latest || needs.setup.outputs.is-release-reference == 'true') && matrix.platform == 'any' }}
@@ -1324,6 +1321,8 @@ jobs:
           destination: "${{ steps.paths.outputs.gcs_artifacts_release_path_latest }}"
           parent: false
           process_gcloudignore: false
+          # Resumable uploads fail on small checksum files, see #775
+          resumable: false
 
       # all zip artifacts are already present in /tmp/dist-artifacts
       # we can generate all the urls here in a single step
@@ -1381,9 +1380,8 @@ jobs:
     needs:
       - setup
       - ci
-      # Update the docs only after a successful GCOM deployment
-      # This dependency can be skipped if gcs-only is true. In that case, this step
-      # is still executed due to the "!(failure() || cancelled())" condition.
+      # Update the docs only after a successful GCOM deployment,
+      # unless in docs-only mode.
       - publish-to-catalog
     if: >-
       ${{
@@ -1430,8 +1428,6 @@ jobs:
       - setup
       - ci
       # Create the release only after a successful GCOM deployment
-      # This dependency can be skipped if gcs-only is true. In that case, this step
-      # is still executed due to the "!(failure() || cancelled())" condition.
       - publish-to-catalog
     if: >-
       ${{

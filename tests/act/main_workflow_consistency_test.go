@@ -107,6 +107,19 @@ func TestCDWorkflowCIJobPassesAllInputs(t *testing.T) {
 	})
 }
 
+func TestCDWorkflowHasNoCatalogOptOut(t *testing.T) {
+	t.Parallel()
+
+	cdWf, err := workflow.NewBaseWorkflowFromFile(filepath.Join(".github", "workflows", "cd.yml"))
+	require.NoError(t, err)
+
+	require.NotContains(t, cdWf.On.WorkflowCall.Inputs, "gcs-only", "CD must not expose a catalog opt-out")
+
+	publishJob := cdWf.Jobs["publish-to-catalog"]
+	require.NotNil(t, publishJob)
+	require.NotContains(t, publishJob.If, "gcs-only", "plugin publishing must not skip the catalog")
+}
+
 func TestCIUploadToGCSWaitsForEnabledPlaywrightJobs(t *testing.T) {
 	t.Parallel()
 
@@ -130,6 +143,30 @@ func TestCIUploadToGCSWaitsForEnabledPlaywrightJobs(t *testing.T) {
 		"(!inputs.run-playwright-docker || needs.playwright-docker.result == 'success')",
 	} {
 		require.Contains(t, uploadToGCSJob.If, condition)
+	}
+}
+
+// Resumable uploads in upload-cloud-storage fail on small files such as the .sha1/.md5 checksums with
+// "the offset is lower than the number of bytes written", even though the object is written.
+// See https://github.com/grafana/plugin-ci-workflows/issues/775.
+func TestGCSUploadsAreNotResumable(t *testing.T) {
+	t.Parallel()
+
+	for _, fn := range []string{"ci.yml", "cd.yml"} {
+		wf, err := workflow.NewBaseWorkflowFromFile(filepath.Join(".github", "workflows", fn))
+		require.NoError(t, err)
+
+		var uploads int
+		for jobID, job := range wf.Jobs {
+			for _, step := range job.Steps {
+				if !strings.HasPrefix(step.Uses, workflow.GCSUploadAction+"@") {
+					continue
+				}
+				uploads++
+				require.Equalf(t, false, step.With["resumable"], "%s: job %q step %q must set `resumable: false`", fn, jobID, step.Name)
+			}
+		}
+		require.NotZerof(t, uploads, "%s should have GCS upload steps", fn)
 	}
 }
 
