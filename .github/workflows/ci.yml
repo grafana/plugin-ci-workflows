@@ -174,7 +174,7 @@ on:
         description: |
           Optional registry path to pull the grafana-enterprise:nightly image from instead of Docker Hub
           (e.g.: us-docker.pkg.dev/grafanalabs-dev/docker-grafana-enterprise-dev).
-          Only applies to the grafana-enterprise:nightly image.
+          Only applies to the grafana-enterprise:nightly image, so run-playwright-with-grafana-image must be grafana-enterprise.
           Other images are still pulled from Docker Hub. Can only be used from private or internal repositories.
           Requires the plugin's docker-compose setup to read the GRAFANA_REPOSITORY variable (see create-plugin update).
           The workflow authenticates to the registry host automatically.

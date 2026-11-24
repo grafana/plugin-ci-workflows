@@ -199,6 +199,7 @@ func TestPlaywrightEnterpriseNightlyRegistryIsWired(t *testing.T) {
 
 			require.Equal(t, "grafana-repository", steps[resolve].ID)
 			require.Equal(t, "${{ inputs.enterprise-nightly-registry }}", steps[resolve].Env["ENTERPRISE_NIGHTLY_REGISTRY"])
+			require.Equal(t, "${{ inputs.grafana-image }}", steps[resolve].Env["GRAFANA_IMAGE_INPUT"])
 			require.Equal(t, "${{ github.event.repository.private }}", steps[resolve].Env["REPOSITORY_IS_PRIVATE"])
 			require.Equal(t, "${{ github.event.repository.visibility }}", steps[resolve].Env["REPOSITORY_VISIBILITY"])
 			require.Contains(t, steps[resolve].Run, `"${REPOSITORY_IS_PRIVATE}" != "true"`, "the guard must fail closed")

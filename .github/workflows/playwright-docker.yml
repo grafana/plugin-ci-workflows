@@ -191,6 +191,10 @@ jobs:
             echo "::error::run-playwright-with-enterprise-nightly-registry can only be used from private or internal repositories"
             exit 1
           fi
+          if [ "${GRAFANA_IMAGE_INPUT}" != "grafana-enterprise" ]; then
+            echo "::error::run-playwright-with-enterprise-nightly-registry only applies to the grafana-enterprise image. Set run-playwright-with-grafana-image to grafana-enterprise or remove the registry input."
+            exit 1
+          fi
           if ! [[ "${ENTERPRISE_NIGHTLY_REGISTRY}" =~ ^[a-z0-9.-]+(:[0-9]+)?(/[a-z0-9._-]+)+$ ]]; then
             echo "::error::run-playwright-with-enterprise-nightly-registry must be a registry path such as us-docker.pkg.dev/<project>/<repository>"
             exit 1
@@ -201,6 +205,7 @@ jobs:
           fi
         env:
           ENTERPRISE_NIGHTLY_REGISTRY: ${{ inputs.enterprise-nightly-registry }}
+          GRAFANA_IMAGE_INPUT: ${{ inputs.grafana-image }}
           REPOSITORY_IS_PRIVATE: ${{ github.event.repository.private }}
           REPOSITORY_VISIBILITY: ${{ github.event.repository.visibility }}
           IMAGE_NAME: ${{ matrix.GRAFANA_IMAGE.NAME }}
@@ -231,8 +236,6 @@ jobs:
           done <<< "${dockerfiles}"
         env:
           DOCKER_COMPOSE_FILE: ${{ inputs.grafana-compose-file }}
-          GRAFANA_IMAGE: ${{ matrix.GRAFANA_IMAGE.NAME }}
-          GRAFANA_VERSION: ${{ matrix.GRAFANA_IMAGE.VERSION }}
 
       - name: Start Grafana
         # add the -f argument only if "inputs.grafana-compose-file" is defined
