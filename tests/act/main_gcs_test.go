@@ -17,10 +17,11 @@ func TestGCS(t *testing.T) {
 	require.NoError(t, err)
 
 	for _, tc := range []struct {
-		folder     string
-		id         string
-		version    string
-		hasBackend bool
+		folder           string
+		id               string
+		version          string
+		hasBackend       bool
+		privateArtifacts bool
 	}{
 		{
 			folder:     "simple-frontend",
@@ -34,8 +35,20 @@ func TestGCS(t *testing.T) {
 			version:    "1.0.0",
 			hasBackend: true,
 		},
+		{
+			folder:           "simple-frontend",
+			id:               "grafana-simplefrontend-panel",
+			version:          "1.0.0",
+			privateArtifacts: true,
+		},
 	} {
-		t.Run(tc.folder, func(t *testing.T) {
+		name := tc.folder
+		bucket := "integration-artifacts"
+		if tc.privateArtifacts {
+			name += "-private-artifacts"
+			bucket = "integration-artifacts-private"
+		}
+		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
 			for _, event := range []act.Event{
@@ -57,6 +70,7 @@ func TestGCS(t *testing.T) {
 							RunPlaywright:      workflow.Input(false),
 							RunTruffleHog:      workflow.Input(false),
 							RunPluginValidator: workflow.Input(false),
+							PrivateArtifacts:   workflow.Input(tc.privateArtifacts),
 						}),
 
 						// Mock dist so we don't spend time building the plugin
@@ -85,8 +99,8 @@ func TestGCS(t *testing.T) {
 
 					// Assert files uploaded to GCS (commit hash)
 					anyZipFn := anyZipFileName(tc.id, tc.version)
-					commitBasePath := filepath.Join("integration-artifacts", tc.id, tc.version, "main", commitHash)
-					latestBasePath := filepath.Join("integration-artifacts", tc.id, tc.version, "main", "latest")
+					commitBasePath := filepath.Join(bucket, tc.id, tc.version, "main", commitHash)
+					latestBasePath := filepath.Join(bucket, tc.id, tc.version, "main", "latest")
 
 					// Expect commit hash any zip
 					expFiles := []string{filepath.Join(commitBasePath, anyZipFn)}
@@ -119,8 +133,8 @@ func TestGCS(t *testing.T) {
 
 					// Assert job outputs (GCS URLs used later for publishing)
 					// Check universal ZIP output
-					latestURL := "https://storage.googleapis.com/integration-artifacts/" + tc.id + "/" + tc.version + "/main/latest/" + anyZipFn
-					commitURL := "https://storage.googleapis.com/integration-artifacts/" + tc.id + "/" + tc.version + "/main/" + commitHash + "/" + anyZipFn
+					latestURL := "https://storage.googleapis.com/" + bucket + "/" + tc.id + "/" + tc.version + "/main/latest/" + anyZipFn
+					commitURL := "https://storage.googleapis.com/" + bucket + "/" + tc.id + "/" + tc.version + "/main/" + commitHash + "/" + anyZipFn
 					for k, v := range map[string]string{
 						"universal_zip_url_latest": latestURL,
 						"universal_zip_url_commit": commitURL,
@@ -140,8 +154,8 @@ func TestGCS(t *testing.T) {
 						// If we have a backend, expect also os/arch zips
 						for _, osArch := range osArchCombos {
 							backendZipFn := osArchZipFileName(tc.id, tc.version, osArch)
-							expLatestZIPURLs = append(expLatestZIPURLs, "https://storage.googleapis.com/integration-artifacts/"+tc.id+"/"+tc.version+"/main/latest/"+backendZipFn)
-							expCommitZIPURLs = append(expCommitZIPURLs, "https://storage.googleapis.com/integration-artifacts/"+tc.id+"/"+tc.version+"/main/"+commitHash+"/"+backendZipFn)
+							expLatestZIPURLs = append(expLatestZIPURLs, "https://storage.googleapis.com/"+bucket+"/"+tc.id+"/"+tc.version+"/main/latest/"+backendZipFn)
+							expCommitZIPURLs = append(expCommitZIPURLs, "https://storage.googleapis.com/"+bucket+"/"+tc.id+"/"+tc.version+"/main/"+commitHash+"/"+backendZipFn)
 						}
 					}
 

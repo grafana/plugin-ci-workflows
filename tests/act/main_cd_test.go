@@ -37,10 +37,11 @@ func TestCD(t *testing.T) {
 	}
 
 	for _, tc := range []struct {
-		name         string
-		pluginFolder string
-		pluginSlug   string
-		hasBackend   bool
+		name             string
+		pluginFolder     string
+		pluginSlug       string
+		hasBackend       bool
+		privateArtifacts bool
 	}{
 		{
 			name:         "simple-frontend",
@@ -54,9 +55,20 @@ func TestCD(t *testing.T) {
 			pluginSlug:   "grafana-simplebackend-datasource",
 			hasBackend:   true,
 		},
+		{
+			name:             "simple-frontend private artifacts",
+			pluginFolder:     "simple-frontend",
+			pluginSlug:       "grafana-simplefrontend-panel",
+			privateArtifacts: true,
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+
+			bucket := "integration-artifacts"
+			if tc.privateArtifacts {
+				bucket = "integration-artifacts-private"
+			}
 
 			var publishCalls int
 			runner, err := act.NewRunner(t)
@@ -103,10 +115,10 @@ func TestCD(t *testing.T) {
 				expDownloadURLs := map[string]any{}
 				if tc.hasBackend {
 					for _, osArch := range osArchCombos {
-						expDownloadURLs[osArch.os+"-"+osArch.arch] = map[string]any{"url": gcsPublishURLBackend(tc.pluginSlug, "1.0.0", osArch.os, osArch.arch)}
+						expDownloadURLs[osArch.os+"-"+osArch.arch] = map[string]any{"url": gcsPublishURLBackend(bucket, tc.pluginSlug, "1.0.0", osArch.os, osArch.arch)}
 					}
 				}
-				expDownloadURLs["any"] = map[string]any{"url": gcsPublishURL(tc.pluginSlug, "1.0.0", "any")}
+				expDownloadURLs["any"] = map[string]any{"url": gcsPublishURL(bucket, tc.pluginSlug, "1.0.0", "any")}
 				require.Equal(t, expDownloadURLs, body["download"], "should have correct download URLs")
 
 				w.WriteHeader(http.StatusOK)
@@ -141,6 +153,8 @@ func TestCD(t *testing.T) {
 						RunTruffleHog:      workflow.Input(false),
 						RunPluginValidator: workflow.Input(false),
 						RunPlaywright:      workflow.Input(false),
+
+						PrivateArtifacts: workflow.Input(tc.privateArtifacts),
 					},
 					DisableDocsPublishing: workflow.Input(true),
 					DisableGitHubRelease:  workflow.Input(true),
@@ -225,24 +239,24 @@ func TestCD(t *testing.T) {
 			// Check GCS release upload
 			expGCSFiles := []string{
 				// CI artifacts
-				filepath.Join("integration-artifacts", tc.pluginSlug, pluginVersion, "main", "latest", anyZipFileName(tc.pluginSlug, pluginVersion)),
-				filepath.Join("integration-artifacts", tc.pluginSlug, pluginVersion, "main", gitSha, anyZipFileName(tc.pluginSlug, pluginVersion)),
+				filepath.Join(bucket, tc.pluginSlug, pluginVersion, "main", "latest", anyZipFileName(tc.pluginSlug, pluginVersion)),
+				filepath.Join(bucket, tc.pluginSlug, pluginVersion, "main", gitSha, anyZipFileName(tc.pluginSlug, pluginVersion)),
 
 				// Release artifacts
-				filepath.Join("integration-artifacts", tc.pluginSlug, "release", pluginVersion, "any", anyZipFileName(tc.pluginSlug, pluginVersion)),
-				filepath.Join("integration-artifacts", tc.pluginSlug, "release", "latest", "any", anyZipFileName(tc.pluginSlug, "latest")),
+				filepath.Join(bucket, tc.pluginSlug, "release", pluginVersion, "any", anyZipFileName(tc.pluginSlug, pluginVersion)),
+				filepath.Join(bucket, tc.pluginSlug, "release", "latest", "any", anyZipFileName(tc.pluginSlug, "latest")),
 			}
 			if tc.hasBackend {
 				for _, osArch := range osArchCombos {
 					expGCSFiles = append(
 						expGCSFiles,
 						// Os/arch CI artifacts
-						filepath.Join("integration-artifacts", tc.pluginSlug, pluginVersion, "main", "latest", osArchZipFileName(tc.pluginSlug, pluginVersion, osArch)),
-						filepath.Join("integration-artifacts", tc.pluginSlug, pluginVersion, "main", gitSha, osArchZipFileName(tc.pluginSlug, pluginVersion, osArch)),
+						filepath.Join(bucket, tc.pluginSlug, pluginVersion, "main", "latest", osArchZipFileName(tc.pluginSlug, pluginVersion, osArch)),
+						filepath.Join(bucket, tc.pluginSlug, pluginVersion, "main", gitSha, osArchZipFileName(tc.pluginSlug, pluginVersion, osArch)),
 
 						// Os/arch release artifacts
-						filepath.Join("integration-artifacts", tc.pluginSlug, "release", pluginVersion, osArch.os, osArchZipFileName(tc.pluginSlug, pluginVersion, osArch)),
-						filepath.Join("integration-artifacts", tc.pluginSlug, "release", "latest", osArch.os, osArchZipFileName(tc.pluginSlug, "latest", osArch)),
+						filepath.Join(bucket, tc.pluginSlug, "release", pluginVersion, osArch.os, osArchZipFileName(tc.pluginSlug, pluginVersion, osArch)),
+						filepath.Join(bucket, tc.pluginSlug, "release", "latest", osArch.os, osArchZipFileName(tc.pluginSlug, "latest", osArch)),
 					)
 				}
 			}
@@ -252,7 +266,7 @@ func TestCD(t *testing.T) {
 			}
 			// This artifact for some reason doesn't have the corresponding checksum files,
 			// so we add it manually after adding the checksums for all other files.
-			expGCSFiles = append(expGCSFiles, filepath.Join("integration-artifacts", tc.pluginSlug, "release", "latest", anyZipFileName(tc.pluginSlug, "latest")))
+			expGCSFiles = append(expGCSFiles, filepath.Join(bucket, tc.pluginSlug, "release", "latest", anyZipFileName(tc.pluginSlug, "latest")))
 			// Assert files exist in mocked GCS
 			require.NoError(t, checkFilesExist(runner.GCS.Fs, expGCSFiles, checkFilesExistOptions{strict: true}), "GCS files should be present")
 		})
@@ -303,7 +317,7 @@ func TestCD_PublishOmitsProvenanceAttestation(t *testing.T) {
 		}))
 	})
 
-	gcsZipURLs, err := json.Marshal([]string{gcsPublishURL(pluginSlug, pluginVersion, "any")})
+	gcsZipURLs, err := json.Marshal([]string{gcsPublishURL("integration-artifacts", pluginSlug, pluginVersion, "any")})
 	require.NoError(t, err)
 	pluginOutput, err := json.Marshal(map[string]string{
 		"id":      pluginSlug,
@@ -516,10 +530,10 @@ func TestCD_GCSLatest(t *testing.T) {
 	}
 }
 
-func gcsPublishURL(pluginSlug string, version string, platform string) string {
-	return "https://storage.googleapis.com/integration-artifacts/" + pluginSlug + "/release/" + version + "/" + platform + "/" + pluginSlug + "-" + version + ".zip"
+func gcsPublishURL(bucket string, pluginSlug string, version string, platform string) string {
+	return "https://storage.googleapis.com/" + bucket + "/" + pluginSlug + "/release/" + version + "/" + platform + "/" + pluginSlug + "-" + version + ".zip"
 }
 
-func gcsPublishURLBackend(pluginSlug string, version string, os string, arch string) string {
-	return "https://storage.googleapis.com/integration-artifacts/" + pluginSlug + "/release/" + version + "/" + os + "/" + pluginSlug + "-" + version + "." + os + "_" + arch + ".zip"
+func gcsPublishURLBackend(bucket string, pluginSlug string, version string, os string, arch string) string {
+	return "https://storage.googleapis.com/" + bucket + "/" + pluginSlug + "/release/" + version + "/" + os + "/" + pluginSlug + "-" + version + "." + os + "_" + arch + ".zip"
 }

@@ -343,6 +343,17 @@ on:
         type: string
         required: false
         default: "grafana"
+      private-artifacts:
+        description: |
+          If true, upload the plugin ZIPs to the private GCS bucket `integration-artifacts-private`
+          instead of the public `integration-artifacts` bucket. Use it for security releases.
+          The `gcs-*` outputs keep the `https://storage.googleapis.com/<bucket>/...` format, but those URLs
+          cannot be downloaded anonymously. Workflows of the `grafana` GitHub organization can download them
+          with GitHub OIDC (`id-token: write`): `grafana/shared-workflows/actions/login-to-gcs` with
+          `use_wif_auth: true`, then `gcloud storage cp gs://<bucket>/<path> .`.
+        type: boolean
+        required: false
+        default: false
 
       # Options for testing the workflow itself.
       testing:
@@ -456,7 +467,7 @@ env:
       sponsorshiplink:
         enabled: false
 
-  GCS_ARTIFACTS_BUCKET: integration-artifacts
+  GCS_ARTIFACTS_BUCKET: ${{ inputs.private-artifacts && 'integration-artifacts-private' || 'integration-artifacts' }}
   VAULT_INSTANCE: ops
 
 jobs:
