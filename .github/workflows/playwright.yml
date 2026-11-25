@@ -242,7 +242,7 @@ jobs:
           mv ./* "$src/dist/"
 
           cd "$src"
-          find dist -type f -exec sha256sum {} + > "${RUNNER_TEMP}/dist.sha256"
+          find dist -type f -exec sha256sum {} + | LC_ALL=C sort -k2 > "${RUNNER_TEMP}/dist.sha256"
         env:
           PLUGIN_ID: ${{ inputs.id }}
           PLUGIN_VERSION: ${{ inputs.version }}
@@ -372,7 +372,7 @@ jobs:
         shell: bash
         working-directory: ${{ inputs.plugin-directory }}
         run: |
-          if ! sha256sum --check --quiet "${RUNNER_TEMP}/dist.sha256"; then
+          if ! find dist -type f -exec sha256sum {} + | LC_ALL=C sort -k2 | diff "${RUNNER_TEMP}/dist.sha256" -; then
             echo "::error::The npm install changed dist/, probably through a prepare or postinstall script that builds the plugin. Remove the build from that script so the e2e tests run against the CI artifact."
             exit 1
           fi
