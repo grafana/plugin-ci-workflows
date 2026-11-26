@@ -2960,21 +2960,21 @@ __metadata:
   linkType: hard
 
 "@tanstack/react-virtual@npm:^3.5.1":
-  version: 3.14.26
-  resolution: "@tanstack/react-virtual@npm:3.14.26"
+  version: 3.14.28
+  resolution: "@tanstack/react-virtual@npm:3.14.28"
   dependencies:
-    "@tanstack/virtual-core": "npm:3.19.11"
+    "@tanstack/virtual-core": "npm:3.19.13"
   peerDependencies:
     react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
     react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
-  checksum: 10c0/71291177ac4c4b067a40351d46c69af0d5fc9dfcc6cb328cb87717b29209501a7193e92e75e599273ee423fff6c55c88157bd238684846b0d926dfa73b5d6dac
+  checksum: 10c0/82c4667e17476769ac87f0e5c6deb6180dbbd364cf4a8dce3c1a58ec9699bbb40ef51cf18232d322c53dd001e4bff090ba1b7981c7723e49aa8e3bc6a27562b7
   languageName: node
   linkType: hard
 
-"@tanstack/virtual-core@npm:3.19.11":
-  version: 3.19.11
-  resolution: "@tanstack/virtual-core@npm:3.19.11"
-  checksum: 10c0/61558882fd09f64020104ecd94bacaa2a6ccbb0745247610ede7683d709cf8d134cc3f6d1ee2d22203cb881e531bc4a3bb92e4657c08edf923ab6d5c39a958ec
+"@tanstack/virtual-core@npm:3.19.13":
+  version: 3.19.13
+  resolution: "@tanstack/virtual-core@npm:3.19.13"
+  checksum: 10c0/c28d58fa76035e9fe78f8c1b69e859d37baca86a111775c9f2e041d703950f67e5bde05c67dcf5664e4d5ba7a550623020a80005cb7d96193f3566af49bc1f3f
   languageName: node
   linkType: hard
 
@@ -4473,9 +4473,9 @@ __metadata:
   linkType: hard
 
 "caniuse-lite@npm:^1.0.30001826":
-  version: 1.0.30001826
-  resolution: "caniuse-lite@npm:1.0.30001826"
-  checksum: 10c0/11e9dba4dd105d270f69da022ce6a47be67cd1cc376f74029f99524ba8141a840153aa285f22c9a643a2fe608ffc0879592bcc9b7c20ad6875ad7ede663a1a6d
+  version: 1.0.30001827
+  resolution: "caniuse-lite@npm:1.0.30001827"
+  checksum: 10c0/219e1b503b2a462f862700c90ec13df61ece2f09b1c1a23cbda0e0c46eb5376dddadc13d9512fa7ada4bc17cc64192387c2709ce6c5c5442baf3cd2bf918a9ac
   languageName: node
   linkType: hard
 
@@ -5077,14 +5077,14 @@ __metadata:
   linkType: hard
 
 "dompurify@npm:^3.4.0":
-  version: 3.4.18
-  resolution: "dompurify@npm:3.4.18"
+  version: 3.5.0
+  resolution: "dompurify@npm:3.5.0"
   dependencies:
     "@types/trusted-types": "npm:^2.0.7"
   dependenciesMeta:
     "@types/trusted-types":
       optional: true
-  checksum: 10c0/03c96d4e04ce6588014d008c09bb80e97dc1f905acc28d0be0cf14ea6974f788f5706cac409a5b7b7a73831dbce15ac7ca68c6fe08b2e1522254f06ce6647e87
+  checksum: 10c0/e01e1ee94c70f30da9ba923f34d07aa1e4135e57d0f6c5da5b7e0de6a5ff9bed15bb3af0996cf112786768b7e9aea3408fb5b5c776c42739ad4871c5216b8df5
   languageName: node
   linkType: hard
 
