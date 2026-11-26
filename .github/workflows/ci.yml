@@ -464,8 +464,6 @@ env:
         enabled: false
       org:
         enabled: false
-      sponsorshiplink:
-        enabled: false
 
   GCS_ARTIFACTS_BUCKET: ${{ inputs.private-artifacts && 'integration-artifacts-private' || 'integration-artifacts' }}
   VAULT_INSTANCE: ops
