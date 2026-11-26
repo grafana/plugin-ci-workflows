@@ -30,10 +30,6 @@ func TestValidator(t *testing.T) {
 			Title:   "plugin-validator: Warning: plugin.json: should include screenshots for the Plugin catalog",
 			Message: `Screenshots are displayed in the Plugin catalog. Please add at least one screenshot to your plugin.json.`,
 		}, {
-			Level:   act.AnnotationLevelNotice,
-			Title:   "plugin-validator: Recommendation: You can include a sponsorship link if you want users to support your work",
-			Message: `Consider to add a sponsorship link in your plugin.json file (Info.Links section: with Name: 'sponsor' or Name: 'sponsorship'), which will be shown on the plugin details page to allow users to support your work if they wish.`,
-		}, {
 			Level:   act.AnnotationLevelWarning,
 			Title:   "plugin-validator: Warning: plugin.json: description is empty",
 			Message: `Consider providing a plugin description for better discoverability.`,
@@ -51,6 +47,10 @@ global:
 analyzers:
   # Disabled because it takes too much resources and time.
   osv-scanner:
+    enabled: false
+
+  # Disabled because results depend on the current Go vulnerability database.
+  govulncheck:
     enabled: false
 
   # Warns if backend SDK is too old. Disabled so we don't have to bump it to fix tests.
@@ -131,12 +131,11 @@ analyzers:
 			sourceFolder:       "simple-frontend-yarn",
 			packagedDistFolder: "dist-artifacts-unsigned/simple-frontend-yarn",
 			validatorConfig:    nil,
-			// Annotations from disabled analyzers (discoverability, license, sponsorshiplink)
+			// Annotations from disabled analyzers (discoverability, license)
 			// should not appear when the default config is used.
 			unexpectedAnnotationTitleSubstrings: []string{
 				"description is empty", // discoverability analyzer
 				"License file",         // license analyzer
-				"sponsorship link",     // sponsorshiplink analyzer
 			},
 			expPluginValidatorVersion:      defaultPluginValidatorVersion,
 			expPluginValidatorConfigSource: "default",
