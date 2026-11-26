@@ -141,6 +141,17 @@ on:
           If not specified, no authentication will be done.
         type: string
         required: false
+      run-playwright-with-enterprise-nightly-registry:
+        description: |
+          Optional registry path to pull the grafana-enterprise:nightly image from instead of Docker Hub
+          (e.g.: us-docker.pkg.dev/grafanalabs-dev/docker-grafana-enterprise-dev).
+          Only applies to the grafana-enterprise:nightly image.
+          Other images are still pulled from Docker Hub. Can only be used from private or internal repositories.
+          Requires the plugin's docker-compose setup to read the GRAFANA_REPOSITORY variable (see create-plugin update).
+          The workflow authenticates to the registry host automatically.
+          If not specified, all images are pulled from Docker Hub.
+        type: string
+        required: false
       # https://github.com/grafana/plugin-actions/blob/main/e2e-version/action.yml
       run-playwright-with-grafana-dependency:
         description: "Optionally, use this input to pass a semver range of supported Grafana versions to test against. This is only used when version-resolver-type is plugin-grafana-dependency. If not provided, the action will try to read grafanaDependency from the plugin.json file."
@@ -887,6 +898,7 @@ jobs:
       playwright-max-parallel: ${{ inputs.playwright-max-parallel }}
       playwright-secrets: ${{ inputs.playwright-secrets }}
       playwright-gar-registry: ${{ inputs.playwright-gar-registry }}
+      run-playwright-with-enterprise-nightly-registry: ${{ inputs.run-playwright-with-enterprise-nightly-registry }}
       playwright-browsers: ${{ inputs.playwright-browsers }}
 
       run-trufflehog: ${{ inputs.run-trufflehog }}

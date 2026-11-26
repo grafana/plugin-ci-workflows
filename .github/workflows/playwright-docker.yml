@@ -20,6 +20,10 @@ on:
       gar-registry:
         type: string
         required: false
+      enterprise-nightly-registry:
+        description: Registry path to pull the grafana-enterprise:nightly image from instead of Docker Hub
+        type: string
+        required: false
       plugin-directory:
         description: Directory of the plugin, if not in the root of the repository.
         type: string
@@ -99,7 +103,8 @@ jobs:
           limit: ${{ inputs.limit }}
 
   playwright-tests:
-    needs: resolve-versions
+    needs:
+      - resolve-versions
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -164,6 +169,62 @@ jobs:
         with:
           registry: ${{ inputs.gar-registry}}
 
+      # The grafana-enterprise nightly image is only published to a private registry, so the repository is
+      # overridden for that matrix entry only. Every other image keeps being pulled from Docker Hub.
+      - name: Resolve Grafana repository
+        id: grafana-repository
+        shell: bash
+        run: |
+          if [ -z "${ENTERPRISE_NIGHTLY_REGISTRY}" ]; then
+            exit 0
+          fi
+          if [ "${REPOSITORY_IS_PRIVATE}" != "true" ] && [ "${REPOSITORY_VISIBILITY}" != "private" ] && [ "${REPOSITORY_VISIBILITY}" != "internal" ]; then
+            echo "::error::run-playwright-with-enterprise-nightly-registry can only be used from private or internal repositories"
+            exit 1
+          fi
+          if ! [[ "${ENTERPRISE_NIGHTLY_REGISTRY}" =~ ^[a-z0-9.-]+(:[0-9]+)?(/[a-z0-9._-]+)+$ ]]; then
+            echo "::error::run-playwright-with-enterprise-nightly-registry must be a registry path such as us-docker.pkg.dev/<project>/<repository>"
+            exit 1
+          fi
+          if [ "${IMAGE_NAME}" = "grafana-enterprise" ] && [ "${IMAGE_VERSION}" = "nightly" ]; then
+            echo "gar-host=${ENTERPRISE_NIGHTLY_REGISTRY%%/*}" >> "$GITHUB_OUTPUT"
+            echo "GRAFANA_REPOSITORY=${ENTERPRISE_NIGHTLY_REGISTRY}/${IMAGE_NAME}" >> "$GITHUB_ENV"
+          fi
+        env:
+          ENTERPRISE_NIGHTLY_REGISTRY: ${{ inputs.enterprise-nightly-registry }}
+          REPOSITORY_IS_PRIVATE: ${{ github.event.repository.private }}
+          REPOSITORY_VISIBILITY: ${{ github.event.repository.visibility }}
+          IMAGE_NAME: ${{ matrix.GRAFANA_IMAGE.NAME }}
+          IMAGE_VERSION: ${{ matrix.GRAFANA_IMAGE.VERSION }}
+
+      - name: Log in to enterprise nightly registry
+        if: steps.grafana-repository.outputs.gar-host != '' && steps.grafana-repository.outputs.gar-host != inputs.gar-registry
+        uses: grafana/shared-workflows/actions/login-to-gar@afad5c7621e788905e6417f05b492972685ab1eb # login-to-gar/v1.0.4
+        with:
+          registry: ${{ steps.grafana-repository.outputs.gar-host }}
+
+      # An older .config setup ignores GRAFANA_REPOSITORY and would silently test against the Docker Hub image
+      - name: Check docker-compose setup supports GRAFANA_REPOSITORY
+        if: steps.grafana-repository.outputs.gar-host != ''
+        shell: bash
+        run: |
+          config=$(GRAFANA_REPOSITORY=repository-override-probe docker compose ${DOCKER_COMPOSE_FILE:+-f "$DOCKER_COMPOSE_FILE"} config --format json)
+          dockerfiles=$(jq -r '.services[] | select(.build.args.grafana_repository == "repository-override-probe") | (.build.dockerfile // "Dockerfile") as $d | if ($d | startswith("/")) then $d else "\(.build.context)/\($d)" end' <<< "${config}")
+          if [ -z "${dockerfiles}" ]; then
+            echo "::error::The docker-compose setup does not pass GRAFANA_REPOSITORY to the Grafana build, so the enterprise nightly image would be pulled from Docker Hub. Update the plugin with 'npx @grafana/create-plugin@latest update' or remove run-playwright-with-enterprise-nightly-registry."
+            exit 1
+          fi
+          while IFS= read -r dockerfile; do
+            if ! grep -Eq '^FROM[[:space:]].*\$\{?grafana_repository' "${dockerfile}"; then
+              echo "::error::${dockerfile} does not use grafana_repository in its FROM line, so the enterprise nightly image would be pulled from Docker Hub. Update the plugin with 'npx @grafana/create-plugin@latest update' or remove run-playwright-with-enterprise-nightly-registry."
+              exit 1
+            fi
+          done <<< "${dockerfiles}"
+        env:
+          DOCKER_COMPOSE_FILE: ${{ inputs.grafana-compose-file }}
+          GRAFANA_IMAGE: ${{ matrix.GRAFANA_IMAGE.NAME }}
+          GRAFANA_VERSION: ${{ matrix.GRAFANA_IMAGE.VERSION }}
+
       - name: Start Grafana
         # add the -f argument only if "inputs.grafana-compose-file" is defined
         run: |
@@ -193,7 +254,8 @@ jobs:
           retention-days: 30
 
   check-playwright-status:
-    needs: playwright-tests
+    needs:
+      - playwright-tests
     name: Check Playwright E2E matrix status
     runs-on: ubuntu-arm64-small
     if: always()
