@@ -342,7 +342,7 @@ jobs:
 
       - name: Wait for Grafana to start
         id: wait-for-grafana
-        uses: grafana/plugin-actions/wait-for-grafana@wait-for-grafana/v1.0.3
+        uses: grafana/plugin-actions/wait-for-grafana@wait-for-grafana/v1.0.5
         with:
           url: "${{ inputs.grafana-url }}"
           timeout: "${{ inputs.grafana-timeout }}"

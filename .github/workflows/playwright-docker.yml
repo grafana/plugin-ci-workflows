@@ -172,7 +172,7 @@ jobs:
           DOCKER_COMPOSE_FILE: ${{ inputs.grafana-compose-file }}
 
       - name: Wait for Grafana to start
-        uses: grafana/plugin-actions/wait-for-grafana@wait-for-grafana/v1.0.2
+        uses: grafana/plugin-actions/wait-for-grafana@wait-for-grafana/v1.0.5
         with:
           url: "${{ inputs.grafana-url }}"
 
