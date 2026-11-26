@@ -129,7 +129,7 @@
             "depNameTemplate": "plugin-validator",
             "packageNameTemplate": "grafana/plugin-validator",
             "datasourceTemplate": "github-releases",
-            "extractVersionTemplate": "^v?(?<version>.*)$"
+            "extractVersionTemplate": "^(?:plugin-validator/)?v(?<version>.+)$"
         },
         {
             "customType": "regex",
