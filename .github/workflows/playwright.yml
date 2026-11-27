@@ -179,49 +179,6 @@ jobs:
           frontend-only: "true"
           node-setup-caching: ${{ inputs.node-setup-caching }}
 
-      - name: Login to Google Cloud
-        if: inputs.npm-registry-auth == true
-        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
-        with:
-          token_format: access_token
-          workload_identity_provider: "projects/304398677251/locations/global/workloadIdentityPools/github/providers/github-provider"
-          service_account: github-plugin-ci-workflows@grafanalabs-workload-identity.iam.gserviceaccount.com
-
-      - name: NPM registry auth
-        if: inputs.npm-registry-auth == true
-        shell: bash
-        working-directory: ${{ inputs.plugin-directory }}
-        run: GOOGLE_APPLICATION_CREDENTIALS=${{ env.GOOGLE_APPLICATION_CREDENTIALS }} npx google-artifactregistry-auth --credential-config ./.npmrc
-
-      - name: Install npm dependencies
-        run: ${{ steps.setup.outputs.node-package-manager-frozen-install-cmd }}
-        shell: bash
-        working-directory: ${{ inputs.plugin-directory }}
-
-      - name: Get Playwright version
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
-        id: version
-        with:
-          script: |
-            const workingDirectory = process.env.PLUGIN_DIRECTORY;
-            console.debug("Specified working directory:", workingDirectory);
-            if (workingDirectory) process.chdir(workingDirectory);
-            console.debug("Actual working directory:", process.cwd());
-            let version = "";
-            try {
-              version = require("@playwright/test/package.json").version;
-            } catch (error) {
-              console.log(error.message);
-            }
-            console.debug("Version:", version);
-            if (version) {
-              core.setOutput("version", version);
-            } else {
-              core.setFailed("Couldn't get Playwright version");
-            }
-        env:
-          PLUGIN_DIRECTORY: ${{ inputs.plugin-directory }}
-
       - name: Resolve Playwright browsers
         id: browsers
         shell: bash
@@ -254,31 +211,7 @@ jobs:
           echo "list=$list" >> "$GITHUB_OUTPUT"
           echo "cache-key=$cache_key" >> "$GITHUB_OUTPUT"
 
-      - name: Cache Playwright
-        if: ${{ inputs.playwright-caching }}
-        id: cache
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ steps.version.outputs.version }}-${{ steps.browsers.outputs.cache-key }}
-
-      - name: Install Playwright browsers
-        shell: bash
-        working-directory: ${{ inputs.plugin-directory }}
-        env:
-          PLAYWRIGHT_BROWSERS_LIST: ${{ steps.browsers.outputs.list }}
-          NPM_EXEC_CMD: ${{ steps.setup.outputs.node-package-manager-exec-local-cmd }}
-        run: |
-          set -euo pipefail
-          for token in $PLAYWRIGHT_BROWSERS_LIST; do
-            if [ "$token" = "webkit" ]; then
-              # WebKit needs system libs that may be missing on self-hosted runners.
-              $NPM_EXEC_CMD playwright install --with-deps webkit || echo "::warning::WebKit install failed; continuing"
-            else
-              $NPM_EXEC_CMD playwright install --with-deps "$token"
-            fi
-          done
-
+      # The dist artifact comes first so that Grafana can start in the background before the npm install.
       - name: Download GitHub artifact
         id: download-dist-artifacts
         continue-on-error: true
@@ -307,10 +240,142 @@ jobs:
           cd out
           cd "$(ls -1)"
           mv ./* "$src/dist/"
+
+          cd "$src"
+          find dist -type f -exec sha256sum {} + | LC_ALL=C sort -k2 > "${RUNNER_TEMP}/dist.sha256"
         env:
           PLUGIN_ID: ${{ inputs.id }}
           PLUGIN_VERSION: ${{ inputs.version }}
         working-directory: ${{ inputs.plugin-directory }}
+
+      # Runs in the background so the image pull, build and Grafana boot overlap with the install steps below.
+      # The exit code is written to a file and checked by the "Wait for background Grafana start" step.
+      # Without secrets or a GAR login there is nothing to protect from the npm lifecycle scripts, so this
+      # can start before the npm install. Otherwise the same step runs after the credentials are set up.
+      - name: Start Grafana
+        if: inputs.secrets == '' && inputs.gar-registry == ''
+        # add the -f argument only if "inputs.docker-compose-file" is defined
+        shell: bash
+        run: |
+          rm -f "${RUNNER_TEMP}/grafana-up.exit"
+          (
+            trap '' HUP
+            status=0
+            docker compose ${DOCKER_COMPOSE_FILE:+-f "$DOCKER_COMPOSE_FILE"} up -d || status=$?
+            echo "$status" > "${RUNNER_TEMP}/grafana-up.exit"
+          ) < /dev/null > "${RUNNER_TEMP}/grafana-up.log" 2>&1 &
+        working-directory: ${{ inputs.plugin-directory }}
+        env:
+          DOCKER_COMPOSE_FILE: ${{ inputs.docker-compose-file }}
+          GRAFANA_VERSION: ${{ matrix.GRAFANA_IMAGE.VERSION }}
+          GRAFANA_IMAGE: ${{ matrix.GRAFANA_IMAGE.NAME }}
+
+      # Reads the Playwright version from the lockfile so the system dependencies (apt) can be installed
+      # while the npm install is running. Outputs nothing when the version is missing or ambiguous,
+      # in which case the dependencies are installed after the npm install instead.
+      # Skipped with a private npm registry: the background install runs outside the plugin directory,
+      # so it would fetch from the public registry and ignore the plugin's .npmrc.
+      - name: Resolve Playwright version from lockfile
+        id: lockfile-version
+        if: inputs.npm-registry-auth != true
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          script: |
+            const fs = require("fs");
+            const path = require("path");
+            const workspace = path.resolve(process.env.GITHUB_WORKSPACE);
+            const versionPattern = /^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/;
+            const parsers = {
+              "package-lock.json": (content) => {
+                const lock = JSON.parse(content);
+                const found = [];
+                for (const [key, value] of Object.entries(lock.packages || {})) {
+                  if (key === "node_modules/@playwright/test" || key.endsWith("/node_modules/@playwright/test")) found.push(value.version);
+                }
+                const legacy = lock.dependencies && lock.dependencies["@playwright/test"];
+                if (legacy) found.push(legacy.version);
+                return found;
+              },
+              "pnpm-lock.yaml": (content) =>
+                [...content.matchAll(/@playwright\/test@(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)/g)].map((m) => m[1]),
+              "yarn.lock": (content) =>
+                content
+                  .split(/\r?\n\r?\n/)
+                  .filter((block) => /^"?@playwright\/test@/m.test(block))
+                  .map((block) => (block.match(/^\s+version:?\s+"?([^"\s]+)"?/m) || [])[1]),
+            };
+            try {
+              let dir = path.resolve(workspace, process.env.PLUGIN_DIRECTORY || ".");
+              let lockfile = "";
+              while (dir.startsWith(workspace)) {
+                lockfile = Object.keys(parsers).find((name) => fs.existsSync(path.join(dir, name))) || "";
+                if (lockfile || dir === workspace) break;
+                dir = path.dirname(dir);
+              }
+              if (!lockfile) {
+                console.log("No lockfile found");
+              } else {
+                const versions = [...new Set(parsers[lockfile](fs.readFileSync(path.join(dir, lockfile), "utf8")))].filter((v) => versionPattern.test(v || ""));
+                console.log(`${lockfile}: ${JSON.stringify(versions)}`);
+                if (versions.length === 1) core.setOutput("version", versions[0]);
+              }
+            } catch (error) {
+              console.log(`Could not resolve the Playwright version from the lockfile: ${error.message}`);
+            }
+        env:
+          PLUGIN_DIRECTORY: ${{ inputs.plugin-directory }}
+
+      - name: Install Playwright system dependencies in the background
+        if: steps.lockfile-version.outputs.version != ''
+        shell: bash
+        env:
+          PLAYWRIGHT_VERSION: ${{ steps.lockfile-version.outputs.version }}
+          PLAYWRIGHT_BROWSERS_LIST: ${{ steps.browsers.outputs.list }}
+        run: |
+          rm -f "${RUNNER_TEMP}/playwright-deps.exit"
+          (
+            trap '' HUP
+            # run outside of the plugin directory so its .npmrc and package manager config are not picked up
+            cd "$RUNNER_TEMP"
+            status=0
+            for token in $PLAYWRIGHT_BROWSERS_LIST; do
+              if [ "$token" = "webkit" ]; then
+                npm exec --yes --package="playwright@${PLAYWRIGHT_VERSION}" -- playwright install-deps webkit || echo "::warning::WebKit system dependencies install failed; continuing"
+              else
+                npm exec --yes --package="playwright@${PLAYWRIGHT_VERSION}" -- playwright install-deps "$token" || status=1
+              fi
+            done
+            echo "$status" > "${RUNNER_TEMP}/playwright-deps.exit"
+          ) < /dev/null > "${RUNNER_TEMP}/playwright-deps.log" 2>&1 &
+
+      - name: Login to Google Cloud
+        if: inputs.npm-registry-auth == true
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          token_format: access_token
+          workload_identity_provider: "projects/304398677251/locations/global/workloadIdentityPools/github/providers/github-provider"
+          service_account: github-plugin-ci-workflows@grafanalabs-workload-identity.iam.gserviceaccount.com
+
+      - name: NPM registry auth
+        if: inputs.npm-registry-auth == true
+        shell: bash
+        working-directory: ${{ inputs.plugin-directory }}
+        run: GOOGLE_APPLICATION_CREDENTIALS=${{ env.GOOGLE_APPLICATION_CREDENTIALS }} npx google-artifactregistry-auth --credential-config ./.npmrc
+
+      - name: Install npm dependencies
+        run: ${{ steps.setup.outputs.node-package-manager-frozen-install-cmd }}
+        shell: bash
+        working-directory: ${{ inputs.plugin-directory }}
+
+      # dist/ is moved in before the npm install, so a prepare or postinstall script that builds the plugin would replace the CI artifact
+      - name: Check that the npm install did not change dist
+        shell: bash
+        working-directory: ${{ inputs.plugin-directory }}
+        run: |
+          if ! find dist -type f -exec sha256sum {} + | LC_ALL=C sort -k2 | diff "${RUNNER_TEMP}/dist.sha256" -; then
+            echo "::error::The npm install changed dist/, probably through a prepare or postinstall script that builds the plugin. Remove the build from that script so the e2e tests run against the CI artifact."
+            exit 1
+          fi
 
       - name: Get secrets from Vault
         if: inputs.secrets != ''
@@ -332,13 +397,131 @@ jobs:
         with:
           registry: ${{ inputs.gar-registry }}
 
-      - name: Start Grafana
+      - name: Start Grafana (with credentials)
+        if: inputs.secrets != '' || inputs.gar-registry != ''
         # add the -f argument only if "inputs.docker-compose-file" is defined
+        shell: bash
         run: |
-          GRAFANA_VERSION=${{ matrix.GRAFANA_IMAGE.VERSION }} GRAFANA_IMAGE=${{ matrix.GRAFANA_IMAGE.NAME }} docker compose ${DOCKER_COMPOSE_FILE:+-f "$DOCKER_COMPOSE_FILE"} up -d
+          rm -f "${RUNNER_TEMP}/grafana-up.exit"
+          (
+            trap '' HUP
+            status=0
+            docker compose ${DOCKER_COMPOSE_FILE:+-f "$DOCKER_COMPOSE_FILE"} up -d || status=$?
+            echo "$status" > "${RUNNER_TEMP}/grafana-up.exit"
+          ) < /dev/null > "${RUNNER_TEMP}/grafana-up.log" 2>&1 &
         working-directory: ${{ inputs.plugin-directory }}
         env:
           DOCKER_COMPOSE_FILE: ${{ inputs.docker-compose-file }}
+          GRAFANA_VERSION: ${{ matrix.GRAFANA_IMAGE.VERSION }}
+          GRAFANA_IMAGE: ${{ matrix.GRAFANA_IMAGE.NAME }}
+
+      - name: Get Playwright version
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        id: version
+        with:
+          script: |
+            const workingDirectory = process.env.PLUGIN_DIRECTORY;
+            console.debug("Specified working directory:", workingDirectory);
+            if (workingDirectory) process.chdir(workingDirectory);
+            console.debug("Actual working directory:", process.cwd());
+            let version = "";
+            try {
+              version = require("@playwright/test/package.json").version;
+            } catch (error) {
+              console.log(error.message);
+            }
+            console.debug("Version:", version);
+            if (version) {
+              core.setOutput("version", version);
+            } else {
+              core.setFailed("Couldn't get Playwright version");
+            }
+        env:
+          PLUGIN_DIRECTORY: ${{ inputs.plugin-directory }}
+
+      - name: Cache Playwright
+        if: ${{ inputs.playwright-caching }}
+        id: cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ steps.version.outputs.version }}-${{ steps.browsers.outputs.cache-key }}
+
+      - name: Wait for Playwright system dependencies
+        id: deps-wait
+        if: steps.lockfile-version.outputs.version != ''
+        shell: bash
+        run: |
+          for _ in $(seq 1 600); do
+            [ -f "${RUNNER_TEMP}/playwright-deps.exit" ] && break
+            sleep 1
+          done
+          if [ ! -f "${RUNNER_TEMP}/playwright-deps.exit" ]; then
+            cat "${RUNNER_TEMP}/playwright-deps.log" || true
+            echo "::error::Timed out waiting for background Playwright system dependencies"
+            exit 1
+          fi
+          cat "${RUNNER_TEMP}/playwright-deps.log" || true
+          if [ "$(cat "${RUNNER_TEMP}/playwright-deps.exit")" = "0" ]; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::Installing the Playwright system dependencies in the background failed; retrying after the npm install"
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Runs when the version could not be read from the lockfile or when the background install failed.
+      - name: Install Playwright system dependencies
+        if: steps.deps-wait.outputs.ok != 'true'
+        shell: bash
+        working-directory: ${{ inputs.plugin-directory }}
+        env:
+          PLAYWRIGHT_BROWSERS_LIST: ${{ steps.browsers.outputs.list }}
+          NPM_EXEC_CMD: ${{ steps.setup.outputs.node-package-manager-exec-local-cmd }}
+        run: |
+          set -euo pipefail
+          for token in $PLAYWRIGHT_BROWSERS_LIST; do
+            if [ "$token" = "webkit" ]; then
+              # WebKit needs system libs that may be missing on self-hosted runners.
+              $NPM_EXEC_CMD playwright install-deps webkit || echo "::warning::WebKit system dependencies install failed; continuing"
+            else
+              $NPM_EXEC_CMD playwright install-deps "$token"
+            fi
+          done
+
+      - name: Install Playwright browsers
+        shell: bash
+        working-directory: ${{ inputs.plugin-directory }}
+        env:
+          PLAYWRIGHT_BROWSERS_LIST: ${{ steps.browsers.outputs.list }}
+          NPM_EXEC_CMD: ${{ steps.setup.outputs.node-package-manager-exec-local-cmd }}
+        run: |
+          set -euo pipefail
+          for token in $PLAYWRIGHT_BROWSERS_LIST; do
+            if [ "$token" = "webkit" ]; then
+              $NPM_EXEC_CMD playwright install webkit || echo "::warning::WebKit install failed; continuing"
+            else
+              $NPM_EXEC_CMD playwright install "$token"
+            fi
+          done
+
+      - name: Wait for background Grafana start
+        shell: bash
+        run: |
+          for _ in $(seq 1 600); do
+            [ -f "${RUNNER_TEMP}/grafana-up.exit" ] && break
+            sleep 1
+          done
+          echo "::group::docker compose up output"
+          cat "${RUNNER_TEMP}/grafana-up.log" || true
+          echo "::endgroup::"
+          if [ ! -f "${RUNNER_TEMP}/grafana-up.exit" ]; then
+            echo "::error::Timed out waiting for 'docker compose up' to finish"
+            exit 1
+          fi
+          if [ "$(cat "${RUNNER_TEMP}/grafana-up.exit")" != "0" ]; then
+            echo "::error::'docker compose up' failed"
+            exit 1
+          fi
 
       - name: Wait for Grafana to start
         id: wait-for-grafana

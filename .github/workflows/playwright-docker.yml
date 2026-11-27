@@ -164,6 +164,21 @@ jobs:
         with:
           registry: ${{ inputs.gar-registry}}
 
+      # Pulls and builds the Playwright service image while Grafana starts. Errors are ignored here
+      # because the "Run Playwright Tests" step builds whatever is still missing.
+      - name: Prepare Playwright image in the background
+        shell: bash
+        run: |
+          rm -f "${RUNNER_TEMP}/playwright-image.done"
+          (
+            trap '' HUP
+            docker compose --profile playwright ${DOCKER_COMPOSE_FILE:+-f "$DOCKER_COMPOSE_FILE"} pull --ignore-buildable --quiet playwright || true
+            docker compose --profile playwright ${DOCKER_COMPOSE_FILE:+-f "$DOCKER_COMPOSE_FILE"} build playwright || true
+            touch "${RUNNER_TEMP}/playwright-image.done"
+          ) < /dev/null > "${RUNNER_TEMP}/playwright-image.log" 2>&1 &
+        env:
+          DOCKER_COMPOSE_FILE: ${{ inputs.grafana-compose-file }}
+
       - name: Start Grafana
         # add the -f argument only if "inputs.grafana-compose-file" is defined
         run: |
@@ -175,6 +190,20 @@ jobs:
         uses: grafana/plugin-actions/wait-for-grafana@wait-for-grafana/v1.0.5
         with:
           url: "${{ inputs.grafana-url }}"
+
+      - name: Wait for Playwright image
+        shell: bash
+        run: |
+          for _ in $(seq 1 600); do
+            [ -f "${RUNNER_TEMP}/playwright-image.done" ] && break
+            sleep 1
+          done
+          if [ ! -f "${RUNNER_TEMP}/playwright-image.done" ]; then
+            cat "${RUNNER_TEMP}/playwright-image.log" || true
+            echo "::error::Timed out waiting for background Playwright image preparation"
+            exit 1
+          fi
+          cat "${RUNNER_TEMP}/playwright-image.log" || true
 
       - name: Run Playwright Tests
         id: run-tests
