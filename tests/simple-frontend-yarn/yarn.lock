@@ -3196,21 +3196,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:*":
-  version: 26.6.6
-  resolution: "@types/node@npm:26.6.6"
+"@types/node@npm:*, @types/node@npm:26.6.10":
+  version: 26.6.10
+  resolution: "@types/node@npm:26.6.10"
   dependencies:
     undici-types: "npm:~8.9.0"
-  checksum: 10c0/5cb63f644f6e85a257a9cd2403cbcbe196760e2a35fd3ec9fb8b5cff663e14cc832b198cc17b53f870a2e30900ed45a1fb3f53e6589aba26b8e8c484aa672053
-  languageName: node
-  linkType: hard
-
-"@types/node@npm:26.6.5":
-  version: 26.6.5
-  resolution: "@types/node@npm:26.6.5"
-  dependencies:
-    undici-types: "npm:~8.9.0"
-  checksum: 10c0/4f791f69466ace7842c09e7bef96cb1ddbb65cf3db916ef7e84f0e2b2a17220b6b816dc7539d01520cadfb17ed7169b8214910900493e0a83be8bc7d124ec20a
+  checksum: 10c0/d249c40c72ee1e61aeb9633263e5ebf428359206926a2ca12435cf7112e09a49aa5ef7a787e413fdf66b9ad8f41fb474eeb4e18e31e9b49a64033393e888ce56
   languageName: node
   linkType: hard
 
@@ -9703,7 +9694,7 @@ __metadata:
     "@testing-library/jest-dom": "npm:8.0.0"
     "@testing-library/react": "npm:16.3.3"
     "@types/jest": "npm:30.0.0"
-    "@types/node": "npm:26.6.5"
+    "@types/node": "npm:26.6.10"
     "@types/react": "npm:18.3.31"
     "@types/react-dom": "npm:18.3.7"
     "@typescript-eslint/eslint-plugin": "npm:8.73.0"
