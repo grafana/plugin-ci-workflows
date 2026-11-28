@@ -28,8 +28,8 @@
     "@testing-library/react": "16.3.3",
     "@types/jest": "30.0.0",
     "@types/node": "26.6.5",
-    "@types/react": "18.3.31",
-    "@types/react-dom": "18.3.7",
+    "@types/react": "19.3.2",
+    "@types/react-dom": "19.3.0",
     "@typescript-eslint/eslint-plugin": "8.73.0",
     "@typescript-eslint/parser": "8.73.0",
     "copy-webpack-plugin": "14.0.0",
@@ -72,8 +72,8 @@
     "@grafana/runtime": "13.1.3",
     "@grafana/schema": "13.1.3",
     "@grafana/ui": "13.1.3",
-    "react": "18.3.1",
-    "react-dom": "18.3.1"
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
   },
   "packageManager": "npm@12.2.3+sha512.a2f98d4517bbe89bdca7513a88e78f43a1fd66be1730eaea81f69e18d86d46f3f75d29762e8fdaf42d4de7f8d194b2ebb2a09e9bfa268067591e96796baca7d5",
   "overrides": {
